@@ -1,0 +1,6 @@
+pid,startDate,endDate,code,frequency,dose,doseUnit,encounterId,isInpatient
+p1,5/10/2012,6/10/2012,J01CR05,1,50,mg,e1,
+p2,10/7/2009,10/22/2009,J01DC02,2,10,mg,,
+p3,1/10/2001,1/25/2001,J01DD02,1,20,mg,e3,TRUE
+p4,8/9/2005,8/25/2005,J01DD04,2,20,mg,,
+p5,10/15/2012,10/25/2012,J01XA01,3,30,mg,,

@@ -1,0 +1,11 @@
+pid,episodeId,encounterId,type,status,startTime,endTime,location,participant
+p1,ep1,e1,305351004,finished,2011-10-10T14:00:00+01:00,2011-10-10T22:00:00+01:00,icu1,pr4
+p2,ep2,e2,305354007,finished,2014-10-20,2014-10-30,ward1,
+p3,ep3,e3,866171008,finished,2015-08-25,,,pr1
+p4,ep4,e4,703120008,finished,2015-08-25,,,
+p5,ep5,e5,398068008,finished,2015-08-25T14:00:00+01:00,2015-08-25T17:00:00+01:00,,
+p6,ep6,e6,305354007,finished,2014-10-20,2014-10-30,room1,
+p7,ep7,e7,305354007,finished,2014-10-20,2014-10-30,ward1,
+p8,ep8,e8,305354007,finished,2014-10-20,2014-10-30,ward2,
+p9,ep9,e9,305354007,finished,2014-10-20,2014-10-30,ward3,
+p10,ep10,e10,305354007,cancelled,2014-10-20,,,

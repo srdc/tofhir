@@ -1,0 +1,5 @@
+lid,name,type,partOf
+or1,OR 1,225738002,
+icu1,ICU 1,309904001,
+ward1,Ward 1,225746001,
+room1,Room 1,225739005,ward1

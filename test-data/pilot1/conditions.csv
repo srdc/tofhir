@@ -1,0 +1,6 @@
+pid,code,onsetDateTime,abatementDateTime,encounterId,diagnosisType,isProlonged,certainity,asserter
+p1,J13,2012-10-15,,,main,false,confirmed,
+p2,G40,2013-05-07,2013-05-22,e2,main,true,,
+p3,J85,2016-02-11,,,comorbidity,,unconfirmed,pr1
+p4,M89.9,2014-01-05T10:00:00Z,,,other,,,
+p5,G40.419,2009-05-07,,,main,,,pr2
