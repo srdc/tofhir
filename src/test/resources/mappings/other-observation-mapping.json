@@ -1,0 +1,213 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
+  "name": "other-observation-mapping",
+  "title": "Mapping of schema Other Observation to AIC-IntraOperativeObservation, AIC-MedicationAdministration, AIC-NEWSScore, AIC-PEWSScore and AIC-GlascowScale FHIR profiles",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-other-observation"
+  }],
+  "context": {
+    "obsConceptMap":  {
+      "category": "concept-map",
+      "url": "./other-observation-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "precondition": {
+        "name": "isSimpleObservation",
+        "language": "text/fhirpath",
+        "expression": "code != '9269-2' and code != '313002' and code!= '35629' and code != '33834'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{uuid()}}",
+          "meta": {
+            "profile": ["{{getConcept(%obsConceptMap, code, 'profile')}}"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "{{getConcept(%obsConceptMap, code, 'source_system')}}",
+                "code": "{{code}}",
+                "display": "{{getConcept(%obsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": {
+            "{{#eid}}": "{{encounterId}}",
+            "{{?}}": {
+              "reference": "Encounter/{{%eid}}"
+            }
+          },
+          "effectiveDateTime": "{{time}}",
+          "valueQuantity": {
+            "value": "{{value}}",
+            "unit": "{{getConcept(%obsConceptMap, code, 'unit')}}",
+            "system": "http://unitsofmeasure.org",
+            "code": "{{getConcept(%obsConceptMap, code, 'unit')}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isGcs",
+        "language": "text/fhirpath",
+        "expression": "code = '9269-2'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{uuid()}}",
+          "meta": {
+            "profile": ["{{getConcept(%obsConceptMap, code, 'profile')}}"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "{{getConcept(%obsConceptMap, code, 'source_system')}}",
+                "code": "{{code}}",
+                "display": "{{getConcept(%obsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": {
+            "{{#eid}}": "{{encounterId}}",
+            "{{?}}": {
+              "reference": "Encounter/{{%eid}}"
+            }
+          },
+          "effectiveDateTime": "{{time}}",
+          "valueQuantity": {
+            "value": "{{value.split('-')[0]}.toDecimal()}",
+            "unit": "{{getConcept(%obsConceptMap, code, 'unit')}}",
+            "system": "http://unitsofmeasure.org",
+            "code": "{{getConcept(%obsConceptMap, code, 'unit')}}"
+          },
+          "component": {
+            "{{#comp}}": "{{value.split('-').tail()}}",
+            "{{?}}": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://loinc.org",
+                      "code": "9267-6",
+                      "display": "GCS eye opening"
+                    }
+                  ]
+                },
+                "valueQuantity": {
+                  "value": "comp[0]",
+                  "unit": "{score}",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "{score}"
+                }
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://loinc.org",
+                      "code": "9270-0",
+                      "display": "GCS verbal response"
+                    }
+                  ]
+                },
+                "valueQuantity": {
+                  "value": "comp[1]",
+                  "unit": "{score}",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "{score}"
+                }
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://loinc.org",
+                      "code": "9268-4",
+                      "display": "GCS motor response"
+                    }
+                  ]
+                },
+                "valueQuantity": {
+                  "value": "comp[2]",
+                  "unit": "{score}",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "{score}"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isMedicationAdministration",
+        "language": "text/fhirpath",
+        "expression": "code = '313002' or code = '35629' or code = '33834'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "MedicationAdministration",
+          "id": "{{uuid()}}",
+          "status": "completed",
+          "category": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/medication-admin-category",
+                "code": "inpatient",
+                "display": "Inpatient"
+              }
+            ]
+          },
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "{{getConcept(%obsConceptMap, code, 'source_system')}}",
+                "code": "{{code}}",
+                "display": "{{getConcept(%obsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "context": {
+            "{{#eid}}": "{{encounterId}}",
+            "{{?}}": {
+              "reference": "Encounter/{{%eid}}"
+            }
+          },
+          "effectiveDateTime": "{{time}}",
+          "dosage": {
+            "dose": {
+              "value": "{{value}}",
+              "unit": "mL",
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "mL"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
