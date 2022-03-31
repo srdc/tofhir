@@ -25,8 +25,10 @@
         <scala.version>2.13.8</scala.version>
         <scala.binary.version>2.13</scala.binary.version>
         <onfhir.version>3.2-SNAPSHOT</onfhir.version>
+        <onfhir-template-engine.version>1.0-SNAPSHOT</onfhir-template-engine.version>
         <json4s.version>4.0.4</json4s.version>
         <scalatest.version>3.1.4</scalatest.version>
+        <spark.version>3.2.1</spark.version>
     </properties>
 
     <build>
@@ -111,6 +113,24 @@
             <artifactId>onfhir-expression_${scala.binary.version}</artifactId>
             <version>${onfhir.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-template-engine_${scala.binary.version}</artifactId>
+            <version>${onfhir-template-engine.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- For Unit testing -->
         <dependency>
             <groupId>org.scalatest</groupId>
