@@ -12,8 +12,7 @@ trait FhirMappingContext {
  * @param concepts  Given concepts with name and columns
  */
 case class ConceptMapContext(concepts:Map[String, Map[String, String]]) extends FhirMappingContext {
-  override def toContextObject: JObject =
-    JObject(concepts.map(c => JField(c._1, JObject(c._2.map(m => JField(m._1, JString(m._2))).toList))).toList)
+  override def toContextObject: JObject = JObject()
 }
 
 /**

@@ -16,7 +16,7 @@ trait IMappingContextLoader {
   def retrieveContext(contextDefinition: FhirMappingContextDefinition):Future[FhirMappingContext]
 }
 
-class MappingContextLoader extends IMappingContextLoader {
+class MappingContextLoader(fhirMappingRepository:IFhirMappingRepository) extends IMappingContextLoader {
 
 
   def retrieveContext(contextDefinition: FhirMappingContextDefinition):Future[FhirMappingContext] = {

@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.engine
 
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
-import io.onfhir.path.{AbstractFhirPathFunctionLibrary, FhirPathEnvironment, FhirPathResult, IFhirPathFunctionLibraryFactory}
+import io.onfhir.path.{AbstractFhirPathFunctionLibrary, FhirPathEnvironment, FhirPathExpressionEvaluator, FhirPathResult, IFhirPathFunctionLibraryFactory}
 import io.onfhir.tofhir.model.FhirMappingContext
 
 /**
