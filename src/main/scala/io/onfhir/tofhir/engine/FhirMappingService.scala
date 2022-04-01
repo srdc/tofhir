@@ -1,8 +1,12 @@
 package io.onfhir.tofhir.engine
 
+import io.onfhir.api.util.FHIRUtil
 import io.onfhir.template.FhirTemplateExpressionHandler
-import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression}
+import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression, MappedFhirResource}
 import org.json4s.JsonAST.JObject
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /**
  * Mapping service for a specific FhirMapping together with contextual data and mapping scripts
@@ -31,7 +35,24 @@ class FhirMappingService(
    * @param source
    * @return
    */
-  override def mapToFhir(source: JObject): Seq[JObject] = ???
+  override def mapToFhir(source: JObject): Future[Seq[MappedFhirResource]]= {
+    Future.sequence(
+      mappings
+        .filter(mpp =>
+          mpp
+            .precondition
+            .forall(prc => templateEngine.fhirPathEvaluator.satisfies(prc.expression.get, source))
+        )
+        .map(mpp => templateEngine.evaluateExpression(mpp.expression, Map.empty, source))
+    ).map(resources =>
+      resources
+        .map(_.asInstanceOf[JObject])
+        .map(r => {
+        val (rtype, rid) = FHIRUtil.extractResourceTypeAndId(r)
+        MappedFhirResource(rid, rtype, r)
+      })
+    )
+  }
 
   /**
    * Map given source set into one or more FHIR resources based on the underlying mapping definition for this service
@@ -39,5 +60,5 @@ class FhirMappingService(
    * @param sources Map of source data (alis of the source in mapping definition FhirMapping.source.alias) -> Source object(s) as the input to the mapping
    * @return
    */
-  override def mapToFhir(sources: Map[String, Seq[JObject]]): Seq[JObject] = ???
+  override def mapToFhir(sources: Map[String, Seq[JObject]]): Future[Seq[MappedFhirResource]] = ???
 }

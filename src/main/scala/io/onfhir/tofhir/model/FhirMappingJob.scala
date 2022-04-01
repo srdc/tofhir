@@ -11,17 +11,17 @@ import java.util.UUID
  * @param tasks             Mapping tasks that will be executed in sequential
  * @param sinkSettings      FHIR sink settings (can be a FHIR repository, file system, kafka)
  */
-case class FhirMappingJob(
+case class FhirMappingJob[T<:FhirMappingTask](
                            id:String = UUID.randomUUID().toString,
-                           sourceSettings:DataSourceSettings,
-                           tasks:Seq[FhirMappingTask],
+                           sourceSettings:DataSourceSettings[T],
+                           tasks:Seq[T],
                            sinkSettings:Option[FhirSinkSettings] = None
                          )
 
 /**
  * Interface for data source settings/configurations
  */
-trait DataSourceSettings {
+trait DataSourceSettings[T<:FhirMappingTask] {
   /**
    * Human friendly name for the source organization for data source
    */
@@ -43,6 +43,14 @@ trait DataSourceSettings {
 }
 
 /**
+ *
+ * @param name            Human friendly name for the source organization for data source
+ * @param sourceUri       Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
+ * @param dataFolderPath  Path to the folder all source data is located
+ */
+case class FileSystemSourceSettings(name:String, sourceUri:String, dataFolderPath:String) extends DataSourceSettings[FhirMappingFromFileSystemTask]
+
+/**
  * Comman interface for sink settings
  */
 trait FhirSinkSettings
@@ -52,7 +60,7 @@ trait FhirSinkSettings
  * @param fhirRepoUrl        FHIR endpoint root url
  * @param securitySettings   Security settings if target API is secured
  */
-case class FhirRepositorySinkSettings(fhirRepoUrl:String, securitySettings:Option[FhirRepositorySecuritySettings] = None)
+case class FhirRepositorySinkSettings(fhirRepoUrl:String, securitySettings:Option[FhirRepositorySecuritySettings] = None) extends FhirSinkSettings
 
 /**
  * Security settings for FHIR API access
@@ -67,13 +75,7 @@ case class FhirRepositorySecuritySettings(clientId:String,
                                           requiredScopes:Seq[String],
                                           authzServerTokenEndpoint:String,
                                           clientAuthenticationMethod:String = "client_secret_basic")
-/**
- *
- * @param name            Human friendly name for the source organization for data source
- * @param sourceUri       Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
- * @param dataFolderPath  Path to the folder all source data is located
- */
-case class FileSystemSourceSettings(name:String, sourceUri:String, dataFolderPath:String) extends DataSourceSettings
+
 
 /**
  * Any mapping task instance

@@ -1,13 +1,17 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.tofhir.model.{FhirMappingFromFileSystemTask, FileSystemSourceSettings}
-import org.apache.spark.sql.DataFrame
+import io.onfhir.tofhir.model.{FhirMappingFromFileSystemTask, FileSystemSourceSettings, SourceFileFormats}
+import org.apache.spark.sql.{DataFrame, SparkSession}
+
+import java.nio.file.Paths
 
 /**
  * Reader from file system
- * @param fsss  File system source settings
+ * @param spark           Spark session
+ * @param sourceSettings  File system source settings
  */
-class FileDataSourceReader(fsss:FileSystemSourceSettings) extends BaseDataSourceReader[FhirMappingFromFileSystemTask, FileSystemSourceSettings](fsss) {
+class FileDataSourceReader(spark:SparkSession, sourceSettings:FileSystemSourceSettings) extends BaseDataSourceReader[FhirMappingFromFileSystemTask](sourceSettings) {
+
   /**
    * Read the source data for the given task
    *
@@ -15,6 +19,12 @@ class FileDataSourceReader(fsss:FileSystemSourceSettings) extends BaseDataSource
    * @return
    */
   override def read(mappingTask: FhirMappingFromFileSystemTask): DataFrame = {
-    throw new NotImplementedError()
+    val finalPath = Paths.get(sourceSettings.dataFolderPath, mappingTask.path).toString
+    mappingTask.sourceType match {
+      case SourceFileFormats.CSV => spark.read.csv(finalPath)
+      case SourceFileFormats.JSON => spark.read.json(finalPath)
+      case SourceFileFormats.PARQUET => spark.read.parquet(finalPath)
+      case _ => throw new NotImplementedError()
+    }
   }
 }
