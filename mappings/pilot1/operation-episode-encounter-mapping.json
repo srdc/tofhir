@@ -1,0 +1,81 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/operation-episode-encounter-mapping",
+  "name": "operation-episode-encounter-mapping",
+  "title": "Mapping of OperationEpisodeEncounter schema for pilots to AIC-OperationEpisodeEncounter FHIR profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-operation-episode-encounter"
+  }],
+  "context": {
+    "encounterTypeConceptMap":  {
+      "category": "concept-map",
+      "url": "./encounter-type-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Encounter",
+          "id": "{{encounterId}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationEpisodeEncounter"]
+          },
+          "status": "{{status}}",
+          "class": {
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            "code": "{{iif(type='866171008' or type='703120008', 'AMB', 'IMP')}}",
+            "display": "{{iif(type='866171008' or type='703120008', 'Ambulatory', 'Inpatient encounter')}}"
+          },
+          "type": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "{{type}}",
+                  "display": "{{mpp:getConcept(%encounterTypeConceptMap, type, 'source_display')}}"
+                }
+              ]
+            }
+          ],
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "participant": {
+            "{{#prid}}": "{{participant}}",
+            "{{*}}": {
+              "type": [{
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "PPRF",
+                    "display": "Primary performer"
+                  }]
+              }],
+              "individual": {
+                "reference": "Practitioner/{{%prid}}"
+              }
+            }
+          },
+          "episodeOfCare": ["EpisodeOfCare/{{episodeId}}"],
+          "period": {
+            "start": "{{startTime}}",
+            "end": "{{? endTime}}"
+          },
+          "location": {
+            "{{#loc}}": "{{location}}",
+            "{{*}}": {
+              "location": "Location/{{%loc}}",
+              "period": {
+                "start": "{{startTime}}",
+                "end": "{{? endTime}}"
+              }
+            }
+          },
+          "duration": "{{? utl:getDurationAsQuantityObject(startTime, endTime)}}"
+        }
+      }
+    }
+  ]
+}

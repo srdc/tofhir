@@ -1,0 +1,421 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/preoperative-assessment-mapping",
+  "name": "preoperative-assessment-mapping",
+  "title": "Mapping of PreoperativeAssessment schema for pilots to multiple AIC FHIR profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-preoperative-assessment"
+  }],
+  "context": {
+    "preOpConceptMap":  {
+      "category": "concept-map",
+      "url": "./preoperative-assessment-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ASAClassification"]
+          },
+          "status": "final",
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                  "code": "exam",
+                  "display": "Exam"
+                }
+              ]
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "97816-3",
+                "display": "ASA Classification"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "{{mpp:getConcept(%preOpConceptMap, asaClassification, 'target_code')}}",
+                  "display": "{{mpp:getConcept(%preOpConceptMap, asaClassification, 'target_display')}}"
+                }
+              ]
+          }
+        }
+      }
+    },
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationUrgency"]
+          },
+          "status": "final",
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                  "code": "exam",
+                  "display": "Exam"
+                }
+              ]
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "34000-0",
+                "display": "Urgency evaluation of surgical operation"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "valueCodeableConcept": {
+            "coding": [
+              {
+                "system": "https://aiccelerate.eu/fhir/CodeSystem/intervention-urgency-codes",
+                "code": "{{urgencyClassification}}",
+                "display": "{{mpp:getConcept(%preOpConceptMap, urgencyClassification, 'target_display')}}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasPregnancyInformation",
+        "language": "text/fhirpath",
+        "expression": "isPregnant.exists()"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PregnancyStatus"]
+          },
+          "status": "final",
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                  "code": "exam",
+                  "display": "Exam"
+                }
+              ]
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "82810-3",
+                "display": "Pregnancy status"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "valueCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "{{iff(isPregnant, '77386006', '60001007')}}",
+                "display": "{{iff(isPregnant, 'Pregnant', 'Not pregnant')}}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasBreastFeedingInformation",
+        "language": "text/fhirpath",
+        "expression": "isBreastFeeding"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Flag",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"]
+          },
+          "status": "inactive",
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/flag-category",
+                  "code": "clinical",
+                  "display": "Clinical"
+                }
+              ],
+              "text": "Clinical"
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "169741004",
+                "display": "Breastfeeding"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "period": {
+            "start": "{{time}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}"
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasPostGestationalAge",
+        "language": "text/fhirpath",
+        "expression": "postGestationalAge.exists()"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PostGestationalAge"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "76516-4",
+                "display": "Post gestational age (at birth)"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "valueQuantity": {
+            "system": "http://unitsofmeasure.org",
+            "code": "wk",
+            "unit": "wk",
+            "value": "{{postGestationalAge}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasPostMenstrualAge",
+        "language": "text/fhirpath",
+        "expression": "postMenstrualAge.exists()"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PostMenstrualAge"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "11885-1",
+                "display": "Post menstrual age (length of pregnancy + age)"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "valueQuantity": {
+            "system": "http://unitsofmeasure.org",
+            "code": "wk",
+            "unit": "wk",
+            "value": "{{postMenstrualAge}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isDayCaseSurgery",
+        "language": "text/fhirpath",
+        "expression": "isDayCaseSurgery"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Flag",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"]
+          },
+          "status": "inactive",
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/flag-category",
+                  "code": "admin",
+                  "display": "Administrative"
+                }
+              ],
+              "text": "Administrative"
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "https://aiccelerate.eu/fhir/CodeSystem/operation-flags",
+                "code": "day-case-surgery",
+                "display": "Day case surgery"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{utl:createFhirReference('Encounter', encounterId)}}"
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isIsolationNeeded",
+        "language": "text/fhirpath",
+        "expression": "isIsolationNeeded"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Flag",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"]
+          },
+          "status": "inactive",
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/flag-category",
+                  "code": "clinical",
+                  "display": "clinical"
+                }
+              ],
+              "text": "Clinical"
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "40174006",
+                "display": "Isolation procedure needed"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{utl:createFhirReference('Encounter', encounterId)}}"
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasBloodGroup",
+        "language": "text/fhirpath",
+        "expression": "bloodGroup.exists()"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-BloodGroupObservation"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "882-1",
+                "display": "Blood group"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "valueCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "{{mpp:getConcept(%preOpConceptMap, bloodGroup, 'target_code')}}",
+                "display": "{{mpp:getConcept(%preOpConceptMap, bloodGroup, 'target_display')}}"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
