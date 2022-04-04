@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingJob, FhirMappingTask, FhirSinkSettings}
+import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingTask, FhirSinkSettings}
 import org.json4s.JObject
 
 import java.util.UUID

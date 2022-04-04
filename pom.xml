@@ -24,12 +24,14 @@
         <!--Dependency versions-->
         <scala.version>2.13.8</scala.version>
         <scala.binary.version>2.13</scala.binary.version>
+        <scala-logging.version>3.9.4</scala-logging.version>
         <onfhir.version>3.2-SNAPSHOT</onfhir.version>
         <onfhir-template-engine.version>1.0-SNAPSHOT</onfhir-template-engine.version>
         <json4s.version>4.0.4</json4s.version>
         <scalatest.version>3.1.4</scalatest.version>
         <spark.version>3.2.1</spark.version>
         <jackson-csv.version>2.13.2</jackson-csv.version>
+        <logback.version>1.2.11</logback.version>
     </properties>
 
     <build>
@@ -109,6 +111,27 @@
             <artifactId>scala-library</artifactId>
             <version>${scala.version}</version>
         </dependency>
+
+        <!-- Scala Logging -->
+        <dependency>
+            <groupId>com.typesafe.scala-logging</groupId>
+            <artifactId>scala-logging_${scala.binary.version}</artifactId>
+            <version>${scala-logging.version}</version>
+        </dependency>
+
+        <!-- Logback dependencies -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+
+        <!-- onFHIR dependencies -->
         <dependency>
             <groupId>io.onfhir</groupId>
             <artifactId>onfhir-expression_${scala.binary.version}</artifactId>
@@ -119,11 +142,22 @@
             <artifactId>onfhir-template-engine_${scala.binary.version}</artifactId>
             <version>${onfhir-template-engine.version}</version>
         </dependency>
+
         <!-- Spark dependencies -->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -131,13 +165,13 @@
             <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>
+
         <!-- For csv parsing -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-csv</artifactId>
             <version>${jackson-csv.version}</version>
         </dependency>
-
 
         <!-- For Unit testing -->
         <dependency>
@@ -148,4 +182,3 @@
         </dependency>
     </dependencies>
 </project>
-	

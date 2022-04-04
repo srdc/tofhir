@@ -10,11 +10,6 @@ trait IFhirMappingRepository {
    * @param mappingUrl  Fhir mapping url
    * @return
    */
-  def getFhirMappingByUrl(mappingUrl:String):Future[FhirMapping]
+  def getFhirMappingByUrl(mappingUrl:String):FhirMapping
 
-  /**
-   * Return the Fhir mapping context data by given url
-   * @return
-   */
-  def getFhirMappingContextByUrl:Future[FhirMappingContext]
 }
