@@ -1,0 +1,54 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/hospital-unit-mapping",
+  "name": "hospital-unit-mapping",
+  "title": "Mapping of schema hospital unit to AIC Hospital Unit profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-hospital-unit"
+  }],
+  "context": {
+    "hospitalUnitConceptMap":  {
+      "category": "concept-map",
+      "url": "./hospital-unit-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Location",
+          "id": "{{lid}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-HospitalUnit"]
+          },
+          "status": "active",
+          "name": "{{name}}",
+          "mode": "instance",
+          "type": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "{{type}}",
+                  "display": "{{mpp:getConcept(%hospitalUnitConceptMap, type, 'source_display')}}"
+                }
+              ]
+            }
+          ],
+          "physicalType": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/location-physical-type",
+                "code": "{{mpp:getConcept(%hospitalUnitConceptMap, type, 'physical_type')}}",
+                "display": "{{mpp:getConcept(%hospitalUnitConceptMap, type, 'physical_display')}}"
+              }
+            ]
+          },
+          "partOf": "{{? utl:createFhirReference('Location', partOf)}}"
+        }
+      }
+    }
+  ]
+}

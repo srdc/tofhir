@@ -1,0 +1,78 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/practitioner-mapping",
+  "name": "practitioner-mapping",
+  "title": "Mapping of schema practitioner  to AIC-Practitioner and AIC-PractitionerRole profiles",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-practitioner"
+  }],
+  "context": {
+    "practitionerConceptMap":  {
+      "category": "concept-map",
+      "url": "./practitioner-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Practitioner",
+          "id": "{{pid}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Practitioner"]
+          },
+          "name": {
+            "{{#fname}}": "{{familyName}}",
+            "{{*}}":  {
+              "use": "official",
+              "family": "{{%fname}}",
+              "given": "{{* givenName.split(' ')}}"
+            }
+          },
+          "qualification": [
+            {
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0360|2.7",
+                    "code": "{{mpp:getConcept(%practitionerConceptMap, role, 'qualification_code')}}",
+                    "display": "{{mpp:getConcept(%practitionerConceptMap, role, 'qualification_display')}}"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "PractitionerRole",
+          "id": "pr-{{pid}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PractitionerRoleForSurgicalWorkflow"]
+          },
+          "active": true,
+          "practitioner": "{{utl:createFhirReference('Practitioner',pid)}}",
+          "code": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "{{role}}",
+                  "display": "{{{{mpp:getConcept(%practitionerConceptMap, role, 'source_display')}}}}"
+                }
+              ]
+            }
+          ],
+          "specialty": "{{* utl:createFhirCodeableConcept('http://snomed.info/sct', specialty, mpp:getConcept(%practitionerConceptMap, specialty, 'source_display'))}}"
+        }
+      }
+    }
+  ]
+}

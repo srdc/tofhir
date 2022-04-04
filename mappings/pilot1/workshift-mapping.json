@@ -1,0 +1,36 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/workshift-mapping",
+  "name": "workshift-mapping",
+  "title": "Mapping of schema workshift to AIC Workshift profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-workshift"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Schedule",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-WorkShiftForSurgicalWorkflow"]
+          },
+          "active": false,
+          "actor": "{{* utl:createFhirReference('PractitionerRole', 'pr-' & pid) | utl:createFhirReference('Location', assignedLocation) }}",
+          "planningHorizon": {
+            "start": "{{startTime}}",
+            "end": "{{endTime}}"
+          },
+          "extension": [
+            {
+              "url": "https://aiccelerate.eu/fhir/StructureDefinition/AIC-WorkShiftAbsence",
+              "valueBoolean": "{{isAbsent}}"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
