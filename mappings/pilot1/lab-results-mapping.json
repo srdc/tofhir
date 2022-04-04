@@ -10,6 +10,10 @@
     "labResultsConceptMap":  {
       "category": "concept-map",
       "url": "./lab-results-concept-map.csv"
+    },
+    "labResultUnitConversion": {
+      "category": "unit-conversion",
+      "url": "./lab-results-unit-conversion.csv"
     }
   },
   "mapping": [
@@ -45,7 +49,7 @@
                 "{{?}}": {
                   "system": "http://loinc.org",
                   "code": "{{%tc}}",
-                  "display": "{{mpp:getConcept(%labResultsConceptMap, code, 'target_display')}}"
+                  "display": "{{? mpp:getConcept(%labResultsConceptMap, code, 'target_display')}}"
                 }
               }
             ]
@@ -55,11 +59,10 @@
           },
           "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
-          "valueQuantity": {
-            "value": "{{value}}",
-            "unit": "{{mpp:getConcept(%vitalSignsConceptMap, code, 'unit')}}",
-            "system": "http://unitsofmeasure.org",
-            "code": "{{mpp:getConcept(%vitalSignsConceptMap, code, 'unit')}}"
+          "valueQuantity": "{{mpp:convertAndReturnQuantity(%labResultUnitConversion, code, value, unit).nav:orElse(utl:createFhirQuantity(value, unit))}}",
+          "interpretation": {
+            "{{#intp}}": "{{interpretation}}",
+            "{{*}}": "{{utl:createFhirCodeableConcept('http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation', %intp)}}"
           }
         }
       }
