@@ -1,0 +1,33 @@
+{
+  "title": "Mapping of patient schema for pilots to AIC-Patient FHIR profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-patient"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Patient",
+          "id": "{{pid}}",
+          "active": true,
+          "gender": "{{gender}}",
+          "birthDate": "{{birthDate}}",
+          "deceasedDateTime": "{{? deceasedDateTime}}",
+          "address": {
+            "{{#pc}}": "{{homePostalCode}}",
+            "{{?}}": [
+              {
+                "use": "home",
+                "type": "both",
+                "postalCode": "{{%pc}}"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

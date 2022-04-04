@@ -1,6 +1,5 @@
 package io.onfhir.tofhir.model
 
-
-abstract class FhirMappingException(msg:String) extends Exception(msg) {
-  val cause:Option[Throwable] = None
+final case class FhirMappingException(private val reason: String, private val cause: Throwable = None.orNull)
+  extends Exception(reason: String, cause: Throwable) {
 }

@@ -5,20 +5,6 @@ import org.json4s.JsonAST.{JString, JValue}
 import java.util.UUID
 
 /**
- * A FHIR mapping job from a specific data source to an optional FHIR sink with multiple mapping tasks
- * @param id Unique job identifier
- * @param sourceSettings    Data source settings and configurations
- * @param tasks             Mapping tasks that will be executed in sequential
- * @param sinkSettings      FHIR sink settings (can be a FHIR repository, file system, kafka)
- */
-case class FhirMappingJob[T<:FhirMappingTask](
-                           id:String = UUID.randomUUID().toString,
-                           sourceSettings:DataSourceSettings[T],
-                           tasks:Seq[T],
-                           sinkSettings:Option[FhirSinkSettings] = None
-                         )
-
-/**
  * Interface for data source settings/configurations
  */
 trait DataSourceSettings[T<:FhirMappingTask] {
