@@ -50,22 +50,19 @@ class FhirMappingJobManager(
     val df = dataSourceReader.read(task)
     df.cache()
     //Retrieve the FHIR mapping definition
-    fhirMappingRepository
-      .getFhirMappingByUrl(task.mappingRef)
-      .flatMap(fhirMapping =>
-        //Load the contextual data for the mapping
-        Future
-          .sequence(
-            fhirMapping
-              .context
-              .toSeq
-              .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
-          ).map(loadedContextMap => {
-            //Construct the mapping service
-            val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), loadedContextMap.toMap, fhirMapping.mapping)
-            MappingTaskExecutor.executeMapping(spark, df, fhirMappingService)
-          })
-      )
+    val fhirMapping = fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
+    //Load the contextual data for the mapping
+    Future
+      .sequence(
+        fhirMapping
+          .context
+          .toSeq
+          .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
+      ).map(loadedContextMap => {
+        //Construct the mapping service
+        val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), loadedContextMap.toMap, fhirMapping.mapping)
+        MappingTaskExecutor.executeMapping(spark, df, fhirMappingService)
+      })
   }
 
   /**
