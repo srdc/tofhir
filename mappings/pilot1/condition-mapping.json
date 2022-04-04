@@ -1,0 +1,61 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/condition-mapping",
+  "name": "condition-mapping",
+  "title": "Mapping of condition schema for pilots to AIC-Condition FHIR profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-condition"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Condition",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": [
+              "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition"
+            ]
+          },
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+                "code": "{{iif(isProlonged or abatementDateTime.exists().not, 'active', 'inactive')}}"
+              }
+            ]
+          },
+          "verificationStatus": "{{? utl:createFhirCodeableConcept('http://terminology.hl7.org/CodeSystem/condition-ver-status', certainity, {})}}",
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                  "code": "{{iif(isProlonged, 'problem-list-item', 'encounter-diagnosis')}}"
+                }
+              ]
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/sid/icd-10",
+                "code": "{{code}}",
+                "display": "{{codeDisplay}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "onsetDateTime": "{{onsetDateTime}}",
+          "abatementDateTime": "{{? abatementDateTime}}",
+          "asserter": "{{? utl:createFhirReference('Practitioner', asserter)}}"
+        }
+      }
+    }
+  ]
+}

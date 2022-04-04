@@ -1,0 +1,125 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/vital-signs-mapping",
+  "name": "vital-signs-mapping",
+  "title": "Mapping of schema vital signs to FHIR Vital signs profiles",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-vital-signs-mapping"
+  }],
+  "context": {
+    "vitalSignsConceptMap":  {
+      "category": "concept-map",
+      "url": "./vital-signs-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "precondition": {
+        "name": "isSimpleObservation",
+        "language": "text/fhirpath",
+        "expression": "code != '85354-9'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["{{mpp:getConcept(%vitalSignsConceptMap, code, 'profile')}}"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "{{code}}",
+                "display": "{{mpp:getConcept(%vitalSignsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "valueQuantity": {
+            "value": "{{value}}",
+            "unit": "{{mpp:getConcept(%vitalSignsConceptMap, code, 'unit')}}",
+            "system": "http://unitsofmeasure.org",
+            "code": "{{mpp:getConcept(%vitalSignsConceptMap, code, 'unit')}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isBp",
+        "language": "text/fhirpath",
+        "expression": "code = '85354-9'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["{{mpp:getConcept(%vitalSignsConceptMap, code, 'profile')}}"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "85354-9",
+                "display": "Blood Pressure"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "component": [
+            {
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "8480-6",
+                    "display": "Systolic blood pressure"
+                  }
+                ]
+              },
+              "valueQuantity": {
+                "value": "{{value.split('-')[0].toDecimal()}}",
+                "unit": "mmHg",
+                "system": "http://unitsofmeasure.org",
+                "code": "mm[Hg]"
+              }
+            },
+            {
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://loinc.org",
+                    "code": "8462-4",
+                    "display": "Diastolic blood pressure"
+                  }
+                ]
+              },
+              "valueQuantity": {
+                "value": "{{value.split('-')[1].toDecimal()}}",
+                "unit": "mmHg",
+                "system": "http://unitsofmeasure.org",
+                "code": "mm[Hg]"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

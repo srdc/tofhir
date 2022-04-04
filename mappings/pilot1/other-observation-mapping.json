@@ -24,7 +24,7 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{uuid()}}",
+          "id": "{{utl:uuid()}}",
           "meta": {
             "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"]
           },
@@ -175,7 +175,7 @@
           "medicationCodeableConcept": {
             "coding": [
               {
-                "system": "{{mpp:getConcept(%obsConceptMap, code, 'source_system')}}",
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
                 "code": "{{code}}",
                 "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
               }
@@ -190,7 +190,7 @@
             "dose": {
               "value": "{{value}}",
               "unit": "mL",
-              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "system": "http://unitsofmeasure.org",
               "code": "mL"
             }
           }
