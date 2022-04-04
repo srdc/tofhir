@@ -15,6 +15,7 @@ class FhirPathMappingFunctions(context:FhirPathEnvironment, current:Seq[FhirPath
 
   /**
    * Get corresponding value from the given concept map with the given key and column name
+   * If there is no concept with given key, return Nil
    * e.g. getConcept(%obsConceptMap, code, 'source_system')
    * @param conceptMap    This should be reference to the conceptMap context e.g. %obsConceptMap
    * @param keyExpr       This is any expression that will provide the key value e.g. code
@@ -26,13 +27,15 @@ class FhirPathMappingFunctions(context:FhirPathEnvironment, current:Seq[FhirPath
   }
 
   /**
-   * Convert the value in given unit to the target unit with specified conversion function given in conversionFunctionsMap
+   * Convert the given value in given unit to the target unit specified in the context file with specified conversion function, return FHIR Path Quantity
+   * If there is no corresponding key (code) or unit in the context map, then return Nil
    * @param conversionFunctionsMap    Map of conversion functions for given code and unit
    * @param keyExpr                   FHIR Path expression returning the key value (code)
-   * @param sourceUnitExpr            FHIR Path expression returning the unit
+   * @param valueExpr                 FHIR Path expression returning the value in the source
+   * @param unitExpr                  FHIR Path expression returning the unit in the source
    * @return
    */
-  def convertUnit(conversionFunctionsMap:ExpressionContext, keyExpr:ExpressionContext, sourceUnitExpr:ExpressionContext):Seq[FhirPathResult] = {
+  def convertAndReturnQuantity(conversionFunctionsMap:ExpressionContext, keyExpr:ExpressionContext, valueExpr:ExpressionContext, unitExpr:ExpressionContext):Seq[FhirPathResult] = {
     throw new NotImplementedError()
   }
 

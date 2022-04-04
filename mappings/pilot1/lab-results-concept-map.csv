@@ -1,0 +1,28 @@
+source_code	source_system	target_code	target_display
+1552	https://koodistopalvelu.kanta.fi/cls/88	718-7	Hemogoblin
+1358	https://koodistopalvelu.kanta.fi/cls/89	20570-8	Hematocrit
+2218	https://koodistopalvelu.kanta.fi/cls/90	26464-8	fB- Leucos
+3238	https://koodistopalvelu.kanta.fi/cls/91	26499-4	Neutrophils
+6462	https://koodistopalvelu.kanta.fi/cls/92	33959-8	PCT
+10303	https://koodistopalvelu.kanta.fi/cls/93	2524-7	Lactate
+1532	https://koodistopalvelu.kanta.fi/cls/94	2746-6	Venous blood gases (Ph)
+1624	https://koodistopalvelu.kanta.fi/cls/95	2021-4	Venous blood gases (PCO2) 
+11456	https://koodistopalvelu.kanta.fi/cls/96	14627-4	"Venous, capillary, arterial blood gases (HCO3) mmHg"
+1527	https://koodistopalvelu.kanta.fi/cls/97	2744-1	Arterial blood gas (Ph)
+1621	https://koodistopalvelu.kanta.fi/cls/98	2019-8	Arterial blood gas (PCO2) mmHg
+10530	https://koodistopalvelu.kanta.fi/cls/99	2708-6	SVO (arterial)%
+11457	https://koodistopalvelu.kanta.fi/cls/100	2711-0	SVO (central venous)%
+3622	https://koodistopalvelu.kanta.fi/cls/101	2951-2	Ions (Na) in plasma
+1999	https://koodistopalvelu.kanta.fi/cls/102	2823-3	Ions (K) in plasma
+2080	https://koodistopalvelu.kanta.fi/cls/103	2075-0	Ions (Cl) in plasma
+4598	https://koodistopalvelu.kanta.fi/cls/104	17861-6	Ions (Ca) in plasma
+11457	https://koodistopalvelu.kanta.fi/cls/105	2947-0	Ions (Na) in blood
+10207	https://koodistopalvelu.kanta.fi/cls/106	6298-4	Ions (K) in blood
+10900	https://koodistopalvelu.kanta.fi/cls/107	2069-3	Ions (Cl) in blood
+10139	https://koodistopalvelu.kanta.fi/cls/108	1994-3	Ions (Ca) in blood
+1399	https://koodistopalvelu.kanta.fi/cls/109	3255-7	Coagulation (fibrinogen)
+4709	https://koodistopalvelu.kanta.fi/cls/110	33762-6	Pro BNP
+4532	https://koodistopalvelu.kanta.fi/cls/111	10839-9	Troponin I
+1471	https://koodistopalvelu.kanta.fi/cls/112	2339-0	Blood glucose
+4573	https://koodistopalvelu.kanta.fi/cls/113	3094-0	Urea
+4600	https://koodistopalvelu.kanta.fi/cls/114	2160-0	Creatinine

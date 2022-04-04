@@ -18,9 +18,9 @@ case class ConceptMapContext(concepts:Map[String, Map[String, String]]) extends 
 /**
  * Class for loaded unit conversion functions
  * @param conversionFunctions (code of the observation, source unit) -> FHIR Path expression to convert the value to given unit
- *                            e.g. Converting Hemoglogbin to g/dL;   (718-7, g/L) -> $this * 0.1
+ *                            e.g. Converting Hemoglogbin to g/dL;   (718-7, g/L) -> ($this * 0.1, g/dL)
  */
-case class UnitConversionContext(conversionFunctions:Map[(String, String), String]) extends FhirMappingContext {
+case class UnitConversionContext(conversionFunctions:Map[(String, String), (String, String)]) extends FhirMappingContext {
   override def toContextObject: JObject = JObject()
 }
 
