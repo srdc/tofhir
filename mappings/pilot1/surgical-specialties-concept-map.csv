@@ -1,0 +1,17 @@
+source_code,source_system,source_display
+408469009,http://snomed.info/sct,Breast Surgery
+394603008,http://snomed.info/sct,Cardiothoracic surgery
+310151004,http://snomed.info/sct,Gastrointestinal surgery
+418018006,http://snomed.info/sct,Dermatologic surgery
+394604002,http://snomed.info/sct,"Ear, nose and throat surgery"
+394609007,http://snomed.info/sct,General surgery
+310150003,http://snomed.info/sct,Endocrine surgery
+394610002,http://snomed.info/sct,Neurosurgery
+394594003,http://snomed.info/sct,Ophthalmology
+394605001,http://snomed.info/sct,Oral surgery
+394611003,http://snomed.info/sct,Plastic surgery
+419321007,http://snomed.info/sct,Surgical oncology
+408477008,http://snomed.info/sct,Transplantation surgery
+394801008,http://snomed.info/sct,Trauma and orthopedics
+394612005,http://snomed.info/sct,Urology
+408463005,http://snomed.info/sct,Vascular surgery

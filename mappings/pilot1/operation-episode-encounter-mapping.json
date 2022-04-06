@@ -73,7 +73,7 @@
               }
             }
           },
-          "duration": "{{? utl:getDurationAsQuantityObject(startTime, endTime)}}"
+          "length": "{{? utl:getDurationAsQuantityObject(startTime, endTime)}}"
         }
       }
     }

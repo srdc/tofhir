@@ -1,0 +1,547 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/surgery-details-mapping",
+  "name": "surgery-details-mapping",
+  "title": "Mapping of schema surgery-details to AIC-SurgeryEncounter, AIC-OperationPhaseDetails, AIC-SurgeryPhaseDetails, AIC-AnesthesiaPhaseDetails profiles",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-surgery-details"
+  }],
+  "context": {
+    "surgicalSpecialtiesConceptMap": {
+      "category": "concept-map",
+      "url": "./surgical-specialties-concept-map.csv"
+    },
+    "surgeryCancellationReasonsConceptMap" : {
+      "category": "concept-map",
+      "url": "./surgery-cancellation-reasons-concept-map.csv"
+    },
+    "anesthesiaTypesConceptMap": {
+      "category": "concept-map",
+      "url": "./anesthesia-types-concept-map.csv"
+    },
+    "anesthesiaProceduresConceptMap": {
+      "category": "concept-map",
+      "url": "./anesthesia-procedures-concept-map.csv"
+    },
+    "ccsConceptMap": {
+      "category": "concept-map",
+      "url": "./icd-10-pcs-ccs-concept-map.csv"
+    },
+    "woundClassificationConceptMap":  {
+      "category": "concept-map",
+      "url": "./surgery-wound-classification-concept-map.csv"
+    },
+    "intubationTypesConceptMap": {
+      "category": "concept-map",
+      "url": "./intubation-types-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "surgeryEncounterMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Encounter",
+          "id": "{{encounterId}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgeryEncounter"]
+          },
+          "status": "{{status}}",
+          "class": {
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            "code": "IMP'",
+            "display": "Inpatient encounter"
+          },
+          "type": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "305408004",
+                  "display": "Surgical Encounter"
+                }
+              ]
+            }
+          ],
+          "serviceType": "{{? utl:createFhirCodeableConcept('http://snomed.info/sct', subspecialty, mpp:getConcept(%surgicalSpecialtiesConceptMap, subspecialty, 'source_display'))}}",
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "participant": [
+            {
+              "{{#prid}}": "{{primarySurgeon}}",
+              "{{?}}": {
+                "type": [{
+                  "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "PPRF",
+                    "display": "Primary performer"
+                  }]
+                }],
+                "individual": {
+                  "reference": "PractitionerRole/pr-{{%prid}}"
+                }
+              }
+            },
+            {
+              "{{#prid}}": "{{otherSurgeons.split(' ') | anesthesiologist | nurses.split(' ')}}",
+              "{{*}}": {
+                "type": [{
+                  "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "SPRF",
+                    "display": "Secondary performer"
+                  }]
+                }],
+                "individual": {
+                  "reference": "PractitionerRole/pr-{{%prid}}"
+                }
+              }
+            }
+          ],
+          "episodeOfCare": ["EpisodeOfCare/{{episodeId}}"],
+          "basedOn": "{{* utl:createFhirReference('ServiceRequest', surgeryPlan)}}",
+          "period": {
+            "start": "{{pet.nav:orElse(ort}}",
+            "end": "{{? plt}}"
+          },
+          "location": {
+            "{{#loc}}": "{{iif(ort.exists(), location, {})}}",
+            "{{*}}": {
+              "location": "Location/{{%loc}}",
+              "period": {
+                "start": "{{ort}}",
+                "end": "{{? plt}}"
+              }
+            }
+          },
+          "length": "{{? utl:getDurationAsQuantityObject(ort, plt)}}",
+          "reasonCode": "{{* utl:createFhirCodeableConcept('https://aiccelerate.eu/fhir/CodeSystem/operation-cancellation-reasons', reasonForCancelling, mpp:getConcept(%surgeryCancellationReasonsConceptMap, reasonForCancelling, 'source_display'))}}"
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasEnrollmentData",
+        "language": "text/fhirpath",
+        "expression": "pet.exists() and pct.exists()"
+      },
+      "expression": {
+        "name": "enrollmentPhaseMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Procedure",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"]
+          },
+          "status": "completed",
+          "category": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "305408004",
+                "display": "Enrollment phase for surgical operation"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": {
+            "reference": "Encounter/{{encounterId}}"
+          },
+          "performedPeriod": {
+            "start": "{{pet}}",
+            "end": "{{pct}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasTransportPhaseData",
+        "language": "text/fhirpath",
+        "expression": "pct.exists() and ort.exists()"
+      },
+      "expression": {
+        "name": "transportPhaseMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Procedure",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"]
+          },
+          "status": "completed",
+          "category": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "1889001",
+                "display": "Transport phase for surgical operation"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": {
+            "reference": "Encounter/{{encounterId}}"
+          },
+          "performedPeriod": {
+            "start": "{{pct}}",
+            "end": "{{ort}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasAnesthesiaData",
+        "language": "text/fhirpath",
+        "expression": "anesthesiaType.exists() or anesthesiaCode.exists()"
+      },
+      "expression": {
+        "name": "anesthesiaDetailsMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Procedure",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-AnesthesiaPhaseDetails"]
+          },
+          "status": "completed",
+          "category": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "399097000",
+                "display": "Anesthesia phase for surgical operation"
+              }
+            ]
+          },
+          "code": {
+            "coding": [
+              {
+                "{{$atype}}": "{{anesthesiaType}}",
+                "{{?}}": {
+                  "system": "http://snomed.info/sct",
+                  "code": "{{%atype}}",
+                  "display": "{{? mpp:getConcept(%anesthesiaTypesConceptMap, %atype, 'source_display')}}"
+                }
+              },
+              {
+                "{{$acode}}": "{{anesthesiaCode}}",
+                "{{?}}": {
+                  "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119",
+                  "code": "{{%acode}}",
+                  "display": "{{? mpp:getConcept(%anesthesiaProceduresConceptMap, %acode, 'source_display')}}"
+                }
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": {
+            "reference": "Encounter/{{encounterId}}"
+          },
+          "performedPeriod": {
+            "start": "{{ort}}",
+            "end": "{{act}}"
+          },
+          "location": "{{? utl:createFhirReference('Location', location)}}",
+          "performer": {
+            "{{$pr}}": "{{anesthesiologist}}",
+            "{{*}}": {
+              "function": "{{utl:createFhirCodeableConcept('http://snomed.info/sct', '88189002', 'Anesthesiologist')}}",
+              "actor": "{{utl:createFhirReference('PractitionerRole', 'pr-' & %pr)}}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasSurgeryData",
+        "language": "text/fhirpath",
+        "expression": "mainProcedureCode.exists()"
+      },
+      "expression": {
+        "name": "surgeryPhaseMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Procedure",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgeryPhaseDetails"]
+          },
+          "status": "completed",
+          "category": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "387713003",
+                "display": "Surgery phase"
+              }
+            ]
+          },
+          "code": {
+            "coding": [
+              {
+                "{{ccs}}": "{{cssCategory}}",
+                "{{?}}": {
+                  "system": "http://hl7.org/fhir/sid/ex-icd-10-procedures-ccs",
+                  "code": "{{%ccs}}",
+                  "display": "{{? mpp:getConcept(%ccsConceptMap, %ccs, 'source_display')}}"
+                }
+              },
+              {
+                "{{$pcc}}": "{{mainProcedureCode}}",
+                "{{?}}": {
+                  "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119",
+                  "code": "{{%pcc}}",
+                  "display": "{{? mainProcedureDescription}}"
+                }
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": {
+            "reference": "Encounter/{{encounterId}}"
+          },
+          "performedPeriod": {
+            "start": "{{ost}}",
+            "end": "{{oet}}"
+          },
+          "location": "{{? utl:createFhirReference('Location', location)}}",
+          "performer": [
+            {
+              "{{$pr}}": "{{primarySurgeon | otherSurgeons.split(' ')}}",
+              "{{*}}": {
+                "function": "{{utl:createFhirCodeableConcept('http://snomed.info/sct', '304292004', 'Surgeon')}}",
+                "actor": "{{utl:createFhirReference('PractitionerRole', 'pr-' & %pr)}}"
+              }
+            },
+            {
+              "{{$pr}}": "{{nurses.split(' ')}}",
+              "{{*}}": {
+                "function": "{{utl:createFhirCodeableConcept('http://snomed.info/sct', '224561008', 'Theatre Nurse')}}",
+                "actor": "{{utl:createFhirReference('PractitionerRole', 'pr-' & %pr)}}"
+              }
+            }
+          ],
+          "bodySite": "{{* utl:createFhirCodeableConcept('http://snomed.info/sct', iif(bodySite='left', '7771000', iif(bodySite='right', '24028007', iif(bodySite='both', '51440002', {}))), bodySite)}}"
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasOtherProcedures",
+        "language": "text/fhirpath",
+        "expression": "otherProcedureCodes.exists()"
+      },
+      "expression": {
+        "name": "otherProceduresMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "{{#opcd}}": "{{otherProcedureCodes}}",
+          "{{*}}": {
+            "resourceType": "Procedure",
+            "id": "{{utl:uuid()}}",
+            "meta": {
+              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ProcedureRelatedWithSurgicalWorkflow"]
+            },
+            "status": "completed",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119",
+                  "code": "{{%opcd}}"
+                }
+              ]
+            },
+            "subject": {
+              "reference": "Patient/{{pid}}"
+            },
+            "partOf": [
+              "{{utl:createFhirReference('Procedure', %surgeryPhaseMapping.id)}}"
+            ],
+            "encounter": {
+              "reference": "Encounter/{{encounterId}}"
+            },
+            "performedPeriod": {
+              "start": "{{ost}}",
+              "end": "{{oet}}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasCleaningPhaseData",
+        "language": "text/fhirpath",
+        "expression": "cst.exists() and cet.exists()"
+      },
+      "expression": {
+        "name": "cleaningPhaseMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Procedure",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"]
+          },
+          "status": "completed",
+          "category": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "441869008",
+                "display": "Cleaning phase for surgical operation"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": {
+            "reference": "Encounter/{{encounterId}}"
+          },
+          "performedPeriod": {
+            "start": "{{cst}}",
+            "end": "{{cet}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasSurgicalWoundClassification",
+        "language": "text/fhirpath",
+        "expression": "surgicalWoundClassification.exists()"
+      },
+      "expression": {
+        "name": "surgicalWoundObservationMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgicalWoundClassificationObservation"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "420109006",
+                "display": "CDC Wound Classification"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{oet.nav:orElse(plt)}}",
+          "valueCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "{{mpp:getConcept(%woundClassificationConceptMap, surgicalWoundClassification, 'target_code')}}",
+                "display": "{{mpp:getConcept(%woundClassificationConceptMap, surgicalWoundClassification, 'target_display')}}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasNumberOfPuncture",
+        "language": "text/fhirpath",
+        "expression": "numOfPunctureAttemps.exists()"
+      },
+      "expression": {
+        "name": "numberOfPunctureAttemptObservationMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation"]
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "447754009:704321009=277762005",
+                "display": "Number of lumbar (spinal) puncture attempt"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{act.nav:orElse(ost)}}",
+          "valueQuantity": {
+            "system": "http://unitsofmeasure.org",
+            "code": "{#}",
+            "unit": "{#}",
+            "value": "{{numOfPunctureAttemps}}"
+          },
+          "partOf": "{{* utl:createFhirReference('Procedure', %anesthesiaDetailsMapping.id)}}"
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "hasIntubationVentilationData",
+        "language": "text/fhirpath",
+        "expression": "intubationType.exists()"
+      },
+      "expression": {
+        "name": "intubationVentilationMapping",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Procedure",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ProcedureRelatedWithSurgicalWorkflow"]
+          },
+          "status": "completed",
+          "code": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "{{intubationType}}",
+                "value": "{{mpp:getConcept(%intubationTypesConceptMap, intubationType, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "partOf": [
+            "{{utl:createFhirReference('Procedure', %anesthesiaDetailsMapping.id.orElse(surgeryPhaseMapping.id))}}"
+          ],
+          "encounter": {
+            "reference": "Encounter/{{encounterId}}"
+          },
+          "performedPeriod": {
+            "start": "{{act.nav:orElse(ost)}}",
+            "end": "{{? oet}}"
+          }
+        }
+      }
+    }
+  ]
+}
