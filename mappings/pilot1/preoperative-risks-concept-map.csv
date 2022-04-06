@@ -1,0 +1,43 @@
+source_code	source_system	source_display
+62014003	http://snomed.info/sct	Adverse reaction caused by drug (disorder)
+81711008	http://snomed.info/sct	Hemolytic anemia caused by drugs (disorder)
+62014003+366667001	http://snomed.info/sct	Adverse reaction caused by drug (disorder) + Skin Reaction (finding)
+609328004	http://snomed.info/sct	Allergic disposition (finding)
+439127006	http://snomed.info/sct	Thrombosis disorder
+64779008	http://snomed.info/sct	Blood coagulation disorder
+234532001	http://snomed.info/sct	Immunodeficiency disorder
+rare-disease	https://aiccelerate.eu/fhir/CodeSystem/preoperative-risk-factors	Rare diseases of particular concern
+281694009	http://snomed.info/sct	Finding at a risk
+365646008	http://snomed.info/sct	Finding of blood group antibody titer (finding)
+250373003	http://snomed.info/sct	Blood transfusion finding
+attention-medication	https://aiccelerate.eu/fhir/CodeSystem/preoperative-risk-factors	Medication requiring special attention
+attention-treatment	https://aiccelerate.eu/fhir/CodeSystem/preoperative-risk-factors	Other treatment requiring special attention
+737294004	http://snomed.info/sct	Transplant present
+441509002	http://snomed.info/sct	Cardiac pacemaker in situ
+397578001	http://snomed.info/sct	Device in situ
+737277001	http://snomed.info/sct	 Prosthetic heart valve in situ
+408708000	http://snomed.info/sct	Stended artery
+722810000	http://snomed.info/sct	Prosthesis in situ
+1156073005	http://snomed.info/sct	Blocked catheter
+16470007	http://snomed.info/sct	Electrode (physical object)
+303274001	http://snomed.info/sct	Artificial material  (physical object)
+416380006	http://snomed.info/sct	Airborne transmission
+461551000124100	http://snomed.info/sct	Droplet transmission
+420193003	http://snomed.info/sct	Transdermal transmission
+24800002	http://snomed.info/sct	"Carrier state, disease not expressed (finding)"
+444107005	http://snomed.info/sct	Exposure to communicable disease
+182890002	http://snomed.info/sct	Patient requests alternative treatment (finding)
+restriction-treatment	https://aiccelerate.eu/fhir/CodeSystem/preoperative-risk-factors	 Restrictions on treatment
+1002253002	http://snomed.info/sct	 Immunization series incomplete (finding) 
+248004009	http://snomed.info/sct	Physical aggression (finding)
+5002000	http://snomed.info/sct	Inhalant dependence (disorder)
+277843001	http://snomed.info/sct	Behavioural concern (finding)
+118956008	http://snomed.info/sct	"Body structure, altered from its original anatomical structure (morphologic abnormality"
+385971003	http://snomed.info/sct	Dialysis care (regime/therapy)
+737350008	http://snomed.info/sct	Needs assistance with communication (finding)
+310247005	http://snomed.info/sct	Family history: Thrombosis (situation)
+366667001:255234002=399097000	http://snomed.info/sct	Skin reaction (finding) after  Anesthesia procedure (procedure)
+718446005	http://snomed.info/sct	 Difficulty with mask ventilation and tracheal intubation (finding)
+422587007:255234002=387713003	http://snomed.info/sct	Nausea (finding) after Surgical procedure (procedure)
+107401000119105	http://snomed.info/sct	Acute postoperative pain
+57177007:246090004=419914000	http://snomed.info/sct	Famil history of (sitaution) Anesthetic Reaction (finding)
