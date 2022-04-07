@@ -61,7 +61,7 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
           .readAll() // Read all lines as a List of Map
       CollectionConverters.asScala(javaList)
         .toSeq // convert the outer List to Scala Seq
-        .map(CollectionConverters.asScala(_).toMap) // convert each inner Java Map ti Scala Map
+        .map(CollectionConverters.asScala(_).toMap) // convert each inner Java Map to Scala Map
     }
   }
 
