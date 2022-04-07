@@ -1,0 +1,71 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/lab-results-mapping",
+  "name": "lab-results-mapping",
+  "title": "Mapping of schema lab results to AIC-LabResults profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-lab-results"
+  }],
+  "context": {
+    "labResultsConceptMap":  {
+      "category": "concept-map",
+      "url": "./lab-results-concept-map.csv"
+    },
+    "labResultUnitConversion": {
+      "category": "unit-conversion",
+      "url": "./lab-results-unit-conversion.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-LabResultWithinSurgicalWorkflow"]
+          },
+          "status": "final",
+          "category": [
+            {
+              "coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory result"
+              }]
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "{{mpp:getConcept(%labResultsConceptMap, code, 'source_system')}",
+                "code": "{{code}}",
+                "display": "{{description}}"
+              },
+              {
+                "{{#tc}}": "{{mpp:getConcept(%labResultsConceptMap, code, 'target_code')}",
+                "{{?}}": {
+                  "system": "http://loinc.org",
+                  "code": "{{%tc}}",
+                  "display": "{{? mpp:getConcept(%labResultsConceptMap, code, 'target_display')}}"
+                }
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}",
+          "valueQuantity": "{{mpp:convertAndReturnQuantity(%labResultUnitConversion, code, value, unit).nav:orElse(utl:createFhirQuantity(value, unit))}}",
+          "interpretation": {
+            "{{#intp}}": "{{interpretation}}",
+            "{{*}}": "{{utl:createFhirCodeableConcept('http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation', %intp)}}"
+          }
+        }
+      }
+    }
+  ]
+}

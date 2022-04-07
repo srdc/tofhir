@@ -24,7 +24,11 @@ case class FhirMapping(id:String = UUID.randomUUID().toString,
                        source:Seq[FhirMappingSource],
                        context:Map[String, FhirMappingContextDefinition],
                        mapping:Seq[FhirMappingExpression]
-                     )
+                     ) {
+  def withContext(newContext: Map[String, FhirMappingContextDefinition]): FhirMapping = {
+    this.copy(context = newContext)
+  }
+}
 
 /**
  * Metadata definition for the source data
@@ -41,7 +45,11 @@ case class FhirMappingSource(alias:String, url:String, description:Option[String
  * @param value       If context data will be supplied as JSON content
  * @param description Description of the context data
  */
-case class FhirMappingContextDefinition(category:String, url:Option[String], value:Option[JObject], description:Option[String] = None)
+case class FhirMappingContextDefinition(category:String, url:Option[String], value:Option[JObject], description:Option[String] = None) {
+  def withURL(newURL: String): FhirMappingContextDefinition = {
+    this.copy(url = Some(newURL))
+  }
+}
 
 object FhirMappingContextCategories {
   final val CONCEPT_MAP = "concept-map"
