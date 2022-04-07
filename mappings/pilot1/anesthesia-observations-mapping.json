@@ -1,0 +1,54 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/anesthesia-observations-mapping",
+  "name": "anesthesia-observations-mapping",
+  "title": "Mapping of schema anesthesia observations symptoms to AIC-AnesthesiaObservation profile resources",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-anesthesia-observations"
+  }],
+  "context": {
+    "anstObsConceptMap":  {
+      "category": "concept-map",
+      "url": "./anesthesia-observations-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 65).select('v' & $this.toString()).mkString(' | ')).indicesWhere($this.exists()).select($this.toString())}}",
+          "{{*}}": {
+            "resourceType": "Observation",
+            "id": "{{utl:uuid()}}",
+            "meta": {
+              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-AnesthesiaObservation"]
+            },
+            "status": "final",
+            "code": {
+              "coding": [
+                {
+                  "system": "{{utl:getConcept(%anstObsConceptMap, %ind, 'target_system')}}",
+                  "code": "{{utl:getConcept(%anstObsConceptMap, %ind, 'target_code')}}",
+                  "display": "{{utl:getConcept(%anstObsConceptMap, %ind, 'target_display')}}"
+                }
+              ]
+            },
+            "subject": {
+              "reference": "Patient/{{pid}}"
+            },
+            "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+            "effectiveDateTime": "{{time}}",
+            "valueQuantity": {
+              "value": "{{utl:evaluateExpression('v' & %ind)}}",
+              "unit": "{{mpp:getConcept(%anstObsConceptMap, code, 'target_unit')}}",
+              "system": "http://unitsofmeasure.org",
+              "code": "{{mpp:getConcept(%anstObsConceptMap, code, 'target_unit')}}"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

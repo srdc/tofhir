@@ -43,7 +43,7 @@
               "coding": [
                 {
                   "system": "http://snomed.info/sct",
-                  "code": "{{{{utl:getConcept(%prsConceptMap, %ind, 'target_code')}}}}",
+                  "code": "{{utl:getConcept(%prsConceptMap, %ind, 'target_code')}}",
                   "display": "{{utl:getConcept(%prsConceptMap, %ind, 'target_display')}}"
                 }
               ]
