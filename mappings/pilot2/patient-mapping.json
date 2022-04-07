@@ -1,0 +1,28 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot2/patient-mapping",
+  "name": "patient-mapping",
+  "title": "Mapping of patient schema for pilots to AIC-Patient and AIC- FHIR profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-plt2-patient"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Patient",
+          "id": "{{pid}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"]
+          },
+          "active": true,
+          "gender": "{{gender}}",
+          "birthDate": "{{birthDate}}",
+          "deceasedDateTime": "{{? deceasedDateTime}}"
+        }
+      }
+    }
+  ]
+}

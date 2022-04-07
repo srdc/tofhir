@@ -1,0 +1,44 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot2/encounter-mapping",
+  "name": "encounter-mapping",
+  "title": "Mapping of encounter schema for pilot 2 to AIC-ParkinsonCareEncounter",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-plt2-encounter"
+  }],
+  "context": {
+    "encounterConceptMap":  {
+      "category": "concept-map",
+      "url": "./encounter-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Encounter",
+          "id": "{{encounterID}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonCareEncounter"]
+          },
+          "status": "finished",
+          "class": {
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            "code": "{{category}}",
+            "display": "{{mpp:getConcept(%encounterConceptMap, category, 'source_display')}}"
+          },
+          "type": "{{* utl:createFhirCodeableConcept('http://snomed.info/sct', type, mpp:getConcept(%encounterConceptMap, type, 'source_display').orElse({})))}}",
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "period": {
+            "start": "{{date}}"
+          }
+        }
+      }
+    }
+
+  ]
+}
