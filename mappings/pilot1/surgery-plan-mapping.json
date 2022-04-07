@@ -1,0 +1,147 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/surgery-plan-mapping",
+  "name": "surgery-plan-mapping",
+  "title": "Mapping of schema surgery-plan to AIC-OperationPlan profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-surgery-plan"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "ServiceRequest",
+          "id": "{{rid}}",
+          "status": "completed",
+          "intent": "plan",
+          "category":[
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "387713003",
+                  "display": "Surgical procedure"
+                }
+              ]
+            },
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "387713003",
+                  "display": "Surgical procedure"
+                }
+              ]
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119",
+                "code": "{{code}}",
+                "display": "{{? codeDisplay}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "occurrencePeriod": {
+            "start": "{{? plannedStartTime}}",
+            "end": "{{? plannedEndTime}}"
+          },
+          "requester": "{{? utl:createFhirReference('Practitioner', requester)}}",
+          "performer": "{{* plannedSurgeons.split(' ').select(utl:createFhirReference('PractitionerRole', 'pr-' & $this))}}",
+          "orderDetail": "{{* otherProcedureCodes.split(' ').select(utl:createFhirCodeableConcept('https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119', $this, {}))}}",
+          "locationReference": "{{* utl:createFhirReference('Location', location)}}",
+          "authoredOn": "{{timeOfAddingToQueue}}"
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isICUPlanned",
+        "language": "text/fhirpath",
+        "expression": "isICUPlanned.exists() && isICUPlanned"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Encounter",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationEpisodeEncounter"]
+          },
+          "status": "planned",
+          "class": {
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            "code": "IMP",
+            "display": "Inpatient encounter"
+          },
+          "type": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "305351004",
+                  "display": "ICU Stay"
+                }
+              ]
+            }
+          ],
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "period": {
+            "start": "{{plannedStartTime.toDate()}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isPACUPlanned",
+        "language": "text/fhirpath",
+        "expression": "isPACUPlanned.exists() && isPACUPlanned"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Encounter",
+          "id": "{{utl:uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationEpisodeEncounter"]
+          },
+          "status": "planned",
+          "class": {
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+            "code": "IMP",
+            "display": "Inpatient encounter"
+          },
+          "type": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "398068008",
+                  "display": "PACU Stay"
+                }
+              ]
+            }
+          ],
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "period": {
+            "start": "{{plannedEndTime.orElse(plannedStartTime)}}"
+          }
+        }
+      }
+    }
+  ]
+}
