@@ -23,6 +23,8 @@ class FhirPathMappingFunctions(context:FhirPathEnvironment, current:Seq[FhirPath
    * @return
    */
   def getConcept(conceptMap:ExpressionContext, keyExpr:ExpressionContext, columnName:ExpressionContext):Seq[FhirPathResult] = {
+    conceptMap.getText // %labConceptMap
+    new FhirPathExpressionEvaluator(context, current).visit(keyExpr) // Bir string donmesi lazim o da 91823
     throw new NotImplementedError()
   }
 
