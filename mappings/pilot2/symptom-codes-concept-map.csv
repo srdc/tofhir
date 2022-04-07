@@ -20,3 +20,6 @@ constipation,14760008,http://snomed.info/sct,Constipation,https://aiccelerate.eu
 pain,22253000,http://snomed.info/sct,Pain,https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonNonMotorSymptomAssessment
 motor-symptoms,267082004,http://snomed.info/sct,Motor Symptoms Score,https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonMotorObservation
 non-motor-symptoms,non-motor-symptoms,https://aiccelerate.eu/fhir/CodeSystem/parkinson-symptoms,Non Motor Symptoms Score,https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonNonMotorSymptomAssessment
+cognition,449888003,http://snomed.info/sct,Normal Cognition,https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonNonMotorSymptomAssessment
+psychiatric-symptoms,75864003,http://snomed.info/sct,Psychiatric symptoms,https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonNonMotorSymptomAssessment
+impulse-control-disorder,66347000,http://snomed.info/sct,Impulse control disorder,https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonNonMotorSymptomAssessment

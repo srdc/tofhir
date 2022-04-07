@@ -1,0 +1,37 @@
+source_code,source_system,source_display,target_unit
+72106-8,http://loinc.org,MMSE total score (1-30 range),{score}
+72172-0,http://loinc.org,MoCA total score (1-30 range),{score}
+57048-1,http://loinc.org,"ADL/IADL total score (Likert 0-5, 0-7)",{score}
+pd-cfrs,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Cognitive functional rating scale PD-CFRS (0-24),{score}
+pd-mci,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,PD-MCI total score,{score}
+sas,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Starkstein Apathy Scale (SAS) score,{score}
+273830002,http://snomed.info/sct,"The State-Trait Anxiety Inventory (STAi-Y1,2) s core",{score}
+pas,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Parkinson Anxiety Scale (PAS) score,{score}
+89209-1 ,http://loinc.org,Beck Depression Inventory II total score,{score}
+bis-11,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Barratt Impulsiveness Scale-11 score,{score}
+sogs,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,The South Oaks Gambling Screen (SOGS) score,{score}
+quip-rs,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Impulsive-Compulsive Disorders in PD-Rating Scale (QUIP-RS) score,{score}
+npi,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Neuropsychological Inventory (NPI) ,{score}
+tmt,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Trial Making Test TMT Total ,{Zscore}
+tmt-a,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Trial Making Test TMT Part A,{Zscore}
+tmt-b,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Trial Making Test TMT Part B,{Zscore}
+sdmt,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Symbol Digit Modality Test (oral form) SDMT,{Zscore}
+verb-flu-a,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Verbal Fluency Test - Alternate form,{Zscore}
+verb-flu-si,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Verbal Fluency Test - Shifting index,{Zscore}
+stroop-t,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Stroop Test- time,{Zscore}
+stroop-e,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Stroop Test - error,{Zscore}
+cdt,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Clock Drowing Test (CDT),{Zscore}
+verb-flu-ph,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Verbal Fluency Test- Phonemic,{Zscore}
+rocf-c,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Rey–Osterrieth complex figure test(ROCF)-copy,{Zscore}
+bjlot,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Benton Judgment of Line Orientation Test (BJLOT),{Zscore}
+vosp,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Visual Object and Space Perception Battery (VOSP) (Incomplete Letters),{Zscore}
+wpat,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Word paired associated test (WPAT),{Zscore}
+rocf-d,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Rey–Osterrieth complex figure test(ROCF) delayed recall,{Zscore}
+bab-t,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Prose memory test,{Zscore}
+verb-flu-s,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Verbal Fluency Test- Semantic form,{Zscore}
+bnt,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Boston Naming test,{Zscore}
+pdq-39,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Parkinson Disease Questionnaire (PDQ-39),{score}
+77714-4,http://loinc.org,Hoehn & Yahr scale,{score}
+fazekas,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,"Fazekas score, Radiology ",{score}
+mta,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,"Scheltens scale/MTA score, radiology",{score}
+gca,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,"GA, radiology",{score}

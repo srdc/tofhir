@@ -1,19 +1,15 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/pilot2/symptom-assessment-mapping",
-  "name": "symptom-assessment-mapping",
-  "title": "Mapping of symptom assessment schema for pilot 2 to AIC-ParkinsonNonMotorSymptomAssessment, AIC-ParkinsonMotorObservation and its children profiles",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot2/symptom-existence-mapping",
+  "name": "symptom-existence-mapping",
+  "title": "Mapping of symptom existence schema for pilot 2 to AIC-ParkinsonMotorObservation profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-plt2-symptom-assessment"
+    "url": "/StructureDefinition/ext-plt2-symptom-existence"
   }],
   "context": {
     "symptomCodesMap":  {
       "category": "concept-map",
       "url": "./symptom-codes-concept-map.csv"
-    },
-    "symptomMethodsMap":  {
-      "category": "concept-map",
-      "url": "./symptom-methods-concept-map.csv"
     }
   },
   "mapping": [
@@ -45,21 +41,7 @@
             "start": "{{startDate}}",
             "end": "{{? endDate}}"
           },
-          "method": {
-            "coding": [
-              {
-                "system": "https://aiccelerate.eu/fhir/CodeSystem/parkinson-symptom-assessment-methods",
-                "code": "{{method}}",
-                "display": "{{mpp:getConcept(%symptomMethodsMap, method, 'source_display')}}"
-              }
-            ]
-          },
-          "valueQuantity": {
-            "value": "{{score}}",
-            "unit": "{score}",
-            "system": "http://unitsofmeasure.org",
-            "code": "{score}"
-          },
+          "valueBoolean": "{{symptomExists}}",
           "performer": "{{* iif(isProm, utl:createFhirReference('Patient', pid), {})}}"
         }
       }
