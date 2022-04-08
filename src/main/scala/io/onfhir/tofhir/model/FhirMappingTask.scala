@@ -2,6 +2,7 @@ package io.onfhir.tofhir.model
 
 import org.json4s.JsonAST.{JString, JValue}
 
+import java.net.URI
 import java.util.UUID
 
 /**
@@ -34,7 +35,7 @@ trait DataSourceSettings[T<:FhirMappingTask] {
  * @param sourceUri       Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
  * @param dataFolderPath  Path to the folder all source data is located
  */
-case class FileSystemSourceSettings(name:String, sourceUri:String, dataFolderPath:String) extends DataSourceSettings[FhirMappingFromFileSystemTask]
+case class FileSystemSourceSettings(name:String, sourceUri:String, dataFolderUri:URI) extends DataSourceSettings[FhirMappingFromFileSystemTask]
 
 /**
  * Comman interface for sink settings

@@ -87,7 +87,6 @@ object MappingTaskExecutor {
     throw new NotImplementedError()
   }
 
-
   def executeMapping(spark:SparkSession, df:DataFrame, fhirMappingService: FhirMappingService):Dataset[MappedFhirResource] = {
     import spark.implicits._
     df.flatMap(row =>

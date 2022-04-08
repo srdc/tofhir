@@ -3,8 +3,7 @@ package io.onfhir.tofhir.engine
 import io.onfhir.path.{FhirPathEvaluator, FhirPathException}
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.model.{ConceptMapContext, FhirMappingException}
-import org.json4s.JsonAST.JLong
-import org.json4s.{JNull, JObject, JString}
+import org.json4s.{JNull, JObject}
 
 class FhirPathMappingFunctionsTest extends ToFhirTestSpec {
 

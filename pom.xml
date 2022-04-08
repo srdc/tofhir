@@ -160,10 +160,24 @@
             </exclusions>
         </dependency>
         <dependency>
+            <!-- This is to meet the hard dependency of Spark on log4j -->
+            <!-- https://stackoverflow.com/questions/70374165/how-to-override-log4j-with-log4j2-version-to-resolve-socketserver-class-vulnera -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-1.2-api</artifactId>
+            <version>2.16.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- JSON4S -->
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
+            <version>${json4s.version}</version>
         </dependency>
 
         <!-- For csv parsing -->
