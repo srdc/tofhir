@@ -1,0 +1,34 @@
+source_code,source_unit,target_unit,conversion_function
+6690-2,E9/L,10*3/uL,$this
+26464-8,E9/L,10*3/uL,$this
+751-8,E9/L,10*3/uL,$this
+26499-4,E9/L,10*3/uL,$this
+1988-5,mg/L,mg/L,$this
+30522-7,mg/L,mg/L,$this
+2951-2,mmol/L,mmol/L,$this
+2777-1,mmol/L,mg/dL,$this * 3.096934
+2823-3,mmol/L,mmol/L,$this
+2601-3,mmol/L,mmol/L,$this
+718-7,g/L,g/dL,$this * 0.1
+777-3,E9/L,10*3/uL,$this
+26515-7,E9/L,10*3/uL,$this
+1751-7,g/L,g/dL,$this * 0.1
+14979-9,%,s,
+2160-0,umol/L,mg/dL,$this * 0.01130965845
+33863-2,mg/L,mg/L,$this
+6299-2,mmol/L,mg/dL,$this * 2.80033604
+1742-6,U/L,U/L,$this
+1975-2,umol/L,mg/dL,$this * 0.05847953216
+15152-2,umol/L,mg/dL,$this * 0.05847953216
+3016-3,mU/L,m[IU]/L,$this
+11579-0,mU/L,m[IU]/L,$this
+3026-2,pmol/L,ng/dL,$this * 0.07770007770007771
+2484-4,ng/mL,ng/mL,$this
+2141-0,pg/mL,pg/mL,$this
+2143-6,ug/dL,ug/dL,$this
+15067-2,mU/L,m[IU]/mL,$this
+10501-5,mU/L,m[IU]/mL,$this
+2243-4,pg/mL,pg/mL,$this
+83104-0,ng/mL,ng/mL,$this
+2986-8,ng/dL,ng/dL,$this
+34319-4,pg/mL,pg/mL,$this

@@ -1,0 +1,49 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/condition-mapping",
+  "name": "condition-mapping",
+  "title": "Mapping of condition schema for pilots to AIC-Condition FHIR profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-plt3-p2-condition"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Condition",
+          "id": "{{conditionID}}",
+          "meta": {
+            "profile": [
+              "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition"
+            ]
+          },
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+                "code": "{{clinicalStatus}}"
+              }
+            ]
+          },
+          "severity": "{{? utl:createFhirCodeableConcept('http://snomed.info/sct', severity, iif(severity='24484000', 'Severe', iif(severity='6736007', 'Moderate', 'Mild')))}}",
+          "code": {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/sid/icd-10",
+                "code": "{{code}}",
+                "display": "{{codeDisplay}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "onsetDateTime": "{{onsetDateTime}}",
+          "abatementDateTime": "{{? abatementDateTime}}"
+        }
+      }
+    }
+  ]
+}

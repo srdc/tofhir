@@ -1,0 +1,58 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/lab-results-mapping",
+  "name": "lab-results-mapping",
+  "title": "Mapping of schema lab results to AIC-PediatricNeurooncologicalLabResult profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-plt3-p2-lab-results"
+  }],
+  "context": {
+    "labResultsConceptMap":  {
+      "category": "concept-map",
+      "url": "./lab-results-concept-map.csv"
+    },
+    "labResultUnitConversion": {
+      "category": "unit-conversion",
+      "url": "./lab-results-unit-conversion.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{resultID}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalLabResult"]
+          },
+          "status": "final",
+          "category": [
+            {
+              "coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory result"
+              }]
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "{{code}}",
+                "display": "{{mpp:getConcept(%labResultsConceptMap, code, 'source_display')}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "effectiveDateTime": "{{date}}",
+          "valueQuantity": "{{mpp:convertAndReturnQuantity(%labResultUnitConversion, code, value, unit)}}"
+        }
+      }
+    }
+  ]
+}
