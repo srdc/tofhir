@@ -27,7 +27,7 @@
         <scala-logging.version>3.9.4</scala-logging.version>
         <onfhir.version>3.2-SNAPSHOT</onfhir.version>
         <onfhir-template-engine.version>1.0-SNAPSHOT</onfhir-template-engine.version>
-        <json4s.version>4.0.4</json4s.version>
+        <json4s.version>3.7.0-M11</json4s.version>
         <scalatest.version>3.1.4</scalatest.version>
         <spark.version>3.2.1</spark.version>
         <jackson-csv.version>2.13.2</jackson-csv.version>
@@ -143,6 +143,12 @@
             <version>${onfhir-template-engine.version}</version>
         </dependency>
 
+        <!-- JSON4S -->
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
+            <version>${json4s.version}</version>
+        </dependency>
         <!-- Spark dependencies -->
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -173,12 +179,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- JSON4S -->
-        <dependency>
-            <groupId>org.json4s</groupId>
-            <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
-            <version>${json4s.version}</version>
-        </dependency>
 
         <!-- For csv parsing -->
         <dependency>
