@@ -52,6 +52,21 @@ class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
     }
   }
 
+  it should "correctly load concept map context definitions from another directory" in {
+    val labResultsMapping = mappingRepository2.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
+    val contextDefinition = labResultsMapping.context("obsConceptMap")
+    val mappingContextLoader = new MappingContextLoader(mappingRepository1)
+    mappingContextLoader.retrieveContext(contextDefinition) map { context =>
+      val conceptMapContext = context.asInstanceOf[ConceptMapContext]
+      conceptMapContext.concepts.size shouldBe 13
+
+      // source_code,source_system,source_display,unit,profile
+      // 9187-6,http://loinc.org,Urine Output,cm3,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+      conceptMapContext.concepts("9187-6")("source_system") shouldBe "http://loinc.org"
+      conceptMapContext.concepts("9187-6")("unit") shouldBe "cm3"
+    }
+  }
+
   it should "correctly load unit conversion mapping definitions" in {
     val labResultsMapping = mappingRepository2.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
     val unitConversionContextDefinition = labResultsMapping.context("labResultUnitConversion")

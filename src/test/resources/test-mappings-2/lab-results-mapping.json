@@ -7,9 +7,9 @@
     "url": "/StructureDefinition/ext-lab-results"
   }],
   "context": {
-    "labResultsConceptMap":  {
+    "obsConceptMap":  {
       "category": "concept-map",
-      "url": "./lab-results-concept-map.csv"
+      "url": "../test-mappings-1/other-observation-concept-map.csv"
     },
     "labResultUnitConversion": {
       "category": "unit-conversion",
