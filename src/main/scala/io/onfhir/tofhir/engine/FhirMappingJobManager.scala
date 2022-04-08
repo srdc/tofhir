@@ -1,6 +1,8 @@
 package io.onfhir.tofhir.engine
 
 import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingTask, FhirSinkSettings, MappedFhirResource}
+import io.onfhir.util.JsonFormatter
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.JObject
 
@@ -49,6 +51,7 @@ class FhirMappingJobManager(
   private def executeTask[T<:FhirMappingTask](dataSourceReader:BaseDataSourceReader[T], task:T):Future[Dataset[MappedFhirResource]] = {
     val df = dataSourceReader.read(task)
     df.cache()
+    df.printSchema()
     //Retrieve the FHIR mapping definition
     val fhirMapping = fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
     //Load the contextual data for the mapping
@@ -84,10 +87,13 @@ class FhirMappingJobManager(
 object MappingTaskExecutor {
 
   private def convertRowToJObject(row: Row): JObject = {
-    throw new NotImplementedError()
+    val method = row.getClass.getSuperclass.getInterfaces.apply(0).getMethod("jsonValue")
+    method.setAccessible(true)
+    method.invoke(row).asInstanceOf[JObject]
   }
 
   def executeMapping(spark:SparkSession, df:DataFrame, fhirMappingService: FhirMappingService):Dataset[MappedFhirResource] = {
+
     import spark.implicits._
     df.flatMap(row =>
       Await.result(fhirMappingService.mapToFhir(convertRowToJObject(row)), Duration.apply(5, "seconds"))

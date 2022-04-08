@@ -23,7 +23,7 @@ class FileDataSourceReader(spark:SparkSession, sourceSettings:FileSystemSourceSe
     val mappingFilePath = Paths.get(mappingTask.path).normalize().toString
     val finalPath = Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString
     mappingTask.sourceType match {
-      case SourceFileFormats.CSV => spark.read.csv(finalPath)
+      case SourceFileFormats.CSV => spark.read.option("header", "true").csv(finalPath)
       case SourceFileFormats.JSON => spark.read.json(finalPath)
       case SourceFileFormats.PARQUET => spark.read.parquet(finalPath)
       case _ => throw new NotImplementedError()
