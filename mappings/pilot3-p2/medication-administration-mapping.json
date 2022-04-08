@@ -1,0 +1,44 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/medication-administration-mapping",
+  "name": "medication-administration-mapping",
+  "title": "Mapping of schema MedicationAdministration to AIC-MedicationAdministration FHIR profile",
+  "source": [{
+    "alias": "source",
+    "url": "/StructureDefinition/ext-medication-administration"
+  }],
+  "context": {
+    "medsConceptMap": {
+      "category": "concept-map",
+      "url": "./medications-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "MedicationAdministration",
+          "id": "{{uuid()}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"]
+          },
+          "status": "completed",
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://www.whocc.no/atc",
+                "code": "{{code}}",
+                "display": "{{mpp:getConcept(%medsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "Patient/{{pid}}"
+          },
+          "effectiveDateTime": "{{startTime}}"
+        }
+      }
+    }
+  ]
+}
