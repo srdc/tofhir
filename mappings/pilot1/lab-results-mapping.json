@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/lab-results-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/lab-results-mapping",
   "name": "lab-results-mapping",
   "title": "Mapping of schema lab results to AIC-LabResults profile",
   "source": [{

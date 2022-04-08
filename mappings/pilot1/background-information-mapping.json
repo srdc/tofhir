@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/background-information-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/background-information-mapping",
   "name": "background-information-mapping",
   "title": "Mapping of schema background information to AIC-OperationFlag profile resources",
   "source": [{

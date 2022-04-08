@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/vital-signs-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/vital-signs-mapping",
   "name": "vital-signs-mapping",
   "title": "Mapping of schema vital signs to FHIR Vital signs profiles",
   "source": [{

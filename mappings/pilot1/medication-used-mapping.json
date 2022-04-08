@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/medication-used-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/medication-used-mapping",
   "name": "medication-used-mapping",
   "title": "Mapping of schema MedicationUsed to AIC-MedicationUsed FHIR profile",
   "source": [{

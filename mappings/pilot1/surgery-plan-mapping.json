@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/surgery-plan-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-plan-mapping",
   "name": "surgery-plan-mapping",
   "title": "Mapping of schema surgery-plan to AIC-OperationPlan profile",
   "source": [{

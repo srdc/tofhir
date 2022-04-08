@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/surgery-details-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-details-mapping",
   "name": "surgery-details-mapping",
   "title": "Mapping of schema surgery-details to AIC-SurgeryEncounter, AIC-OperationPhaseDetails, AIC-SurgeryPhaseDetails, AIC-AnesthesiaPhaseDetails profiles",
   "source": [{

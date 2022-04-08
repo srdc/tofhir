@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/health-behavior-assessment-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/health-behavior-assessment-mapping",
   "name": "health-behavior-assessment-mapping",
   "title": "Mapping of HealthBehaviorAssessment schema for pilots to AIC Smoking Status and Health Behavior Assessment FHIR profiles",
   "source": [{

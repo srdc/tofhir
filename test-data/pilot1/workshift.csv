@@ -1,0 +1,3 @@
+pid,startTime,endTime,isAbsent,assignedLocation
+pr1,2017-01-18,2017-01-19,false,loc1
+pr2,2017-01-19T00:00:00Z,2017-01-20T10:00:00Z,true,

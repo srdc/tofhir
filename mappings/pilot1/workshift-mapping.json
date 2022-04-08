@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/workshift-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/workshift-mapping",
   "name": "workshift-mapping",
   "title": "Mapping of schema workshift to AIC Workshift profile",
   "source": [{

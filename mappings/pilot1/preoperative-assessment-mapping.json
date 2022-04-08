@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/preoperative-assessment-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-assessment-mapping",
   "name": "preoperative-assessment-mapping",
   "title": "Mapping of PreoperativeAssessment schema for pilots to multiple AIC FHIR profile",
   "source": [{

@@ -1,0 +1,4 @@
+pid,encounterId,startTime,endTime,code,hasRisk,isCritical,isPermenant,certainity
+p1,e1,2017-10-05T10:00:00+01:00,,439127006,TRUE,FALSE,TRUE,definite
+p2,e2,2017-10-05T10:00:00+01:00,2017-10-30T10:00:00+01:00,62014003+366667001,TRUE,TRUE,FALSE,propable
+p3,e3,2017-10-05T10:00:00+01:00,,rare-disease,FALSE,,,

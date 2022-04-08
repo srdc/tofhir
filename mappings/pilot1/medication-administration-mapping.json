@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/medication-administration-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/medication-administration-mapping",
   "name": "medication-administration-mapping",
   "title": "Mapping of schema MedicationAdministration to AIC-MedicationAdministration FHIR profile",
   "source": [{

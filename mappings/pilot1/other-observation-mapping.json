@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/other-observation-mapping",
   "name": "other-observation-mapping",
   "title": "Mapping of schema Other Observation to AIC-IntraOperativeObservation, AIC-MedicationAdministration, AIC-NEWSScore, AIC-PEWSScore and AIC-GlascowScale FHIR profiles",
   "source": [{

@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/radiological-studies-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/radiological-studies-mapping",
   "name": "radiological-studies-mapping",
   "title": "Mapping of radiological studies schema for pilots to AIC-DiagnosticStudy FHIR profile",
   "source": [{

@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/anesthesia-observations-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping",
   "name": "anesthesia-observations-mapping",
   "title": "Mapping of schema anesthesia observations symptoms to AIC-AnesthesiaObservation profile resources",
   "source": [{

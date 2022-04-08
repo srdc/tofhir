@@ -1,0 +1,6 @@
+medicationUseID,pid,startDate,endDate,code,codeDisplay,frequency,dose,doseUnit,encounterId,isInpatient
+mu1,p1,"2012-05-10","2012-05-28",N04BA01,Levodopa,1,50,mg,e1,
+mu2,p2,"2014-03-10","2014-03-20",N04BB01,Amantadine ,2,10,mg,,
+mu3,p3,"2011-02-06","2011-04-06",N06AB03,fluoxetine,,,,e3,TRUE
+mu4,p4,"2009-01-25","2009-01-30",N06DA01,Tacrine,,,mg,,
+mu5,p5,"2014-01-25","2014-02-25",A06AB09,Bisoxatin,,,mg,,

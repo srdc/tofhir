@@ -1,6 +1,6 @@
-pid,time,encounterId,code
-p1,2012-05-10,e1,AA1AD
-p2,2012-05-10,,PA2AT
-p3,2012-05-10T10:00:00+01:00,,PC1AD
-p4,2012-05-10,,AA1AG
-p5,2012-05-10,,AA5FG
+pid,time,encounterId,code,codeDisplay
+p1,5/10/2012,e1,AA1AD,CT of head and brain
+p2,5/10/2012,,PA2AT,Cerebral artery PTA
+p3,2012-05-10T10:00:00+01:00,,PC1AD,
+p4,5/10/2012,,AA1AG,
+p5,5/10/2012,,AA5FG,

@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
   "name": "patient-mapping",
   "title": "Mapping of patient schema for pilots to AIC-Patient FHIR profile",
   "source": [{

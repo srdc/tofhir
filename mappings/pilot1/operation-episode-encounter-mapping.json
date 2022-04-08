@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/operation-episode-encounter-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/operation-episode-encounter-mapping",
   "name": "operation-episode-encounter-mapping",
   "title": "Mapping of OperationEpisodeEncounter schema for pilots to AIC-OperationEpisodeEncounter FHIR profile",
   "source": [{

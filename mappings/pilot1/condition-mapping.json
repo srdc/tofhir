@@ -1,5 +1,5 @@
 {
-  "url": "https://aiccelerate.eu/fhir/mappings/condition-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping",
   "name": "condition-mapping",
   "title": "Mapping of condition schema for pilots to AIC-Condition FHIR profile",
   "source": [{
