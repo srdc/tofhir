@@ -1,23 +1,25 @@
 package io.onfhir.tofhir.engine
 
+import io.onfhir.api.Resource
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression, MappedFhirResource}
-import org.json4s.JsonAST.JObject
+import org.json4s.JObject
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 /**
  * Mapping service for a specific FhirMapping together with contextual data and mapping scripts
- * @param sources   List of source aliases
- * @param context   Context data
- * @param mappings  Mapping scripts
+ *
+ * @param sources  List of source aliases
+ * @param context  Context data
+ * @param mappings Mapping scripts
  */
 class FhirMappingService(
-                          sources:Seq[String],
-                          context:Map[String, FhirMappingContext],
-                          mappings:Seq[FhirMappingExpression]
+                          sources: Seq[String],
+                          context: Map[String, FhirMappingContext],
+                          mappings: Seq[FhirMappingExpression]
                         ) extends IFhirMappingService {
 
   /**
@@ -35,7 +37,7 @@ class FhirMappingService(
    * @param source
    * @return
    */
-  override def mapToFhir(source: JObject): Future[Seq[MappedFhirResource]]= {
+  override def mapToFhir(source: JObject): Future[Seq[Resource]] = {
     Future.sequence(
       mappings
         .filter(mpp =>
@@ -47,10 +49,6 @@ class FhirMappingService(
     ).map(resources =>
       resources
         .map(_.asInstanceOf[JObject])
-        .map(r => {
-        val (rtype, rid) = FHIRUtil.extractResourceTypeAndId(r)
-        MappedFhirResource(rid, rtype, r)
-      })
     )
   }
 
@@ -60,5 +58,5 @@ class FhirMappingService(
    * @param sources Map of source data (alis of the source in mapping definition FhirMapping.source.alias) -> Source object(s) as the input to the mapping
    * @return
    */
-  override def mapToFhir(sources: Map[String, Seq[JObject]]): Future[Seq[MappedFhirResource]] = ???
+  override def mapToFhir(sources: Map[String, Seq[JObject]]): Future[Seq[Resource]] = ???
 }

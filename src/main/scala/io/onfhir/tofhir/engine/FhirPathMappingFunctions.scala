@@ -13,7 +13,7 @@ import org.json4s.{JObject, JString}
  * @param mappingContext Specific mapping context
  */
 class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPathResult], mappingContext: Map[String, FhirMappingContext])
-  extends AbstractFhirPathFunctionLibrary {
+  extends AbstractFhirPathFunctionLibrary with Serializable {
 
   /**
    * Get corresponding value from the given concept map with the given key and column name
@@ -115,7 +115,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
 
 }
 
-class FhirMappingFunctionsFactory(mappingContext: Map[String, FhirMappingContext]) extends IFhirPathFunctionLibraryFactory {
+class FhirMappingFunctionsFactory(mappingContext: Map[String, FhirMappingContext]) extends IFhirPathFunctionLibraryFactory with Serializable {
   override def getLibrary(context: FhirPathEnvironment, current: Seq[FhirPathResult]): AbstractFhirPathFunctionLibrary =
     new FhirPathMappingFunctions(context, current, mappingContext)
 }

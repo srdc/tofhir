@@ -1,12 +1,11 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, MappedFhirResource}
-import org.apache.spark.sql.Dataset
+import io.onfhir.tofhir.model.{FhirRepositorySinkSettings}
+import org.apache.spark.sql.{DataFrame}
 
 /**
  * Class to write the dataset to given FHIR repository
  * @param sinkSettings                  Settings for the FHIR repository
- * @tparam FhirRepositorySinkSettings
  */
 class FhirRepositoryWriter(sinkSettings:FhirRepositorySinkSettings) extends BaseFhirWriter(sinkSettings) {
   /**
@@ -14,5 +13,5 @@ class FhirRepositoryWriter(sinkSettings:FhirRepositorySinkSettings) extends Base
    *
    * @param df
    */
-  override def write(df:Dataset[MappedFhirResource]): Unit = ???
+  override def write(df:DataFrame): Unit = ???
 }
