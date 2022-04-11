@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.model
 
-import org.json4s.JsonAST.{JField, JObject, JValue}
+import org.json4s.{JField, JObject, JValue}
 
 trait FhirMappingContext {
   def toContextObject: JObject
