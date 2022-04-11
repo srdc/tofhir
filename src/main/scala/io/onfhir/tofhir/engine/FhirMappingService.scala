@@ -4,9 +4,10 @@ import io.onfhir.api.Resource
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression, MappedFhirResource}
-import org.json4s.JObject
+import org.json4s.{JObject, JValue}
 import org.json4s.JsonAST.JArray
 
+import scala.collection.IterableOnce.iterableOnceExtensionMethods
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -39,20 +40,36 @@ class FhirMappingService(
    * @return
    */
   override def mapToFhir(source: JObject): Future[Seq[Resource]] = {
-    Future.sequence(
+    //Find out eligible mappings based on preconditions
+    val eligibleMappings =
       mappings
-        .filter(mpp =>
-          mpp
-            .precondition
-            .forall(prc => templateEngine.fhirPathEvaluator.satisfies(prc.expression.get, source))
-        )
-        .map(mpp => templateEngine.evaluateExpression(mpp.expression, Map.empty, source))
-    ).map(resources =>
-      resources.flatMap {
-        case a:JArray => a.arr.map(_.asInstanceOf[JObject])
-        case o:JObject => Seq(o)
+      .filter(mpp =>
+        mpp
+          .precondition
+          .forall(prc => templateEngine.fhirPathEvaluator.satisfies(prc.expression.get, source))
+      )
+    //Execute the mappings sequentially while appending previous mapping results as context parameter
+    eligibleMappings
+      .foldLeft[Future[(Map[String, JValue], Seq[JValue])]](Future.apply(Map.empty[String, JValue] -> Seq.empty[JValue])) {
+        case (fresults, mpp) =>
+          fresults
+            .flatMap {
+              case (cntx, results) =>
+                templateEngine
+                  .evaluateExpression(mpp.expression, cntx, source) //Evaluate the template expression
+                  .map(r =>
+                    (cntx + (mpp.expression.name -> r)) ->  //Append the new result to dynamic context params set
+                      (results :+ r)  //Append the result to result set
+                  )
+            }
       }
-    )
+      .map(_._2)
+      .map(resources =>
+        resources.flatMap {
+          case a:JArray => a.arr.map(_.asInstanceOf[JObject])
+          case o:JObject => Seq(o)
+        }
+      )
   }
 
   /**
