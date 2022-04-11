@@ -5,6 +5,7 @@ import io.onfhir.api.util.FHIRUtil
 import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression, MappedFhirResource}
 import org.json4s.JObject
+import org.json4s.JsonAST.JArray
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -47,8 +48,10 @@ class FhirMappingService(
         )
         .map(mpp => templateEngine.evaluateExpression(mpp.expression, Map.empty, source))
     ).map(resources =>
-      resources
-        .map(_.asInstanceOf[JObject])
+      resources.flatMap {
+        case a:JArray => a.arr.map(_.asInstanceOf[JObject])
+        case o:JObject => Seq(o)
+      }
     )
   }
 
