@@ -25,15 +25,6 @@
                   "display": "Surgical procedure"
                 }
               ]
-            },
-            {
-              "coding": [
-                {
-                  "system": "http://snomed.info/sct",
-                  "code": "387713003",
-                  "display": "Surgical procedure"
-                }
-              ]
             }
           ],
           "code": {
@@ -97,7 +88,7 @@
             "reference": "Patient/{{pid}}"
           },
           "period": {
-            "start": "{{plannedStartTime.toDate()}}"
+            "start": "{{plannedEndTime.orElse(plannedStartTime).toDate()}}"
           }
         }
       }
