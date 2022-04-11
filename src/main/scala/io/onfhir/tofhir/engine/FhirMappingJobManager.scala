@@ -1,9 +1,9 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingTask, FhirSinkSettings, MappedFhirResource}
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
-import org.json4s.ext.JavaTypesSerializers
-import org.json4s.{DefaultFormats, JObject}
+import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingTask, FhirSinkSettings}
+import io.onfhir.util.JsonFormatter._
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.json4s.JObject
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -20,6 +20,7 @@ class FhirMappingJobManager(
                               contextLoader:IMappingContextLoader,
                               spark:SparkSession
                            )(implicit ec:ExecutionContext) extends IFhirMappingJobManager {
+
   /**
    * Execute the given mapping job and write the resulting FHIR resources to given sink
    *
@@ -47,7 +48,7 @@ class FhirMappingJobManager(
    * @param sinkSettings
    * @return
    */
-  private def executeTask[T<:FhirMappingTask](dataSourceReader:BaseDataSourceReader[T], task:T):Future[Dataset[MappedFhirResource]] = {
+  private def executeTask[T<:FhirMappingTask](dataSourceReader:BaseDataSourceReader[T], task:T):Future[DataFrame] = {
     val df = dataSourceReader.read(task)
     df.cache()
     df.printSchema()
@@ -78,30 +79,47 @@ class FhirMappingJobManager(
    * @return
    */
   override def executeMappingTaskAndReturn[T<:FhirMappingTask](id:  String, sourceSettings:  DataSourceSettings[T], task: T): Future[Seq[JObject]] = {
-    import spark.implicits._
-    implicit val formats = DefaultFormats ++ JavaTypesSerializers.all
     val dataSourceReader = DataSourceReaderFactory.apply(spark, sourceSettings)
-    executeTask(dataSourceReader, task).map { dataset =>
-      dataset
-        .map(_.resource)
-        .collect()
-        .toSeq
-    }
+    executeTask(dataSourceReader, task)
+      .map { dataset =>
+        dataset
+          .toJSON
+          .collect()
+          .map(_.parseJson)
+          .toSeq
+      }
   }
 }
 
 object MappingTaskExecutor {
 
+  /**
+   * Convert input row for mapping to JObject
+   * @param row
+   * @return
+   */
   private def convertRowToJObject(row: Row): JObject = {
     val method = row.getClass.getSuperclass.getInterfaces.apply(0).getMethod("jsonValue")
     method.setAccessible(true)
     method.invoke(row).asInstanceOf[JObject]
   }
 
-  def executeMapping(spark:SparkSession, df:DataFrame, fhirMappingService: FhirMappingService):Dataset[MappedFhirResource] = {
+  /**
+   * Executing the mapping and returning the dataframe for FHIR resources
+   * @param spark
+   * @param df
+   * @param fhirMappingService
+   * @return
+   */
+  def executeMapping(spark:SparkSession, df:DataFrame, fhirMappingService: FhirMappingService):DataFrame = {
     import spark.implicits._
-    df.flatMap(row =>
-      Await.result(fhirMappingService.mapToFhir(convertRowToJObject(row)), Duration.apply(5, "seconds"))
-    )
+    val result =
+      df
+        .flatMap(row =>
+          Await.result(fhirMappingService.mapToFhir(convertRowToJObject(row)), Duration.apply(5, "seconds"))
+            .map(_.toJson)
+        )
+
+    spark.read.json(result)
   }
 }
