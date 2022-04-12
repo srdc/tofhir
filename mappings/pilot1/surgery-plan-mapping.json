@@ -56,7 +56,7 @@
       "precondition": {
         "name": "isICUPlanned",
         "language": "text/fhirpath",
-        "expression": "isICUPlanned.exists() && isICUPlanned"
+        "expression": "isICUPlanned.exists() and isICUPlanned"
       },
       "expression": {
         "name": "result",
@@ -97,7 +97,7 @@
       "precondition": {
         "name": "isPACUPlanned",
         "language": "text/fhirpath",
-        "expression": "isPACUPlanned.exists() && isPACUPlanned"
+        "expression": "isPACUPlanned.exists() and isPACUPlanned"
       },
       "expression": {
         "name": "result",

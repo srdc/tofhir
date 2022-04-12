@@ -73,6 +73,19 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     }
   }
 
+  "surgery plan mapping" should "map test data" in {
+    val mappingTask =
+      FhirMappingFromFileSystemTask(
+        mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-plan-mapping",
+        path = "surgery-plans.csv",
+        sourceType = SourceFileFormats.CSV
+      )
+
+    fhirMappingJobManager.executeMappingTaskAndReturn(sourceSettings = dataSourceSettings, task = mappingTask) map { results =>
+      results.size shouldBe 4
+    }
+  }
+
 
 
 }

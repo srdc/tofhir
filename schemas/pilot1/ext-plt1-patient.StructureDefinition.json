@@ -1,0 +1,107 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/ext-plt1-patient",
+  "name": "ext-plt1-patient",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "https://aiccelerate.eu/fhir/StructureDefinition/ext-plt1-patient",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "ext-plt1-patient",
+        "path": "ext-plt1-patient",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "ext-plt1-patient.pid",
+        "path": "ext-plt1-patient.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ext-plt1-patient.gender",
+        "path": "ext-plt1-patient.gender",
+        "short": "Gender of patient",
+        "definition": "Gender of patient",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ext-plt1-patient.birthDate",
+        "path": "ext-plt1-patient.birthDate",
+        "short": "Birth date",
+        "definition": "The birth year of patient",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "date",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/date"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ext-plt1-patient.deceasedDateTime",
+        "path": "ext-plt1-patient.deceasedDateTime",
+        "short": "Deceseased date",
+        "definition": "If patient is deceased, its date",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "date",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/date"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ext-plt1-patient.homePostalCode",
+        "path": "ext-plt1-patient.homePostalCode",
+        "short": "Home postal code",
+        "definition": "Postal code for patient home address",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "string",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/string"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

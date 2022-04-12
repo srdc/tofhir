@@ -1,3 +1,3 @@
 rid,pid,episodeId,encounterId,timeOfAddingToQueue,plannedStartTime,plannedEndTime,requester,code,codeDisplay,otherProcedureCodes,anesthesiaType,location,plannedSurgeons,isICUPlanned,isPACUPlanned
-sp1,p1,ep11,e21,9/10/2007,2007-09-22T10:00:00+01:00,2007-09-22T13:00:00+01:00,pr1,ABB06,BlaBlaSurgery,,50697003,or1,pr1,FALSE,TRUE
-sp2,p2,ep12,e22,9/11/2007,2007-09-22T14:00:00+01:00,2007-09-22T16:00:00+01:00,pr2,AAA27,,,50697003,or1,pr2,TRUE,FALSE
+sp1,p1,ep11,e21,2007-09-10,2007-09-22T10:00:00+01:00,2007-09-22T13:00:00+01:00,pr1,ABB06,BlaBlaSurgery,,50697003,or1,pr1,FALSE,TRUE
+sp2,p2,ep12,e22,2007-09-11,2007-09-22T14:00:00+01:00,2007-09-22T16:00:00+01:00,pr2,AAA27,,,50697003,or1,pr2,TRUE,FALSE
