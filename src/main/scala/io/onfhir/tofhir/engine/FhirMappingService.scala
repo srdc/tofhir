@@ -1,13 +1,11 @@
 package io.onfhir.tofhir.engine
 
 import io.onfhir.api.Resource
-import io.onfhir.api.util.FHIRUtil
 import io.onfhir.template.FhirTemplateExpressionHandler
-import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression, MappedFhirResource}
-import org.json4s.{JObject, JValue}
+import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression}
 import org.json4s.JsonAST.JArray
+import org.json4s.{JObject, JValue}
 
-import scala.collection.IterableOnce.iterableOnceExtensionMethods
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -40,15 +38,16 @@ class FhirMappingService(
    * @return
    */
   override def mapToFhir(source: JObject): Future[Seq[Resource]] = {
-    //Find out eligible mappings based on preconditions
+    //Find out eligible mappings on this source JObject based on preconditions
     val eligibleMappings =
       mappings
-      .filter(mpp =>
-        mpp
-          .precondition
-          .forall(prc => templateEngine.fhirPathEvaluator.satisfies(prc.expression.get, source))
-      )
-    //Execute the mappings sequentially while appending previous mapping results as context parameter
+        .filter(mpp =>
+          mpp
+            .precondition
+            .forall(prc => templateEngine.fhirPathEvaluator.satisfies(prc.expression.get, source))
+        )
+
+    //Execute the eligible mappings sequentially while appending previous mapping results as context parameter
     eligibleMappings
       .foldLeft[Future[(Map[String, JValue], Seq[JValue])]](Future.apply(Map.empty[String, JValue] -> Seq.empty[JValue])) {
         case (fresults, mpp) =>
@@ -57,17 +56,17 @@ class FhirMappingService(
               case (cntx, results) =>
                 templateEngine
                   .evaluateExpression(mpp.expression, cntx, source) //Evaluate the template expression
-                  .map(r =>
-                    (cntx + (mpp.expression.name -> r)) ->  //Append the new result to dynamic context params set
-                      (results :+ r)  //Append the result to result set
+                  .map(r => // Get result of the evaluated expression
+                    (cntx + (mpp.expression.name -> r)) -> //Append the new result to dynamic context params set
+                      (results :+ r) //Append the result to result set (resources are accumulating)
                   )
             }
       }
-      .map(_._2)
+      .map(_._2) // Get the accumulated result set
       .map(resources =>
         resources.flatMap {
-          case a:JArray => a.arr.map(_.asInstanceOf[JObject])
-          case o:JObject => Seq(o)
+          case a: JArray => a.arr.map(_.asInstanceOf[Resource])
+          case o: JObject => Seq(o)
         }
       )
   }
