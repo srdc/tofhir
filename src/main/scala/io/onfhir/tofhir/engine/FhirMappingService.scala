@@ -2,6 +2,7 @@ package io.onfhir.tofhir.engine
 
 import io.onfhir.api.Resource
 import io.onfhir.api.util.FHIRUtil
+import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression, MappedFhirResource}
 import org.json4s.{JObject, JValue}
@@ -30,7 +31,11 @@ class FhirMappingService(
   val templateEngine =
     new FhirTemplateExpressionHandler(
       context.filter(_._2.isInstanceOf[ConfigurationContext]).map(c => c._1 -> c._2.toContextObject), // Provide the static contexts
-      Map("mpp" -> new FhirMappingFunctionsFactory(context.filterNot(_._2.isInstanceOf[ConfigurationContext]))) //Add our mapping function library
+      Map(
+        "mpp" -> new FhirMappingFunctionsFactory(context.filterNot(_._2.isInstanceOf[ConfigurationContext])),
+        FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory,
+        FhirPathNavFunctionsFactory.defaultPrefix -> FhirPathNavFunctionsFactory
+      ) //Add our mapping function library
     )
 
   /**

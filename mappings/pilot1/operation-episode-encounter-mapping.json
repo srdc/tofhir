@@ -54,11 +54,11 @@
                   }]
               }],
               "individual": {
-                "reference": "Practitioner/{{%prid}}"
+                "reference": "PractitionerRole/pr-{{%prid}}"
               }
             }
           },
-          "episodeOfCare": ["EpisodeOfCare/{{episodeId}}"],
+          "episodeOfCare": [ "{{utl:createFhirReference('EpisodeOfCare', episodeId)}}"],
           "period": {
             "start": "{{startTime}}",
             "end": "{{? endTime}}"
@@ -66,7 +66,7 @@
           "location": {
             "{{#loc}}": "{{location}}",
             "{{*}}": {
-              "location": "Location/{{%loc}}",
+              "location": "{{utl:createFhirReference('Location', %loc)}}",
               "period": {
                 "start": "{{startTime}}",
                 "end": "{{? endTime}}"
