@@ -22,28 +22,26 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @param df
    */
   override def write(df: DataFrame): Unit = {
-    println("111111111111111111111")
-
     df.cache()
     df.printSchema()
 
     import io.onfhir.util.JsonFormatter._
 
-    df.foreach { r: Row =>
-      println(MappingTaskExecutor.convertRowToJObject(r).toJson)
+    df
+      .toJSON
+      .foreachPartition { partition: Iterator[String] =>
+      val onFhirClient = OnFhirNetworkClient.apply(sinkSettings.fhirRepoUrl) // A FhirClient for each partition
+      partition
+        .grouped(10)
+        .foreach(rowGroup => {
+          var batchRequest = onFhirClient.batch()
+          rowGroup.foreach(row => {
+            val resource = row.parseJson
+            batchRequest = batchRequest.entry(_.update(resource))
+          })
+          val a = Await.result(batchRequest.execute(), FiniteDuration(5, TimeUnit.SECONDS))
+          println(a.responseBody.get)
+        })
     }
-
-//    df.foreachPartition { partition: Iterator[Row] =>
-//      val onFhirClient = OnFhirNetworkClient.apply(sinkSettings.fhirRepoUrl) // A FhirClient for each partition
-//      partition.grouped(10)
-//        .foreach(rowGroup => {
-//          var batchRequest = onFhirClient.batch()
-//          rowGroup.foreach(row => {
-//            batchRequest = batchRequest.entry(_.create(row.asInstanceOf[Resource]))
-//          })
-//          val a = Await.result(batchRequest.execute(), FiniteDuration(5, TimeUnit.SECONDS))
-//          println(a.responseBody.get)
-//        })
-//    }
   }
 }

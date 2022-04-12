@@ -9,7 +9,7 @@ import org.apache.spark.sql.{DataFrame, Dataset}
  * @param sinkSettings
  * @tparam S
  */
-abstract class BaseFhirWriter(sinkSettings:FhirSinkSettings) {
+abstract class BaseFhirWriter(sinkSettings:FhirSinkSettings) extends Serializable {
   /**
    * Write the data frame to given sink (e.g. FHIR repository)
    * @param df
