@@ -58,7 +58,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
    * @param fhirMappings
    * @return
    */
-  private def arrangeContextURLs(fhirMappings: List[FhirMapping]): List[FhirMapping] = {
+  private def normalizeContextURLs(fhirMappings: List[FhirMapping]): List[FhirMapping] = {
     fhirMappings.map { fhirMapping => // iterate over each FhirMapping
       val newContextDefinitionMap = fhirMapping.context.map { case (key, contextDefinition) => // iterate over each contextDefinition entry
         val newContextDefinition = // create a new context definition object
@@ -82,7 +82,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
    */
   private def loadMappings(): Map[String, FhirMapping] = {
     logger.debug("Loading all mappings from folder:{}", folderUri)
-    val mappings = arrangeContextURLs(getFhirMappings)
+    val mappings = normalizeContextURLs(getFhirMappings)
       .foldLeft(Map[String, FhirMapping]()) { (map, fhirMapping) => map + (fhirMapping.url -> fhirMapping) }
     logger.debug("{} mappings were loaded from the mapping folder:{}", mappings.size, folderUri)
     logger.debug("Loaded mappings are:{}{}", System.lineSeparator(), mappings.keySet.mkString(System.lineSeparator()))
