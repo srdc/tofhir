@@ -6,24 +6,26 @@ import org.apache.spark.sql.{DataFrame, Dataset}
 
 /**
  * Base class for FHIR resource writer
+ *
  * @param sinkSettings
  * @tparam S
  */
-abstract class BaseFhirWriter(sinkSettings:FhirSinkSettings) extends Serializable {
+abstract class BaseFhirWriter(sinkSettings: FhirSinkSettings) extends Serializable {
   /**
    * Write the data frame to given sink (e.g. FHIR repository)
+   *
    * @param df
    */
-  def write(df:DataFrame):Unit
+  def write(df: DataFrame): Unit
 }
 
 /**
  * Factory for FHIR writers
  */
 object FhirWriterFactory {
-  def apply(sinkSettings:FhirSinkSettings):BaseFhirWriter = {
+  def apply(sinkSettings: FhirSinkSettings): BaseFhirWriter = {
     sinkSettings match {
-      case frs :FhirRepositorySinkSettings => new FhirRepositoryWriter(frs)
+      case frs: FhirRepositorySinkSettings => new FhirRepositoryWriter(frs)
       case _ => throw new NotImplementedError()
     }
   }
