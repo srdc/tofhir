@@ -4,7 +4,7 @@
   "title": "Mapping of OperationEpisodeEncounter schema for pilots to AIC-OperationEpisodeEncounter FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-operation-episode-encounter"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-operation-episode-encounter"
   }],
   "context": {
     "encounterTypeConceptMap":  {

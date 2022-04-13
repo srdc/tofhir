@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingTask, FhirSinkSettings}
+import io.onfhir.tofhir.model.{FhirMappingException, FhirMappingTask, FhirSinkSettings}
 import io.onfhir.util.JsonFormatter._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.json4s.JObject
@@ -28,16 +28,14 @@ class FhirMappingJobManager(
    * Execute the given mapping job and write the resulting FHIR resources to given sink
    *
    * @param id             Unique job identifier
-   * @param sourceSettings Data source settings and configurations
    * @param tasks          Mapping tasks that will be executed in sequential
    * @param sinkSettings   FHIR sink settings (can be a FHIR repository, file system, kafka)
    * @return
    */
-  override def executeMappingJob[T <: FhirMappingTask](id: String, sourceSettings: DataSourceSettings[T], tasks: Seq[T], sinkSettings: FhirSinkSettings): Future[Unit] = {
-    val dataSourceReader = DataSourceReaderFactory.apply(spark, sourceSettings)
+  override def executeMappingJob(id: String, tasks: Seq[FhirMappingTask], sinkSettings: FhirSinkSettings): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
     tasks
-      .map(t => executeTask(dataSourceReader, t)) // Retrieve the source data and execute the mapping
+      .map(t => executeTask(t)) // Retrieve the source data and execute the mapping
       .map { f => f.map(fhirResourcesDataSet => fhirWriter.write(fhirResourcesDataSet)) } // Write the created FHIR Resources to the FhirWriter
     match {
       case Seq(r) => r // Execute it if there is only a single Future
@@ -48,17 +46,32 @@ class FhirMappingJobManager(
   /**
    * Execute a single mapping task.
    *
-   * @param dataSourceReader A #BaseDataSourceReader to read the source data.
    * @param task A #FhirMappingTask to be executed.
    * @return
    */
-  private def executeTask[T <: FhirMappingTask](dataSourceReader: BaseDataSourceReader[T], task: T): Future[DataFrame] = {
+  private def executeTask(task: FhirMappingTask): Future[DataFrame] = {
     //Retrieve the FHIR mapping definition
     val fhirMapping = fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
+    val sourceNames = fhirMapping.source.map(_.alias).toSet
+    val namesForSuppliedSourceContexts =  task.sourceContext.keySet
+    if(sourceNames != namesForSuppliedSourceContexts)
+      throw FhirMappingException(s"Invalid mapping task, source context is not given for some mapping source(s) ${sourceNames.diff(namesForSuppliedSourceContexts).mkString(", ")}")
 
-    val df = dataSourceReader.read(task)
-    //    df.cache()
-    //    df.printSchema()
+    //Get the source schemas
+    val sources = fhirMapping.source.map(s => (s.alias, schemaLoader.getSchema(s.url), task.sourceContext(s.alias)))
+    //Read sources into Spark as DataFrame
+    val sourceDataFrames =
+      sources.map {
+        case (alias, schema, sourceContext) =>
+          alias ->
+            DataSourceReaderFactory
+              .apply(spark, sourceContext)
+              .read(sourceContext, schema)
+      }
+
+    val df = handleJoin(task, sourceDataFrames)
+
+    df.printSchema()
 
     //Load the contextual data for the mapping
     Future
@@ -75,6 +88,21 @@ class FhirMappingJobManager(
   }
 
   /**
+   * Handle the joining of source data framees
+   * @param task              Mapping task definition
+   * @param sourceDataFrames  Source data frames loaded
+   * @return
+   */
+  def handleJoin(task: FhirMappingTask, sourceDataFrames:Seq[(String, DataFrame)]):DataFrame = {
+    sourceDataFrames match {
+      case Seq(_ -> df) => df
+      case oth =>
+        //Join of source data is not implemented yet
+        throw new NotImplementedError()
+    }
+  }
+
+  /**
    * Execute the given mapping job and return the resulting FHIR resources
    *
    * @param id             Unique job identifier
@@ -82,9 +110,8 @@ class FhirMappingJobManager(
    * @param task           Mapping task that will be executed
    * @return
    */
-  override def executeMappingTaskAndReturn[T <: FhirMappingTask](id: String, sourceSettings: DataSourceSettings[T], task: T): Future[Seq[JObject]] = {
-    val dataSourceReader = DataSourceReaderFactory.apply(spark, sourceSettings)
-    executeTask(dataSourceReader, task)
+  override def executeMappingTaskAndReturn(id: String,  task: FhirMappingTask): Future[Seq[JObject]] = {
+    executeTask(task)
       .map { dataFrame =>
         dataFrame
           .toJSON // Convert to Dataset[String] where the Strings are JSON Strings
@@ -120,6 +147,21 @@ object MappingTaskExecutor {
    * @return
    */
   def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService): DataFrame = {
+    fhirMappingService.sources match {
+      case Seq(_) =>  executeMappingOnSingleSource(spark, df, fhirMappingService)
+      //Executing on multiple sources
+      case _ => throw new NotImplementedError()
+    }
+  }
+
+  /**
+   *
+   * @param spark
+   * @param df
+   * @param fhirMappingService
+   * @return
+   */
+  private def executeMappingOnSingleSource(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService):DataFrame = {
     import spark.implicits._
     val result =
       df
@@ -130,4 +172,5 @@ object MappingTaskExecutor {
 
     spark.read.json(result)
   }
+
 }

@@ -4,7 +4,7 @@
   "title": "Mapping of patient schema for pilots to AIC-Patient FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "https://aiccelerate.eu/fhir/StructureDefinition/ext-plt1-patient"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-patient"
   }],
   "mapping": [
     {

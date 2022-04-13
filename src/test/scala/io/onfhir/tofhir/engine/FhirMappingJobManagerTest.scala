@@ -5,7 +5,7 @@ import io.onfhir.api.Resource
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
-import io.onfhir.tofhir.model.{FhirMappingFromFileSystemTask, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSourceSettings, SourceFileFormats}
+import io.onfhir.tofhir.model.{FhirMappingTask, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
@@ -27,6 +27,8 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     new FhirMappingFolderRepository(getClass.getResource("/test-mappings-1").toURI)
   val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)
 
+  val schemaRepository = new SchemaFolderRepository(getClass.getResource("/test-schema").toURI)
+
   val dataSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings("test-source-1", "file:///test-source-1", getClass.getResource("/test-data-1").toURI)
   val fhirSinkSetting: FhirRepositorySinkSettings = FhirRepositorySinkSettings("http://localhost:8081/fhir")
   val onFhirClient = OnFhirNetworkClient.apply(fhirSinkSetting.fhirRepoUrl)
@@ -34,14 +36,17 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
       .getOrElse(false)
 
-  val patientMappingTask = FhirMappingFromFileSystemTask(
+  val patientMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    path = "patients.csv",
-    sourceType = SourceFileFormats.CSV)
+    sourceContext = Map(
+      "source" ->  FileSystemSource(path = "patients.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings)
+    )
+  )
+
 
   "A FhirMappingJobManager" should "execute the patient mapping task and return the results" in {
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, sparkSession)
-    fhirMappingJobManager.executeMappingTaskAndReturn(sourceSettings = dataSourceSettings, task = patientMappingTask) map { results =>
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession)
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
       results.size shouldBe 10
       val patient1 = results.head
       FHIRUtil.extractResourceType(patient1) shouldBe "Patient"
@@ -65,12 +70,11 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
   it should "execute the a mapping job with a single Patient mapping task and write the results into a FHIR repository" in {
     assume(fhirServerIsAvailable)
 
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, sparkSession)
-    fhirMappingJobManager.executeMappingJob(sourceSettings = dataSourceSettings, tasks = Seq(patientMappingTask), sinkSettings = fhirSinkSetting) flatMap { response =>
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession)
+    fhirMappingJobManager.executeMappingJob(tasks = Seq(patientMappingTask), sinkSettings = fhirSinkSetting) flatMap { response =>
       onFhirClient.read("Patient", "p1").executeAndReturnResource() map { p1Resource =>
         FHIRUtil.extractIdFromResource(p1Resource) shouldBe "p1"
       }
-
     }
   }
 

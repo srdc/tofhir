@@ -18,7 +18,7 @@ import scala.concurrent.Future
  * @param mappings Mapping scripts
  */
 class FhirMappingService(
-                          sources: Seq[String],
+                          val sources: Seq[String],
                           context: Map[String, FhirMappingContext],
                           mappings: Seq[FhirMappingExpression]
                         ) extends IFhirMappingService {

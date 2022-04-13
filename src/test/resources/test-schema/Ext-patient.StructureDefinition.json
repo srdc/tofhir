@@ -1,19 +1,19 @@
 {
   "resourceType": "StructureDefinition",
-  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-patient",
-  "name": "Ext-plt1-patient",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-patient",
+  "name": "ext-patient",
   "status": "draft",
   "fhirVersion": "4.0.1",
   "kind": "logical",
   "abstract": false,
-  "type": "Ext-plt1-patient",
+  "type": "Ext-patient",
   "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
   "derivation": "specialization",
   "differential": {
     "element": [
       {
-        "id": "Ext-plt1-patient",
-        "path": "Ext-plt1-patient",
+        "id": "Ext-patient",
+        "path": "Ext-patient",
         "min": 0,
         "max": "*",
         "type": [
@@ -23,8 +23,8 @@
         ]
       },
       {
-        "id": "Ext-plt1-patient.pid",
-        "path": "Ext-plt1-patient.pid",
+        "id": "Ext-patient.pid",
+        "path": "Ext-patient.pid",
         "short": "Patient identifier",
         "definition": "Unique patient identifier  (a pseudoynm)",
         "min": 1,
@@ -39,8 +39,8 @@
         ]
       },
       {
-        "id": "Ext-plt1-patient.gender",
-        "path": "Ext-plt1-patient.gender",
+        "id": "Ext-patient.gender",
+        "path": "Ext-patient.gender",
         "short": "Gender of patient",
         "definition": "Gender of patient",
         "min": 1,
@@ -55,8 +55,8 @@
         ]
       },
       {
-        "id": "Ext-plt1-patient.birthDate",
-        "path": "Ext-plt1-patient.birthDate",
+        "id": "Ext-patient.birthDate",
+        "path": "Ext-patient.birthDate",
         "short": "Birth date",
         "definition": "The birth year of patient",
         "min": 1,
@@ -71,8 +71,8 @@
         ]
       },
       {
-        "id": "Ext-plt1-patient.deceasedDateTime",
-        "path": "Ext-plt1-patient.deceasedDateTime",
+        "id": "Ext-patient.deceasedDateTime",
+        "path": "Ext-patient.deceasedDateTime",
         "short": "Deceseased date",
         "definition": "If patient is deceased, its date",
         "min": 0,
@@ -87,8 +87,8 @@
         ]
       },
       {
-        "id": "Ext-plt1-patient.homePostalCode",
-        "path": "Ext-plt1-patient.homePostalCode",
+        "id": "Ext-patient.homePostalCode",
+        "path": "Ext-patient.homePostalCode",
         "short": "Home postal code",
         "definition": "Postal code for patient home address",
         "min": 0,

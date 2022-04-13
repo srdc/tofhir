@@ -1,0 +1,171 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-operation-episode-encounter",
+  "name": "Ext-plt1-operation-episode-encounter",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt1-operation-episode-encounter",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt1-operation-episode-encounter",
+        "path": "Ext-plt1-operation-episode-encounter",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.pid",
+        "path": "Ext-plt1-operation-episode-encounter.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.episodeId",
+        "path": "Ext-plt1-operation-episode-encounter.episodeId",
+        "short": "Id of the operation episode",
+        "definition": "Identifier of the operation episode that this encounter take place",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.encounterId",
+        "path": "Ext-plt1-operation-episode-encounter.encounterId",
+        "short": "Id of encounter",
+        "definition": "Identifier of this encounter",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.type",
+        "path": "Ext-plt1-operation-episode-encounter.type",
+        "short": "Type of encounter",
+        "definition": "The type of encounter",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.status",
+        "path": "Ext-plt1-operation-episode-encounter.status",
+        "short": "Status of the encounter",
+        "definition": "Status of the encounter",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.startTime",
+        "path": "Ext-plt1-operation-episode-encounter.startTime",
+        "short": "Time encounter is started",
+        "definition": "Time encounter is started",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.endTime",
+        "path": "Ext-plt1-operation-episode-encounter.endTime",
+        "short": "Time encounter is ended",
+        "definition": "Time encounter is ended",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.location",
+        "path": "Ext-plt1-operation-episode-encounter.location",
+        "short": "Location of encounter",
+        "definition": "Identifier of the location of encounter",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-operation-episode-encounter.participant",
+        "path": "Ext-plt1-operation-episode-encounter.participant",
+        "short": "Primary practitioner participates to the encounter",
+        "definition": "Identifier of the practitioner that participates to the encounter",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

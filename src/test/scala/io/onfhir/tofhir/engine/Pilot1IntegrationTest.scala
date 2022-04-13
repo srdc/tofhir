@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.engine
 
 import io.onfhir.tofhir.ToFhirTestSpec
-import io.onfhir.tofhir.model.{FhirMappingFromFileSystemTask, FileSystemSourceSettings, SourceFileFormats}
+import io.onfhir.tofhir.model.{FhirMappingTask, FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
 import io.onfhir.util.JsonFormatter.formats
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -27,19 +27,24 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
 
   val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)
 
+  val schemaRepository = new SchemaFolderRepository(Paths.get("schemas/pilot1").toAbsolutePath.toUri)
+
   val dataSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings("test-source-1", "http://hus.fi", Paths.get("test-data/pilot1").toAbsolutePath.toUri)
 
-  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, sparkSession)
+  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession)
 
   "patient mapping" should "map test data" in {
-    val patientMappingTask =
-      FhirMappingFromFileSystemTask(
-        mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
+    val patientMappingTask = FhirMappingTask(
+      mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
+      sourceContext = Map("source" ->  FileSystemSource(
         path = "patients.csv",
-        sourceType = SourceFileFormats.CSV
-      )
+        sourceType = SourceFileFormats.CSV,
+        dataSourceSettings
+      ))
+    )
 
-    fhirMappingJobManager.executeMappingTaskAndReturn(sourceSettings = dataSourceSettings, task = patientMappingTask) map { results =>
+
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
       val genders = (JArray(results.toList) \ "gender").extract[Seq[String]]
       genders shouldBe ((1 to 5).map(_ => "male") ++ (6 to 10).map(_=> "female"))
 
@@ -52,13 +57,17 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
 
   "operation episode encounter mapping" should "map test data" in {
     val mappingTask =
-      FhirMappingFromFileSystemTask(
+      FhirMappingTask(
         mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/operation-episode-encounter-mapping",
-        path = "operation-episode-encounters.csv",
-        sourceType = SourceFileFormats.CSV
+        sourceContext = Map("source" ->  FileSystemSource(
+          path = "operation-episode-encounters.csv",
+          sourceType = SourceFileFormats.CSV,
+          dataSourceSettings
+        ))
       )
 
-    fhirMappingJobManager.executeMappingTaskAndReturn(sourceSettings = dataSourceSettings, task = mappingTask) map { results =>
+
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = mappingTask) map { results =>
       results.size shouldBe(10)
       (results.apply(1) \ "id").extract[String] shouldBe "e2"
       (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe("Patient/p2")
@@ -74,14 +83,16 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
   }
 
   "surgery plan mapping" should "map test data" in {
-    val mappingTask =
-      FhirMappingFromFileSystemTask(
+    val mappingTask = FhirMappingTask(
         mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-plan-mapping",
-        path = "surgery-plans.csv",
-        sourceType = SourceFileFormats.CSV
+        sourceContext = Map("source" ->FileSystemSource(
+          path = "surgery-plans.csv",
+          sourceType = SourceFileFormats.CSV,
+          dataSourceSettings
+        ))
       )
 
-    fhirMappingJobManager.executeMappingTaskAndReturn(sourceSettings = dataSourceSettings, task = mappingTask) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = mappingTask) map { results =>
       results.size shouldBe 4
     }
   }
