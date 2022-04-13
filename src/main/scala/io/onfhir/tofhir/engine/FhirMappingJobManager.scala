@@ -13,12 +13,14 @@ import scala.concurrent.{Await, ExecutionContext, Future}
  *
  * @param fhirMappingRepository Repository for mapping definitions
  * @param contextLoader         Context loader
+ * @param schemaLoader          Schema (StructureDefinition) loader
  * @param spark                 Spark session
  * @param ec
  */
 class FhirMappingJobManager(
                              fhirMappingRepository: IFhirMappingRepository,
                              contextLoader: IMappingContextLoader,
+                             schemaLoader:IFhirSchemaLoader,
                              spark: SparkSession
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
 
@@ -51,12 +53,12 @@ class FhirMappingJobManager(
    * @return
    */
   private def executeTask[T <: FhirMappingTask](dataSourceReader: BaseDataSourceReader[T], task: T): Future[DataFrame] = {
-    val df = dataSourceReader.read(task)
-//    df.cache()
-//    df.printSchema()
-
     //Retrieve the FHIR mapping definition
     val fhirMapping = fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
+
+    val df = dataSourceReader.read(task)
+    //    df.cache()
+    //    df.printSchema()
 
     //Load the contextual data for the mapping
     Future
