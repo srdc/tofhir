@@ -1,7 +1,9 @@
 package io.onfhir.tofhir.engine
 
+import akka.http.scaladsl.model.StatusCodes
+import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
-import io.onfhir.tofhir.model.{FhirMappingTask, FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
+import io.onfhir.tofhir.model.{FhirMappingTask, FhirRepositorySinkSettings, FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
 import io.onfhir.util.JsonFormatter.formats
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -9,6 +11,10 @@ import org.json4s.JArray
 
 import java.net.URI
 import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
+import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
 
 class Pilot1IntegrationTest extends ToFhirTestSpec {
 
@@ -33,6 +39,13 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
 
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession)
 
+  val fhirSinkSetting: FhirRepositorySinkSettings = FhirRepositorySinkSettings("http://localhost:8081/fhir")
+  val onFhirClient = OnFhirNetworkClient.apply(fhirSinkSetting.fhirRepoUrl)
+
+  val fhirServerIsAvailable =
+    Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
+      .getOrElse(false)
+
   "patient mapping" should "map test data" in {
     val patientMappingTask = FhirMappingTask(
       mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
@@ -53,6 +66,13 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
       (results.apply(3) \ "address" \ "postalCode").extract[Seq[String]] shouldBe(Seq("H10564"))
       (results.apply(4) \ "deceasedDateTime" ).extract[String] shouldBe("2019-04-21")
     }
+
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(patientMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
   }
 
   "operation episode encounter mapping" should "map test data" in {
@@ -66,7 +86,6 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
         ))
       )
 
-
     fhirMappingJobManager.executeMappingTaskAndReturn(task = mappingTask) map { results =>
       results.size shouldBe(10)
       (results.apply(1) \ "id").extract[String] shouldBe "e2"
@@ -78,8 +97,14 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
       (results.apply(6) \ "period" \ "start").extract[String] shouldBe "2014-10-20"
       (results.apply(3) \ "period" \ "end").extractOpt[String] shouldBe empty
       (results.apply(7) \ "location" \ "location" \ "reference").extract[Seq[String]] shouldBe Seq("Location/ward2")
-      (results.apply(0) \ "participant" \ "individual" \ "reference").extract[Seq[String]] shouldBe Seq("PractitionerRole/pr-pr4")
+      (results.head \ "participant" \ "individual" \ "reference").extract[Seq[String]] shouldBe Seq("PractitionerRole/pr-pr4")
     }
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(mappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
   }
 
   "surgery plan mapping" should "map test data" in {
@@ -94,7 +119,35 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
 
     fhirMappingJobManager.executeMappingTaskAndReturn(task = mappingTask) map { results =>
       results.size shouldBe 4
+      //ServiceRequests
+      val sr1 = results.find(r => (r \"rid").extractOpt[String].contains("sp1"))
+      val sr2 = results.find(r => (r \"rid").extractOpt[String].contains("sp2"))
+      sr1 shouldBe Some
+      sr2 shouldBe Some
+      //Encounters
+      val e1 = results.find(r => (r \"episodeOfCare" \ "reference").extractOpt[Seq[String]].contains(Seq("EpisodeOfCare/ep11")))
+      val e2 = results.find(r => (r \"episodeOfCare" \ "reference").extractOpt[Seq[String]].contains(Seq("EpisodeOfCare/ep12")))
+      e1 shouldBe Some
+      e2 shouldBe Some
+
+      (sr1.get \ "subject" \ "reference").extract[String] shouldBe "Patient/p1"
+      (sr2.get \ "encounter" \ "reference").extract[String] shouldBe "Encounter/e22"
+      (sr1.get \ "occurencePeriod" \ "start").extract[String] shouldBe "2007-09-22T10:00:00+01:00"
+      (sr2.get \ "occurencePeriod" \ "end").extract[String] shouldBe "2007-09-22T16:00:00+01:00"
+      (sr1.get \ "requester" \ "reference").extract[String] shouldBe "Practitioner/pr1"
+      (sr1.get \ "performer" \ "reference").extractOpt[Seq[String]] shouldBe Some(Seq("PractitionerRole/pr-pr1"))
+      (sr2.get \ "code" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("AAA27")
+
+      (e1.get \ "subject" \ "reference").extract[String] shouldBe "Patient/p1"
+      (e2.get \ "type" \ "coding" \ "code").extract[Seq[String]] shouldBe Some("305351004")
     }
+
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(mappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
   }
 
 

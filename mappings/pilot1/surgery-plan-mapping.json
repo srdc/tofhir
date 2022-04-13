@@ -4,7 +4,7 @@
   "title": "Mapping of schema surgery-plan to AIC-OperationPlan profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-surgery-plan"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-surgery-plan"
   }],
   "mapping": [
     {
@@ -89,7 +89,8 @@
           },
           "period": {
             "start": "{{plannedEndTime.orElse(plannedStartTime).toDate()}}"
-          }
+          },
+          "episodeOfCare": [ "{{utl:createFhirReference('EpisodeOfCare', episodeId)}}"]
         }
       }
     },
@@ -130,7 +131,8 @@
           },
           "period": {
             "start": "{{plannedEndTime.orElse(plannedStartTime)}}"
-          }
+          },
+          "episodeOfCare": [ "{{utl:createFhirReference('EpisodeOfCare', episodeId)}}"]
         }
       }
     }

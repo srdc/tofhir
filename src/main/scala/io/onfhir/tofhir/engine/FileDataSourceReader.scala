@@ -25,7 +25,13 @@ class FileDataSourceReader(spark:SparkSession) extends BaseDataSourceReader[File
     val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
     val finalPath = Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString
     mappingSource.sourceType match {
-      case SourceFileFormats.CSV => spark.read.option("header", "true").schema(schema).csv(finalPath)
+      case SourceFileFormats.CSV =>
+        spark.read
+          .option("header", true) //TODO make this optional
+          .option("inferSchema", false)
+          .option("enforceSchema", true)  //Enforce the given schema
+          .schema(schema)
+          .csv(finalPath)
       case SourceFileFormats.JSON => spark.read.schema(schema).json(finalPath)
       case SourceFileFormats.PARQUET => spark.read.schema(schema).parquet(finalPath)
       case _ => throw new NotImplementedError()
