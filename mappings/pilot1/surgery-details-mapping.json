@@ -499,7 +499,7 @@
               {
                 "system": "http://snomed.info/sct",
                 "code": "{{intubationType}}",
-                "value": "{{mpp:getConcept(%intubationTypesConceptMap, intubationType, 'source_display')}}"
+                "display": "{{mpp:getConcept(%intubationTypesConceptMap, intubationType, 'source_display')}}"
               }
             ]
           },

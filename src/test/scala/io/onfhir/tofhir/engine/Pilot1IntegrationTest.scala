@@ -171,7 +171,7 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
 
   "surgery details mapping" should "map test data" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(task = surgeryDetailsMappingTask) map { results =>
-      results.size shouldBe >(0)
+      results.size shouldBe 14
     }
   }
 
