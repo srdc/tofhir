@@ -13,7 +13,18 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "ServiceRequest",
-          "id": "{{rid}}",
+          "id": "{{mpp:getHashedId('ServiceRequest',rid)}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPlan"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{rid}}"
+            }
+          ],
           "status": "completed",
           "intent": "plan",
           "category":[
@@ -36,18 +47,16 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "occurrencePeriod": {
             "start": "{{? plannedStartTime}}",
             "end": "{{? plannedEndTime}}"
           },
-          "requester": "{{? utl:createFhirReference('Practitioner', requester)}}",
-          "performer": "{{* plannedSurgeons.split(' ').select(utl:createFhirReference('PractitionerRole', 'pr-' & $this))}}",
+          "requester": "{{? mpp:createFhirReferenceWithHashedId('Practitioner', requester)}}",
+          "performer": "{{* mpp:createFhirReferenceWithHashedId('PractitionerRole', plannedSurgeons.split(' '))}}",
           "orderDetail": "{{* otherProcedureCodes.split(' ').select(utl:createFhirCodeableConcept('https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119', $this, {}))}}",
-          "locationReference": "{{* utl:createFhirReference('Location', location)}}",
+          "locationReference": "{{* mpp:createFhirReferenceWithHashedId('Location', location)}}",
           "authoredOn": "{{timeOfAddingToQueue}}"
         }
       }
@@ -63,9 +72,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Encounter",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Encounter',rid & 'icu')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationEpisodeEncounter"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationEpisodeEncounter"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "planned",
           "class": {
@@ -84,13 +94,11 @@
               ]
             }
           ],
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "period": {
             "start": "{{plannedEndTime.orElse(plannedStartTime).toDate()}}"
           },
-          "episodeOfCare": [ "{{utl:createFhirReference('EpisodeOfCare', episodeId)}}"]
+          "episodeOfCare": [ "{{mpp:createFhirReferenceWithHashedId('EpisodeOfCare', episodeId)}}"]
         }
       }
     },
@@ -105,9 +113,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Encounter",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Encounter',rid & 'pacu')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationEpisodeEncounter"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationEpisodeEncounter"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "planned",
           "class": {
@@ -126,13 +135,11 @@
               ]
             }
           ],
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "period": {
             "start": "{{plannedEndTime.orElse(plannedStartTime)}}"
           },
-          "episodeOfCare": [ "{{utl:createFhirReference('EpisodeOfCare', episodeId)}}"]
+          "episodeOfCare": [ "{{mpp:createFhirReferenceWithHashedId('EpisodeOfCare', episodeId)}}"]
         }
       }
     }

@@ -81,8 +81,11 @@ class FhirMappingJobManager(
           .toSeq
           .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
       ).map(loadedContextMap => {
+      //Get configuration context
+      val sourceNames = fhirMapping.source.map(_.alias)
+      val configurationContext = task.sourceContext(sourceNames.head).settings.toConfigurationContext
       //Construct the mapping service
-      val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), loadedContextMap.toMap, fhirMapping.mapping)
+      val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping)
       MappingTaskExecutor.executeMapping(spark, df, fhirMappingService)
     })
   }
@@ -165,10 +168,10 @@ object MappingTaskExecutor {
     import spark.implicits._
     val result =
       df
-        .flatMap(row =>
-          Await.result(fhirMappingService.mapToFhir(convertRowToJObject(row)), Duration.apply(5, "seconds"))
-            .map(_.toJson)
-        )
+        .flatMap(row => {
+          val resources = Await.result(fhirMappingService.mapToFhir(convertRowToJObject(row)), Duration.apply(5, "seconds"))
+          resources.map(_.toJson)
+        })
 
     spark.read.json(result)
   }

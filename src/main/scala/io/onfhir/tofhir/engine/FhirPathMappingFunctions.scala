@@ -1,9 +1,13 @@
 package io.onfhir.tofhir.engine
 
+import com.google.common.hash.Hashing
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
 import io.onfhir.path._
 import io.onfhir.tofhir.model.{ConceptMapContext, FhirMappingContext, FhirMappingException, UnitConversionContext}
+import io.onfhir.tofhir.util.FhirMappingUtility
+import org.apache.commons.codec.binary.StringUtils
 import org.json4s.{JObject, JString}
+
 
 /**
  * Function library for FHIR Path expressions that provide mapping utility functions
@@ -14,6 +18,43 @@ import org.json4s.{JObject, JString}
  */
 class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPathResult], mappingContext: Map[String, FhirMappingContext])
   extends AbstractFhirPathFunctionLibrary with Serializable {
+
+  /**
+   * Get hash of a string to generate a
+   * @param inputExpr
+   * @return
+   */
+  def getHashedId(resourceTypeExp:ExpressionContext, inputExpr:ExpressionContext):Seq[FhirPathResult] = {
+    val resourceType = getStringValueOfExpr(resourceTypeExp, s"Invalid function call 'getHashedId', given expression for keyExpr:${resourceTypeExp.getText} should return a string value!")
+    val input = getStringValueOfExpr(inputExpr, s"Invalid function call 'getHashedId', given expression for keyExpr:${inputExpr.getText} should return a string value!")
+    Seq(FhirPathString(FhirMappingUtility.getHashedId(resourceType, input)))
+  }
+
+  private def getStringValueOfExpr(expr:ExpressionContext, errorMsg:String):String = {
+    val result = new FhirPathExpressionEvaluator(context, current).visit(expr)
+    if (result.length != 1 || !result.head.isInstanceOf[FhirPathString])
+      throw new FhirPathException(errorMsg)
+    result.head.asInstanceOf[FhirPathString].s
+  }
+
+  private def getStringValuesOfExpr(expr:ExpressionContext, errorMsg:String):Seq[String] = {
+    val result = new FhirPathExpressionEvaluator(context, current).visit(expr)
+    if (!result.forall(_.isInstanceOf[FhirPathString]))
+      throw new FhirPathException(errorMsg)
+    result.map(_.asInstanceOf[FhirPathString].s)
+  }
+
+  /**
+   * Create a FHIR Reference object with given resource type and hash of the given id
+   * @param resourceTypeExp Expression that will return resource type
+   * @param inputExpr       Expression to return the value of referenced id
+   * @return
+   */
+  def createFhirReferenceWithHashedId(resourceTypeExp:ExpressionContext, inputExpr:ExpressionContext):Seq[FhirPathResult] = {
+    val resourceType = getStringValueOfExpr(resourceTypeExp, s"Invalid function call 'createFhirReferenceWithHashedId', given expression for keyExpr:${resourceTypeExp.getText} should return a string value!")
+    val input = getStringValuesOfExpr(inputExpr, s"Invalid function call 'createFhirReferenceWithHashedId', given expression for keyExpr:${inputExpr.getText} should return string value(s)!")
+    input.map(inp => FhirPathComplex(JObject("reference" -> JString(FhirMappingUtility.getHashedReference(resourceType, inp)))))
+  }
 
   /**
    * Get corresponding value from the given concept map with the given key and column name

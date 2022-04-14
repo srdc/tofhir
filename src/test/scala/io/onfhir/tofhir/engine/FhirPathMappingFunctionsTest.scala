@@ -61,4 +61,13 @@ class FhirPathMappingFunctionsTest extends ToFhirTestSpec {
     }
   }
 
+  it should "correctly execute getHashedId" in {
+    val fhirEvaluator = FhirPathEvaluator().withFunctionLibrary("mpp",  new FhirMappingFunctionsFactory(Map.empty))
+    val hash1 = fhirEvaluator.evaluateOptionalString("mpp:getHashedId('Patient','p1')", JNull)
+    val hash2 = fhirEvaluator.evaluateOptionalString("mpp:getHashedId('Patient', 'p1')", JNull)
+    hash1 shouldBe hash2
+    val hash3 = fhirEvaluator.evaluateOptionalString("mpp:getHashedId('Patient','p2')", JNull)
+    hash1 != hash3 shouldBe(true)
+  }
+
 }

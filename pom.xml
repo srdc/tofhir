@@ -25,6 +25,7 @@
         <scalatest.version>3.1.4</scalatest.version>
         <spark.version>3.2.1</spark.version>
         <jackson-csv.version>2.13.2</jackson-csv.version>
+        <apache-commons-codec.version>1.15</apache-commons-codec.version>
         <logback.version>1.2.11</logback.version>
     </properties>
 
@@ -188,7 +189,6 @@
             <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>
-
 
         <!-- For csv parsing -->
         <dependency>

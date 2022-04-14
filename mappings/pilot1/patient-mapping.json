@@ -13,11 +13,19 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Patient",
-          "id": "{{pid}}",
+          "id": "{{mpp:getHashedId('Patient',pid)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "active": true,
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{pid}}"
+            }
+          ],
           "gender": "{{gender}}",
           "birthDate": "{{birthDate}}",
           "deceasedDateTime": "{{? deceasedDateTime}}",
