@@ -12,11 +12,11 @@ import org.apache.spark.sql.{DataFrame, Dataset}
  */
 abstract class BaseFhirWriter(sinkSettings: FhirSinkSettings) extends Serializable {
   /**
-   * Write the data frame to given sink (e.g. FHIR repository)
+   * Write the data frame of json serialized FHIR resources to given sink (e.g. FHIR repository)
    *
    * @param df
    */
-  def write(df: DataFrame): Unit
+  def write(df: Dataset[String]): Unit
 }
 
 /**

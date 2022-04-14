@@ -5,7 +5,7 @@ import io.onfhir.api.client.FHIRTransactionBatchBundle
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.client.OnFhirNetworkClient.system.dispatcher
 import io.onfhir.tofhir.model.{FhirMappingException, FhirRepositorySinkSettings}
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.Dataset
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
@@ -27,11 +27,10 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    *
    * @param df
    */
-  override def write(df: DataFrame): Unit = {
+  override def write(df:  Dataset[String]): Unit = {
     logger.debug("Created FHIR resources will be written to the given FHIR repository URL:{}", sinkSettings.fhirRepoUrl)
     import io.onfhir.util.JsonFormatter._
     df
-      .toJSON // Convert all Rows of this DataFrame to JSON String
       .foreachPartition { partition: Iterator[String] =>
         val onFhirClient = OnFhirNetworkClient.apply(sinkSettings.fhirRepoUrl) // A FhirClient for each partition
         partition

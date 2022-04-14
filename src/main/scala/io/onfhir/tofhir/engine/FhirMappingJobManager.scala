@@ -2,7 +2,7 @@ package io.onfhir.tofhir.engine
 
 import io.onfhir.tofhir.model.{FhirMappingException, FhirMappingTask, FhirSinkSettings}
 import io.onfhir.util.JsonFormatter._
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.JObject
 
 import scala.concurrent.duration.Duration
@@ -49,7 +49,7 @@ class FhirMappingJobManager(
    * @param task A #FhirMappingTask to be executed.
    * @return
    */
-  private def executeTask(task: FhirMappingTask): Future[DataFrame] = {
+  private def executeTask(task: FhirMappingTask): Future[Dataset[String]] = {
     //Retrieve the FHIR mapping definition
     val fhirMapping = fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
     val sourceNames = fhirMapping.source.map(_.alias).toSet
@@ -72,6 +72,7 @@ class FhirMappingJobManager(
     val df = handleJoin(task, sourceDataFrames)
 
     df.printSchema()
+    //df.show(10)
 
     //Load the contextual data for the mapping
     Future
@@ -117,7 +118,6 @@ class FhirMappingJobManager(
     executeTask(task)
       .map { dataFrame =>
         dataFrame
-          .toJSON // Convert to Dataset[String] where the Strings are JSON Strings
           .collect() // Collect into an Array[String]
           .map(_.parseJson) // Parse each JSON String into FHIR Resource where Resource is a JObject
           .toSeq // Convert to Seq[Resource]
@@ -149,7 +149,7 @@ object MappingTaskExecutor {
    * @param fhirMappingService
    * @return
    */
-  def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService): DataFrame = {
+  def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService): Dataset[String]  = {
     fhirMappingService.sources match {
       case Seq(_) =>  executeMappingOnSingleSource(spark, df, fhirMappingService)
       //Executing on multiple sources
@@ -164,7 +164,7 @@ object MappingTaskExecutor {
    * @param fhirMappingService
    * @return
    */
-  private def executeMappingOnSingleSource(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService):DataFrame = {
+  private def executeMappingOnSingleSource(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService):Dataset[String] = {
     import spark.implicits._
     val result =
       df
@@ -172,8 +172,8 @@ object MappingTaskExecutor {
           val resources = Await.result(fhirMappingService.mapToFhir(convertRowToJObject(row)), Duration.apply(5, "seconds"))
           resources.map(_.toJson)
         })
-
-    spark.read.json(result)
+    result
+    //spark.read.json(result)
   }
 
 }

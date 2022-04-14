@@ -74,34 +74,39 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
       case e: Exception => throw new FhirPathException(s"Invalid function call 'getConcept', given expression for conceptMap:${conceptMap.getText} should point to a valid map entry in the provided mapping context!")
     }
 
-    val conceptCodeResult = new FhirPathExpressionEvaluator(context, current).visit(keyExpr) // Should return the code of the concept whose mapping is requested
-    if (conceptCodeResult.length != 1 || !conceptCodeResult.head.isInstanceOf[FhirPathString]) {
-      throw new FhirPathException(s"Invalid function call 'getConcept', given expression for keyExpr:${keyExpr.getText} for the concept code should return a string value!")
-    }
-    val conceptCode = conceptCodeResult.head.asInstanceOf[FhirPathString].s
-
     val targetFieldResult = new FhirPathExpressionEvaluator(context, current).visit(columnName)
     if (targetFieldResult.length != 1 || !targetFieldResult.head.isInstanceOf[FhirPathString]) {
       throw new FhirPathException(s"Invalid function call 'getConcept', given expression for columnName:${columnName.getText} for the target field should return a string value!")
     }
     val targetField = targetFieldResult.head.asInstanceOf[FhirPathString].s
 
-    val codeEntry = try {
-      conceptMapContext.concepts(conceptCode)
-    } catch {
-      case e: NoSuchElementException =>
-        throw FhirMappingException(s"Concept code:$conceptCode cannot be found in the ConceptMapContext:$mapName", e)
+    val conceptCodeResult = new FhirPathExpressionEvaluator(context, current).visit(keyExpr) // Should return the code of the concept whose mapping is requested
+    if (conceptCodeResult.length > 1 || !conceptCodeResult.forall(_.isInstanceOf[FhirPathString])) {
+      throw new FhirPathException(s"Invalid function call 'getConcept', given expression for keyExpr:${keyExpr.getText} for the concept code should return a string value!")
     }
+    //If conceptCode returns empty, also return empty
+    conceptCodeResult
+      .headOption
+      .map(_.asInstanceOf[FhirPathString].s) match {
+        case None => Nil
+        case Some(conceptCode) =>
+          val codeEntry = try {
+            conceptMapContext.concepts(conceptCode)
+          } catch {
+            case e: NoSuchElementException =>
+              throw FhirMappingException(s"Concept code:$conceptCode cannot be found in the ConceptMapContext:$mapName", e)
+          }
 
-    val mappedValue = try {
-      codeEntry(targetField)
-    } catch {
-      case e: NoSuchElementException =>
-        throw FhirMappingException(s"For the given concept code:$conceptCode, the column:$targetField cannot be " +
-          s"found in the ConceptMapContext:$mapName. Available columns are ${conceptMapContext.concepts.head._2.keySet.mkString(",")}", e)
+          val mappedValue = try {
+            codeEntry(targetField)
+          } catch {
+            case e: NoSuchElementException =>
+              throw FhirMappingException(s"For the given concept code:$conceptCode, the column:$targetField cannot be " +
+                s"found in the ConceptMapContext:$mapName. Available columns are ${conceptMapContext.concepts.head._2.keySet.mkString(",")}", e)
+          }
+
+          Seq(FhirPathString(mappedValue))
     }
-
-    Seq(FhirPathString(mappedValue))
   }
 
   /**

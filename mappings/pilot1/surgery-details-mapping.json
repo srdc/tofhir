@@ -4,7 +4,7 @@
   "title": "Mapping of schema surgery-details to AIC-SurgeryEncounter, AIC-OperationPhaseDetails, AIC-SurgeryPhaseDetails, AIC-AnesthesiaPhaseDetails profiles",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-surgery-details"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-surgery-details"
   }],
   "context": {
     "surgicalSpecialtiesConceptMap": {
@@ -43,9 +43,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Encounter",
-          "id": "{{encounterId}}",
+          "id": "{{mpp:getHashedId('Encounter',encounterId)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgeryEncounter"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgeryEncounter"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "{{status}}",
           "class": {
@@ -65,9 +66,7 @@
             }
           ],
           "serviceType": "{{? utl:createFhirCodeableConcept('http://snomed.info/sct', subspecialty, mpp:getConcept(%surgicalSpecialtiesConceptMap, subspecialty, 'source_display'))}}",
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "participant": [
             {
               "{{#prid}}": "{{primarySurgeon}}",
@@ -79,9 +78,7 @@
                     "display": "Primary performer"
                   }]
                 }],
-                "individual": {
-                  "reference": "PractitionerRole/pr-{{%prid}}"
-                }
+                "individual": "{{mpp:createFhirReferenceWithHashedId('PractitionerRole', %prid)}}"
               }
             },
             {
@@ -94,14 +91,12 @@
                     "display": "Secondary performer"
                   }]
                 }],
-                "individual": {
-                  "reference": "PractitionerRole/pr-{{%prid}}"
-                }
+                "individual": "{{mpp:createFhirReferenceWithHashedId('PractitionerRole', %prid)}}"
               }
             }
           ],
-          "episodeOfCare": ["EpisodeOfCare/{{episodeId}}"],
-          "basedOn": "{{* utl:createFhirReference('ServiceRequest', surgeryPlan)}}",
+          "episodeOfCare": ["{{mpp:createFhirReferenceWithHashedId('EpisodeOfCare', episodeId)}}"],
+          "basedOn": "{{* mpp:createFhirReferenceWithHashedId('ServiceRequest', surgeryPlan)}}",
           "period": {
             "start": "{{pet.nav:orElse(ort}}",
             "end": "{{? plt}}"
@@ -109,7 +104,7 @@
           "location": {
             "{{#loc}}": "{{iif(ort.exists(), location, {})}}",
             "{{*}}": {
-              "location": "Location/{{%loc}}",
+              "location": "{{mpp:createFhirReferenceWithHashedId('Location', %loc)}}",
               "period": {
                 "start": "{{ort}}",
                 "end": "{{? plt}}"
@@ -132,9 +127,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Procedure",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Procedure', encounterId & 'enrollment')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "category": {
@@ -146,12 +142,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": {
-            "reference": "Encounter/{{encounterId}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "performedPeriod": {
             "start": "{{pet}}",
             "end": "{{pct}}"
@@ -170,9 +162,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Procedure",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Procedure', encounterId & 'transport')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "category": {
@@ -184,12 +177,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": {
-            "reference": "Encounter/{{encounterId}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "performedPeriod": {
             "start": "{{pct}}",
             "end": "{{ort}}"
@@ -208,9 +197,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Procedure",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Procedure', encounterId & 'anesthesia')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-AnesthesiaPhaseDetails"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-AnesthesiaPhaseDetails"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "category": {
@@ -225,7 +215,7 @@
           "code": {
             "coding": [
               {
-                "{{$atype}}": "{{anesthesiaType}}",
+                "{{#atype}}": "{{anesthesiaType}}",
                 "{{?}}": {
                   "system": "http://snomed.info/sct",
                   "code": "{{%atype}}",
@@ -233,7 +223,7 @@
                 }
               },
               {
-                "{{$acode}}": "{{anesthesiaCode}}",
+                "{{#acode}}": "{{anesthesiaCode}}",
                 "{{?}}": {
                   "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119",
                   "code": "{{%acode}}",
@@ -242,22 +232,18 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": {
-            "reference": "Encounter/{{encounterId}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "performedPeriod": {
             "start": "{{ort}}",
-            "end": "{{act}}"
+            "end": "{{? act}}"
           },
-          "location": "{{? utl:createFhirReference('Location', location)}}",
+          "location": "{{? mpp:createFhirReferenceWithHashedId('Location', location)}}",
           "performer": {
-            "{{$pr}}": "{{anesthesiologist}}",
+            "{{#pr}}": "{{anesthesiologist}}",
             "{{*}}": {
               "function": "{{utl:createFhirCodeableConcept('http://snomed.info/sct', '88189002', 'Anesthesiologist')}}",
-              "actor": "{{utl:createFhirReference('PractitionerRole', 'pr-' & %pr)}}"
+              "actor": "{{mpp:createFhirReferenceWithHashedId('PractitionerRole', %pr)}}"
             }
           }
         }
@@ -274,9 +260,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Procedure",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Procedure', encounterId & 'surgery')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgeryPhaseDetails"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgeryPhaseDetails"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "category": {
@@ -291,7 +278,7 @@
           "code": {
             "coding": [
               {
-                "{{ccs}}": "{{cssCategory}}",
+                "{{#ccs}}": "{{cssCategory}}",
                 "{{?}}": {
                   "system": "http://hl7.org/fhir/sid/ex-icd-10-procedures-ccs",
                   "code": "{{%ccs}}",
@@ -299,7 +286,7 @@
                 }
               },
               {
-                "{{$pcc}}": "{{mainProcedureCode}}",
+                "{{#pcc}}": "{{mainProcedureCode}}",
                 "{{?}}": {
                   "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119",
                   "code": "{{%pcc}}",
@@ -308,30 +295,26 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": {
-            "reference": "Encounter/{{encounterId}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "performedPeriod": {
-            "start": "{{ost}}",
-            "end": "{{oet}}"
+            "start": "{{ost.nav:orElse(ort)}}",
+            "end": "{{oet.nav:orElse(plt)}}"
           },
-          "location": "{{? utl:createFhirReference('Location', location)}}",
+          "location": "{{? mpp:createFhirReferenceWithHashedId('Location', location)}}",
           "performer": [
             {
-              "{{$pr}}": "{{primarySurgeon | otherSurgeons.split(' ')}}",
+              "{{#pr}}": "{{primarySurgeon | otherSurgeons.split(' ')}}",
               "{{*}}": {
                 "function": "{{utl:createFhirCodeableConcept('http://snomed.info/sct', '304292004', 'Surgeon')}}",
-                "actor": "{{utl:createFhirReference('PractitionerRole', 'pr-' & %pr)}}"
+                "actor": "{{mpp:createFhirReferenceWithHashedId('PractitionerRole', %pr)}}"
               }
             },
             {
-              "{{$pr}}": "{{nurses.split(' ')}}",
+              "{{#pr}}": "{{nurses.split(' ')}}",
               "{{*}}": {
                 "function": "{{utl:createFhirCodeableConcept('http://snomed.info/sct', '224561008', 'Theatre Nurse')}}",
-                "actor": "{{utl:createFhirReference('PractitionerRole', 'pr-' & %pr)}}"
+                "actor": "{{mpp:createFhirReferenceWithHashedId('PractitionerRole', %pr)}}"
               }
             }
           ],
@@ -352,9 +335,10 @@
           "{{#opcd}}": "{{otherProcedureCodes}}",
           "{{*}}": {
             "resourceType": "Procedure",
-            "id": "{{utl:uuid()}}",
+            "id": "{{mpp:getHashedId('Procedure', encounterId & %opcd)}}",
             "meta": {
-              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ProcedureRelatedWithSurgicalWorkflow"]
+              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ProcedureRelatedWithSurgicalWorkflow"],
+              "source": "{{%sourceSystem.sourceUri}}"
             },
             "status": "completed",
             "code": {
@@ -365,18 +349,14 @@
                 }
               ]
             },
-            "subject": {
-              "reference": "Patient/{{pid}}"
-            },
+            "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+            "encounter": "{{mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
             "partOf": [
               "{{utl:createFhirReference('Procedure', %surgeryPhaseMapping.id)}}"
             ],
-            "encounter": {
-              "reference": "Encounter/{{encounterId}}"
-            },
             "performedPeriod": {
-              "start": "{{ost}}",
-              "end": "{{oet}}"
+              "start": "{{ost.nav:orElse(ort)}}",
+              "end": "{{oet.nav:orElse(plt)}}"
             }
           }
         }
@@ -393,9 +373,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Procedure",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Procedure', encounterId & 'cleaning')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "category": {
@@ -407,12 +388,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": {
-            "reference": "Encounter/{{encounterId}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "performedPeriod": {
             "start": "{{cst}}",
             "end": "{{cet}}"
@@ -431,9 +408,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'wound')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgicalWoundClassificationObservation"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgicalWoundClassificationObservation"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
@@ -445,10 +423,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{oet.nav:orElse(plt)}}",
           "valueCodeableConcept": {
             "coding": [
@@ -473,9 +449,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'puncture')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
@@ -487,11 +464,9 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{act.nav:orElse(ost)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{act.nav:orElse(ost).nav:orElse(ort)}}",
           "valueQuantity": {
             "system": "http://unitsofmeasure.org",
             "code": "{#}",
@@ -513,9 +488,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Procedure",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Procedure', encounterId & 'intubation')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ProcedureRelatedWithSurgicalWorkflow"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ProcedureRelatedWithSurgicalWorkflow"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "code": {
@@ -527,17 +503,13 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "partOf": [
-            "{{utl:createFhirReference('Procedure', %anesthesiaDetailsMapping.id.orElse(surgeryPhaseMapping.id))}}"
+            "{{utl:createFhirReference('Procedure', %anesthesiaDetailsMapping.id.nav:orElse(surgeryPhaseMapping.id))}}"
           ],
-          "encounter": {
-            "reference": "Encounter/{{encounterId}}"
-          },
+          "encounter": "{{mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "performedPeriod": {
-            "start": "{{act.nav:orElse(ost)}}",
+            "start": "{{act.nav:orElse(ost).nav:orElse(ort)}}",
             "end": "{{? oet}}"
           }
         }
