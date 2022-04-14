@@ -2,6 +2,7 @@ package io.onfhir.tofhir.engine
 
 import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.client.OnFhirNetworkClient
+import io.onfhir.path.FhirPathEvaluator
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.model.{FhirMappingTask, FhirRepositorySinkSettings, FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
 import io.onfhir.tofhir.util.FhirMappingUtility
@@ -171,7 +172,59 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
 
   "surgery details mapping" should "map test data" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(task = surgeryDetailsMappingTask) map { results =>
-      results.size shouldBe 14
+      results.size shouldBe 15
+      val surgeryEncounters = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgeryEncounter")
+      surgeryEncounters.size shouldBe 2
+      (surgeryEncounters.head \ "id").extract[String] shouldBe FhirMappingUtility.getHashedId("Encounter", "e11")
+      (surgeryEncounters.head \ "serviceType" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("394609007")
+      (surgeryEncounters.head \ "serviceType" \ "coding" \ "display").extract[Seq[String]] shouldBe Seq("General surgery")
+      (surgeryEncounters.last \ "episodeOfCare" \ "reference").extract[Seq[String]] shouldBe Seq(FhirMappingUtility.getHashedReference("EpisodeOfCare", "ep2"))
+      (surgeryEncounters.last \ "location" \ "location" \ "reference").extract[Seq[String]] shouldBe Seq(FhirMappingUtility.getHashedReference("Location", "or1"))
+      (surgeryEncounters.head \ "basedOn" \  "reference").extract[Seq[String]] shouldBe Seq(FhirMappingUtility.getHashedReference("ServiceRequest", "sp1"))
+      (surgeryEncounters.last \ "basedOn" \  "reference").extract[Seq[String]] shouldBe empty
+      (surgeryEncounters.head \ "participant" \ "individual" \ "reference").extract[Seq[String]].length shouldBe 5
+      //p1 has all 3 phases
+      val otherPhases = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationPhaseDetails")
+      otherPhases.length shouldBe 3
+      //Enrollment
+      val enrollment = otherPhases.find(p => (p \ "category" \ "coding" \ "code").extract[Seq[String]] == Seq("305408004"))
+      enrollment should not be empty
+      (enrollment.head \ "performedPeriod" \ "start").extract[String] shouldBe "2015-05-17T10:05:00+01:00"
+      //Both patients has anesthesia data
+      val anesthesiaPhases = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-AnesthesiaPhaseDetails")
+      anesthesiaPhases.length shouldBe 2
+      val patient1AnesthesiaProcedure = anesthesiaPhases.find(r => (r \ "subject" \ "reference").extract[String] == FhirMappingUtility.getHashedReference("Patient", "p1"))
+      patient1AnesthesiaProcedure should not be empty
+      (patient1AnesthesiaProcedure.head \ "code" \ "coding" \ "code").extract[Seq[String]].toSet shouldBe Set("50697003","WX402")
+      (patient1AnesthesiaProcedure.head \ "code" \ "coding" \ "display").extract[Seq[String]].toSet shouldBe Set("General Anesthesia","General anesthesis")
+
+      val surgeryPhases = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgeryPhaseDetails")
+      surgeryPhases.length shouldBe 2
+      val patient1Surgery = surgeryPhases.find(r => (r \ "subject" \ "reference").extract[String] == FhirMappingUtility.getHashedReference("Patient", "p1"))
+      patient1Surgery should not be empty
+      (patient1Surgery.head \ "code" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("AAC00")
+      (patient1Surgery.head \ "code" \ "coding" \ "display").extract[Seq[String]] shouldBe Seq("Ligature of intracranial aneurysm")
+      //3 surgeons for p1
+      FhirPathEvaluator().evaluateString("Procedure.performer.where(function.coding.where(code='304292004').exists()).actor.reference", patient1Surgery.head ).length shouldBe 3
+
+      val patient2Surgery = surgeryPhases.find(r => (r \ "subject" \ "reference").extract[String] == FhirMappingUtility.getHashedReference("Patient", "p2"))
+      patient2Surgery should not be empty
+      //For patient 2, 2 procedure from other procedures and 1 from intubation
+      val otherProcedures = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-ProcedureRelatedWithSurgicalWorkflow")
+      otherProcedures.length shouldBe 3
+      (JArray(otherProcedures.toList) \ "code" \ "coding" \ "code").extract[Seq[String]].toSet shouldBe Set("ADA99","ADB","232678001")
+      (JArray(otherProcedures.toList) \ "partOf" \ "reference").extract[Seq[String]].toSet should contain ("Procedure/"+(patient2Surgery.head \ "id").extract[String])
+      //both patient has this data
+      val surgicalWounds = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-SurgicalWoundClassificationObservation")
+      surgicalWounds.length shouldBe 2
+      //Both has classification 2
+      (JArray(surgicalWounds.toList) \ "valueCodeableConcept" \ "coding" \ "code").extract[Seq[String]].toSet shouldBe Set("418115006")
+      (JArray(surgicalWounds.toList) \ "valueCodeableConcept" \ "coding" \ "display").extract[Seq[String]].toSet shouldBe Set("Clean-contaminated (Class II)")
+      //Only patient 2 has this data
+      val punctures = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation")
+      punctures.length shouldBe 1
+      (punctures.head \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e12")
+      (punctures.head \ "valueQuantity" \ "value").extract[Int] shouldBe 2
     }
   }
 

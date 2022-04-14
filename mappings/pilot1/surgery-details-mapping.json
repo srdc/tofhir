@@ -332,7 +332,7 @@
         "name": "otherProceduresMapping",
         "language": "application/fhir-template+json",
         "value": {
-          "{{#opcd}}": "{{otherProcedureCodes}}",
+          "{{#opcd}}": "{{otherProcedureCodes.split(' ')}}",
           "{{*}}": {
             "resourceType": "Procedure",
             "id": "{{mpp:getHashedId('Procedure', encounterId & %opcd)}}",
@@ -505,7 +505,7 @@
           },
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "partOf": [
-            "{{utl:createFhirReference('Procedure', %anesthesiaDetailsMapping.id.nav:orElse(surgeryPhaseMapping.id))}}"
+            "{{utl:createFhirReference('Procedure', %anesthesiaDetailsMapping.id.nav:orElse(%surgeryPhaseMapping.id))}}"
           ],
           "encounter": "{{mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "performedPeriod": {
