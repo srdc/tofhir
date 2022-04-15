@@ -119,6 +119,15 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     ))
   )
 
+  val medAdmMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/medication-administration-mapping",
+    sourceContext = Map("source" ->FileSystemSource(
+      path = "medication-administration.csv",
+      sourceType = SourceFileFormats.CSV,
+      dataSourceSettings
+    ))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -405,6 +414,31 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "medication administration mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = medAdmMappingTask) map { results =>
+      results.length shouldBe 5
+      (results.apply(2) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p3")
+      (results.apply(3)  \ "context" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e3")
+
+      (results.apply(2) \ "medicationCodeableConcept" \ "coding" \ "code").extract[Seq[String]].head shouldBe "L01CA02"
+      (results.apply(2) \ "medicationCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "medication2"
+      (results.apply(1) \ "medicationCodeableConcept" \ "coding" \ "display").extract[Seq[String]] shouldBe empty
+      (results.apply(1) \ "effectivePeriod" \ "start").extract[String] shouldBe "2005-05-29T10:20:00+01:00"
+      (results.apply(4) \ "dosage" \ "dose" \ "value").extract[Double] shouldBe 40.5
+      (results.apply(4) \ "dosage" \ "dose" \ "code").extract[String] shouldBe "mg"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(medAdmMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 
 }

@@ -4,7 +4,7 @@
   "title": "Mapping of schema MedicationAdministration to AIC-MedicationAdministration FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-medication-administration"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-medication-administration"
   }],
   "mapping": [
     {
@@ -13,9 +13,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "MedicationAdministration",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & startTine.toString())}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "category": {
@@ -36,21 +37,14 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "context": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "context": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectivePeriod": {
             "start":"{{startTime}}",
             "end": "{{? endTime}}"
           },
           "dosage": {
-            "dose": {
-              "value": "{{dose}}",
-              "unit": "{{doseUnit}}",
-              "system": "http://unitsofmeasure.org",
-              "code": "{{doseUnit}}"
-            }
+            "dose": "{{? utl:createFhirQuantity(dose, %ucum, doseUnit)}}"
           }
         }
       }
