@@ -101,6 +101,15 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     ))
   )
 
+  val otherObsMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/other-observation-mapping",
+    sourceContext = Map("source" ->FileSystemSource(
+      path = "other-observations.csv",
+      sourceType = SourceFileFormats.CSV,
+      dataSourceSettings
+    ))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -335,5 +344,34 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "other observation mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObsMappingTask) map { results =>
+      results.length shouldBe 14
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.apply(2) \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e3")
+
+      (results.apply(4) \ "valueQuantity" \ "value").extract[Double] shouldBe 43.2
+      (results.apply(4) \ "meta" \ "profile").extract[Seq[String]].head shouldBe "https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation"
+      (results.apply(4) \ "valueQuantity" \ "unit").extract[String] shouldBe "mL"
+      (results.apply(4) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "1298-9"
+      (results.apply(4) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "RBC given"
+
+      (results.apply(10) \ "meta" \ "profile").extract[Seq[String]].head shouldBe "https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"
+      (results.apply(8) \ "meta" \ "profile").extract[Seq[String]].head shouldBe "https://aiccelerate.eu/fhir/StructureDefinition/AIC-PEWSScore"
+
+      (results.apply(13) \ "component" \ "valueQuantity" \ "value").extract[Seq[Int]] shouldBe Seq(3, 5, 4)
+      (results.apply(13) \ "valueQuantity" \ "value").extract[Int] shouldBe 4
+    }
+  }
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(otherObsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 }

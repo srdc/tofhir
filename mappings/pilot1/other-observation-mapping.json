@@ -4,7 +4,7 @@
   "title": "Mapping of schema Other Observation to AIC-IntraOperativeObservation, AIC-MedicationAdministration, AIC-NEWSScore, AIC-PEWSScore and AIC-GlascowScale FHIR profiles",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-other-observation"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-other-observation"
   }],
   "context": {
     "obsConceptMap":  {
@@ -24,9 +24,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
           "meta": {
-            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"]
+            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
@@ -38,13 +39,11 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueQuantity": {
-            "value": "{{value}}",
+            "value": "{{value.toDecimal()}}",
             "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
             "system": "http://unitsofmeasure.org",
             "code": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}"
@@ -63,9 +62,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
           "meta": {
-            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"]
+            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
@@ -77,19 +77,17 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueQuantity": {
-            "value": "{{value.split('-')[0]}.toDecimal()}",
+            "value": "{{value.split('-')[0].toDecimal()}}",
             "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
             "system": "http://unitsofmeasure.org",
             "code": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}"
           },
           "component": {
-            "{{#comp}}": "{{value.split('-').tail()}}",
+            "{{#comp}}": "{{value.split('-').tail().select($this.toDecimal())}}",
             "{{?}}": [
               {
                 "code": {
@@ -102,7 +100,7 @@
                   ]
                 },
                 "valueQuantity": {
-                  "value": "comp[0]",
+                  "value": "{{%comp[0]}}",
                   "unit": "{score}",
                   "system": "http://unitsofmeasure.org",
                   "code": "{score}"
@@ -119,7 +117,7 @@
                   ]
                 },
                 "valueQuantity": {
-                  "value": "comp[1]",
+                  "value": "{{%comp[1]}}",
                   "unit": "{score}",
                   "system": "http://unitsofmeasure.org",
                   "code": "{score}"
@@ -136,7 +134,7 @@
                   ]
                 },
                 "valueQuantity": {
-                  "value": "comp[2]",
+                  "value": "{{%comp[2]}}",
                   "unit": "{score}",
                   "system": "http://unitsofmeasure.org",
                   "code": "{score}"
@@ -158,9 +156,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "MedicationAdministration",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('MedicationAdministration', pid & code & time.toString())}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "category": {
@@ -181,14 +180,12 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "context": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "context": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "dosage": {
             "dose": {
-              "value": "{{value}}",
+              "value": "{{value.toDecimal()}}",
               "unit": "mL",
               "system": "http://unitsofmeasure.org",
               "code": "mL"

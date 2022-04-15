@@ -24,7 +24,7 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString() & value)}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
           "meta": {
             "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SmokingStatus"],
             "source": "{{%sourceSystem.sourceUri}}"
@@ -76,7 +76,7 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString() & value)}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
           "meta": {
             "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-HealthBehaviourAssessment"],
             "source": "{{%sourceSystem.sourceUri}}"
