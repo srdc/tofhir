@@ -50,91 +50,58 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
 
   val patientMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
-    sourceContext = Map("source" ->  FileSystemSource(
-      path = "patients.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
-    ))
+    sourceContext = Map("source" ->  FileSystemSource(path = "patients.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
   val encounterMappingTask =
     FhirMappingTask(
       mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/operation-episode-encounter-mapping",
-      sourceContext = Map("source" ->  FileSystemSource(
-        path = "operation-episode-encounters.csv",
-        sourceType = SourceFileFormats.CSV,
-        dataSourceSettings
-      ))
+      sourceContext = Map("source" ->  FileSystemSource(path = "operation-episode-encounters.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
     )
   val surgeryPlanMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-plan-mapping",
-    sourceContext = Map("source" ->FileSystemSource(
-      path = "surgery-plans.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
-    ))
+    sourceContext = Map("source" ->FileSystemSource(path = "surgery-plans.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
   val surgeryDetailsMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-details-mapping",
-    sourceContext = Map("source" ->FileSystemSource(
-      path = "surgery-details.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
-    ))
+    sourceContext = Map("source" ->FileSystemSource(path = "surgery-details.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
   val preopAssMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-assessment-mapping",
-    sourceContext = Map("source" ->FileSystemSource(
-      path = "preoperative-assessment.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
-    ))
+    sourceContext = Map("source" ->FileSystemSource(path = "preoperative-assessment.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
   val healthBehaviorMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/health-behavior-assessment-mapping",
-    sourceContext = Map("source" ->FileSystemSource(
-      path = "health-behavior-assessment.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
+    sourceContext = Map("source" ->FileSystemSource(path = "health-behavior-assessment.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings
     ))
   )
 
   val otherObsMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/other-observation-mapping",
-    sourceContext = Map("source" ->FileSystemSource(
-      path = "other-observations.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
-    ))
+    sourceContext = Map("source" ->FileSystemSource(path = "other-observations.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
   val medUsedMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/medication-used-mapping",
-    sourceContext = Map("source" ->FileSystemSource(
-      path = "medication-used.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
+    sourceContext = Map("source" ->FileSystemSource(path = "medication-used.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings
     ))
   )
 
   val medAdmMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/medication-administration-mapping",
-    sourceContext = Map("source" ->FileSystemSource(
-      path = "medication-administration.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
-    ))
+    sourceContext = Map("source" ->FileSystemSource(path = "medication-administration.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
   val conditionMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping",
-    sourceContext = Map("source" ->FileSystemSource(
-      path = "conditions.csv",
-      sourceType = SourceFileFormats.CSV,
-      dataSourceSettings
-    ))
+    sourceContext = Map("source" ->FileSystemSource(path = "conditions.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
+  val vitalSignsMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/vital-signs-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "vitalsigns.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
   "patient mapping" should "map test data" in {
@@ -467,6 +434,30 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(conditionMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "vital signs mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = vitalSignsMappingTask) map { results =>
+      results.length shouldBe 8
+      (results.apply(5) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.head  \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e1")
+      (results.apply(4) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "8867-4"
+      (results.apply(4) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Heart rate"
+
+      (results.apply(2) \ "valueQuantity" \ "value").extract[Double] shouldBe 25.5
+      (results.apply(2) \ "valueQuantity" \ "code").extract[String] shouldBe "kg/m2"
+
+      (results.apply(5) \ "component" \ "valueQuantity" \ "value").extract[Seq[Double]] shouldBe Seq(132,95)
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(vitalSignsMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )
