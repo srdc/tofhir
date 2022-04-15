@@ -4,7 +4,7 @@
   "title": "Mapping of schema MedicationUsed to AIC-MedicationUsed FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-medication-used"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-medication-used"
   }],
   "mapping": [
     {
@@ -13,9 +13,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "MedicationStatement",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & startDate.toString())}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationUsed"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationUsed"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "medicationCodeableConcept": {
@@ -27,28 +28,29 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "effectivePeriod": {
-            "start": "{{startTime}}",
-            "end": "{{? endTime}}"
+            "start": "{{startDate}}",
+            "end": "{{? endDate}}"
           },
-          "context": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "context": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "dosage": {
             "{{#ds}}": "{{dose}}",
             "{{*}}": {
               "timing": {
-                "frequency": "{{frequency}}",
-                "periodUnit": "d",
-                "period": 1
+                "repeat": {
+                  "frequency": "{{frequency}}",
+                  "periodUnit": "d",
+                  "period": 1
+                }
               },
               "doseAndRate": [
                 {
                   "doseQuantity": {
                     "system": "http://unitsofmeasure.org",
                     "code": "{{doseUnit}}",
-                    "value": "{{ds}}"
+                    "unit": "{{doseUnit}}",
+                    "value": "{{%ds}}"
                   }
                 }
               ]

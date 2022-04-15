@@ -110,6 +110,15 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     ))
   )
 
+  val medUsedMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/medication-used-mapping",
+    sourceContext = Map("source" ->FileSystemSource(
+      path = "medication-used.csv",
+      sourceType = SourceFileFormats.CSV,
+      dataSourceSettings
+    ))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -368,6 +377,30 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(otherObsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "medication used mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = medUsedMappingTask) map { results =>
+      results.length shouldBe 5
+
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.head \ "context" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e1")
+
+      (results.apply(2) \ "medicationCodeableConcept" \ "coding" \ "code").extract[Seq[String]].head shouldBe "J01DD02"
+      (results.apply(2) \ "medicationCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "medication2"
+      (results.apply(2) \ "dosage" \ "timing" \ "repeat" \ "frequency").extract[Seq[Int]].head shouldBe 1
+      (results.apply(2) \ "dosage" \ "doseAndRate" \ "doseQuantity" \ "value").extract[Seq[Double]].head shouldBe 20.0
+      (results.apply(2) \ "dosage" \ "doseAndRate" \ "doseQuantity" \ "unit").extract[Seq[String]].head shouldBe "mg"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(medUsedMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )
