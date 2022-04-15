@@ -4,7 +4,7 @@
   "title": "Mapping of HealthBehaviorAssessment schema for pilots to AIC Smoking Status and Health Behavior Assessment FHIR profiles",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-health-behavior-assessment"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-health-behavior-assessment"
   }],
   "context": {
     "hbaConceptMap":  {
@@ -24,9 +24,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString() & value)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SmokingStatus"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-SmokingStatus"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "category": [
@@ -49,10 +50,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueCodeableConcept": {
             "coding": [
@@ -77,9 +76,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString() & value)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-HealthBehaviourAssessment"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-HealthBehaviourAssessment"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "category": [
@@ -102,15 +102,13 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueCodeableConcept": {
             "coding": [
               {
-                "system": "http://snomed.info/sct",
+                "system": "http://loinc.org",
                 "code": "{{value}}",
                 "display": "{{mpp:getConcept(%hbaConceptMap, value, 'source_display')}}"
               }

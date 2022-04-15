@@ -9,9 +9,9 @@ source_code,source_system,source_display
 428061000124105,http://snomed.info/sct,Current Light tobacco smoker
 LA28391-3,http://loinc.org,Current every day user
 LA28392-1,http://loinc.org,Current some day user
-"	LA28393-9",http://loinc.org,Former user
-"	LA4519-0",http://loinc.org,Never used
-"	LA4489-6",http://loinc.org,Unknown
-88031-0 ,http://loinc.org,Other nicotin products use
+LA28393-9,http://loinc.org,Former user
+LA4519-0,http://loinc.org,Never used
+LA4489-6,http://loinc.org,Unknown
+88031-0,http://loinc.org,Other nicotin products use
 11331-6,http://loinc.org,Alcohol use
 11343-1,http://loinc.org,Illicit drug use
