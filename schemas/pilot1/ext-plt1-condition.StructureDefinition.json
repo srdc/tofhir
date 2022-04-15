@@ -1,0 +1,187 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-condition",
+  "name": "Ext-plt1-condition",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt1-condition",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt1-condition",
+        "path": "Ext-plt1-condition",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.pid",
+        "path": "Ext-plt1-condition.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.code",
+        "path": "Ext-plt1-condition.code",
+        "short": "Condition code",
+        "definition": "ICD-10 code for diagnosis",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.codeDisplay",
+        "path": "Ext-plt1-condition.codeDisplay",
+        "short": "Condition name",
+        "definition": "Name of the diagnosis",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "string",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/string"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.onsetDateTime",
+        "path": "Ext-plt1-condition.onsetDateTime",
+        "short": "Condition start date",
+        "definition": "When this condition is started or diagnosis is set. ",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.abatementDateTime",
+        "path": "Ext-plt1-condition.abatementDateTime",
+        "short": "Condition abatement date",
+        "definition": "If the disease is resolved/no longer active, the end date.",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.encounterId",
+        "path": "Ext-plt1-condition.encounterId",
+        "short": "Encounter",
+        "definition": "Unique identifier of the visit/encounter that this diagnosis is set (if exists and related)",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.diagnosisType",
+        "path": "Ext-plt1-condition.diagnosisType",
+        "short": "Diagnosis category",
+        "definition": "Type of diagnosis related with the surgery. Use one of the following codes; main: Main pre-operative diagnosis for sugery, comorbidity: A comorbidity diagnosis related with the surgery, other: Other diagnosis",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.isProlonged",
+        "path": "Ext-plt1-condition.isProlonged",
+        "short": "Is prolonged condition",
+        "definition": "Whether this disease is a prolonged / chronic disease or not",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.certainity",
+        "path": "Ext-plt1-condition.certainity",
+        "short": "Certainity of condition",
+        "definition": "Certainity of the diagnosis. Use one of the followings; unconfirmed : Suspected/candidate diagnosis, confirmed: Confirmed/definite diagnosis, refuted: This diagnosis has been ruled out by diagnostic and clinical evidence.",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-condition.asserter",
+        "path": "Ext-plt1-condition.asserter",
+        "short": "Asserter of condition",
+        "definition": "Reference to the practitioner (Practitioner) that asserts this diagnosis",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -128,6 +128,15 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     ))
   )
 
+  val conditionMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping",
+    sourceContext = Map("source" ->FileSystemSource(
+      path = "conditions.csv",
+      sourceType = SourceFileFormats.CSV,
+      dataSourceSettings
+    ))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -434,6 +443,30 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(medAdmMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "conditions mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = conditionMappingTask) map { results =>
+      results.length shouldBe 5
+      (results.apply(2) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p3")
+      (results.apply(1)  \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e2")
+      (results.apply(4) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "G40.419"
+      (results.apply(4) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Other generalized epilepsy and epileptic syndromes, intractable, without status epilepticus"
+      (results.apply(1) \ "onsetDateTime" ).extract[String] shouldBe "2013-05-07"
+      (results.head \ "category" \ "coding" \ "code").extract[Seq[String]].head shouldBe "problem-list-item"
+      (results.apply(2) \ "verificationStatus" \ "coding" \ "code").extract[Seq[String]].head shouldBe "unconfirmed"
+
+      (results.apply(4) \ "asserter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Practitioner", "pr2")
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(conditionMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )
