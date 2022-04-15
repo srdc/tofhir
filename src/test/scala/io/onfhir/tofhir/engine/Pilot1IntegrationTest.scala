@@ -83,6 +83,15 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     ))
   )
 
+  val preopAssMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-assessment-mapping",
+    sourceContext = Map("source" ->FileSystemSource(
+      path = "preoperative-assessment.csv",
+      sourceType = SourceFileFormats.CSV,
+      dataSourceSettings
+    ))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -232,6 +241,62 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(surgeryDetailsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "preoperative assessment mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = preopAssMappingTask) map { results =>
+      results should not be empty
+      val asaObs = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-ASAClassification")
+      asaObs.length shouldBe 10
+      (JArray(asaObs.toList) \ "subject" \ "reference").extract[Seq[String]].toSet shouldBe (1 to 10).map(i => s"p$i").map(pid => FhirMappingUtility.getHashedReference("Patient", pid)).toSet
+      (JArray(asaObs.toList) \ "encounter" \ "reference").extract[Seq[String]].toSet shouldBe (1 to 10).map(i => s"e$i").map(pid => FhirMappingUtility.getHashedReference("Encounter", pid)).toSet
+
+      val patient3Asa  = asaObs.find(r => (r \ "subject" \ "reference").extract[String] == FhirMappingUtility.getHashedReference("Patient", "p3"))
+      (patient3Asa.head \ "valueCodeableConcept" \ "coding" \ "code").extract[Seq[String]].head shouldBe "413499007"
+      (patient3Asa.head \ "valueCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "ASA5: A moribund patient who is not expected to survive without the operation"
+      (patient3Asa.head \ "effectiveDateTime").extract[String] shouldBe "2011-01-07"
+
+      val urgObs = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationUrgency")
+      urgObs.length shouldBe 10
+      (JArray(urgObs.toList) \ "subject" \ "reference").extract[Seq[String]].toSet shouldBe (1 to 10).map(i => s"p$i").map(pid => FhirMappingUtility.getHashedReference("Patient", pid)).toSet
+      (JArray(urgObs.toList) \ "encounter" \ "reference").extract[Seq[String]].toSet shouldBe (1 to 10).map(i => s"e$i").map(pid => FhirMappingUtility.getHashedReference("Encounter", pid)).toSet
+      val patient7Urg  = urgObs.find(r => (r \ "subject" \ "reference").extract[String] == FhirMappingUtility.getHashedReference("Patient", "p7"))
+      (patient7Urg.head  \ "valueCodeableConcept" \ "coding" \ "code").extract[Seq[String]].head shouldBe "R3"
+      (patient7Urg.head  \ "valueCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Elective patient: (in 6 months)"
+
+       val pregnancyObs = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-PregnancyStatus")
+       pregnancyObs.length shouldBe 5
+      (JArray(pregnancyObs.toList) \ "subject" \ "reference").extract[Seq[String]].toSet shouldBe (6 to 10).map(i => s"p$i").map(pid => FhirMappingUtility.getHashedReference("Patient", pid)).toSet
+      val pregnantPatients = pregnancyObs.filter(r => (r \ "valueCodeableConcept" \ "coding" \ "code").extract[Seq[String]].head == "77386006")
+      pregnantPatients.length shouldBe 1
+      (pregnantPatients.head \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p9")
+
+      val operationFlags = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag")
+      operationFlags.length shouldBe 3
+      (JArray(operationFlags.toList) \ "code" \ "coding" \ "code").extract[Seq[String]].toSet shouldBe Set("40174006", "day-case-surgery", "169741004")
+      //Post menstrual age
+      val pmage = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-PostMenstrualAge")
+      pmage.length shouldBe 7
+      (JArray(pmage.toList) \ "valueQuantity" \ "value").extract[Seq[Int]].toSet shouldBe Set(24, 27, 19, 35, 19, 26, 21, 29)
+      //Post gestational age
+      val pgage = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-PostGestationalAge")
+      pgage.length shouldBe 6
+
+      val bloodGroupObs = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head =="https://aiccelerate.eu/fhir/StructureDefinition/AIC-BloodGroupObservation")
+      bloodGroupObs.length shouldBe 8
+      val patient5BloodGroup = bloodGroupObs.find(r => (r \ "subject" \ "reference").extract[String]  == FhirMappingUtility.getHashedReference("Patient", "p5"))
+      patient5BloodGroup should not be empty
+      (patient5BloodGroup.head \ "valueCodeableConcept" \ "coding" \ "code").extract[Seq[String]].head shouldBe "278151004"
+      (patient5BloodGroup.head \ "valueCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "AB Rh(D) positive"
+    }
+  }
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(preopAssMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )

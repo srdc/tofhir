@@ -4,7 +4,7 @@
   "title": "Mapping of PreoperativeAssessment schema for pilots to multiple AIC FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-preoperative-assessment"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-preoperative-assessment"
   }],
   "context": {
     "preOpConceptMap":  {
@@ -19,9 +19,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'asa')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ASAClassification"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ASAClassification"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "category": [
@@ -44,10 +45,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueCodeableConcept": {
               "coding": [
@@ -67,9 +66,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'urgency')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationUrgency"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationUrgency"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "category": [
@@ -92,17 +92,15 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueCodeableConcept": {
             "coding": [
               {
                 "system": "https://aiccelerate.eu/fhir/CodeSystem/intervention-urgency-codes",
                 "code": "{{urgencyClassification}}",
-                "display": "{{mpp:getConcept(%preOpConceptMap, urgencyClassification, 'target_display')}}"
+                "display": "{{mpp:getConcept(%preOpConceptMap, urgencyClassification, 'source_display')}}"
               }
             ]
           }
@@ -120,9 +118,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'pregnancy')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PregnancyStatus"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PregnancyStatus"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "category": [
@@ -145,17 +144,15 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueCodeableConcept": {
             "coding": [
               {
                 "system": "http://snomed.info/sct",
-                "code": "{{iff(isPregnant, '77386006', '60001007')}}",
-                "display": "{{iff(isPregnant, 'Pregnant', 'Not pregnant')}}"
+                "code": "{{iif(isPregnant, '77386006', '60001007')}}",
+                "display": "{{iif(isPregnant, 'Pregnant', 'Not pregnant')}}"
               }
             ]
           }
@@ -166,16 +163,17 @@
       "precondition": {
         "name": "hasBreastFeedingInformation",
         "language": "text/fhirpath",
-        "expression": "isBreastFeeding"
+        "expression": "isBreastFeeding.exists() and isBreastFeeding"
       },
       "expression": {
         "name": "result",
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Flag",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Flag', encounterId & 'breastfeeding')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "inactive",
           "category": [
@@ -199,13 +197,11 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "period": {
             "start": "{{time}}"
           },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}"
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}"
         }
       }
     },
@@ -220,9 +216,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'pgage')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PostGestationalAge"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PostGestationalAge"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
@@ -234,10 +231,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueQuantity": {
             "system": "http://unitsofmeasure.org",
@@ -259,9 +254,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'pmage')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PostMenstrualAge"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PostMenstrualAge"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
@@ -273,10 +269,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueQuantity": {
             "system": "http://unitsofmeasure.org",
@@ -291,16 +285,17 @@
       "precondition": {
         "name": "isDayCaseSurgery",
         "language": "text/fhirpath",
-        "expression": "isDayCaseSurgery"
+        "expression": "isDayCaseSurgery.exists() and isDayCaseSurgery"
       },
       "expression": {
         "name": "result",
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Flag",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Flag', encounterId & 'daycase')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "inactive",
           "category": [
@@ -324,10 +319,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{utl:createFhirReference('Encounter', encounterId)}}"
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}"
         }
       }
     },
@@ -335,16 +328,17 @@
       "precondition": {
         "name": "isIsolationNeeded",
         "language": "text/fhirpath",
-        "expression": "isIsolationNeeded"
+        "expression": "isIsolationNeeded.exists() and isIsolationNeeded"
       },
       "expression": {
         "name": "result",
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Flag",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'isolation')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "inactive",
           "category": [
@@ -368,10 +362,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{utl:createFhirReference('Encounter', encounterId)}}"
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}"
         }
       }
     },
@@ -386,9 +378,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', encounterId & 'bloodgroup')}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-BloodGroupObservation"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-BloodGroupObservation"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
@@ -400,10 +393,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueCodeableConcept": {
             "coding": [

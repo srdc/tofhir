@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.engine
 
 import com.typesafe.scalalogging.Logger
-import io.onfhir.api.client.FHIRTransactionBatchBundle
+import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder}
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.client.OnFhirNetworkClient.system.dispatcher
 import io.onfhir.tofhir.model.{FhirMappingException, FhirRepositorySinkSettings}
@@ -36,11 +36,12 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         partition
           .grouped(BATCH_GROUP_SIZE)
           .foreach(rowGroup => {
-            var batchRequest = onFhirClient.batch()
+            var batchRequest:FhirBatchTransactionRequestBuilder = onFhirClient.batch()
             rowGroup.foreach(row => {
               val resource = row.parseJson
-              batchRequest = batchRequest.entry(_.update(resource).returnMinimal())
+              batchRequest = batchRequest.entry(_.update(resource))
             })
+            batchRequest = batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder]
             logger.debug("Batch Update request will be sent to the FHIR repository for {} resources.", rowGroup.size)
             var responseBundle:FHIRTransactionBatchBundle = null
               try {

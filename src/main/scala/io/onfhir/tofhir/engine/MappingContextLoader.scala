@@ -27,6 +27,8 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
 
   private val logger: Logger = Logger(this.getClass)
 
+  final val CONCEPT_MAP_FIRST_COLUMN_NAME = "source_code"
+
   def retrieveContext(contextDefinition: FhirMappingContextDefinition): Future[FhirMappingContext] = {
     if (contextDefinition.url.isDefined) {
       logger.debug("The context definition for the mapping repository is defined at a URL:{}. It will be loaded...", contextDefinition.url.get)
@@ -73,9 +75,9 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
    */
   private def readConceptMapContextFromCSV(filePath: String): Future[Map[String, Map[String, String]]] = {
     readFromCSV(filePath) map { records =>
-      val (firstColumnName, _) = records.head.head // Get the first element in the records list and then get the first (k,v) pair to get the name of the first column.
+      //val (firstColumnName, _) = records.head.head // Get the first element in the records list and then get the first (k,v) pair to get the name of the first column.
       records.foldLeft(Map[String, Map[String, String]]()) { (conceptMap, columnMap) =>
-        conceptMap + (columnMap(firstColumnName)-> columnMap)
+        conceptMap + (columnMap(CONCEPT_MAP_FIRST_COLUMN_NAME)-> columnMap)
       }
     }
   }

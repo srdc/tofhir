@@ -1,6 +1,6 @@
 source_code,source_system,source_display,target_code,target_system,target_display
 asa1,,,413495001,http://snomed.info/sct,ASA1: A normal healthy patient
-asa2,,,"	413496000",http://snomed.info/sct,ASA2: A patient with mild systemic disease
+asa2,,,"413496000",http://snomed.info/sct,ASA2: A patient with mild systemic disease
 asa3,,,413497009,http://snomed.info/sct,ASA3: A patient with severe systemic disease
 asa4,,,413498004,http://snomed.info/sct,ASA4: A patient with severe systemic disease that is a constant threat to life
 asa5,,,413499007,http://snomed.info/sct,ASA5: A moribund patient who is not expected to survive without the operation
