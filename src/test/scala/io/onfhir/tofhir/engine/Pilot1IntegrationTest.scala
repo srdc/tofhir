@@ -114,6 +114,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "radiological-studies.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val hospitalUnitMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/hospital-unit-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "hospital-unit.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -519,6 +524,26 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(radStudiesMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "hospital unit mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = hospitalUnitMappingTask) map { results =>
+      results.length shouldBe 4
+      (results.apply(1) \ "type" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("309904001")
+      (results.apply(1) \ "physicalType" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("ro")
+      (results.apply(2) \ "id").extract[String] shouldBe FhirMappingUtility.getHashedId("Location", "ward1")
+
+      (results.last \ "partOf" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Location", "ward1")
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(hospitalUnitMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )

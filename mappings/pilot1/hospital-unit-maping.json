@@ -4,7 +4,7 @@
   "title": "Mapping of schema hospital unit to AIC Hospital Unit profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-hospital-unit"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-hospital-unit"
   }],
   "context": {
     "hospitalUnitConceptMap":  {
@@ -19,9 +19,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Location",
-          "id": "{{lid}}",
+          "id": "{{mpp:getHashedId('Location',lid))}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-HospitalUnit"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-HospitalUnit"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "active",
           "name": "{{name}}",
@@ -46,7 +47,7 @@
               }
             ]
           },
-          "partOf": "{{? utl:createFhirReference('Location', partOf)}}"
+          "partOf": "{{? mpp:createFhirReferenceWithHashedId('Location', partOf)}}"
         }
       }
     }

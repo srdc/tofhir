@@ -13,7 +13,7 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "DiagnosticReport",
-          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
+          "id": "{{mpp:getHashedId('DiagnosticReport', pid & code & time.toString())}}",
           "meta": {
             "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-DiagnosticStudy"],
             "source": "{{%sourceSystem.sourceUri}}"
