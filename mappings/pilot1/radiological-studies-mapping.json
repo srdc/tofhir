@@ -4,7 +4,7 @@
   "title": "Mapping of radiological studies schema for pilots to AIC-DiagnosticStudy FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-radiological-studies"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-radiological-studies"
   }],
   "mapping": [
     {
@@ -13,7 +13,11 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "DiagnosticReport",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-DiagnosticStudy"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
           "status": "final",
           "category": [
             {
@@ -31,15 +35,13 @@
               {
                 "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=57&versionKey=119",
                 "code": "{{code}}",
-                "display": "{{codeDisplay}}"
+                "display": "{{? codeDisplay}}"
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "effectiveDateTime": "{{time}}",
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}"
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time}}"
         }
       }
     }

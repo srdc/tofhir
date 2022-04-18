@@ -1,0 +1,107 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-radiological-studies",
+  "name": "Ext-plt1-radiological-studies",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt1-radiological-studies",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt1-radiological-studies",
+        "path": "Ext-plt1-radiological-studies",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-radiological-studies.pid",
+        "path": "Ext-plt1-radiological-studies.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-radiological-studies.time",
+        "path": "Ext-plt1-radiological-studies.time",
+        "short": "Study time",
+        "definition": "Clinical time of study.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-radiological-studies.encounterId",
+        "path": "Ext-plt1-radiological-studies.encounterId",
+        "short": "Encounter",
+        "definition": "Unique identifier of the visit/encounter that this study is performed e.g. during ward stay after operation",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-radiological-studies.code",
+        "path": "Ext-plt1-radiological-studies.code",
+        "short": "Study code",
+        "definition": "Code of the radiology examination/study in source system.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-radiological-studies.codeDisplay",
+        "path": "Ext-plt1-radiological-studies.codeDisplay",
+        "short": "Name of the examination/study",
+        "definition": "Name of the examination/study",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "string",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/string"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

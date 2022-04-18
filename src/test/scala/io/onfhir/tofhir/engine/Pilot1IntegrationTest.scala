@@ -109,6 +109,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "lab-results.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val radStudiesMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/radiological-studies-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "radiological-studies.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -498,5 +503,27 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "radiological studies mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = radStudiesMappingTask) map { results =>
+      results.length shouldBe 5
+      (results.head \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p1")
+      (results.head \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e1")
+      (results.apply(1) \ "effectiveDateTime").extract[String] shouldBe "2012-05-10"
+      (results.apply(1) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "PA2AT"
+      (results.apply(1) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Cerebral artery PTA"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(radStudiesMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+
 
 }
