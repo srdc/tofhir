@@ -470,11 +470,12 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
 
   "lab results mapping" should "map test data" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(task = labResultsMappingTask) map { results =>
-      results.length shouldBe 25
+      results.length shouldBe 26
       (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
       (results.apply(1) \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e2")
       (results.head \ "effectiveDateTime").extract[String] shouldBe "2012-05-10T10:00:00+01:00"
 
+      (results.head \ "code" \ "coding" \"code").extract[Seq[String]].toSet shouldBe Set("1552", "718-7")
       (results.head \ "valueQuantity" \ "value").extract[Double] shouldBe 1.05
       (results.head \ "valueQuantity" \ "unit").extract[String] shouldBe "g/dL"
 
@@ -482,6 +483,9 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
       (results.apply(6) \ "valueQuantity" \ "unit").extract[String] shouldBe  "mm[Hg]"
 
       (results.apply(3) \ "interpretation" \ "coding" \ "code").extract[Seq[String]].head shouldBe "N"
+
+      (results.last \ "code" \ "coding" \"code").extract[Seq[String]] shouldBe Seq("99999")
+      (results.last \ "code" \ "coding" \"display").extract[Seq[String]] shouldBe Seq("Blabla")
     }
   }
 

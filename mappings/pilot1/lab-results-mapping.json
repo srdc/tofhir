@@ -41,7 +41,7 @@
           "code": {
             "coding": [
               {
-                "system": "{{mpp:getConcept(%labResultsConceptMap, code.toString(), 'source_system')}}",
+                "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=88&versionKey=120",
                 "code": "{{code.toString()}}",
                 "display": "{{description}}"
               },

@@ -84,28 +84,20 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
     if (conceptCodeResult.length > 1 || !conceptCodeResult.forall(_.isInstanceOf[FhirPathString])) {
       throw new FhirPathException(s"Invalid function call 'getConcept', given expression for keyExpr:${keyExpr.getText} for the concept code should return a string value!")
     }
-    //If conceptCode returns empty, also return empty
+    //If conceptCode returns empty, also return empty, if there is no such key or target column is null also return empty
     conceptCodeResult
       .headOption
       .map(_.asInstanceOf[FhirPathString].s) match {
         case None => Nil
         case Some(conceptCode) =>
-          val codeEntry = try {
-            conceptMapContext.concepts(conceptCode)
-          } catch {
-            case e: NoSuchElementException =>
-              throw FhirMappingException(s"Concept code:$conceptCode cannot be found in the ConceptMapContext:$mapName", e)
-          }
-
-          val mappedValue = try {
-            codeEntry(targetField)
-          } catch {
-            case e: NoSuchElementException =>
-              throw FhirMappingException(s"For the given concept code:$conceptCode, the column:$targetField cannot be " +
-                s"found in the ConceptMapContext:$mapName. Available columns are ${conceptMapContext.concepts.head._2.keySet.mkString(",")}", e)
-          }
-
-          Seq(FhirPathString(mappedValue))
+          conceptMapContext
+            .concepts
+            .get(conceptCode)
+            .flatMap(codeEntry =>
+              codeEntry.get(targetField)
+            )
+            .map(mappedValue =>  FhirPathString(mappedValue))
+            .toSeq
     }
   }
 
@@ -128,13 +120,13 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
     }
 
     val codeResult = new FhirPathExpressionEvaluator(context, current).visit(keyExpr)
-    if (codeResult.length != 1 || !codeResult.head.isInstanceOf[FhirPathString]) {
+    if (codeResult.length > 1 || !codeResult.head.isInstanceOf[FhirPathString]) {
       throw new FhirPathException(s"Invalid function call 'convertAndReturnQuantity', given expression for keyExpr:${keyExpr.getText} for the source code should return a string value!")
     }
-    val code = codeResult.head.asInstanceOf[FhirPathString].s
+
 
     val valueResult = new FhirPathExpressionEvaluator(context, current).visit(valueExpr)
-    if (valueResult.length != 1 || !valueResult.head.isInstanceOf[FhirPathNumber]) {
+    if (valueResult.length > 1 || !valueResult.head.isInstanceOf[FhirPathNumber]) {
       throw new FhirPathException(s"Invalid function call 'convertAndReturnQuantity', given expression for valueExpr:${valueExpr.getText} for the value should return a numeric value!")
     }
 
@@ -144,21 +136,24 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
     }
     val unit = unitResult.head.asInstanceOf[FhirPathString].s
 
-    val (targetUnit, conversionFunction) = try {
-      unitConversionContext.conversionFunctions(code -> unit)
-    } catch {
-      case e: NoSuchElementException =>
-        throw FhirMappingException(s"(code, unit) pair:($code, $unit) cannot be found in the UnitConversionFunctionsContext:$mapName", e)
+    if(codeResult.isEmpty || valueResult.isEmpty)
+      Nil
+    else {
+      val code = codeResult.head.asInstanceOf[FhirPathString].s
+      unitConversionContext
+        .conversionFunctions
+        .get(code -> unit)
+        .map {
+          case (targetUnit, conversionFunction) =>
+            val conversionFunctionExpressionContext = FhirPathEvaluator.parse(conversionFunction)
+            val functionResult = new FhirPathExpressionEvaluator(context, valueResult).visit(conversionFunctionExpressionContext)
+            if (functionResult.length != 1 || !functionResult.head.isInstanceOf[FhirPathNumber]) {
+              throw new FhirPathException(s"Invalid FHIR expression in the unit conversion context! The FHIR path expression:${conversionFunction} should evaluate to a single numeric value!")
+            }
+            FhirPathComplex(JObject(List("value" -> functionResult.head.toJson, "system" -> JString("http://unitsofmeasure.org"), "unit" -> JString(targetUnit), "code" -> JString(targetUnit))))
+        }.toSeq
     }
-    val conversionFunctionExpressionContext = FhirPathEvaluator.parse(conversionFunction)
-    val functionResult = new FhirPathExpressionEvaluator(context, valueResult).visit(conversionFunctionExpressionContext)
-    if (functionResult.length != 1 || !functionResult.head.isInstanceOf[FhirPathNumber]) {
-      throw new FhirPathException(s"Invalid FHIR expression in the unit conversion context! The FHIR path expression:${conversionFunction} should evaluate to a single numeric value!")
-    }
-
-    Seq(FhirPathComplex(JObject(List("value" -> functionResult.head.toJson, "system" -> JString("http://unitsofmeasure.org"), "unit" -> JString(targetUnit), "code" -> codeResult.head.toJson))))
   }
-
 }
 
 class FhirMappingFunctionsFactory(mappingContext: Map[String, FhirMappingContext]) extends IFhirPathFunctionLibraryFactory with Serializable {

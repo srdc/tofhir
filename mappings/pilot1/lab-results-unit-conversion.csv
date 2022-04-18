@@ -18,7 +18,7 @@ source_code,source_unit,target_unit,conversion_function
 10207,mmol/l,mmol/L,"$this"
 10900,mmol/l,mmol/L,"$this"
 10139,mmol/l,mmol/L,"$this"
-1399,g/l,g/L ,"$this"
+1399,g/l,g/L,"$this"
 4709,ng/l,ng/L,"$this"
 4532,ng/l,ng/mL,"$this * 0.001"
 1471,mmol/l,mg/dL,"$this * 18"
