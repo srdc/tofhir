@@ -4,7 +4,7 @@
   "title": "Mapping of schema background information to AIC-OperationFlag profile resources",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-background-information"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-background-information"
   }],
   "context": {
     "binfConceptMap":  {
@@ -18,12 +18,13 @@
         "name": "result",
         "language": "application/fhir-template+json",
         "value": {
-          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 44).select('v' & $this.toString()).mkString(' | ')).indicesWhere($this.exists() and $this).select($this.toString())}}",
+          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 44).select('iif(v' & $this.toString() & ', ' & $this.toString() & ', {})').mkString(' | ')).select('v' & $this.toString())}}",
           "{{*}}": {
             "resourceType": "Flag",
-            "id": "{{utl:uuid()}}",
+            "id": "{{mpp:getHashedId('Observation', pid & %ind & time.toString())}}",
             "meta": {
-              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"]
+              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-OperationFlag"],
+              "source": "{{%sourceSystem.sourceUri}}"
             },
             "status": "inactive",
             "category": [
@@ -45,10 +46,8 @@
                 }
               ]
             },
-            "subject": {
-              "reference": "Patient/{{pid}}"
-            },
-            "encounter": "{{utl:createFhirReference('Encounter', encounterId)}}",
+            "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+            "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
             "period": {
               "start": "{{? time}}"
             }

@@ -1,46 +1,45 @@
 source_code,target_code,target_system,target_display,flag_category
-1,has-relative-to-pick,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,Day surgery: patient has an adult relative or other friend who will pick him/her up from the hospital,admin
-2,has-adult-follow-up,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,Day surgery: patient has adult follow-up until the next morning,admin
-3,449360002,http://snomed.info/sct, Need special diet,diet
-4,226010006,http://snomed.info/sct, Need for help with eating,diet
-5,737286006,http://snomed.info/sct,Dental prothesis,clinical
-6,879862001,http://snomed.info/sct,Piercing,clinical
-7,341000119102,http://snomed.info/sct,Tattoo,clinical
-8,366248005,http://snomed.info/sct,"Pivot tooth, partial denture",clinical
-9,hospitilized-abroad,https://aiccelerate.eu/fhir/CodeSystem/operation-flags, Hospitalization abroad over the past year,clinical
-10,169741004,http://snomed.info/sct,   breastfeeding,clinical
-11,281789004,http://snomed.info/sct,   antibiotic,drug
-12,421728001,http://snomed.info/sct,   thrombosis prophylaxis,drug
-13,182764009,http://snomed.info/sct,   anticoagulant,drug
-14,416608005,http://snomed.info/sct,   biological drug,drug
-15,108327007,http://snomed.info/sct,"   home care
-",admin
-16,160774006,http://snomed.info/sct,   home help,admin
-17,using-treatment-facility,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,   treatment facility,admin
-18,65853000,http://snomed.info/sct,   school,admin
-19,304903009,http://snomed.info/sct,   day care,admin
-20,using-children-health-clinic,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,   children health clinic,admin
-21,other-therapy,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,"   other, therapy and support",admin
-22,129839007,http://snomed.info/sct,   has fallen in the last year,safety
-23,710803000,http://snomed.info/sct,   need for mobility assistance,safety
-24,433035000,http://snomed.info/sct,   need for washing assistance,safety
-25,313420001,http://snomed.info/sct,   need for assistance in toilet,safety
-26,704444008,http://snomed.info/sct,   need for help with dressing,safety
-27,8510008:42752001=29857009,http://snomed.info/sct,   ambulation is restricted because of chesst pain,safety
-28,8510008:42752001=10601006,http://snomed.info/sct,   ambulation is restricted because of lower limb pain,safety
-29,8510008:42752001=267036007,http://snomed.info/sct,   ambulation is restricted because of dyspnea,safety
-30,8510008:42752001=238131007,http://snomed.info/sct,   ambulation is restricted because of overweight,safety
-31,8510008:42752001=44695005,http://snomed.info/sct,   ambulation is restricted because of paralysis,safety
-32,8510008:42752001=404684003,http://snomed.info/sct,   ambulation is restricted because of other reasons,safety
-33,reduced-mobility-u100,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,   ambutation is restricted under 100m,safety
-34,reduced-mobility-u1000,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,   ambutation is restricted under 100m-1km,safety
-35,reduced-mobility-o1000,https://aiccelerate.eu/fhir/CodeSystem/operation-flags, ambutation is restricted under over 1 km,safety
-36,443663000,http://snomed.info/sct,   crutch,admin
-37,165255004,http://snomed.info/sct,   rollator,admin
-38,225612007,http://snomed.info/sct,   wheelchair,admin
-39,365112008,http://snomed.info/sct,   other,admin
-40,232325008,http://snomed.info/sct,   deaf,clinical
-41,343087000,http://snomed.info/sct,   impaired hearing,clinical
-42,112089001,http://snomed.info/sct,   speech comprehension problems,clinical
-43,267095009,http://snomed.info/sct,   speech production problems,clinical
-44,95677002,http://snomed.info/sct,   visual handicap,clinical
+v1,has-relative-to-pick,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,"Day surgery: patient has an adult relative or other friend who will pick him/her up from the hospital",admin
+v2,has-adult-follow-up,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,"Day surgery: patient has adult follow-up until the next morning",admin
+v3,449360002,http://snomed.info/sct,"Need special diet",diet
+v4,226010006,http://snomed.info/sct,"Need for help with eating",diet
+v5,737286006,http://snomed.info/sct,"Dental prothesis",clinical
+v6,879862001,http://snomed.info/sct,Piercing,clinical
+v7,341000119102,http://snomed.info/sct,Tattoo,clinical
+v8,366248005,http://snomed.info/sct,"Pivot tooth, partial denture",clinical
+v9,hospitilized-abroad,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,"Hospitalization abroad over the past year",clinical
+v10,169741004,http://snomed.info/sct,breastfeeding,clinical
+v11,281789004,http://snomed.info/sct,antibiotic,drug
+v12,421728001,http://snomed.info/sct,thrombosis prophylaxis,drug
+v13,182764009,http://snomed.info/sct,anticoagulant,drug
+v14,416608005,http://snomed.info/sct,biological drug,drug
+v15,108327007,http://snomed.info/sct,Getting home care,admin
+v16,160774006,http://snomed.info/sct,Getting home help,admin
+v17,using-treatment-facility,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,Using treatment facility,admin
+v18,65853000,http://snomed.info/sct,Going to school,admin
+v19,304903009,http://snomed.info/sct,Having day care,admin
+v20,using-children-health-clinic,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,Children health clinic,admin
+v21,other-therapy,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,"Getting other, therapy and support",admin
+v22,129839007,http://snomed.info/sct,has fallen in the last year,safety
+v23,710803000,http://snomed.info/sct,need for mobility assistance,safety
+v24,433035000,http://snomed.info/sct,need for washing assistance,safety
+v25,313420001,http://snomed.info/sct,need for assistance in toilet,safety
+v26,704444008,http://snomed.info/sct,need for help with dressing,safety
+v27,8510008:42752001=29857009,http://snomed.info/sct,ambulation is restricted because of chesst pain,safety
+v28,8510008:42752001=10601006,http://snomed.info/sct,ambulation is restricted because of lower limb pain,safety
+v29,8510008:42752001=267036007,http://snomed.info/sct,ambulation is restricted because of dyspnea,safety
+v30,8510008:42752001=238131007,http://snomed.info/sct,ambulation is restricted because of overweight,safety
+v31,8510008:42752001=44695005,http://snomed.info/sct,ambulation is restricted because of paralysis,safety
+v32,8510008:42752001=404684003,http://snomed.info/sct,ambulation is restricted because of other reasons,safety
+v33,reduced-mobility-u100,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,ambulation is restricted under 100m,safety
+v34,reduced-mobility-u1000,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,ambulation is restricted under 100m-1km,safety
+v35,reduced-mobility-o1000,https://aiccelerate.eu/fhir/CodeSystem/operation-flags,ambulation is restricted under over 1 km,safety
+v36,443663000,http://snomed.info/sct,Using crutch,admin
+v37,165255004,http://snomed.info/sct,Using rollator,admin
+v38,225612007,http://snomed.info/sct,Using wheelchair,admin
+v39,365112008,http://snomed.info/sct,"Using other aids, appliances",admin
+v40,232325008,http://snomed.info/sct,Deaf,clinical
+v41,343087000,http://snomed.info/sct,Impaired hearing,clinical
+v42,112089001,http://snomed.info/sct,Has speech comprehension problems,clinical
+v43,267095009,http://snomed.info/sct,Has speech production problems,clinical
+v44,95677002,http://snomed.info/sct,Has visual handicap,clinical

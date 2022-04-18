@@ -129,6 +129,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "workshift.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val backgroundInfMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/background-information-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "background-information.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -601,6 +606,29 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "background information mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = backgroundInfMappingTask) map { results =>
+      results.length shouldBe 30
+      val patient1Flags = results.filter(r => (r\ "subject" \ "reference").extract[String] == FhirMappingUtility.getHashedReference("Patient", "p1"))
+      (JArray(patient1Flags.toList) \ "period" \"start").extract[Seq[String]].toSet shouldBe Set("2021-10-05T10:00:00+01:00")
+
+      val flag8 = patient1Flags.find(r => (r \ "code" \ "coding" \ "code").extract[Seq[String]].contains("366248005"))
+      flag8 should not be empty
+      (flag8.head \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Pivot tooth, partial denture"
+      (flag8.head \ "code" \ "coding" \ "system").extract[Seq[String]].head shouldBe "http://snomed.info/sct"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(backgroundInfMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 
 }

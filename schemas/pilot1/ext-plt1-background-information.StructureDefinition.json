@@ -1,0 +1,779 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-background-information",
+  "name": "Ext-plt1-background-information",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt1-background-information",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt1-background-information",
+        "path": "Ext-plt1-background-information",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.pid",
+        "path": "Ext-plt1-background-information.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.time",
+        "path": "Ext-plt1-background-information.time",
+        "short": "Time of evaluation",
+        "definition": "Date or datetime of this background evaluation done",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.encounterId",
+        "path": "Ext-plt1-background-information.encounterId",
+        "short": "Encounter id",
+        "definition": "Reference to the encounter that this assessment is done",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v1",
+        "path": "Ext-plt1-background-information.v1",
+        "short": "Day surgery: patient has an adult relative or other friend who will pick him/her up from the hospital",
+        "definition": "Day surgery: patient has an adult relative or other friend who will pick him/her up from the hospital",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v2",
+        "path": "Ext-plt1-background-information.v2",
+        "short": "Day surgery: patient has adult follow-up until the next morning",
+        "definition": "Day surgery: patient has adult follow-up until the next morning",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v3",
+        "path": "Ext-plt1-background-information.v3",
+        "short": "Special diet",
+        "definition": "Special diet",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v4",
+        "path": "Ext-plt1-background-information.v4",
+        "short": "Need for help with eating",
+        "definition": "need for help with eating",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v5",
+        "path": "Ext-plt1-background-information.v5",
+        "short": "dental prothesis",
+        "definition": "dental prothesis",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v6",
+        "path": "Ext-plt1-background-information.v6",
+        "short": "piercing",
+        "definition": "piercing",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v7",
+        "path": "Ext-plt1-background-information.v7",
+        "short": "tattoo",
+        "definition": "tattoo",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v8",
+        "path": "Ext-plt1-background-information.v8",
+        "short": "pivot tooth, partial denture",
+        "definition": "pivot tooth, partial denture",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v9",
+        "path": "Ext-plt1-background-information.v9",
+        "short": "hospitalization abroad over the past year",
+        "definition": "hospitalization abroad over the past year",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v10",
+        "path": "Ext-plt1-background-information.v10",
+        "short": "breastfeeding",
+        "definition": "breastfeeding",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v11",
+        "path": "Ext-plt1-background-information.v11",
+        "short": "antibiotic",
+        "definition": "antibiotic",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v12",
+        "path": "Ext-plt1-background-information.v12",
+        "short": "thrombosis prophylaxis",
+        "definition": "thrombosis prophylaxis",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v13",
+        "path": "Ext-plt1-background-information.v13",
+        "short": "anticoagulant",
+        "definition": "anticoagulant",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v14",
+        "path": "Ext-plt1-background-information.v14",
+        "short": "biological drug",
+        "definition": "biological drug",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v15",
+        "path": "Ext-plt1-background-information.v15",
+        "short": "home care",
+        "definition": "home care",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v16",
+        "path": "Ext-plt1-background-information.v16",
+        "short": "home help",
+        "definition": "home help",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v17",
+        "path": "Ext-plt1-background-information.v17",
+        "short": "treatment facility",
+        "definition": "treatment facility",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v18",
+        "path": "Ext-plt1-background-information.v18",
+        "short": "school",
+        "definition": "school",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v19",
+        "path": "Ext-plt1-background-information.v19",
+        "short": "day care",
+        "definition": "day care",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v20",
+        "path": "Ext-plt1-background-information.v20",
+        "short": "children health clinic",
+        "definition": "children health clinic",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v21",
+        "path": "Ext-plt1-background-information.v21",
+        "short": "other, therapy and support",
+        "definition": "other, therapy and support",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v22",
+        "path": "Ext-plt1-background-information.v22",
+        "short": "has fallen in the last year",
+        "definition": "has fallen in the last year",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v23",
+        "path": "Ext-plt1-background-information.v23",
+        "short": "need for mobility assistance",
+        "definition": "need for mobility assistance",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v24",
+        "path": "Ext-plt1-background-information.v24",
+        "short": "need for washing assistance",
+        "definition": "need for washing assistance",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v25",
+        "path": "Ext-plt1-background-information.v25",
+        "short": "need for assistance in toilet",
+        "definition": "need for assistance in toilet",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v26",
+        "path": "Ext-plt1-background-information.v26",
+        "short": "need for help with dressing",
+        "definition": "need for help with dressing",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v27",
+        "path": "Ext-plt1-background-information.v27",
+        "short": "ambulation is restricted because of chesst pain",
+        "definition": "ambulation is restricted because of chesst pain",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v28",
+        "path": "Ext-plt1-background-information.v28",
+        "short": "ambulation is restricted because of lower limb pain",
+        "definition": "ambulation is restricted because of lower limb pain",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v29",
+        "path": "Ext-plt1-background-information.v29",
+        "short": "ambulation is restricted because of dyspnea",
+        "definition": "ambulation is restricted because of dyspnea",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v30",
+        "path": "Ext-plt1-background-information.v30",
+        "short": "ambulation is restricted because of overweight",
+        "definition": "ambulation is restricted because of overweight",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v31",
+        "path": "Ext-plt1-background-information.v31",
+        "short": "ambulation is restricted because of paralysis",
+        "definition": "ambulation is restricted because of paralysis",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v32",
+        "path": "Ext-plt1-background-information.v32",
+        "short": "ambulation is restricted because of other reasons",
+        "definition": "ambulation is restricted because of other reasons",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v33",
+        "path": "Ext-plt1-background-information.v33",
+        "short": "ambulation is restricted under 100m",
+        "definition": "ambulation is restricted under 100m",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v34",
+        "path": "Ext-plt1-background-information.v34",
+        "short": "ambulation is restricted under 100m-1km",
+        "definition": "ambulation is restricted under 100m-1km",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v35",
+        "path": "Ext-plt1-background-information.v35",
+        "short": "ambulation is restricted under over 1 km",
+        "definition": "ambulation is restricted under over 1 km",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v36",
+        "path": "Ext-plt1-background-information.v36",
+        "short": "crutch",
+        "definition": "crutch",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v37",
+        "path": "Ext-plt1-background-information.v37",
+        "short": "rollator",
+        "definition": "rollator",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v38",
+        "path": "Ext-plt1-background-information.v38",
+        "short": "wheelchair",
+        "definition": "wheelchair",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v39",
+        "path": "Ext-plt1-background-information.v39",
+        "short": "Other aids and appliances",
+        "definition": "Other aids and appliances",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v40",
+        "path": "Ext-plt1-background-information.v40",
+        "short": "Deaf",
+        "definition": "Deaf",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v41",
+        "path": "Ext-plt1-background-information.v41",
+        "short": "impaired hearing",
+        "definition": "impaired hearing",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v42",
+        "path": "Ext-plt1-background-information.v42",
+        "short": "speech comprehension problems",
+        "definition": "speech comprehension problems",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v43",
+        "path": "Ext-plt1-background-information.v43",
+        "short": "speech production problems",
+        "definition": "speech production problems",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-background-information.v44",
+        "path": "Ext-plt1-background-information.v44",
+        "short": "visual handicap",
+        "definition": "visual handicap",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
