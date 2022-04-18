@@ -24,6 +24,13 @@
             "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-HospitalUnit"],
             "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{lid}}"
+            }
+          ],
           "status": "active",
           "name": "{{name}}",
           "mode": "instance",

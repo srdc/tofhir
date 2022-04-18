@@ -119,6 +119,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "hospital-unit.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val practitionerMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/practitioner-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "practitioners.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -544,6 +549,30 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(hospitalUnitMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "practitioner mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = practitionerMappingTask) map { results =>
+      results.length shouldBe 8
+
+      val practitioners = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Practitioner")
+      practitioners.length shouldBe 4
+      (practitioners.head \ "name" \ "family").extract[Seq[String]] shouldBe Seq("NAMLI")
+      (practitioners.last \ "qualification" \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "RN"
+
+      val practitionerRoles = results.filter(r => (r \ "meta" \ "profile").extract[Seq[String]].head == "https://aiccelerate.eu/fhir/StructureDefinition/AIC-PractitionerRoleForSurgicalWorkflow")
+      (practitionerRoles.head \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Specialized surgeon"
+      (practitionerRoles.head \ "specialty" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Cardiology"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(practitionerMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )

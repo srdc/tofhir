@@ -4,7 +4,7 @@
   "title": "Mapping of schema practitioner  to AIC-Practitioner and AIC-PractitionerRole profiles",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-practitioner"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-practitioner"
   }],
   "context": {
     "practitionerConceptMap":  {
@@ -19,10 +19,18 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Practitioner",
-          "id": "{{pid}}",
+          "id": "{{mpp:getHashedId('Practitioner',pid)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Practitioner"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Practitioner"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{pid}}"
+            }
+          ],
           "name": {
             "{{#fname}}": "{{familyName}}",
             "{{*}}":  {
@@ -53,19 +61,20 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "PractitionerRole",
-          "id": "pr-{{pid}}",
+          "id": "{{mpp:getHashedId('PractitionerRole',pid)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PractitionerRoleForSurgicalWorkflow"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PractitionerRoleForSurgicalWorkflow"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "active": true,
-          "practitioner": "{{utl:createFhirReference('Practitioner',pid)}}",
+          "practitioner": "{{mpp:createFhirReferenceWithHashedId('Practitioner',pid)}}",
           "code": [
             {
               "coding": [
                 {
                   "system": "http://snomed.info/sct",
                   "code": "{{role}}",
-                  "display": "{{{{mpp:getConcept(%practitionerConceptMap, role, 'source_display')}}}}"
+                  "display": "{{mpp:getConcept(%practitionerConceptMap, role, 'source_display')}}"
                 }
               ]
             }
