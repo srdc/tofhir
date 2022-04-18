@@ -140,6 +140,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "preoperative-risk-factors.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val patientReportedConditionsMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-reported-conditions-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "patient-reported-conditions.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -654,6 +659,25 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(preopRisksMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "patient reported conditions mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientReportedConditionsMappingTask) map { results =>
+      results.length shouldBe 20
+      val patient1Conds = results.filter(r => (r \ "subject" \ "reference").extract[String] == FhirMappingUtility.getHashedReference("Patient", "p1"))
+      val circDisease = patient1Conds.find(r => (r \ "code" \"coding" \ "code").extract[Seq[String]].head == "400047006")
+      circDisease should not be empty
+      (circDisease.head \ "code" \"coding" \ "display").extract[Seq[String]].head shouldBe "circulation diseases in lower extremities"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(patientReportedConditionsMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )

@@ -1,51 +1,51 @@
 source_code,target_code,target_display
-1,49601007,cardiovascular diseases
-2,368009,valvular disease
-3,38341003,hypertension
-4,22298006,infarction
-5,53741008,coronary artery disease
-6,84114007,cardiac insufficiency
-7,698247007,arrhythmia
-8,13213009,congenital heart defect
-9,400047006,circulation diseases in lower extreminities
-10,235856003,liver disease
-11,59927004,hepatic insufficiency
-12,19829001,lung disease
-13,195967001,asthma
-14,13645005,chronic obstructive pulmonary disease
-15,19829001+74964007,other lung disease
-16,426990007, home oxygen therapy
-17,90708001,kidney disease
-18,723188008,nephropathy: renal insufficiency
-19,3.31E+11,nephropathy: hemodialysis
-20,118940003,neurologic diseases
-21,230690007,stroke
-22,274100004,cerebral hemorrhage
-23,62914000,cerebrovascular disorder
-24,84757009,epilepsy
-25,386807006,memory disorder
-26,24700007,multiple sclerosis
-27,49049000,parkinson´s disease
-28,129565002,myopathy
-29,73211009,diabetes
-30,170745003,diabetes: diet therapy
-31,170746002,diabetes: tablet therapy
-32,170747006,diabetes: multiple daily injections
-33,69896004,rheumatic diseases
-34,203082005,fibromyalgia
-35,363346000,cancer diseases
-36,14304000,thyroid disease
-37,40930008,hypothyroidism
-38,34486009,hyperthyroidism
-39,85919009,intestinal disease
-40,24526004,inflammatory bowel disease
-41,170903008,ostomy
-42,128187005,migraine or other headache
-43,414022008,blood disease
-44,93143009,leukemia
-45,271737000,anemia
-46,302215000,low thrombocyte
-47,64779008,bleeding sensitivity and tendency for thrombosis
-48,366219004,usually more sensitive to bleeding wounds
-49,111293003,diagnosed venous thrombosis
-50,59282003,diagnosed pulmonary embolism
+d1,49601007,cardiovascular diseases
+d2,368009,valvular disease
+d3,38341003,hypertension
+d4,22298006,infarction
+d5,53741008,coronary artery disease
+d6,84114007,cardiac insufficiency
+d7,698247007,arrhythmia
+d8,13213009,congenital heart defect
+d9,400047006,circulation diseases in lower extremities
+d10,235856003,liver disease
+d11,59927004,hepatic insufficiency
+d12,19829001,lung disease
+d13,195967001,asthma
+d14,13645005,chronic obstructive pulmonary disease
+d15,19829001+74964007,other lung disease
+d16,426990007,home oxygen therapy
+d17,90708001,kidney disease
+d18,723188008,nephropathy: renal insufficiency
+d19,3.31E+11,nephropathy: hemodialysis
+d20,118940003,neurologic diseases
+d21,230690007,stroke
+d22,274100004,cerebral hemorrhage
+d23,62914000,cerebrovascular disorder
+d24,84757009,epilepsy
+d25,386807006,memory disorder
+d26,24700007,multiple sclerosis
+d27,49049000,parkinsonï¿½s disease
+d28,129565002,myopathy
+d29,73211009,diabetes
+d30,170745003,diabetes: diet therapy
+d31,170746002,diabetes: tablet therapy
+d32,170747006,diabetes: multiple daily injections
+d33,69896004,rheumatic diseases
+d34,203082005,fibromyalgia
+d35,363346000,cancer diseases
+d36,14304000,thyroid disease
+d37,40930008,hypothyroidism
+d38,34486009,hyperthyroidism
+d39,85919009,intestinal disease
+d40,24526004,inflammatory bowel disease
+d41,170903008,ostomy
+d42,128187005,migraine or other headache
+d43,414022008,blood disease
+d44,93143009,leukemia
+d45,271737000,anemia
+d46,302215000,low thrombocyte
+d47,64779008,bleeding sensitivity and tendency for thrombosis
+d48,366219004,usually more sensitive to bleeding wounds
+d49,111293003,diagnosed venous thrombosis
+d50,59282003,diagnosed pulmonary embolism

@@ -4,7 +4,7 @@
   "title": "Mapping of schema patient reported conditions to AIC-PatientReportedCondition profile resources",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-patient-reported-conditions"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-patient-reported-conditions"
   }],
   "context": {
     "prcConceptMap":  {
@@ -18,31 +18,28 @@
         "name": "result",
         "language": "application/fhir-template+json",
         "value": {
-          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 50).select('v' & $this.toString()).mkString(' | ')).indicesWhere($this.exists() and $this).select($this.toString())}}",
+          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 50).select('iif(d' & $this.toString() & ', ' & $this.toString() & ', {})').mkString(' | ')).select('d' & $this.toString())}}",
           "{{*}}": {
             "resourceType": "Condition",
-            "id": "{{utl:uuid()}}",
+            "id": "{{mpp:getHashedId('Observation', pid & %ind & time.toString())}}",
             "meta": {
-              "profile": [
-                "https://aiccelerate.eu/fhir/StructureDefinition/AIC-PatientReportedCondition"
-              ]
+              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PatientReportedCondition"],
+              "source": "{{%sourceSystem.sourceUri}}"
             },
             "verificationStatus": "{{? utl:createFhirCodeableConcept('http://terminology.hl7.org/CodeSystem/condition-ver-status', 'unconfirmed', {})}}",
             "code": {
               "coding": [
                 {
                   "system": "http://snomed.info/sct",
-                  "code": "{{utl:getConcept(%prcConceptMap, %ind, 'target_code')}}",
-                  "display": "{{utl:getConcept(%prcConceptMap, %ind, 'target_display')}}"
+                  "code": "{{mpp:getConcept(%prcConceptMap, %ind, 'target_code')}}",
+                  "display": "{{mpp:getConcept(%prcConceptMap, %ind, 'target_display')}}"
                 }
               ]
             },
-            "subject": {
-              "reference": "Patient/{{pid}}"
-            },
-            "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+            "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+            "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
             "recordedDate": "{{? time}}",
-            "asserter": "{{utl:createFhirReference('Patient', pid)}}"
+            "asserter": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}"
           }
         }
       }
