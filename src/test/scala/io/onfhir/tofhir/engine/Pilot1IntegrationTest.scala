@@ -104,6 +104,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "vitalsigns.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val labResultsMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/lab-results-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "lab-results.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -463,6 +468,31 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
       )
   }
 
+  "lab results mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = labResultsMappingTask) map { results =>
+      results.length shouldBe 25
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.apply(1) \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e2")
+      (results.head \ "effectiveDateTime").extract[String] shouldBe "2012-05-10T10:00:00+01:00"
 
+      (results.head \ "valueQuantity" \ "value").extract[Double] shouldBe 1.05
+      (results.head \ "valueQuantity" \ "unit").extract[String] shouldBe "g/dL"
+
+      (results.apply(6) \ "valueQuantity" \ "value").extract[Double] shouldBe 15 * 7.500617
+      (results.apply(6) \ "valueQuantity" \ "unit").extract[String] shouldBe  "mm[Hg]"
+
+      (results.apply(3) \ "interpretation" \ "coding" \ "code").extract[Seq[String]].head shouldBe "N"
+    }
+  }
+
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(labResultsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
 
 }
