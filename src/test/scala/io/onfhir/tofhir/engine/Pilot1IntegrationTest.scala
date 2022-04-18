@@ -10,6 +10,7 @@ import io.onfhir.util.JsonFormatter.formats
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.json4s.JArray
+import org.json4s.JsonAST.JObject
 
 import java.net.URI
 import java.nio.file.Paths
@@ -132,6 +133,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
   val backgroundInfMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/background-information-mapping",
     sourceContext = Map("source" ->FileSystemSource(path = "background-information.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
+  val preopRisksMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-risks-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "preoperative-risk-factors.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
   "patient mapping" should "map test data" in {
@@ -629,6 +635,28 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
       )
   }
 
+  "preoperative risk factors mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = preopRisksMappingTask) map { results =>
+       results.length shouldBe 3
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.apply(1) \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e2")
+      (results.head \ "effectivePeriod" \ "start").extract[String] shouldBe "2017-10-05T10:00:00+01:00"
+      (results.apply(1) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "62014003+366667001"
+      (results.apply(1) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Adverse reaction caused by drug (disorder) + Skin Reaction (finding)"
+      val comps = (results.apply(1) \ "component").extract[Seq[JObject]]
+      comps.length shouldBe 3
+      (comps.head \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "246112005"
+      (comps.head \ "valueBoolean").extract[Boolean] shouldBe true
+    }
+  }
 
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(preopRisksMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
 
 }
