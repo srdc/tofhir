@@ -1,20 +1,20 @@
 source_code,target_code,target_display
-1,29857009,Chest pain (finding)
-2,81953000,Chest pain on exortion (finding)
-3,29857009+426899007,Chest Pain (finding) +  Pain provoked by walking (finding)
-4,9267009,Chest pain at rest(finding)
-5,39898005,Sleep disorder
-6,111489007,Breathing-related sleep disorder
-7,72863001,Snoring
-8,73430006,Sleep Apnea
-9,73430006:371881003=229308003,Sleep Apnea during iterminant CPAP
-10,267036007,Dyspnea
-11,60845006,Dyspnea on exertion
-12,267036007:371881003=870595007,Dyspnea during walking
-13,161941007,Dyspnea at rest
-14,267036007:371881003=40733004,Dyspnea during infection
-15,59140005,Abnormal salivary secretion
-16,300378004,Difficulty in ability to defecate (finding)
-17,102835006,Difficulty passing urine (finding)
-18,64531003,Nasal Discharge
-19,426931009,Prophylaxis against infective endocarditis
+s1,29857009,Chest pain (finding)
+s2,81953000,Chest pain on exortion (finding)
+s3,29857009+426899007,"Chest Pain (finding) + Pain provoked by walking (finding)"
+s4,9267009,Chest pain at rest(finding)
+s5,39898005,Sleep disorder
+s6,111489007,Breathing-related sleep disorder
+s7,72863001,Snoring
+s8,73430006,Sleep Apnea
+s9,73430006:371881003=229308003,Sleep Apnea during iterminant CPAP
+s10,267036007,Dyspnea
+s11,60845006,Dyspnea on exertion
+s12,267036007:371881003=870595007,Dyspnea during walking
+s13,161941007,Dyspnea at rest
+s14,267036007:371881003=40733004,Dyspnea during infection
+s15,59140005,Abnormal salivary secretion
+s16,300378004,Difficulty in ability to defecate (finding)
+s17,102835006,Difficulty passing urine (finding)
+s18,64531003,Nasal Discharge
+s19,426931009,Prophylaxis against infective endocarditis

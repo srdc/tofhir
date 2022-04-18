@@ -4,7 +4,7 @@
   "title": "Mapping of schema preoperative symptoms to AIC-PreoperativeSymptom profile resources",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-preoperative-symptoms"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-preoperative-symptoms"
   }],
   "context": {
     "prsConceptMap":  {
@@ -18,14 +18,13 @@
         "name": "result",
         "language": "application/fhir-template+json",
         "value": {
-          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 19).select('v' & $this.toString()).mkString(' | ')).indicesWhere($this.exists()).select($this.toString())}}",
+          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 19).select('iif(s' & $this.toString() & '.exists(), ' & $this.toString() & ', {})').mkString(' | ')).select('s' & $this.toString())}}",
           "{{*}}": {
             "resourceType": "Observation",
-            "id": "{{uuid()}}",
+            "id": "{{mpp:getHashedId('Observation', pid & %ind & startTime.toString())}}",
             "meta": {
-              "profile": [
-                "https://aiccelerate.eu/fhir/StructureDefinition/AIC-PreoperativeSymptom"
-              ]
+              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PreoperativeSymptom"],
+              "source": "{{%sourceSystem.sourceUri}}"
             },
             "status": "final",
             "category": [
@@ -43,17 +42,15 @@
               "coding": [
                 {
                   "system": "http://snomed.info/sct",
-                  "code": "{{utl:getConcept(%prsConceptMap, %ind, 'target_code')}}",
-                  "display": "{{utl:getConcept(%prsConceptMap, %ind, 'target_display')}}"
+                  "code": "{{mpp:getConcept(%prsConceptMap, %ind, 'target_code')}}",
+                  "display": "{{mpp:getConcept(%prsConceptMap, %ind, 'target_display')}}"
                 }
               ]
             },
-            "subject": {
-              "reference": "Patient/{{pid}}"
-            },
-            "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+            "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+            "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
             "effectiveDateTime": "{{time}}",
-            "valueBoolean": "{{utl:evaluateExpression('s' & %ind)}}"
+            "valueBoolean": "{{utl:evaluateExpression(%ind)}}"
           }
         }
       }

@@ -145,6 +145,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "patient-reported-conditions.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val preopSymptomsMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-symptoms-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "preoperative-symptoms.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -678,6 +683,27 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(patientReportedConditionsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "preoperative symptoms mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = preopSymptomsMappingTask) map { results =>
+      results.length shouldBe 38
+      val patient1Symptoms = results.filter(r => (r \ "subject" \ "reference").extract[String] == FhirMappingUtility.getHashedReference("Patient", "p1"))
+      patient1Symptoms.length shouldBe 19
+      (patient1Symptoms.head  \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e1")
+
+      (patient1Symptoms.apply(11) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "267036007:371881003=870595007"
+      (patient1Symptoms.apply(11) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Dyspnea during walking"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(preopSymptomsMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )

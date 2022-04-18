@@ -21,7 +21,7 @@
           "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 50).select('iif(d' & $this.toString() & ', ' & $this.toString() & ', {})').mkString(' | ')).select('d' & $this.toString())}}",
           "{{*}}": {
             "resourceType": "Condition",
-            "id": "{{mpp:getHashedId('Observation', pid & %ind & time.toString())}}",
+            "id": "{{mpp:getHashedId('Condition', pid & %ind & time.toString())}}",
             "meta": {
               "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PatientReportedCondition"],
               "source": "{{%sourceSystem.sourceUri}}"
