@@ -124,6 +124,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "practitioners.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val workshiftMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/workshift-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "workshift.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -578,6 +583,24 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
       )
   }
 
+  "workshift mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = workshiftMappingTask) map { results =>
+      results.length shouldBe 2
+      (results.head \ "actor" \"reference").extract[Seq[String]].toSet shouldBe Set(FhirMappingUtility.getHashedReference("PractitionerRole", "pr1"), FhirMappingUtility.getHashedReference("Location", "loc1"))
+      (results.head \ "extension" \ "valueBoolean").extract[Seq[Boolean]].head shouldBe false
+      (results.head \ "planningHorizon" \ "start").extract[String] shouldBe "2017-01-18"
+      (results.head \ "planningHorizon" \ "end").extract[String] shouldBe "2017-01-19"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(workshiftMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
 
 
 }

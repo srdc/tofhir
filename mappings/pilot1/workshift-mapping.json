@@ -4,7 +4,7 @@
   "title": "Mapping of schema workshift to AIC Workshift profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-workshift"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-workshift"
   }],
   "mapping": [
     {
@@ -13,12 +13,13 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Schedule",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Schedule', pid & startTime.toString())}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-WorkShiftForSurgicalWorkflow"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-WorkShiftForSurgicalWorkflow"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "active": false,
-          "actor": "{{* utl:createFhirReference('PractitionerRole', 'pr-' & pid) | utl:createFhirReference('Location', assignedLocation) }}",
+          "actor": "{{* mpp:createFhirReferenceWithHashedId('PractitionerRole', pid) | mpp:createFhirReferenceWithHashedId('Location', assignedLocation)}}",
           "planningHorizon": {
             "start": "{{startTime}}",
             "end": "{{endTime}}"
