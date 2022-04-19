@@ -1,0 +1,107 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt2-device-used",
+  "name": "Ext-plt2-device-used",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt2-device-used",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt2-device-used",
+        "path": "Ext-plt2-device-used",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-device-used.deviceUseID",
+        "path": "Ext-plt2-device-used.deviceUseID",
+        "short": "Unique identifier for this device use record.",
+        "definition": "Unique identifier for this device use record.)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-device-used.pid",
+        "path": "Ext-plt2-device-used.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-device-used.startDate",
+        "path": "Ext-plt2-device-used.startDate",
+        "short": "Device use start date",
+        "definition": "Start time for the using the medical device (e.g. infusion pump) ",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-device-used.endDate",
+        "path": "Ext-plt2-device-used.endDate",
+        "short": "Device use end date",
+        "definition": "End time (last day) for using the device (inclusive), if not ongoing",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-device-used.code",
+        "path": "Ext-plt2-device-used.code",
+        "short": "Device used",
+        "definition": "The code for the device used",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

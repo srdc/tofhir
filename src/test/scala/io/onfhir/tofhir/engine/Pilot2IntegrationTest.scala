@@ -81,6 +81,11 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "medication-used.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val deviceUsedMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot2/device-used-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "device-used.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -257,5 +262,25 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "device used mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = deviceUsedMappingTask) map { results =>
+      results.length shouldBe 2
+      (results.last \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.last \ "device" \"identifier" \ "value").extract[String] shouldBe "levodopa-infusion-pump"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(deviceUsedMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 }
