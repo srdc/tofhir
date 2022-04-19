@@ -8,6 +8,7 @@ import scala.io.Source
 import io.onfhir.util.JsonFormatter._
 
 import java.net.URI
+import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import scala.util.Try
 
@@ -43,7 +44,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
   private def getFhirMappings: List[FhirMapping] = {
     val files = getJsonFiles
     files.map { f =>
-      val source = Source.fromFile(f, "utf-8") // read the JSON file
+      val source = Source.fromFile(f, StandardCharsets.UTF_8.name()) // read the JSON file
       val fileContent = try source.mkString finally source.close()
       Try(fileContent.parseJson.extract[FhirMapping]).toOption
     }.filter(_.nonEmpty) // Remove the elements from the list if they are not valid FhirMapping JSONs
@@ -51,7 +52,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
   }
 
   /**
-   * Given a list of #FhirMapping, arrange the URIs pointing to the context definition files (e.g., concept mappings)
+   * Given a list of #FhirMapping, normalize the URIs pointing to the context definition files (e.g., concept mappings)
    * in the #FhirMappingContextDefinition objects with respect to the folderPath of this repository because the paths
    * may be given as relative paths in those URIs.
    *
@@ -96,7 +97,12 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
    * @return
    */
   override def getFhirMappingByUrl(mappingUrl: String): FhirMapping = {
-    fhirMappings(mappingUrl)
+    try {
+      fhirMappings(mappingUrl)
+    } catch {
+      case e: NoSuchElementException => throw FhirMappingException(s"FhirMapping with url $mappingUrl cannot be found in folder $folderUri", e)
+      case e: Throwable => throw FhirMappingException(s"Unknown exception while retrieving the FhirMapping with url $mappingUrl from folder $folderUri", e)
+    }
   }
 
 }

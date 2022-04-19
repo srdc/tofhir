@@ -41,8 +41,8 @@
       {
         "id": "Ext-other-observation.time",
         "path": "Ext-other-observation.time",
-        "short": "Time of observation",
-        "definition": "Time of observation",
+        "short": "Observation time",
+        "definition": "Time that this measurement is done",
         "min": 1,
         "max": "1",
         "type": [
@@ -57,15 +57,15 @@
       {
         "id": "Ext-other-observation.encounterId",
         "path": "Ext-other-observation.encounterId",
-        "short": "Encounter id",
-        "definition": "Encounter id",
+        "short": "Encounter",
+        "definition": "Reference to the encounter that this observation is performed",
         "min": 0,
         "max": "1",
         "type": [
           {
-            "code": "string",
+            "code": "id",
             "profile": [
-              "http://hl7.org/fhir/StructureDefinition/string"
+              "http://hl7.org/fhir/StructureDefinition/id"
             ]
           }
         ]
@@ -73,8 +73,8 @@
       {
         "id": "Ext-other-observation.code",
         "path": "Ext-other-observation.code",
-        "short": "Code for the observation",
-        "definition": "Code for the observation",
+        "short": "Observation code",
+        "definition": "Code for the type of the measurement",
         "min": 1,
         "max": "1",
         "type": [
@@ -89,15 +89,15 @@
       {
         "id": "Ext-other-observation.value",
         "path": "Ext-other-observation.value",
-        "short": "Value of the observation",
-        "definition": "Value of the observation",
+        "short": "Value of the measurement.",
+        "definition": "Value of the measurement(s). If there are multiple measurements list of them seperated by '-'",
         "min": 1,
         "max": "1",
         "type": [
           {
-            "code": "decimal",
+            "code": "string",
             "profile": [
-              "http://hl7.org/fhir/StructureDefinition/decimal"
+              "http://hl7.org/fhir/StructureDefinition/string"
             ]
           }
         ]

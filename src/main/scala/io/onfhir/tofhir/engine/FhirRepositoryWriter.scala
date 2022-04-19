@@ -27,7 +27,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    *
    * @param df
    */
-  override def write(df:  Dataset[String]): Unit = {
+  override def write(df: Dataset[String]): Unit = {
     logger.debug("Created FHIR resources will be written to the given FHIR repository URL:{}", sinkSettings.fhirRepoUrl)
     import io.onfhir.util.JsonFormatter._
     df
@@ -36,32 +36,32 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         partition
           .grouped(BATCH_GROUP_SIZE)
           .foreach(rowGroup => {
-            var batchRequest:FhirBatchTransactionRequestBuilder = onFhirClient.batch()
+            var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
             rowGroup.foreach(row => {
               val resource = row.parseJson
               batchRequest = batchRequest.entry(_.update(resource))
             })
             batchRequest = batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder]
             logger.debug("Batch Update request will be sent to the FHIR repository for {} resources.", rowGroup.size)
-            var responseBundle:FHIRTransactionBatchBundle = null
-              try {
-                responseBundle = Await.result(batchRequest.executeAndReturnBundle(), FiniteDuration(5, TimeUnit.SECONDS))
-              } catch {
-                case e:Throwable => throw FhirMappingException("!!!There is an error while writing resources to the FHIR Repository.", e)
-              }
-              //Check if there is any error in one of the requests
-              if (responseBundle.hasAnyError()) {
-                val msg =
-                  s"!!!There is an error while writing resources to the FHIR Repository.\n" +
-                    s"Repository URL: ${sinkSettings.fhirRepoUrl}\n" +
-                    s"Bundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
-                    s"Bundle response: ${responseBundle.bundle.toJson}"
-                logger.error(msg)
-                throw FhirMappingException(msg)
-              } else {
-                logger.debug("{} FHIR resources were written to the FHIR repository successfully.", rowGroup.size)
-              }
-      })
-    }
+            var responseBundle: FHIRTransactionBatchBundle = null
+            try {
+              responseBundle = Await.result(batchRequest.executeAndReturnBundle(), FiniteDuration(5, TimeUnit.SECONDS))
+            } catch {
+              case e: Throwable => throw FhirMappingException("!!!There is an error while writing resources to the FHIR Repository.", e)
+            }
+            //Check if there is any error in one of the requests
+            if (responseBundle.hasAnyError()) {
+              val msg =
+                s"!!!There is an error while writing resources to the FHIR Repository.\n" +
+                  s"Repository URL: ${sinkSettings.fhirRepoUrl}\n" +
+                  s"Bundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
+                  s"Bundle response: ${responseBundle.bundle.toJson}"
+              logger.error(msg)
+              throw FhirMappingException(msg)
+            } else {
+              logger.debug("{} FHIR resources were written to the FHIR repository successfully.", rowGroup.size)
+            }
+          })
+      }
   }
 }
