@@ -85,7 +85,8 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
       throw new FhirPathException(s"Invalid function call 'getConcept', given expression for keyExpr:${keyExpr.getText} for the concept code should return a string value!")
     }
     //If conceptCode returns empty, also return empty, if there is no such key or target column is null also return empty
-    conceptCodeResult
+    val result =
+      conceptCodeResult
       .headOption
       .map(_.asInstanceOf[FhirPathString].s) match {
         case None => Nil
@@ -99,6 +100,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
             .map(mappedValue =>  FhirPathString(mappedValue))
             .toSeq
     }
+    result
   }
 
   /**

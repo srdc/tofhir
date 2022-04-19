@@ -150,6 +150,11 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->FileSystemSource(path = "preoperative-symptoms.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val anestObsMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping",
+    sourceContext = Map("source" ->FileSystemSource(path = "anesthesia-observations.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -709,4 +714,26 @@ class Pilot1IntegrationTest extends ToFhirTestSpec {
       )
   }
 
+  "anesthesia observations mapping" should "map test data" in {
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = anestObsMappingTask) map { results =>
+      results.length shouldBe 130
+      val p1 = results.filter(r => (r \ "encounter" \ "reference").extractOpt[String].contains(FhirMappingUtility.getHashedReference("Encounter", "e1")))
+      p1.length shouldBe 65
+      (p1.apply(35) \ "effectiveDateTime").extract[String] shouldBe "2015-05-10T10:25:00+01:00"
+
+      (p1.apply(42) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "61010-5"
+      (p1.apply(42) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Burst suppression ratio [Ratio] Cerebral cortex Electroencephalogram (EEG)"
+      (p1.apply(42) \ "valueQuantity" \ "value").extract[Double] shouldBe 0.277386451
+      (p1.apply(42) \ "valueQuantity" \ "unit").extract[String] shouldBe "%"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(anestObsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
 }

@@ -4,7 +4,7 @@
   "title": "Mapping of schema anesthesia observations symptoms to AIC-AnesthesiaObservation profile resources",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-anesthesia-observations"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-anesthesia-observations"
   }],
   "context": {
     "anstObsConceptMap":  {
@@ -18,12 +18,13 @@
         "name": "result",
         "language": "application/fhir-template+json",
         "value": {
-          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 65).select('v' & $this.toString()).mkString(' | ')).indicesWhere($this.exists()).select($this.toString())}}",
+          "{{#ind}}": "{{utl:evaluateExpression(utl:indices(1, 65).select('iif(v' & $this.toString() & '.exists(), ' & $this.toString() & ', {})').mkString(' | ')).select('v' & $this.toString())}}",
           "{{*}}": {
             "resourceType": "Observation",
-            "id": "{{utl:uuid()}}",
+            "id": "{{mpp:getHashedId('Observation', pid & %ind & time.toString())}}",
             "meta": {
-              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-AnesthesiaObservation"]
+              "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-AnesthesiaObservation"],
+              "source": "{{%sourceSystem.sourceUri}}"
             },
             "status": "final",
             "code": {
@@ -35,16 +36,14 @@
                 }
               ]
             },
-            "subject": {
-              "reference": "Patient/{{pid}}"
-            },
-            "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+            "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+            "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
             "effectiveDateTime": "{{time}}",
             "valueQuantity": {
-              "value": "{{utl:evaluateExpression('v' & %ind)}}",
-              "unit": "{{mpp:getConcept(%anstObsConceptMap, code, 'target_unit')}}",
+              "value": "{{utl:evaluateExpression(%ind)}}",
+              "unit": "{{mpp:getConcept(%anstObsConceptMap, %ind, 'target_unit')}}",
               "system": "http://unitsofmeasure.org",
-              "code": "{{mpp:getConcept(%anstObsConceptMap, code, 'target_unit')}}"
+              "code": "{{mpp:getConcept(%anstObsConceptMap, %ind, 'target_unit')}}"
             }
           }
         }

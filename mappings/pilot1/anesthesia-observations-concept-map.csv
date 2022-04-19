@@ -1,66 +1,66 @@
 source_code,target_code,target_system,target_display,target_unit
-1,60907-3,http://loinc.org,Sevoflurane [VFr/PPres] Airway adaptor --during inspiration,%{vol}
-2,60805-9,http://loinc.org,Desflurane [VFr/PPres] Airway adaptor --during inspiration,%{vol}
-3,60807-5,http://loinc.org,Sevoflurane [VFr/PPres] Airway adaptor --during expiration,%{vol}
-4,62265-4,http://loinc.org,Desflurane [VFr/PPres] Airway adaptor --during expiration,%{vol}
-5,60804-2,http://loinc.org,Minimum alveolar concentration (MAC) for anesthesia.XXX Anesthetic agent.XXX,%
-6,3151-8,http://loinc.org,Inhaled oxygen flow rate,L/min
-7,75924-1,http://loinc.org,Fresh gas.nitrous oxide flow Gas delivery system,L/min
-8,75923-3,http://loinc.org,Fresh gas.air flow Gas delivery system,L/min
-9,19994-3,http://loinc.org,Oxygen/Total gas setting [Volume Fraction] Ventilator,%
-10,2708-6,http://loinc.org,Oxygen saturation in Arterial blood,%
-11,60809-1,http://loinc.org,Carbon dioxide [VFr/PPres] in Airway adaptor --during expiration,%
-12,3150-0,http://loinc.org,Inhaled oxygen concentration,%
-13,60939-6,http://loinc.org,Nitrous oxide [VFr/PPres] Airway adaptor --during expiration,%
-14,rso2-l,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,rSO2 L (%),%
-15,rso2-r,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,rSO2 R (%),%
-16,rso2-s1,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,rSO2 S1 (%),%
-17,rso2-s2,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,rSO2 S2 (%),%
-18,75960-5,http://loinc.org,Inspired minute Volume,L/min
-19,76007-4 ,http://loinc.org,Tidal volume expired Respiratory system airway --on ventilator,mL
-20,60952-9,http://loinc.org,Mean airway pressure --during inspiration,cm[H2O]
-21,9279-1,http://loinc.org,Respiratory rate,{breaths}/min
-22,76270-8,http://loinc.org,Respiratory rate by Impedance.transthoracic,{breaths}/min
-23,20077-4,http://loinc.org,Positive end expiratory pressure setting Ventilator,cm[H2O]
-24,8867-4,http://loinc.org,Heart Rate,{beats}/min
-25,60985-9,http://loinc.org,Central venous pressure (CVP),mm[Hg]
-26,76534-7,http://loinc.org,Systolic blood pressure by Noninvasive,mm[Hg]
-27,76536-2,http://loinc.org,Mean blood pressure by Noninvasive,mm[Hg]
-28,76535-4,http://loinc.org,Diastolic blood pressure by Noninvasive,mm[Hg]
-29,76215-3,http://loinc.org,Invasive Systolic blood pressure,mm[Hg]
-30,76214-6,http://loinc.org,Invasive Mean blood pressure,mm[Hg]
-31,76213-8,http://loinc.org,Invasive Diastolic blood pressure,mm[Hg]
-32,8440-0,http://loinc.org,Pulmonary artery Systolic blood pressure,mm[Hg]
-33,8414-5,http://loinc.org,Pulmonary artery Mean blood pressure,mm[Hg]
-34,8385-7,http://loinc.org,Pulmonary artery Diastolic blood pressure,mm[Hg]
-35,75994-4,http://loinc.org,Pulmonary artery wedge pressure,mm[Hg]
-36,LP19466-9,http://loinc.org,Cardiac output,L/min/m2
-37,8750-2,http://loinc.org,Left ventricular Cardiac index by Fick method,L/min/m2
-38,18566-0,http://loinc.org,ST amplitude.J point+60 ms Lead V5,mV
-39,18545-4,http://loinc.org,ST amplitude.J point+20 ms Lead AVL,mV
-40,733502006,http://snomed.info/sct,Stroke volume variation (observable entity),%
-41,75949-8,http://loinc.org,"Response entropy [Score] Cerebral cortex Electroencephalogram (EEG)",{score}
-42,75954-8,http://loinc.org,State entropy [Score] Cerebral cortex Electroencephalogram (EEG),{score}
-43,61010-5,http://loinc.org,Burst suppression ratio [Ratio] Cerebral cortex Electroencephalogram (EEG),%
-44,LP187002-3,http://loinc.org,Bispectral index,%
-45,spi,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,Surgical Pleth Index,%
-46,250832007,http://snomed.info/sct,Train of four count ,{Count}
-47,250831000,http://snomed.info/sct,Train of four ration,%
-48,59561-1,http://loinc.org,Propofol glucuronide [Mass/volume] in Urine,ug/mL
-49,58381-5,http://loinc.org,fentaNYL [Mass/volume] in Urine by Confirmatory method,ng/mL
-50,8328-7,http://loinc.org,Axillary temperature,Cel
-51,91371-5,http://loinc.org,Body temprature brain,Cel
-52,8331-1,http://loinc.org,Oral Temprature ,Cel
-53,8332-9,http://loinc.org,Rectal Tempratur,Cel
-54,8333-7,http://loinc.org,Tympanic membrane temperature,Cel
-55,8334-5 ,http://loinc.org,"Body temperature - Urinary bladder",Cel
-56,76010-8,http://loinc.org,Nasal temprature,Cel
-57,60836-4,http://loinc.org,Esophageal temperature,Cel
-58,39106-0,http://loinc.org,Tempratur of skin,Cel
-59,60834-9,http://loinc.org,Blood temperature,Cel
-60,60956-0,http://loinc.org,Intracranial pressure (ICP),mm[Hg]
-61,251427005,http://snomed.info/sct,Muscle compartment pressure,mm[Hg]
-62,8478-0,http://loinc.org,Mean arterial pressure(MAP) or mean blood pressue,mm[Hg]
-63,2711-0,http://loinc.org,Oxygen saturation in Venous blood,Cel
-64,75987-8,http://loinc.org,Venous blood temperature,Cel
-65,60835-6,http://loinc.org,Arterial blood temperature,Cel
+v1,60907-3,http://loinc.org,Sevoflurane [VFr/PPres] Airway adaptor --during inspiration,%{vol}
+v2,60805-9,http://loinc.org,Desflurane [VFr/PPres] Airway adaptor --during inspiration,%{vol}
+v3,60807-5,http://loinc.org,Sevoflurane [VFr/PPres] Airway adaptor --during expiration,%{vol}
+v4,62265-4,http://loinc.org,Desflurane [VFr/PPres] Airway adaptor --during expiration,%{vol}
+v5,60804-2,http://loinc.org,Minimum alveolar concentration (MAC) for anesthesia.XXX Anesthetic agent.XXX,%
+v6,3151-8,http://loinc.org,Inhaled oxygen flow rate,L/min
+v7,75924-1,http://loinc.org,Fresh gas.nitrous oxide flow Gas delivery system,L/min
+v8,75923-3,http://loinc.org,Fresh gas.air flow Gas delivery system,L/min
+v9,19994-3,http://loinc.org,Oxygen/Total gas setting [Volume Fraction] Ventilator,%
+v10,2708-6,http://loinc.org,Oxygen saturation in Arterial blood,%
+v11,60809-1,http://loinc.org,Carbon dioxide [VFr/PPres] in Airway adaptor --during expiration,%
+v12,3150-0,http://loinc.org,Inhaled oxygen concentration,%
+v13,60939-6,http://loinc.org,Nitrous oxide [VFr/PPres] Airway adaptor --during expiration,%
+v14,rso2-l,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,rSO2 L (%),%
+v15,rso2-r,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,rSO2 R (%),%
+v16,rso2-s1,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,rSO2 S1 (%),%
+v17,rso2-s2,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,rSO2 S2 (%),%
+v18,75960-5,http://loinc.org,Inspired minute Volume,L/min
+v19,76007-4,http://loinc.org,Tidal volume expired Respiratory system airway --on ventilator,mL
+v20,60952-9,http://loinc.org,Mean airway pressure --during inspiration,cm[H2O]
+v21,9279-1,http://loinc.org,Respiratory rate,{breaths}/min
+v22,76270-8,http://loinc.org,Respiratory rate by Impedance.transthoracic,{breaths}/min
+v23,20077-4,http://loinc.org,Positive end expiratory pressure setting Ventilator,cm[H2O]
+v24,8867-4,http://loinc.org,Heart Rate,{beats}/min
+v25,60985-9,http://loinc.org,Central venous pressure (CVP),mm[Hg]
+v26,76534-7,http://loinc.org,Systolic blood pressure by Noninvasive,mm[Hg]
+v27,76536-2,http://loinc.org,Mean blood pressure by Noninvasive,mm[Hg]
+v28,76535-4,http://loinc.org,Diastolic blood pressure by Noninvasive,mm[Hg]
+v29,76215-3,http://loinc.org,Invasive Systolic blood pressure,mm[Hg]
+v30,76214-6,http://loinc.org,Invasive Mean blood pressure,mm[Hg]
+v31,76213-8,http://loinc.org,Invasive Diastolic blood pressure,mm[Hg]
+v32,8440-0,http://loinc.org,Pulmonary artery Systolic blood pressure,mm[Hg]
+v33,8414-5,http://loinc.org,Pulmonary artery Mean blood pressure,mm[Hg]
+v34,8385-7,http://loinc.org,Pulmonary artery Diastolic blood pressure,mm[Hg]
+v35,75994-4,http://loinc.org,Pulmonary artery wedge pressure,mm[Hg]
+v36,LP19466-9,http://loinc.org,Cardiac output,L/min/m2
+v37,8750-2,http://loinc.org,Left ventricular Cardiac index by Fick method,L/min/m2
+v38,18566-0,http://loinc.org,ST amplitude.J point+60 ms Lead V5,mV
+v39,18545-4,http://loinc.org,ST amplitude.J point+20 ms Lead AVL,mV
+v40,733502006,http://snomed.info/sct,Stroke volume variation (observable entity),%
+v41,75949-8,http://loinc.org,"Response entropy [Score] Cerebral cortex Electroencephalogram (EEG)",{score}
+v42,75954-8,http://loinc.org,State entropy [Score] Cerebral cortex Electroencephalogram (EEG),{score}
+v43,61010-5,http://loinc.org,Burst suppression ratio [Ratio] Cerebral cortex Electroencephalogram (EEG),%
+v44,LP187002-3,http://loinc.org,Bispectral index,%
+v45,spi,https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters,Surgical Pleth Index,%
+v46,250832007,http://snomed.info/sct,Train of four count ,{Count}
+v47,250831000,http://snomed.info/sct,Train of four ration,%
+v48,59561-1,http://loinc.org,Propofol glucuronide [Mass/volume] in Urine,ug/mL
+v49,58381-5,http://loinc.org,fentaNYL [Mass/volume] in Urine by Confirmatory method,ng/mL
+v50,8328-7,http://loinc.org,Axillary temperature,Cel
+v51,91371-5,http://loinc.org,Body temprature brain,Cel
+v52,8331-1,http://loinc.org,Oral Temprature ,Cel
+v53,8332-9,http://loinc.org,Rectal Tempratur,Cel
+v54,8333-7,http://loinc.org,Tympanic membrane temperature,Cel
+v55,8334-5,http://loinc.org,"Body temperature - Urinary bladder",Cel
+v56,76010-8,http://loinc.org,Nasal temprature,Cel
+v57,60836-4,http://loinc.org,Esophageal temperature,Cel
+v58,39106-0,http://loinc.org,Tempratur of skin,Cel
+v59,60834-9,http://loinc.org,Blood temperature,Cel
+v60,60956-0,http://loinc.org,Intracranial pressure (ICP),mm[Hg]
+v61,251427005,http://snomed.info/sct,Muscle compartment pressure,mm[Hg]
+v62,8478-0,http://loinc.org,Mean arterial pressure(MAP) or mean blood pressue,mm[Hg]
+v63,2711-0,http://loinc.org,Oxygen saturation in Venous blood,Cel
+v64,75987-8,http://loinc.org,Venous blood temperature,Cel
+v65,60835-6,http://loinc.org,Arterial blood temperature,Cel
