@@ -25,6 +25,14 @@
               "value": "{{conditionID}}"
             }
           ],
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+                "code": "{{iif(abatementDateTime.exists(), 'inactive', 'active')}}"
+              }
+            ]
+          },
           "code": {
             "coding": [
               {
