@@ -1,0 +1,171 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt2-symptom-assessment",
+  "name": "Ext-plt2-symptom-assessment",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt2-symptom-assessment",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt2-symptom-assessment",
+        "path": "Ext-plt2-symptom-assessment",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.observationID",
+        "path": "Ext-plt2-symptom-assessment.observationID",
+        "short": "Unique identifier for this symptom assessment observation.",
+        "definition": "Unique identifier for this symptom assessment observation.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.pid",
+        "path": "Ext-plt2-symptom-assessment.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.startDate",
+        "path": "Ext-plt2-symptom-assessment.startDate",
+        "short": "Assessment/observation time",
+        "definition": "Time of the observation or start time for the period this score is about if evaluation is done for a period (e.g. if patient answer the questionnaire for a specific week or month or custom period). ",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.endDate",
+        "path": "Ext-plt2-symptom-assessment.endDate",
+        "short": "Observation period end time",
+        "definition": "If this observation is about a time period, its end time",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.code",
+        "path": "Ext-plt2-symptom-assessment.code",
+        "short": "Symptom code",
+        "definition": "The symptom that this observation is about. Please check symptoms listed in the Symptoms table for possible codes.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.method",
+        "path": "Ext-plt2-symptom-assessment.method",
+        "short": "Symptom evaluation method",
+        "definition": "The method of evaluation specific to the symptom.  Please check symptoms listed in the Symptoms table for possible method codes (Method column).",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.score",
+        "path": "Ext-plt2-symptom-assessment.score",
+        "short": "Symptom evaluation score",
+        "definition": "Numeric score of the symptom evaluation",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "integer",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/integer"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.isProm",
+        "path": "Ext-plt2-symptom-assessment.isProm",
+        "short": "Is evaluation done by patient",
+        "definition": "Whether this assessment is done by patient (via a questionnaire) or not",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "boolean",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/boolean"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-symptom-assessment.encounterID",
+        "path": "Ext-plt2-symptom-assessment.encounterID",
+        "short": "Encounter identifier",
+        "definition": "Unique identifier of the visit/encounter that this assessment is done",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

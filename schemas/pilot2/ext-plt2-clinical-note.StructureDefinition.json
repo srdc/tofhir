@@ -1,0 +1,123 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt2-clinical-note",
+  "name": "Ext-plt2-clinical-note",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt2-clinical-note",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt2-clinical-note",
+        "path": "Ext-plt2-clinical-note",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-clinical-note.clinicalNoteID",
+        "path": "Ext-plt2-clinical-note.clinicalNoteID",
+        "short": "Unique identifier for the clinical note.",
+        "definition": "Unique identifier for the clinical note.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-clinical-note.pid",
+        "path": "Ext-plt2-clinical-note.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-clinical-note.language",
+        "path": "Ext-plt2-clinical-note.language",
+        "short": "Language of the content",
+        "definition": "Language of the content; fi: Finish, en: English, it: Italian",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-clinical-note.data",
+        "path": "Ext-plt2-clinical-note.data",
+        "short": "Unstructured text providing the Doctor's notes",
+        "definition": "Unstructured text providing the Doctor's notes",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "base64Binary",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/base64Binary"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-clinical-note.date",
+        "path": "Ext-plt2-clinical-note.date",
+        "short": "Time the note is provided",
+        "definition": "Time the note is provided",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt2-clinical-note.encounterID",
+        "path": "Ext-plt2-clinical-note.encounterID",
+        "short": "Id of encounter",
+        "definition": "Reference to the visit/encounter that this note is provided if such an information exists",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

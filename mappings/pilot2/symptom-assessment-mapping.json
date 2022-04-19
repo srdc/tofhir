@@ -4,7 +4,7 @@
   "title": "Mapping of symptom assessment schema for pilot 2 to AIC-ParkinsonNonMotorSymptomAssessment, AIC-ParkinsonMotorObservation and its children profiles",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-plt2-symptom-assessment"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt2-symptom-assessment"
   }],
   "context": {
     "symptomCodesMap":  {
@@ -23,24 +23,30 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{observationID}}",
+          "id": "{{mpp:getHashedId('Observation',observationID)}}",
           "meta": {
-            "profile": ["{{mpp:getConcept(%symptomCodesMap, code, 'target_profile')}}"]
+            "profile": ["{{mpp:getConcept(%symptomCodesMap, code, 'target_profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{observationID}}"
+            }
+          ],
           "status": "final",
           "code": {
             "coding": [
               {
                 "system": "{{mpp:getConcept(%symptomCodesMap, code, 'target_system')}}",
-                "code": "{{code}}",
+                "code": "{{mpp:getConcept(%symptomCodesMap, code, 'target_code')}}",
                 "display": "{{mpp:getConcept(%symptomCodesMap, code, 'target_display')}}"
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterID)}}",
           "effectivePeriod": {
             "start": "{{startDate}}",
             "end": "{{? endDate}}"
@@ -60,7 +66,7 @@
             "system": "http://unitsofmeasure.org",
             "code": "{score}"
           },
-          "performer": "{{* iif(isProm, utl:createFhirReference('Patient', pid), {})}}"
+          "performer": "{{* iif(isProm, mpp:createFhirReferenceWithHashedId('Patient', pid), {})}}"
         }
       }
     }

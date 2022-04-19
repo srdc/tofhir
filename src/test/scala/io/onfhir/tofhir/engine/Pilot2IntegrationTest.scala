@@ -56,6 +56,11 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "encounters.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val symptomsAssMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot2/symptom-assessment-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "parkinson-symptom-assessments.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -108,5 +113,32 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "symptom assessment mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = symptomsAssMappingTask) map { results =>
+      results.length shouldBe 12
+      (results.apply(2) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p1")
+      (results.apply(2) \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e1")
+      (results.apply(2) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "271587009"
+      (results.apply(2) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Stiffness, rigidity"
+      (results.apply(2) \ "meta" \ "profile").extract[Seq[String]].head shouldBe "https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonStiffnessScore"
+      (results.apply(2) \ "method" \ "coding" \ "code").extract[Seq[String]].head shouldBe "updrs3"
+      (results.apply(2) \ "method" \ "coding" \ "display").extract[Seq[String]].head shouldBe "UPDRS v3 Questionnaire"
+      (results.apply(5) \ "effectivePeriod" \ "start").extract[String] shouldBe "2012-02-07"
+      (results.apply(5) \ "effectivePeriod" \ "end").extract[String] shouldBe "2012-02-13"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(symptomsAssMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 }
