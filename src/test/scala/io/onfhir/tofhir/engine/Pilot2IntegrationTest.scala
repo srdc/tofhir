@@ -71,6 +71,11 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "other-assessments.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val conditionMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot2/condition-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "conditions.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -198,6 +203,32 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "condition mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = conditionMappingTask) map { results =>
+       results.length shouldBe 5
+
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.apply(1) \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e2")
+      (results.apply(2) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "J85"
+      (results.apply(2) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Abscess of lung and mediastinum"
+
+      (results.head \ "onsetDateTime" ).extract[String] shouldBe "2010-10-15"
+      (results.head \ "abatementDateTime" ).extract[String] shouldBe "2010-11-15"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(conditionMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 
 

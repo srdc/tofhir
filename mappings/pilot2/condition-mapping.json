@@ -4,7 +4,7 @@
   "title": "Mapping of condition schema for pilots to AIC-Condition FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-plt2-condition"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt2-condition"
   }],
   "mapping": [
     {
@@ -13,11 +13,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Condition",
-          "id": "{{conditionID}}",
+          "id": "{{mpp:getHashedId('Condition',conditionID)}}",
           "meta": {
-            "profile": [
-              "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition"
-            ]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "code": {
             "coding": [
@@ -28,10 +27,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterID)}}",
           "onsetDateTime": "{{onsetDateTime}}",
           "abatementDateTime": "{{? abatementDateTime}}"
         }
