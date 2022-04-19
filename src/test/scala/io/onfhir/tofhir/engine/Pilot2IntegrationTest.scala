@@ -61,6 +61,11 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "parkinson-symptom-assessments.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val symptomsExistenceMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot2/symptom-existence-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "parkinson-symptom-existence.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -139,6 +144,32 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "symptom existence mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = symptomsExistenceMappingTask) map { results =>
+      results.length shouldBe 6
+      (results.head \ "identifier" \ "value").extract[Seq[String]] shouldBe Seq("se1")
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p1")
+      (results.apply(1) \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e1")
+
+      (results.head \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "443544006"
+      (results.head \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Freezing of gait"
+      (results.apply(4) \ "valueBoolean").extract[Boolean] shouldBe(true)
+      (results.last \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "39898005"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(symptomsExistenceMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 
 }

@@ -4,3 +4,4 @@ se2,p1,2012-04-10,2012-04-17,orthostatic-hypotension,TRUE,FALSE,e1
 se3,p1,2012-04-10,2012-04-17,cognition,FALSE,FALSE,e1
 se4,p2,2013-05-15,,postural-balance,FALSE,TRUE,
 se5,p2,2013-05-15,,nocturia,TRUE,TRUE,
+se6,p2,2013-05-15,,sleep-disorder,TRUE,FALSE,
