@@ -66,6 +66,11 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "symptoms.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val vitalSignsMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot3-p2/vital-signs-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "vitalsigns.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -160,6 +165,24 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "vital signs mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = vitalSignsMappingTask) map { results =>
+      results.length shouldBe 8
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(vitalSignsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 
 }
