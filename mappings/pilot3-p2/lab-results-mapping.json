@@ -4,7 +4,7 @@
   "title": "Mapping of schema lab results to AIC-PediatricNeurooncologicalLabResult profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-plt3-p2-lab-results"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p2-lab-result"
   }],
   "context": {
     "labResultsConceptMap":  {
@@ -23,10 +23,18 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{resultID}}",
+          "id": "{{mpp:getHashedId('Observation',resultID)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalLabResult"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalLabResult"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{resultID}}"
+            }
+          ],
           "status": "final",
           "category": [
             {
@@ -42,13 +50,11 @@
               {
                 "system": "http://loinc.org",
                 "code": "{{code}}",
-                "display": "{{mpp:getConcept(%labResultsConceptMap, code, 'source_display')}"
+                "display": "{{mpp:getConcept(%labResultsConceptMap, code, 'source_display')}}"
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "effectiveDateTime": "{{date}}",
           "valueQuantity": "{{mpp:convertAndReturnQuantity(%labResultUnitConversion, code, value, unit)}}"
         }
