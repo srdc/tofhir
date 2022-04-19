@@ -29,6 +29,13 @@
             "profile": ["{{mpp:getConcept(%vitalSignsConceptMap, code, 'profile')}}"],
             "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{observationID}}"
+            }
+          ],
           "status": "final",
           "category": [
             {
@@ -77,6 +84,13 @@
             "profile": ["{{mpp:getConcept(%vitalSignsConceptMap, code, 'profile')}}"],
             "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{observationID}}"
+            }
+          ],
           "status": "final",
           "category": [
             {
