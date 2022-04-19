@@ -4,7 +4,7 @@
   "title": "Mapping of condition schema for pilots to AIC-Condition FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-plt3-p2-condition"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p2-condition"
   }],
   "mapping": [
     {
@@ -13,17 +13,23 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Condition",
-          "id": "{{conditionID}}",
+          "id": "{{mpp:getHashedId('Condition',conditionID)}}",
           "meta": {
-            "profile": [
-              "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition"
-            ]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{conditionID}}"
+            }
+          ],
           "clinicalStatus": {
             "coding": [
               {
                 "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
-                "code": "{{clinicalStatus}}"
+                "code": "{{clinicalStatus.nav:orElse(iif(abatementDateTime.exists(), 'inactive', 'active'))}}"
               }
             ]
           },
@@ -37,9 +43,7 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "onsetDateTime": "{{onsetDateTime}}",
           "abatementDateTime": "{{? abatementDateTime}}"
         }

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.model.{FhirMappingTask, FhirRepositorySinkSettings, FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
+import io.onfhir.tofhir.util.FhirMappingUtility
 import io.onfhir.util.JsonFormatter.formats
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -50,6 +51,11 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "patients.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val conditionMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot3-p2/condition-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "conditions.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -63,6 +69,32 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(patientMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "condition mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = conditionMappingTask) map { results =>
+      results.length shouldBe 5
+
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+
+      (results.apply(3) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "M89.9"
+      (results.apply(3) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Disorder of bone, unspecified"
+
+      (results.head \ "clinicalStatus" \ "coding" \ "code").extract[Seq[String]].head shouldBe "resolved"
+      (results.head \ "severity" \ "coding" \ "code").extract[Seq[String]].head shouldBe "24484000"
+      (results.head \ "severity" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Severe"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(conditionMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )
