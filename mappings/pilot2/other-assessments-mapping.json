@@ -4,7 +4,7 @@
   "title": "Mapping of other assessment schema for pilot 2 to AIC-ParkinsonCognitiveBehavioralAssessment profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-plt2-other-assessments"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt2-other-assessment"
   }],
   "context": {
     "otherAssessmentsMap":  {
@@ -19,10 +19,18 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{observationID}}",
+          "id": "{{mpp:getHashedId('Observation',observationID)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonCognitiveBehavioralAssessment"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonCognitiveBehavioralAssessment"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{observationID}}"
+            }
+          ],
           "status": "final",
           "code": {
             "coding": [
@@ -33,10 +41,8 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterID)}}",
           "effectivePeriod": {
             "start": "{{startDate}}",
             "end": "{{? endDate}}"

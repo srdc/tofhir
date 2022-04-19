@@ -66,6 +66,11 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "parkinson-symptom-existence.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val otherAssMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot2/other-assessments-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "other-assessments.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -165,6 +170,30 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(symptomsExistenceMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "other assessment mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherAssMappingTask) map { results =>
+      results.length shouldBe 5
+      (results.head \ "identifier" \ "value").extract[Seq[String]] shouldBe Seq("oo1")
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p1")
+      (results.apply(1) \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e1")
+      (results.apply(2) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "bis-11"
+      (results.apply(2) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Barratt Impulsiveness Scale-11 score"
+      (results.apply(3) \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "tmt-a"
+      (results.apply(3) \ "valueQuantity" \ "code").extract[String] shouldBe "{Zscore}"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(otherAssMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )

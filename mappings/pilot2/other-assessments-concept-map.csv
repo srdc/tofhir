@@ -7,7 +7,7 @@ pd-mci,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-ass
 sas,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Starkstein Apathy Scale (SAS) score,{score}
 273830002,http://snomed.info/sct,"The State-Trait Anxiety Inventory (STAi-Y1,2) s core",{score}
 pas,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Parkinson Anxiety Scale (PAS) score,{score}
-89209-1 ,http://loinc.org,Beck Depression Inventory II total score,{score}
+89209-1,http://loinc.org,Beck Depression Inventory II total score,{score}
 bis-11,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Barratt Impulsiveness Scale-11 score,{score}
 sogs,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,The South Oaks Gambling Screen (SOGS) score,{score}
 quip-rs,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Impulsive-Compulsive Disorders in PD-Rating Scale (QUIP-RS) score,{score}
@@ -22,11 +22,11 @@ stroop-t,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-a
 stroop-e,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Stroop Test - error,{Zscore}
 cdt,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Clock Drowing Test (CDT),{Zscore}
 verb-flu-ph,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Verbal Fluency Test- Phonemic,{Zscore}
-rocf-c,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Rey–Osterrieth complex figure test(ROCF)-copy,{Zscore}
+rocf-c,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Reyï¿½Osterrieth complex figure test(ROCF)-copy,{Zscore}
 bjlot,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Benton Judgment of Line Orientation Test (BJLOT),{Zscore}
 vosp,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Visual Object and Space Perception Battery (VOSP) (Incomplete Letters),{Zscore}
 wpat,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Word paired associated test (WPAT),{Zscore}
-rocf-d,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Rey–Osterrieth complex figure test(ROCF) delayed recall,{Zscore}
+rocf-d,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Reyï¿½Osterrieth complex figure test(ROCF) delayed recall,{Zscore}
 bab-t,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Prose memory test,{Zscore}
 verb-flu-s,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Verbal Fluency Test- Semantic form,{Zscore}
 bnt,https://aiccelerate.eu/fhir/CodeSystem/parkinson-cognitive-behavioral-assessments,Boston Naming test,{Zscore}
