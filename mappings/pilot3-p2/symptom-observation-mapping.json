@@ -4,7 +4,7 @@
   "title": "Mapping of schema symptom observations to AIC-PediatricNeurooncologicalSymptomFinding profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-plt3-p2-symptom-observation"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p2-symptom-observation"
   }],
   "context": {
     "symptomsConceptMap":  {
@@ -19,23 +19,22 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{observationID}}",
+          "id": "{{mpp:getHashedId('Observation',observationID)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalSymptomFinding"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalSymptomFinding"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
             "coding": [
               {
-                "system": "http://loinc.org",
+                "system": "http://snomed.info/sct",
                 "code": "{{code}}",
-                "display": "{{mpp:getConcept(%symptomsConceptMap, code, 'source_display')}"
+                "display": "{{mpp:getConcept(%symptomsConceptMap, code, 'source_display')}}"
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "effectivePeriod": {
             "start": "{{startDate}}",
             "end": "{{? endDate}}"

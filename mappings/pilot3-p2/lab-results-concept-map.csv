@@ -20,15 +20,15 @@ source_code,source_display
 1742-6,Plasma alanine transferase level (P-ALAT)
 1975-2,Plasma bilirubin level (P-Bil)
 15152-2,Plasma conjugated bilirubin level (P-Bil-kj)
-3016-3,P-TSH
-11579-0,P-TSH by Detection limit
-3026-2,P-T4V
-2484-4,P-IGF-1
-2141-0,P-ACTH
-2143-6,S-Korsol
-15067-2,S-FSH
-10501-5,S-LH
-2243-4,S-estradiol
-83104-0,S-AMH
-2986-8,S-testosterone
-34319-4,S-inhibine-B
+3016-3,Thyrotropin [Units/volume] in Serum or Plasma (P-TSH)
+11579-0,Thyrotropin [Units/volume] in Serum or Plasma by Detection limit <= 0.05 mIU/L
+3026-2,Thyroxine (T4) [Mass/volume] in Serum or Plasma (P-T4V)
+2484-4,Insulin-like growth factor-I [Mass/volume] in Serum or Plasma (P-IGF-1)
+2141-0,Corticotropin [Mass/volume] in Plasma (P-ACTH)
+2143-6,Cortisol [Mass/volume] in Serum or Plasma (S-Korsol)
+15067-2,Follitropin [Units/volume] in Serum or Plasma (S-FSH)
+10501-5,Lutropin [Units/volume] in Serum or Plasma (S-LH)
+2243-4,Estradiol (E2) [Mass/volume] in Serum or Plasma (S-estradiol)
+83104-0,Mullerian inhibiting substance [Mass/volume] in Serum or Plasma by Immunoassay (S-AMH)
+2986-8,Testosterone [Mass/volume] in Serum or Plasma (S-testosterone)
+34319-4,Inhibin B [Mass/volume] in Serum or Plasma (S-inhibine-B)

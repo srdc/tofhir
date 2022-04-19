@@ -61,6 +61,11 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "lab-results.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val symptomMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot3-p2/symptom-observation-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "symptoms.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -111,7 +116,7 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
       results.length shouldBe 33
       (results.apply(25) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p21")
       (results.apply(25) \  "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "2141-0"
-      (results.apply(25) \  "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "P-ACTH"
+      (results.apply(25) \  "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Corticotropin [Mass/volume] in Plasma (P-ACTH)"
       (results.apply(25) \  "valueQuantity" \ "value").extract[Double] shouldBe 18.16060583
       (results.apply(25) \  "valueQuantity" \ "code").extract[String] shouldBe "pg/mL"
 
@@ -125,6 +130,32 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(labResultsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "symptoms mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = symptomMappingTask) map { results =>
+      results.length shouldBe 12
+
+      val patient1 = results.filter(r => (r\ "subject" \ "reference").extract[String] ==  FhirMappingUtility.getHashedReference("Patient", "p1"))
+      patient1.length shouldBe 7
+      (JArray(patient1.toList) \ "valueBoolean").extract[Seq[Boolean]] shouldBe (1 to 7).map(_ => false)
+      (patient1.apply(4) \  "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "699281009"
+      (patient1.apply(4) \  "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Motor Weakness"
+
+      val patient2 = results.filter(r => (r\ "subject" \ "reference").extract[String] ==  FhirMappingUtility.getHashedReference("Patient", "p2"))
+      (JArray(patient2.toList) \ "valueBoolean").extract[Seq[Boolean]] shouldBe (8 to 12).map(_ => true)
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(symptomMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )
