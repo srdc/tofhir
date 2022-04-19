@@ -18,6 +18,13 @@
             "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition"],
             "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{conditionID}}"
+            }
+          ],
           "code": {
             "coding": [
               {

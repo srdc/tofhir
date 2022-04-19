@@ -4,7 +4,7 @@
   "title": "Mapping of schema MedicationUsed to AIC-MedicationUsed FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-plt2-medication-used"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt2-medication-used"
   }],
   "mapping": [
     {
@@ -13,10 +13,18 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "MedicationStatement",
-          "id": "{{medicationUseID}}",
+          "id": "{{mpp:getHashedId('MedicationStatement',medicationUseID)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationUsed"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationUsed"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{medicationUseID}}"
+            }
+          ],
           "status": "completed",
           "medicationCodeableConcept": {
             "coding": [
@@ -27,9 +35,7 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "effectivePeriod": {
             "start": "{{startDate}}",
             "end": "{{? endDate}}"
@@ -38,16 +44,19 @@
             "{{#ds}}": "{{dose}}",
             "{{*}}": {
               "timing": {
-                "frequency": "{{frequency}}",
-                "periodUnit": "d",
-                "period": 1
+                "repeat": {
+                  "frequency": "{{frequency}}",
+                  "periodUnit": "d",
+                  "period": 1
+                }
               },
               "doseAndRate": [
                 {
                   "doseQuantity": {
                     "system": "http://unitsofmeasure.org",
                     "code": "{{doseUnit}}",
-                    "value": "{{ds}}"
+                    "unit": "{{doseUnit}}",
+                    "value": "{{%ds}}"
                   }
                 }
               ]

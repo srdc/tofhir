@@ -76,6 +76,11 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "conditions.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val medicationUsedMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot2/medication-used-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "medication-used.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -229,7 +234,28 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
       )
   }
 
+  "medication used mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = medicationUsedMappingTask) map { results =>
+      results.length shouldBe 5
+      (results.apply(1) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.apply(2) \ "medicationCodeableConcept" \ "coding" \ "code").extract[Seq[String]].head shouldBe "N06AB03"
+      (results.apply(2) \ "medicationCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "fluoxetine"
 
+      (results.apply(1) \ "dosage" \"timing" \ "repeat" \ "frequency").extract[Seq[Int]] shouldBe Seq(2)
+      (results.apply(1) \ "dosage" \"doseAndRate" \ "doseQuantity" \ "value").extract[Seq[Double]] shouldBe Seq(10)
+      (results.apply(1) \ "dosage" \"doseAndRate" \ "doseQuantity" \ "code").extract[Seq[String]] shouldBe Seq("mg")
+    }
+  }
 
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(medicationUsedMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
 
 }
