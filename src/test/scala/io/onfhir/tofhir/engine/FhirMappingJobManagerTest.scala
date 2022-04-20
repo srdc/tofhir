@@ -51,7 +51,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
       .getOrElse(false)
 
-  val testMappingJobFilePath: String = Paths.get(Paths.get(getClass.getResource("/").toURI).toAbsolutePath.toString, "test-mapping-jobs.json").toAbsolutePath.toString
+  val testMappingJobFilePath: String = Paths.get(getClass.getResource("/test-mappingjob.json").toURI).normalize().toAbsolutePath.toString
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(id = "test-mapping-job",
     mappingRepositoryUri = mappingRepositoryURI,
     schemaRepositoryUri = schemaRepositoryURI,
@@ -128,18 +128,18 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
   }
 
   it should "save and read FhirMappingJob objects to/from a file" in {
-    FhirMappingJobManager.saveMappingJobsToFile(Seq(fhirMappingJob), testMappingJobFilePath)
-    val f = new File(testMappingJobFilePath)
+    val lFileName = "tmp-mappingjob.json"
+    FhirMappingJobManager.saveMappingJobsToFile(Seq(fhirMappingJob), lFileName)
+    val f = new File(lFileName)
     f.exists() shouldBe true
 
-    val lMappingJobs = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
+    val lMappingJobs = FhirMappingJobManager.readMappingJobFromFile(lFileName)
     lMappingJobs.size shouldBe 1
     lMappingJobs.head.tasks.size shouldBe 2
     f.delete() shouldBe true
   }
 
   it should "execute the FhirMappingJob restored from a file" in {
-    FhirMappingJobManager.saveMappingJobsToFile(Seq(fhirMappingJob), testMappingJobFilePath)
     val lMappingJobs = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
 
     val lMappingRepository = new FhirMappingFolderRepository(lMappingJobs.head.mappingRepositoryUri)
@@ -148,13 +148,10 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     fhirMappingJobManager.executeMappingTaskAndReturn(task = lMappingJobs.head.tasks.head) map { results =>
       results.size shouldBe 10
     }
-
-    new File(testMappingJobFilePath).delete() shouldBe true
   }
 
   it should "execute the FhirMappingJob with sink settings restored from a file" in {
     assume(fhirServerIsAvailable)
-    FhirMappingJobManager.saveMappingJobsToFile(Seq(fhirMappingJob), testMappingJobFilePath)
     val lMappingJobs = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
     val lMappingRepository = new FhirMappingFolderRepository(lMappingJobs.head.mappingRepositoryUri)
 
@@ -162,8 +159,6 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     fhirMappingJobManager.executeMappingJob(tasks = lMappingJobs.head.tasks, sinkSettings = lMappingJobs.head.sinkSettings) map { unit =>
       unit shouldBe ()
     }
-
-    new File(testMappingJobFilePath).delete() shouldBe true
   }
 
 }
