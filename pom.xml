@@ -27,6 +27,7 @@
         <jackson-csv.version>2.13.2</jackson-csv.version>
         <apache-commons-codec.version>1.15</apache-commons-codec.version>
         <logback.version>1.2.11</logback.version>
+        <typesafe.config.version>1.4.2</typesafe.config.version>
     </properties>
 
     <build>
@@ -188,6 +189,13 @@
             <artifactId>spark-sql_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- Application Configuration -->
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>${typesafe.config.version}</version>
         </dependency>
 
         <!-- For csv parsing -->

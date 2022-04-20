@@ -24,35 +24,29 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
           "meta": {
-            "profile": ["{{getConcept(%obsConceptMap, code, 'profile')}}"]
+            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
             "coding": [
               {
-                "system": "{{getConcept(%obsConceptMap, code, 'source_system')}}",
+                "system": "{{mpp:getConcept(%obsConceptMap, code, 'source_system')}}",
                 "code": "{{code}}",
-                "display": "{{getConcept(%obsConceptMap, code, 'source_display')}}"
+                "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": {
-            "{{#eid}}": "{{encounterId}}",
-            "{{?}}": {
-              "reference": "Encounter/{{%eid}}"
-            }
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueQuantity": {
-            "value": "{{value}}",
-            "unit": "{{getConcept(%obsConceptMap, code, 'unit')}}",
+            "value": "{{value.toDecimal()}}",
+            "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
             "system": "http://unitsofmeasure.org",
-            "code": "{{getConcept(%obsConceptMap, code, 'unit')}}"
+            "code": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}"
           }
         }
       }
@@ -68,38 +62,32 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
           "meta": {
-            "profile": ["{{getConcept(%obsConceptMap, code, 'profile')}}"]
+            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "code": {
             "coding": [
               {
-                "system": "{{getConcept(%obsConceptMap, code, 'source_system')}}",
+                "system": "{{mpp:getConcept(%obsConceptMap, code, 'source_system')}}",
                 "code": "{{code}}",
-                "display": "{{getConcept(%obsConceptMap, code, 'source_display')}}"
+                "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": {
-            "{{#eid}}": "{{encounterId}}",
-            "{{?}}": {
-              "reference": "Encounter/{{%eid}}"
-            }
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "valueQuantity": {
-            "value": "{{value.split('-')[0]}.toDecimal()}",
-            "unit": "{{getConcept(%obsConceptMap, code, 'unit')}}",
+            "value": "{{value.split('-')[0].toDecimal()}}",
+            "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
             "system": "http://unitsofmeasure.org",
-            "code": "{{getConcept(%obsConceptMap, code, 'unit')}}"
+            "code": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}"
           },
           "component": {
-            "{{#comp}}": "{{value.split('-').tail()}}",
+            "{{#comp}}": "{{value.split('-').tail().select($this.toDecimal())}}",
             "{{?}}": [
               {
                 "code": {
@@ -112,7 +100,7 @@
                   ]
                 },
                 "valueQuantity": {
-                  "value": "comp[0]",
+                  "value": "{{%comp[0]}}",
                   "unit": "{score}",
                   "system": "http://unitsofmeasure.org",
                   "code": "{score}"
@@ -129,7 +117,7 @@
                   ]
                 },
                 "valueQuantity": {
-                  "value": "comp[1]",
+                  "value": "{{%comp[1]}}",
                   "unit": "{score}",
                   "system": "http://unitsofmeasure.org",
                   "code": "{score}"
@@ -146,7 +134,7 @@
                   ]
                 },
                 "valueQuantity": {
-                  "value": "comp[2]",
+                  "value": "{{%comp[2]}}",
                   "unit": "{score}",
                   "system": "http://unitsofmeasure.org",
                   "code": "{score}"
@@ -168,7 +156,11 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "MedicationAdministration",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('MedicationAdministration', pid & code & time.toString())}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
           "status": "completed",
           "category": {
             "coding": [
@@ -182,27 +174,20 @@
           "medicationCodeableConcept": {
             "coding": [
               {
-                "system": "{{getConcept(%obsConceptMap, code, 'source_system')}}",
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
                 "code": "{{code}}",
-                "display": "{{getConcept(%obsConceptMap, code, 'source_display')}}"
+                "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "context": {
-            "{{#eid}}": "{{encounterId}}",
-            "{{?}}": {
-              "reference": "Encounter/{{%eid}}"
-            }
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "context": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
           "dosage": {
             "dose": {
-              "value": "{{value}}",
+              "value": "{{value.toDecimal()}}",
               "unit": "mL",
-              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "system": "http://unitsofmeasure.org",
               "code": "mL"
             }
           }

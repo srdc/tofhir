@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.engine
 
 import io.onfhir.tofhir.ToFhirTestSpec
-import io.onfhir.tofhir.model.{ConceptMapContext, UnitConversionContext}
+import io.onfhir.tofhir.model.{ConceptMapContext, FhirMappingException, UnitConversionContext}
 
 import java.io.File
 import java.net.URI
@@ -34,7 +34,7 @@ class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
   }
 
   it should "throw exception when an unknown mapping is requested" in {
-    the[NoSuchElementException] thrownBy mappingRepository1.getFhirMappingByUrl("some-unknown-url") should have message "key not found: some-unknown-url"
+    the[FhirMappingException] thrownBy mappingRepository1.getFhirMappingByUrl("some-unknown-url") should have message s"FhirMapping with url some-unknown-url cannot be found in folder $repositoryFolderUri1"
   }
 
   it should "correctly load concept map context definitions" in {
