@@ -4,7 +4,7 @@
   "title": "Mapping of schema MedicationAdministration to AIC-MedicationAdministration FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-medication-administration"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p2-medication-administration"
   }],
   "context": {
     "medsConceptMap": {
@@ -19,9 +19,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "MedicationAdministration",
-          "id": "{{uuid()}}",
+          "id": "{{mpp:getHashedId('MedicationAdministration',pid & code & startTime.toString())}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
           "medicationCodeableConcept": {
@@ -33,9 +34,7 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "effectiveDateTime": "{{startTime}}"
         }
       }

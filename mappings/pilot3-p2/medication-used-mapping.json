@@ -4,7 +4,7 @@
   "title": "Mapping of schema MedicationUsed to AIC-MedicationUsed FHIR profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-medication-used"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p2-medication-used"
   }],
   "context": {
     "medsConceptMap": {
@@ -19,11 +19,12 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "MedicationStatement",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('MedicationStatement',pid & code & startDate.toString())}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationUsed"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationUsed"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
-          "status": "completed",
+          "status": "{{iif(endDate.exists(),'completed','active')}}",
           "medicationCodeableConcept": {
             "coding": [
               {
@@ -33,9 +34,7 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "effectivePeriod": {
             "start": "{{startDate}}",
             "end": "{{? endDate}}"

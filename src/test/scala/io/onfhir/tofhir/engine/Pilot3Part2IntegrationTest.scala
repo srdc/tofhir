@@ -76,6 +76,16 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "neurooncological-observations.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val medAdministrationMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot3-p2/medication-administration-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "medication-administrations.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
+  val medUsedMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot3-p2/medication-used-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "medications-used.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -213,6 +223,50 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
         unit shouldBe ()
       )
   }
+
+  "medication administration mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = medAdministrationMappingTask) map { results =>
+      results.length shouldBe 12
+
+      (results.apply(4) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p3")
+      (results.apply(4) \  "medicationCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "etoposide"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(medAdministrationMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "medication used mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = medUsedMappingTask) map { results =>
+      results.length shouldBe 10
+      (results.apply(4) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p5")
+      (results.apply(4) \  "medicationCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "vancomycin"
+      (results.apply(4) \ "effectivePeriod" \ "start").extract[String] shouldBe "2014-05-10"
+      (results.apply(4) \ "effectivePeriod" \ "end").extract[String] shouldBe "2014-06-10"
+
+      (results.last \ "status").extract[String] shouldBe "active"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(medUsedMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
 
 
 
