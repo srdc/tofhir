@@ -71,6 +71,11 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
     sourceContext = Map("source" ->  FileSystemSource(path = "vitalsigns.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
   )
 
+  val neuroObsMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot3-p2/neurooncological-observation-mapping",
+    sourceContext = Map("source" ->  FileSystemSource(path = "neurooncological-observations.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+  )
+
   "patient mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
@@ -178,6 +183,32 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
     assert(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(vitalSignsMappingTask), sinkSettings = fhirSinkSetting)
+      .map( unit =>
+        unit shouldBe ()
+      )
+  }
+
+  "neurooncological observations mapping" should "map test data" in {
+    //Some semantic tests on generated content
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = neuroObsMappingTask) map { results =>
+       results.length shouldBe 21
+      (results.apply(9) \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p2")
+      (results.apply(9) \  "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "18156-0"
+      (results.apply(9) \  "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Posterior wall thickness (Left ventricular posterior wall Thickness during systole by US)"
+      (results.apply(9) \  "valueQuantity" \ "value").extract[Double] shouldBe 9.035436143
+      (results.apply(9) \  "valueQuantity" \ "code").extract[String] shouldBe "mm"
+
+
+      (results.apply(17) \  "valueCodeableConcept" \ "coding" \ "code").extract[Seq[String]].head shouldBe "LA28366-5"
+      (results.apply(17) \  "valueCodeableConcept" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Complete response"
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    //Send it to our fhir repo if they are also validated
+    assert(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(neuroObsMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
         unit shouldBe ()
       )

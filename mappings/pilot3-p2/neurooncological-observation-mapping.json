@@ -4,7 +4,7 @@
   "title": "Mapping of schema neurooncological observation to FHIR AIC-PediatricNeurooncologicalObservation profiles",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-neurooncological-observation"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p2-neurooncological-observation"
   }],
   "context": {
     "obsConceptMap":  {
@@ -28,10 +28,18 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{observationID}}",
+          "id": "{{mpp:getHashedId('Observation', observationID)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalObservation"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalObservation"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{observationID}}"
+            }
+          ],
           "status": "final",
           "code": {
             "coding": [
@@ -42,15 +50,13 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "effectiveDateTime": "{{startDate}}",
           "valueQuantity": {
             "value": "{{valueQuantity}}",
-            "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
+            "unit": "{{mpp:getConcept(%obsConceptMap, code, 'target_unit')}}",
             "system": "http://unitsofmeasure.org",
-            "code": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}"
+            "code": "{{mpp:getConcept(%obsConceptMap, code, 'target_unit')}}"
           }
         }
       }
@@ -66,10 +72,18 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{observationID}}",
+          "id": "{{mpp:getHashedId('Observation', observationID)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalObservation"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricNeurooncologicalObservation"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{observationID}}"
+            }
+          ],
           "status": "final",
           "code": {
             "coding": [
@@ -80,9 +94,7 @@
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "effectiveDateTime": "{{startDate}}",
           "valueCodeableConcept": {
             "coding": [

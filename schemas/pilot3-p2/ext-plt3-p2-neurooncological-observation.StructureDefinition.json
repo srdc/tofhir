@@ -1,0 +1,123 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p2-neurooncological-observation",
+  "name": "Ext-plt3-p2-neurooncological-observation",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt3-p2-neurooncological-observation",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt3-p2-neurooncological-observation",
+        "path": "Ext-plt3-p2-neurooncological-observation",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-neurooncological-observation.observationID",
+        "path": "Ext-plt3-p2-neurooncological-observation.observationID",
+        "short": "Unique identifier for this vital sign observation.",
+        "definition": "Unique identifier for this vital sign observation.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-neurooncological-observation.pid",
+        "path": "Ext-plt3-p2-neurooncological-observation.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-neurooncological-observation.startDate",
+        "path": "Ext-plt3-p2-neurooncological-observation.startDate",
+        "short": "Observation time",
+        "definition": "Time that this measurement is done",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-neurooncological-observation.code",
+        "path": "Ext-plt3-p2-neurooncological-observation.code",
+        "short": "Observation code",
+        "definition": "Code for the type of the measurement",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-neurooncological-observation.valueCode",
+        "path": "Ext-plt3-p2-neurooncological-observation.valueCode",
+        "short": "Coded value for measurement",
+        "definition": "Coded value to indicate the result of this observation. At least one of the value fields (valueCode | valueQuantity) should be provided. If the observation code is 84892-9 (Residual Tumor existence), then use one of the following: (R0 | R1 | R2).If the observation code is 88040-1 (Response to cancer treatment), then use one of the following: (CR | PR | SD | PD)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-neurooncological-observation.valueQuantity",
+        "path": "Ext-plt3-p2-neurooncological-observation.valueQuantity",
+        "short": "Numeric value to indicate the result of this observation.",
+        "definition": "Numeric value to indicate the result of this observation.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "decimal",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/decimal"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
