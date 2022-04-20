@@ -1,0 +1,75 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p2-medication-administration",
+  "name": "Ext-plt3-p2-medication-administration",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt3-p2-medication-administration",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt3-p2-medication-administration",
+        "path": "Ext-plt3-p2-medication-administration",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-medication-administration.pid",
+        "path": "Ext-plt3-p2-medication-administration.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-medication-administration.startTime",
+        "path": "Ext-plt3-p2-medication-administration.startTime",
+        "short": "Time of the medication administration",
+        "definition": "Time of the medication administration",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p2-medication-administration.code",
+        "path": "Ext-plt3-p2-medication-administration.code",
+        "short": "ATC code for the administered medication",
+        "definition": "ATC code for the administered medication",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
