@@ -40,7 +40,8 @@
           "type": "{{* utl:createFhirCodeableConcept('http://snomed.info/sct', type.nav:orElse('394841004'), mpp:getConcept(%encounterConceptMap, type, 'source_display').orElse({})))}}",
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "period": {
-            "start": "{{date}}"
+            "start": "{{date}}",
+            "end": "{{? endDate}}"
           }
         }
       }

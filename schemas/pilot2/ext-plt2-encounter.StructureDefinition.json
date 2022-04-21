@@ -101,6 +101,22 @@
             ]
           }
         ]
+      },
+      {
+        "id": "Ext-plt2-encounter.endDate",
+        "path": "Ext-plt2-encounter.endDate",
+        "short": "Discharge Date",
+        "definition": "For hospital stays, the discharge date",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
       }
     ]
   }

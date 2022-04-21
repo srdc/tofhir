@@ -118,11 +118,11 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
   "encounter mapping" should "map test data" in {
     //Some semantic tests on generated content
     fhirMappingJobManager.executeMappingTaskAndReturn(task = encounterMappingTask) map { results =>
-      results.length shouldBe 2
+      results.length shouldBe 3
       (results.head \ "subject" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Patient", "p1")
-      (results.last \ "id").extract[String] shouldBe FhirMappingUtility.getHashedId("Encounter", "e2")
-      (results.last \ "class" \ "code").extract[String] shouldBe "EMER"
-      (results.last \ "class" \ "display").extract[String] shouldBe "Emergency visit"
+      (results.apply(1) \ "id").extract[String] shouldBe FhirMappingUtility.getHashedId("Encounter", "e2")
+      (results.apply(1) \ "class" \ "code").extract[String] shouldBe "EMER"
+      (results.apply(1) \ "class" \ "display").extract[String] shouldBe "Emergency visit"
       (results.head \ "type" \ "coding" \ "code").extract[Seq[String]].head shouldBe "225398001"
       (results.head \ "type" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Neurological Assessment"
       (results.head \ "period" \ "start").extract[String] shouldBe "2012-08-23"
