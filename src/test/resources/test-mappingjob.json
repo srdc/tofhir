@@ -1,0 +1,38 @@
+[ {
+  "id" : "test-mapping-job",
+  "mappingRepositoryUri" : "file:/C:/development/aiccelerate/data-integration-suite/target/test-classes/test-mappings-1",
+  "schemaRepositoryUri" : "file:/C:/development/aiccelerate/data-integration-suite/target/test-classes/test-schema",
+  "sinkSettings" : {
+    "jsonClass" : "FhirRepositorySinkSettings",
+    "fhirRepoUrl" : "http://localhost:8081/fhir"
+  },
+  "tasks" : [ {
+    "mappingRef" : "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+    "sourceContext" : {
+      "source" : {
+        "jsonClass" : "FileSystemSource",
+        "path" : "patients.csv",
+        "sourceType" : "csv",
+        "settings" : {
+          "name" : "test-source-1",
+          "sourceUri" : "file:///test-source-1",
+          "dataFolderUri" : "file:/C:/development/aiccelerate/data-integration-suite/target/test-classes/test-data-1"
+        }
+      }
+    }
+  }, {
+    "mappingRef" : "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
+    "sourceContext" : {
+      "source" : {
+        "jsonClass" : "FileSystemSource",
+        "path" : "other-observations.csv",
+        "sourceType" : "csv",
+        "settings" : {
+          "name" : "test-source-1",
+          "sourceUri" : "file:///test-source-1",
+          "dataFolderUri" : "file:/C:/development/aiccelerate/data-integration-suite/target/test-classes/test-data-1"
+        }
+      }
+    }
+  } ]
+} ]
