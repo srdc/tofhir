@@ -33,7 +33,6 @@
               }
             ]
           },
-          "severity": "{{? utl:createFhirCodeableConcept('http://snomed.info/sct', severity, iif(severity='24484000', 'Severe', iif(severity='6736007', 'Moderate', 'Mild')))}}",
           "code": {
             "coding": [
               {

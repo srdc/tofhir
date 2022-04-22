@@ -115,8 +115,6 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
       (results.apply(3) \ "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Disorder of bone, unspecified"
 
       (results.head \ "clinicalStatus" \ "coding" \ "code").extract[Seq[String]].head shouldBe "resolved"
-      (results.head \ "severity" \ "coding" \ "code").extract[Seq[String]].head shouldBe "24484000"
-      (results.head \ "severity" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Severe"
     }
   }
 
