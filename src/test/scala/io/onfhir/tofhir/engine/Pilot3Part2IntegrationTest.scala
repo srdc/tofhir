@@ -96,7 +96,7 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(patientMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -120,7 +120,7 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(conditionMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -136,16 +136,16 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
       (results.apply(25) \  "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "2141-0"
       (results.apply(25) \  "code" \ "coding" \ "display").extract[Seq[String]].head shouldBe "Corticotropin [Mass/volume] in Plasma (P-ACTH)"
       (results.apply(25) \  "valueQuantity" \ "value").extract[Double] shouldBe 18.16060583
-      (results.apply(25) \  "valueQuantity" \ "code").extract[String] shouldBe "pg/mL"
+      (results.apply(25) \  "valueQuantity" \ "unit").extract[String] shouldBe "pg/mL"
 
       (results.apply(24) \  "valueQuantity" \ "value").extract[Double] shouldBe 123.06613514285
-      (results.apply(24) \  "valueQuantity" \ "code").extract[String] shouldBe "ng/mL"
+      (results.apply(24) \  "valueQuantity" \ "unit").extract[String] shouldBe "ng/mL"
     }
   }
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(labResultsMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -171,7 +171,7 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(symptomMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -188,7 +188,7 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(vitalSignsMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -214,7 +214,7 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(neuroObsMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -234,7 +234,7 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(medAdministrationMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -257,7 +257,7 @@ class Pilot3Part2IntegrationTest  extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(medUsedMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>

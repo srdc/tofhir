@@ -116,11 +116,15 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
         FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "female"
         FHIRUtil.extractValue[String](p1Resource, "birthDate") shouldBe "2010-01-10"
 
-        onFhirClient.search("Observation").executeAndReturnBundle() flatMap { observationBundle =>
-          observationBundle.searchResults.size shouldBe 11
+        onFhirClient.search("Observation").where("code", "1035-5").executeAndReturnBundle() flatMap { observationBundle =>
+          observationBundle.searchResults.size shouldBe 1
+          (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
+            FhirMappingUtility.getHashedReference("Patient", "p1")
 
-          onFhirClient.search("MedicationAdministration").executeAndReturnBundle() map { medicationAdministrationBundle =>
-            medicationAdministrationBundle.searchResults.size shouldBe 3
+          onFhirClient.search("MedicationAdministration").where("code", "313002").executeAndReturnBundle() map { medicationAdministrationBundle =>
+            medicationAdministrationBundle.searchResults.size shouldBe 1
+            (medicationAdministrationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
+              FhirMappingUtility.getHashedReference("Patient", "p4")
           }
         }
       }
@@ -157,7 +161,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
 
     val fhirMappingJobManager = new FhirMappingJobManager(lMappingRepository, new MappingContextLoader(lMappingRepository), new SchemaFolderRepository(lMappingJobs.head.schemaRepositoryUri), sparkSession)
     fhirMappingJobManager.executeMappingJob(tasks = lMappingJobs.head.tasks, sinkSettings = lMappingJobs.head.sinkSettings) map { unit =>
-      unit shouldBe ()
+      unit shouldBe()
     }
   }
 

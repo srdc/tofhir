@@ -1,0 +1,58 @@
+[
+  {
+    "id": "pilot1-mappingjob",
+    "mappingRepositoryUri": "file:/C:/development/aiccelerate/data-integration-suite/mappings/pilot1",
+    "schemaRepositoryUri": "file:/C:/development/aiccelerate/data-integration-suite/schemas/pilot1",
+    "sinkSettings": {
+      "jsonClass": "FhirRepositorySinkSettings",
+      "fhirRepoUrl": "http://localhost:8081/fhir"
+    },
+    "tasks": [
+      {
+        "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping",
+        "sourceContext": {
+          "source": {
+            "jsonClass": "FileSystemSource",
+            "path": "anesthesia-observations.csv",
+            "sourceType": "csv",
+            "settings": {
+              "name": "pilot1-source",
+              "sourceUri": "http://hus.fi/aiccelerate/pilot1",
+              "dataFolderUri": "file:/C:/development/aiccelerate/data-integration-suite/test-data/pilot1"
+            }
+          }
+        }
+      },
+      {
+        "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/background-information-mapping",
+        "sourceContext": {
+          "source": {
+            "jsonClass": "FileSystemSource",
+            "path": "background-information.csv",
+            "sourceType": "csv",
+            "settings": {
+              "name": "pilot1-source",
+              "sourceUri": "http://hus.fi/aiccelerate/pilot1",
+              "dataFolderUri": "file:/C:/development/aiccelerate/data-integration-suite/test-data/pilot1"
+            }
+          }
+        }
+      },
+      {
+        "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping",
+        "sourceContext": {
+          "source": {
+            "jsonClass": "FileSystemSource",
+            "path": "conditions.csv",
+            "sourceType": "csv",
+            "settings": {
+              "name": "pilot1-source",
+              "sourceUri": "http://hus.fi/aiccelerate/pilot1",
+              "dataFolderUri": "file:/C:/development/aiccelerate/data-integration-suite/test-data/pilot1"
+            }
+          }
+        }
+      }
+    ]
+  }
+]

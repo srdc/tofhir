@@ -1,10 +1,10 @@
 package io.onfhir.tofhir
 
-import io.onfhir.tofhir.config.ToFhirConfig
+import io.onfhir.tofhir.cli.CommandLineInterface
 
 /**
  * Entrypoint of toFHIR
  */
 object Boot extends App {
-  println(ToFhirConfig.appName)
+  CommandLineInterface.start()
 }

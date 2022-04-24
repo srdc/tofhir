@@ -79,7 +79,7 @@ class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
       // 10207,mmol/l,mmol/L,"""$this"""
       val conversionValue = unitConversionContext.conversionFunctions("10207", "mmol/l")
       conversionValue._1 shouldBe "mmol/L"
-      conversionValue._2 shouldBe "\"$this\""
+      conversionValue._2 shouldBe "$this"
     }
   }
 

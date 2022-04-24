@@ -4,12 +4,16 @@
   "title": "Mapping of schema lab results to AIC-LabResults profile",
   "source": [{
     "alias": "source",
-    "url": "/StructureDefinition/ext-lab-results"
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-lab-results"
   }],
   "context": {
-    "obsConceptMap":  {
+    "obsConceptMap": {
       "category": "concept-map",
       "url": "../test-mappings-1/other-observation-concept-map.csv"
+    },
+    "labResultsConceptMap":  {
+      "category": "concept-map",
+      "url": "./lab-results-concept-map.csv"
     },
     "labResultUnitConversion": {
       "category": "unit-conversion",
@@ -23,9 +27,10 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{utl:uuid()}}",
+          "id": "{{mpp:getHashedId('Observation', pid & code.toString() & time.toString())}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-LabResultWithinSurgicalWorkflow"]
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-LabResultWithinSurgicalWorkflow"],
+            "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "final",
           "category": [
@@ -40,29 +45,27 @@
           "code": {
             "coding": [
               {
-                "system": "{{mpp:getConcept(%labResultsConceptMap, code, 'source_system')}",
-                "code": "{{code}}",
+                "system": "https://koodistopalvelu.kanta.fi/codeserver/pages/classification-view-page.xhtml?classificationKey=88&versionKey=120",
+                "code": "{{code.toString()}}",
                 "display": "{{description}}"
               },
               {
-                "{{#tc}}": "{{mpp:getConcept(%labResultsConceptMap, code, 'target_code')}",
+                "{{#tc}}": "{{mpp:getConcept(%labResultsConceptMap, code.toString(), 'target_code')}}",
                 "{{?}}": {
                   "system": "http://loinc.org",
                   "code": "{{%tc}}",
-                  "display": "{{? mpp:getConcept(%labResultsConceptMap, code, 'target_display')}}"
+                  "display": "{{? mpp:getConcept(%labResultsConceptMap, code.toString(), 'target_display')}}"
                 }
               }
             ]
           },
-          "subject": {
-            "reference": "Patient/{{pid}}"
-          },
-          "encounter": "{{? utl:createFhirReference('Encounter', encounterId)}}",
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
           "effectiveDateTime": "{{time}}",
-          "valueQuantity": "{{mpp:convertAndReturnQuantity(%labResultUnitConversion, code, value, unit).nav:orElse(utl:createFhirQuantity(value, unit))}}",
+          "valueQuantity": "{{mpp:convertAndReturnQuantity(%labResultUnitConversion, code.toString(), value, unit).nav:orElse(utl:createFhirQuantity(value, unit))}}",
           "interpretation": {
             "{{#intp}}": "{{interpretation}}",
-            "{{*}}": "{{utl:createFhirCodeableConcept('http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation', %intp)}}"
+            "{{*}}": "{{utl:createFhirCodeableConcept('http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation', %intp, {})}}"
           }
         }
       }

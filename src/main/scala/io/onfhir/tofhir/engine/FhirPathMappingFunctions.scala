@@ -152,7 +152,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
             if (functionResult.length != 1 || !functionResult.head.isInstanceOf[FhirPathNumber]) {
               throw new FhirPathException(s"Invalid FHIR expression in the unit conversion context! The FHIR path expression:${conversionFunction} should evaluate to a single numeric value!")
             }
-            FhirPathComplex(JObject(List("value" -> functionResult.head.toJson, "system" -> JString("http://unitsofmeasure.org"), "unit" -> JString(targetUnit), "code" -> JString(targetUnit))))
+            FhirPathComplex(JObject(List("value" -> functionResult.head.toJson, "system" -> JString("http://unitsofmeasure.org"), "unit" -> JString(targetUnit), "code" -> codeResult.head.toJson)))
         }.toSeq
     }
   }

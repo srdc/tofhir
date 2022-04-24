@@ -82,11 +82,11 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
    * @return
    */
   private def loadMappings(): Map[String, FhirMapping] = {
-    logger.debug("Loading all mappings from folder:{}", folderUri)
+    //logger.debug("Loading all mappings from folder:{}", folderUri)
     val mappings = normalizeContextURLs(getFhirMappings)
       .foldLeft(Map[String, FhirMapping]()) { (map, fhirMapping) => map + (fhirMapping.url -> fhirMapping) }
-    logger.debug("{} mappings were loaded from the mapping folder:{}", mappings.size, folderUri)
-    logger.debug("Loaded mappings are:{}{}", System.lineSeparator(), mappings.keySet.mkString(System.lineSeparator()))
+    //logger.debug("{} mappings were loaded from the mapping folder:{}", mappings.size, folderUri)
+    //logger.debug("Loaded mappings are:{}{}", System.lineSeparator(), mappings.keySet.mkString(System.lineSeparator()))
     mappings
   }
 

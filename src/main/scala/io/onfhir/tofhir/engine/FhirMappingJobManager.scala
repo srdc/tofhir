@@ -49,6 +49,19 @@ class FhirMappingJobManager(
   }
 
   /**
+   * Execute the given mapping task and write the resulting FHIR resources to the given sink
+   *
+   * @param id           Unique job identifier
+   * @param task         A Mapping task that will be executed
+   * @param sinkSettings FHIR sink settings (can be a FHIR repository, file system, kafka)
+   * @return
+   */
+  override def executeMappingTask(id: String, task: FhirMappingTask, sinkSettings: FhirSinkSettings): Future[Unit] = {
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    executeTask(task) map { f => fhirWriter.write(f) }
+  }
+
+  /**
    * Execute a single mapping task.
    *
    * @param task A #FhirMappingTask to be executed.

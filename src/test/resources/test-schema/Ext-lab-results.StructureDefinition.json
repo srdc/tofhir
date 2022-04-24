@@ -1,0 +1,155 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-lab-results",
+  "name": "Ext-lab-results",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-lab-results",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-lab-results",
+        "path": "Ext-lab-results",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-lab-results.pid",
+        "path": "Ext-lab-results.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-lab-results.time",
+        "path": "Ext-lab-results.time",
+        "short": "Observation time",
+        "definition": "Time that this measurement is done",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-lab-results.code",
+        "path": "Ext-lab-results.code",
+        "short": "Lab test code",
+        "definition": "Code of the lab result in the source system",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-lab-results.description",
+        "path": "Ext-lab-results.description",
+        "short": "Name of the lab result",
+        "definition": "Name of the lab result",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-lab-results.value",
+        "path": "Ext-lab-results.value",
+        "short": "Value of the measurement.",
+        "definition": "Value of the measurement(s). If there are multiple measurements list of them seperated by '-'",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "decimal",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/decimal"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-lab-results.unit",
+        "path": "Ext-lab-results.unit",
+        "short": "Unit of measurement",
+        "definition": "Unit of the measurement",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-lab-results.interpretation",
+        "path": "Ext-lab-results.interpretation",
+        "short": "Encounter",
+        "definition": "Reference to the encounter that this observation is performed",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-vital-signs.encounterId",
+        "path": "Ext-vital-signs.encounterId",
+        "short": "Encounter",
+        "definition": "Reference to the encounter that this observation is performed",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

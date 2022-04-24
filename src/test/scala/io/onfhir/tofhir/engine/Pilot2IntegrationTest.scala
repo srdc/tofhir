@@ -107,7 +107,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(patientMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -131,7 +131,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(encounterMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -157,7 +157,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(symptomsAssMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -182,7 +182,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(symptomsExistenceMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -206,7 +206,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(otherAssMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -231,7 +231,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(conditionMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -255,7 +255,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(medicationUsedMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>
@@ -274,7 +274,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   it should "map test data and write it to FHIR repo successfully" in {
     //Send it to our fhir repo if they are also validated
-    assert(fhirServerIsAvailable)
+    assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(deviceUsedMappingTask), sinkSettings = fhirSinkSetting)
       .map( unit =>

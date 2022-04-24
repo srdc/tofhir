@@ -14,6 +14,7 @@ object ToFhirConfig {
   /** Master url of the Spark cluster */
   lazy val sparkMaster: String = Try(config.getString("spark.master")).getOrElse("local[4]")
 
+  /** Absolute file path to the MappingJobs file while initiating the Data Integration Suite */
   lazy val mappingJobsFilePath: Option[String] = Try(config.getString("mapping-jobs.file-path")).toOption
 
 }

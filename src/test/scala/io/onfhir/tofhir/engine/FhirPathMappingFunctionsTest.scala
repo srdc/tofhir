@@ -26,16 +26,10 @@ class FhirPathMappingFunctionsTest extends ToFhirTestSpec {
       val profile = FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:getConcept(%obsConceptMap, '1299-7', 'profile')", JNull)
       profile shouldBe Some("https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation")
 
-      val thrownException1 = the[FhirPathException] thrownBy
-        FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:getConcept(%obsConceptMap, 'UNKNOWN_CODE', 'profile')", JNull)
-      thrownException1.getCause shouldBe a[FhirMappingException]
-      thrownException1.getCause should have message "Concept code:UNKNOWN_CODE cannot be found in the ConceptMapContext:obsConceptMap"
-
-      val thrownException2 = the[FhirPathException] thrownBy
-        FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:getConcept(%obsConceptMap, '1299-7', 'UNKNOWN_COLUMN')", JNull)
-      thrownException2.getCause shouldBe a[FhirMappingException]
-      thrownException2.getCause should have message s"For the given concept code:1299-7, the column:UNKNOWN_COLUMN cannot be " +
-        s"found in the ConceptMapContext:obsConceptMap. Available columns are ${mappingContext.asInstanceOf[ConceptMapContext].concepts.head._2.keySet.mkString(",")}"
+      val unknownCode = FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:getConcept(%obsConceptMap, 'UNKNOWN_CODE', 'profile')", JNull)
+      unknownCode shouldBe None
+      val unknownColumn = FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:getConcept(%obsConceptMap, '1299-7', 'UNKNOWN_COLUMN')", JNull)
+      unknownColumn shouldBe None
     }
   }
 
@@ -54,10 +48,8 @@ class FhirPathMappingFunctionsTest extends ToFhirTestSpec {
       obj("unit") shouldBe "g/dL"
       obj("code") shouldBe "1552"
 
-      val thrownException = the[FhirPathException] thrownBy
-        FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:convertAndReturnQuantity(%labResultUnitConversion, 'UNKNOWN_CODE', 100, 'UNKNOWN_UNIT')", JNull)
-      thrownException.getCause shouldBe a[FhirMappingException]
-      thrownException.getCause should have message "(code, unit) pair:(UNKNOWN_CODE, UNKNOWN_UNIT) cannot be found in the UnitConversionFunctionsContext:labResultUnitConversion"
+      val unknownConversion = FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:convertAndReturnQuantity(%labResultUnitConversion, 'UNKNOWN_CODE', 100, 'UNKNOWN_UNIT')", JNull)
+      unknownConversion shouldBe None
     }
   }
 
