@@ -26,8 +26,6 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
 
   val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
 
-  Paths.get(".") .toAbsolutePath
-
   val mappingRepository: IFhirMappingRepository =
     new FhirMappingFolderRepository(Paths.get("mappings/pilot2").toAbsolutePath.toUri)
 

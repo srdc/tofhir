@@ -1,7 +1,7 @@
 [ {
   "id" : "test-mapping-job",
-  "mappingRepositoryUri" : "file:/C:/development/aiccelerate/data-integration-suite/target/test-classes/test-mappings-1",
-  "schemaRepositoryUri" : "file:/C:/development/aiccelerate/data-integration-suite/target/test-classes/test-schema",
+  "mappingRepositoryUri" : "file:/test-mappings-1",
+  "schemaRepositoryUri" : "file:/test-schema",
   "sinkSettings" : {
     "jsonClass" : "FhirRepositorySinkSettings",
     "fhirRepoUrl" : "http://localhost:8081/fhir"
@@ -15,8 +15,8 @@
         "sourceType" : "csv",
         "settings" : {
           "name" : "test-source-1",
-          "sourceUri" : "file:///test-source-1",
-          "dataFolderUri" : "file:/C:/development/aiccelerate/data-integration-suite/target/test-classes/test-data-1"
+          "sourceUri" : "https://test.aiccelerate.eu",
+          "dataFolderUri" : "file:/test-data-1"
         }
       }
     }
@@ -29,8 +29,8 @@
         "sourceType" : "csv",
         "settings" : {
           "name" : "test-source-1",
-          "sourceUri" : "file:///test-source-1",
-          "dataFolderUri" : "file:/C:/development/aiccelerate/data-integration-suite/target/test-classes/test-data-1"
+          "sourceUri" : "https://test.aiccelerate.eu",
+          "dataFolderUri" : "file:/test-data-1"
         }
       }
     }

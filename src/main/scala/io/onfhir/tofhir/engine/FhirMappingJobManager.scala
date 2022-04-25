@@ -89,7 +89,7 @@ class FhirMappingJobManager(
 
     val df = handleJoin(task, sourceDataFrames)
 
-    df.printSchema()
+    //df.printSchema()
     //df.show(10)
 
     //Load the contextual data for the mapping

@@ -145,11 +145,20 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
 
   it should "execute the FhirMappingJob restored from a file" in {
     val lMappingJobs = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
+    Paths.get(lMappingJobs.head.mappingRepositoryUri).getFileName.toString shouldBe "test-mappings-1"
+    Paths.get(lMappingJobs.head.schemaRepositoryUri).getFileName.toString shouldBe "test-schema"
 
-    val lMappingRepository = new FhirMappingFolderRepository(lMappingJobs.head.mappingRepositoryUri)
+    val lMappingRepository = new FhirMappingFolderRepository(mappingRepositoryURI)
+    val lSchemaRepository = new SchemaFolderRepository(schemaRepositoryURI)
+    val loadedTask = lMappingJobs.head.tasks.head
+    val loadedFileSystemSource = loadedTask.sourceContext.head._2.asInstanceOf[FileSystemSource]
+    val task = FhirMappingTask(mappingRef = loadedTask.mappingRef,
+      sourceContext = Map(loadedTask.sourceContext.head._1 ->
+        FileSystemSource(loadedFileSystemSource.path, loadedFileSystemSource.sourceType,
+          FileSystemSourceSettings(loadedFileSystemSource.settings.name, loadedFileSystemSource.settings.sourceUri, getClass.getResource("/test-data-1").toURI))))
 
-    val fhirMappingJobManager = new FhirMappingJobManager(lMappingRepository, new MappingContextLoader(lMappingRepository), new SchemaFolderRepository(lMappingJobs.head.schemaRepositoryUri), sparkSession)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = lMappingJobs.head.tasks.head) map { results =>
+    val fhirMappingJobManager = new FhirMappingJobManager(lMappingRepository, new MappingContextLoader(lMappingRepository), lSchemaRepository, sparkSession)
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = task) map { results =>
       results.size shouldBe 10
     }
   }
@@ -157,10 +166,20 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
   it should "execute the FhirMappingJob with sink settings restored from a file" in {
     assume(fhirServerIsAvailable)
     val lMappingJobs = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
-    val lMappingRepository = new FhirMappingFolderRepository(lMappingJobs.head.mappingRepositoryUri)
+    Paths.get(lMappingJobs.head.mappingRepositoryUri).getFileName.toString shouldBe "test-mappings-1"
+    Paths.get(lMappingJobs.head.schemaRepositoryUri).getFileName.toString shouldBe "test-schema"
 
-    val fhirMappingJobManager = new FhirMappingJobManager(lMappingRepository, new MappingContextLoader(lMappingRepository), new SchemaFolderRepository(lMappingJobs.head.schemaRepositoryUri), sparkSession)
-    fhirMappingJobManager.executeMappingJob(tasks = lMappingJobs.head.tasks, sinkSettings = lMappingJobs.head.sinkSettings) map { unit =>
+    val lMappingRepository = new FhirMappingFolderRepository(mappingRepositoryURI)
+    val lSchemaRepository = new SchemaFolderRepository(schemaRepositoryURI)
+    val loadedTask = lMappingJobs.head.tasks.head
+    val loadedFileSystemSource = loadedTask.sourceContext.head._2.asInstanceOf[FileSystemSource]
+    val task = FhirMappingTask(mappingRef = loadedTask.mappingRef,
+      sourceContext = Map(loadedTask.sourceContext.head._1 ->
+        FileSystemSource(loadedFileSystemSource.path, loadedFileSystemSource.sourceType,
+          FileSystemSourceSettings(loadedFileSystemSource.settings.name, loadedFileSystemSource.settings.sourceUri, getClass.getResource("/test-data-1").toURI))))
+
+    val fhirMappingJobManager = new FhirMappingJobManager(lMappingRepository, new MappingContextLoader(lMappingRepository), lSchemaRepository, sparkSession)
+    fhirMappingJobManager.executeMappingJob(tasks = Seq(task), sinkSettings = lMappingJobs.head.sinkSettings) map { unit =>
       unit shouldBe()
     }
   }

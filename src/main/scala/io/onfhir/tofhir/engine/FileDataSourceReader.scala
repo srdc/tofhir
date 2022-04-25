@@ -20,7 +20,6 @@ class FileDataSourceReader(spark:SparkSession) extends BaseDataSourceReader[File
    * @return
    */
   override def read(mappingSource: FileSystemSource, schema:StructType): DataFrame = {
-
     val dataFolderPath = Paths.get(mappingSource.settings.dataFolderUri).normalize().toString
     val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
     val finalPath = Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString
