@@ -19,7 +19,7 @@ class Load extends Command {
       try {
         val mappingJobs = FhirMappingJobManager.readMappingJobFromFile(filePath)
         println("The following FhirMappingJob successfully loaded.")
-        val newContext = new CommandExecutionContext(context.sparkSession, Some(mappingJobs.head), Load.getMappingNameUrlTuples(mappingJobs.head))
+        val newContext = CommandExecutionContext(context.sparkSession, Some(mappingJobs.head), Load.getMappingNameUrlTuples(mappingJobs.head))
         println(Info.serializeMappingJobToCommandLine(newContext))
         newContext
       } catch {

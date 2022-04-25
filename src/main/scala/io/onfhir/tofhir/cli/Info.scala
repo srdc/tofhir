@@ -2,8 +2,39 @@ package io.onfhir.tofhir.cli
 
 import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, FhirSinkSettings}
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success}
+
 class Info extends Command {
   override def execute(args: Seq[String], context: CommandExecutionContext): CommandExecutionContext = {
+    if(context.runningStatus.isDefined) {
+      if(context.runningStatus.get._2.isCompleted) {
+        context.runningStatus.get._2.value match {
+          case Some(Success(_)) =>
+            if(context.runningStatus.get._1.isDefined) {
+              println(s"The execution of the single mapping task was successful. URL: ${context.runningStatus.get._1.get.mappingRef}")
+            } else {
+              println("The execution of the tasks in the Mapping Job was successful.")
+            }
+          case Some(Failure(ex)) =>
+            if(context.runningStatus.get._1.isDefined) {
+              println(s"Error in the execution of the single mapping task with URL: ${context.runningStatus.get._1.get.mappingRef}")
+            } else {
+              println("Error in the execution of the tasks in the Mapping Job.")
+            }
+            ex.printStackTrace()
+        }
+      } else {
+        if(context.runningStatus.get._1.isDefined) {
+          println(s"I am still running the single mapping task with URL: ${context.runningStatus.get._1.get.mappingRef}")
+        } else {
+          println("I am still running the tasks defined in the loaded Mapping Job.")
+        }
+      }
+    }
     if (context.fhirMappingJob.isEmpty) {
       println("There is no loaded FhirMappingJob!")
     } else {
