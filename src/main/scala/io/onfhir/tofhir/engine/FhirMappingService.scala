@@ -1,10 +1,14 @@
 package io.onfhir.tofhir.engine
 
+import com.typesafe.scalalogging.Logger
 import io.onfhir.api.Resource
+import io.onfhir.expression.FhirExpressionException
 import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.template.FhirTemplateExpressionHandler
-import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingExpression}
+import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingException, FhirMappingExpression}
+import io.onfhir.util.JsonFormatter._
 import org.json4s.JsonAST.JArray
+import org.json4s.jackson.Serialization
 import org.json4s.{JObject, JValue}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -65,6 +69,11 @@ class FhirMappingService(
                     (cntx + (mpp.expression.name -> r)) -> //Append the new result to dynamic context params set
                       (results :+ r) //Append the result to result set (resources are accumulating)
                   )
+                  .recover {
+                    case e: FhirExpressionException =>
+                      val msg = s"Error while evaluating the mapping expression.\n Expression: ${Serialization.write(mpp.expression)}\n Source: ${Serialization.write(source)}\n"
+                      throw FhirMappingException(msg, e)
+                  }
             }
       }
       .map(_._2) // Get the accumulated result set

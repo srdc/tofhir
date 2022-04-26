@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder}
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.client.OnFhirNetworkClient.system.dispatcher
+import io.onfhir.tofhir.config.{MAPPING_ERROR_HANDLING, ToFhirConfig}
 import io.onfhir.tofhir.model.{FhirMappingException, FhirRepositorySinkSettings}
 import org.apache.spark.sql.Dataset
 
@@ -20,8 +21,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
 
   private val logger: Logger = Logger(this.getClass)
 
-  val BATCH_GROUP_SIZE: Int = 10
-
   /**
    * Write the data frame of FHIR resources to given FHIR repository
    *
@@ -34,7 +33,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
       .foreachPartition { partition: Iterator[String] =>
         val onFhirClient = OnFhirNetworkClient.apply(sinkSettings.fhirRepoUrl) // A FhirClient for each partition
         partition
-          .grouped(BATCH_GROUP_SIZE)
+          .grouped(ToFhirConfig.fhirWriterBatchGroupSize)
           .foreach(rowGroup => {
             var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
             rowGroup.foreach(row => {
@@ -47,7 +46,12 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
             try {
               responseBundle = Await.result(batchRequest.executeAndReturnBundle(), FiniteDuration(5, TimeUnit.SECONDS))
             } catch {
-              case e: Throwable => throw FhirMappingException("!!!There is an error while writing resources to the FHIR Repository.", e)
+              case e: Throwable =>
+                val msg = "!!!There is an error while writing resources to the FHIR Repository."
+                logger.error(msg)
+                if(ToFhirConfig.mappingErrorHandling == MAPPING_ERROR_HANDLING.HALT) {
+                  throw FhirMappingException(msg, e)
+                }
             }
             //Check if there is any error in one of the requests
             if (responseBundle.hasAnyError()) {
@@ -57,7 +61,9 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
                   s"Bundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
                   s"Bundle response: ${responseBundle.bundle.toJson}"
               logger.error(msg)
-              throw FhirMappingException(msg)
+              if(ToFhirConfig.mappingErrorHandling == MAPPING_ERROR_HANDLING.HALT) {
+                throw FhirMappingException(msg)
+              }
             } else {
               logger.debug("{} FHIR resources were written to the FHIR repository successfully.", rowGroup.size)
             }

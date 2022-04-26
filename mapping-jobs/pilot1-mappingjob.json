@@ -17,7 +17,7 @@
             "sourceType": "csv",
             "settings": {
               "name": "pilot1-source",
-              "sourceUri": "http://hus.fi/aiccelerate/pilot1",
+              "sourceUri": "https://hus.fi/aiccelerate/pilot1",
               "dataFolderUri": "file:/C:/development/aiccelerate/data-integration-suite/test-data/pilot1"
             }
           }
@@ -32,7 +32,7 @@
             "sourceType": "csv",
             "settings": {
               "name": "pilot1-source",
-              "sourceUri": "http://hus.fi/aiccelerate/pilot1",
+              "sourceUri": "https://hus.fi/aiccelerate/pilot1",
               "dataFolderUri": "file:/C:/development/aiccelerate/data-integration-suite/test-data/pilot1"
             }
           }
@@ -44,6 +44,21 @@
           "source": {
             "jsonClass": "FileSystemSource",
             "path": "conditions.csv",
+            "sourceType": "csv",
+            "settings": {
+              "name": "pilot1-source",
+              "sourceUri": "https://hus.fi/aiccelerate/pilot1",
+              "dataFolderUri": "file:/C:/development/aiccelerate/data-integration-suite/test-data/pilot1"
+            }
+          }
+        }
+      },
+      {
+        "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/lab-results-mapping",
+        "sourceContext": {
+          "source": {
+            "jsonClass": "FileSystemSource",
+            "path": "lab-results.csv",
             "sourceType": "csv",
             "settings": {
               "name": "pilot1-source",

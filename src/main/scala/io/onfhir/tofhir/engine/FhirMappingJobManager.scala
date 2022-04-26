@@ -1,5 +1,8 @@
 package io.onfhir.tofhir.engine
 
+import com.typesafe.scalalogging.Logger
+import io.onfhir.api.Resource
+import io.onfhir.tofhir.config.{MAPPING_ERROR_HANDLING, ToFhirConfig}
 import io.onfhir.tofhir.model._
 import io.onfhir.util.JsonFormatter._
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
@@ -9,6 +12,7 @@ import org.json4s.{Formats, JObject, ShortTypeHints}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
+import java.util.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
@@ -28,6 +32,8 @@ class FhirMappingJobManager(
                              schemaLoader: IFhirSchemaLoader,
                              spark: SparkSession
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
+
+  private val logger: Logger = Logger(this.getClass)
 
   /**
    * Execute the given mapping job and write the resulting FHIR resources to given sink
@@ -146,6 +152,8 @@ class FhirMappingJobManager(
 
 object MappingTaskExecutor {
 
+  private val logger: Logger = Logger(this.getClass)
+
   /**
    * Convert input row for mapping to JObject
    *
@@ -188,11 +196,28 @@ object MappingTaskExecutor {
     val result =
       df
         .flatMap(row => {
-          val resources = Await.result(fhirMappingService.mapToFhir(convertRowToJObject(row)), Duration.apply(5, "seconds"))
+          val jo = convertRowToJObject(row)
+          val resources = try {
+            Await.result(fhirMappingService.mapToFhir(jo), Duration.apply(5, "seconds"))
+          } catch {
+            case e: FhirMappingException =>
+              logger.error(e.getMessage, e)
+              if (ToFhirConfig.mappingErrorHandling == MAPPING_ERROR_HANDLING.CONTINUE) {
+                Seq.empty[Resource]
+              } else {
+                throw e
+              }
+            case e: TimeoutException =>
+              logger.error(s"TimeoutException. A single row could not be mapped to FHIR in 5 seconds. The row JObject: ${Serialization.write(jo)}")
+              if (ToFhirConfig.mappingErrorHandling == MAPPING_ERROR_HANDLING.CONTINUE) {
+                Seq.empty[Resource]
+              } else {
+                throw e
+              }
+          }
           resources.map(_.toJson)
         })
     result
-    //spark.read.json(result)
   }
 
 }

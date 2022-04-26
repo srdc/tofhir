@@ -17,4 +17,10 @@ object ToFhirConfig {
   /** Absolute file path to the MappingJobs file while initiating the Data Integration Suite */
   lazy val mappingJobsFilePath: Option[String] = Try(config.getString("mapping-jobs.file-path")).toOption
 
+  /** The # of FHIR resources in the group while executing (create/update) a batch operation. */
+  lazy val fhirWriterBatchGroupSize: Int = Try(config.getInt("fhir-writer.batch-group-size")) .getOrElse(10)
+
+  /** Error handling mechanism of the mappings to indicate whether  */
+  lazy val mappingErrorHandling: String = Try(config.getString("mapping.error-handling")).getOrElse(MAPPING_ERROR_HANDLING.CONTINUE)
+
 }

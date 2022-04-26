@@ -2,10 +2,6 @@ package io.onfhir.tofhir.cli
 
 import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, FhirSinkSettings}
 
-import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
 class Info extends Command {
@@ -25,7 +21,8 @@ class Info extends Command {
             } else {
               println("Error in the execution of the tasks in the Mapping Job.")
             }
-            ex.printStackTrace()
+            println("ERROR MESSAGE OF THE PREVIOUS EXECUTION:")
+            println(ex.getMessage + "\n")
         }
       } else {
         if(context.runningStatus.get._1.isDefined) {
