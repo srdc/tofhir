@@ -1,8 +1,11 @@
 package io.onfhir.tofhir
 
 package object config {
-  object MAPPING_ERROR_HANDLING {
-    val CONTINUE = "continue"
-    val HALT = "halt"
+
+  object MappingErrorHandling extends Enumeration {
+    type MappingErrorHandling = Value
+    final val CONTINUE = Value("continue")
+    final val HALT = Value("halt")
   }
+
 }

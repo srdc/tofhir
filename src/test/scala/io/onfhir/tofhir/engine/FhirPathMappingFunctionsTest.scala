@@ -7,7 +7,6 @@ import org.json4s.{JNull, JObject}
 
 class FhirPathMappingFunctionsTest extends ToFhirTestSpec {
 
-  val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(getClass.getResource("/test-mappings-2").toURI)
   val labResultMapping: FhirMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
   val conceptMapContextDefinition: FhirMappingContextDefinition = labResultMapping.context("obsConceptMap")
   val unitConversionContextDefinition: FhirMappingContextDefinition = labResultMapping.context("labResultUnitConversion")

@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.cli
 
-import io.onfhir.tofhir.engine.{FhirMappingFolderRepository, FhirMappingJobManager}
-import io.onfhir.tofhir.model.FhirMappingJob
+import io.onfhir.tofhir.engine.{FhirMappingJobManager, IFhirMappingRepository}
+import io.onfhir.tofhir.model.FhirMappingTask
 import org.json4s.MappingException
 
 import java.io.FileNotFoundException
@@ -19,7 +19,7 @@ class Load extends Command {
       try {
         val mappingJobs = FhirMappingJobManager.readMappingJobFromFile(filePath)
         println("The following FhirMappingJob successfully loaded.")
-        val newContext = CommandExecutionContext(context.sparkSession, Some(mappingJobs.head), Load.getMappingNameUrlTuples(mappingJobs.head))
+        val newContext = CommandExecutionContext(context.toFhirEngine, Some(mappingJobs), Load.getMappingNameUrlTuples(mappingJobs.tasks, context.toFhirEngine.mappingRepository))
         println(Info.serializeMappingJobToCommandLine(newContext))
         newContext
       } catch {
@@ -35,10 +35,9 @@ class Load extends Command {
 }
 
 object Load {
-  def getMappingNameUrlTuples(mappingJob: FhirMappingJob): Map[String, String] = {
-    val repo = new FhirMappingFolderRepository(mappingJob.mappingRepositoryUri)
-    mappingJob.tasks.foldLeft(Map.empty[String, String]) { (map, task) => // Convert to tuple (name -> url)
-      map + (repo.getFhirMappingByUrl(task.mappingRef).name -> task.mappingRef)
+  def getMappingNameUrlTuples(tasks: Seq[FhirMappingTask], mappingRepository: IFhirMappingRepository): Map[String, String] = {
+    tasks.foldLeft(Map.empty[String, String]) { (map, task) => // Convert to tuple (name -> url)
+      map + (mappingRepository.getFhirMappingByUrl(task.mappingRef).name -> task.mappingRef)
     }
   }
 }

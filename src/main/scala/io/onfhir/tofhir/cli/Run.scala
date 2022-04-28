@@ -3,6 +3,7 @@ package io.onfhir.tofhir.cli
 import io.onfhir.tofhir.engine.{FhirMappingFolderRepository, FhirMappingJobManager, MappingContextLoader, SchemaFolderRepository}
 import io.onfhir.tofhir.model.FhirMappingTask
 
+import java.nio.file.Paths
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -17,10 +18,8 @@ class Run extends Command {
         context
       } else {
         val mappingJob = context.fhirMappingJob.get
-        val fhirMappingRepository = new FhirMappingFolderRepository(mappingJob.mappingRepositoryUri)
-        val contextLoader = new MappingContextLoader(fhirMappingRepository)
-        val schemaRepository = new SchemaFolderRepository(mappingJob.schemaRepositoryUri)
-        val fhirMappingJobManager = new FhirMappingJobManager(fhirMappingRepository, contextLoader, schemaRepository, context.sparkSession)
+        val fhirMappingJobManager = new FhirMappingJobManager(context.toFhirEngine.mappingRepository, context.toFhirEngine.contextLoader,
+          context.toFhirEngine.schemaRepository, context.toFhirEngine.sparkSession, context.toFhirEngine.errorHandling)
 
         val runningStatus = if (args.isEmpty) {
           // Execute all tasks in the mapping job

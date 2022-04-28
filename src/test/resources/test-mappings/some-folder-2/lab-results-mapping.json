@@ -9,7 +9,7 @@
   "context": {
     "obsConceptMap": {
       "category": "concept-map",
-      "url": "../test-mappings-1/other-observation-concept-map.csv"
+      "url": "../some-folder-1/other-observation-concept-map.csv"
     },
     "labResultsConceptMap":  {
       "category": "concept-map",

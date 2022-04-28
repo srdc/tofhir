@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder}
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.client.OnFhirNetworkClient.system.dispatcher
-import io.onfhir.tofhir.config.{MAPPING_ERROR_HANDLING, ToFhirConfig}
+import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.model.{FhirMappingException, FhirRepositorySinkSettings}
 import org.apache.spark.sql.Dataset
 
@@ -49,7 +49,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
               case e: Throwable =>
                 val msg = "!!!There is an error while writing resources to the FHIR Repository."
                 logger.error(msg)
-                if(ToFhirConfig.mappingErrorHandling == MAPPING_ERROR_HANDLING.HALT) {
+                if (sinkSettings.writeErrorHandling == MappingErrorHandling.HALT) {
                   throw FhirMappingException(msg, e)
                 }
             }
@@ -61,7 +61,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
                   s"Bundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
                   s"Bundle response: ${responseBundle.bundle.toJson}"
               logger.error(msg)
-              if(ToFhirConfig.mappingErrorHandling == MAPPING_ERROR_HANDLING.HALT) {
+              if (sinkSettings.writeErrorHandling == MappingErrorHandling.HALT) {
                 throw FhirMappingException(msg)
               }
             } else {

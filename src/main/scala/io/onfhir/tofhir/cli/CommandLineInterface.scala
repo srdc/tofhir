@@ -1,9 +1,8 @@
 package io.onfhir.tofhir.cli
 
+import io.onfhir.tofhir.ToFhirEngine
 import io.onfhir.tofhir.config.ToFhirConfig
 import io.onfhir.tofhir.engine.FhirMappingJobManager
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.SparkSession
 import org.json4s.MappingException
 
 import java.io.FileNotFoundException
@@ -14,37 +13,29 @@ object CommandLineInterface {
 
   private var commandExecutionContext: CommandExecutionContext = _
 
-  private def init(): Unit = {
-
-    val sparkConf: SparkConf = new SparkConf()
-      .setAppName(ToFhirConfig.appName)
-      .setMaster(ToFhirConfig.sparkMaster)
-      .set("spark.driver.allowMultipleContexts", "false")
-      .set("spark.ui.enabled", "false")
-    val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-
+  private def init(toFhirEngine: ToFhirEngine): Unit = {
     this.commandExecutionContext =
-      if (ToFhirConfig.mappingJobsFilePath.isDefined) {
+      if (ToFhirConfig.mappingJobFilePath.isDefined) {
         try {
-          val mappingJobs = FhirMappingJobManager.readMappingJobFromFile(ToFhirConfig.mappingJobsFilePath.get)
-          CommandExecutionContext(sparkSession = sparkSession,
-            fhirMappingJob = Some(mappingJobs.head),
-            mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJobs.head)) // We can only process a single MappingJob for now
+          val mappingJob = FhirMappingJobManager.readMappingJobFromFile(ToFhirConfig.mappingJobFilePath.get)
+          CommandExecutionContext(toFhirEngine = toFhirEngine,
+            fhirMappingJob = Some(mappingJob),
+            mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJob.tasks, toFhirEngine.mappingRepository))
         } catch {
           case _: FileNotFoundException =>
-            println(s"The file cannot be found at the specified path found in the config:${ToFhirConfig.mappingJobsFilePath.get}")
-            CommandExecutionContext(sparkSession)
+            println(s"The file cannot be found at the specified path found in the config:${ToFhirConfig.mappingJobFilePath.get}")
+            CommandExecutionContext(toFhirEngine)
           case _: MappingException =>
-            println(s"Invalid MappingJob file at the specified path found in the config:${ToFhirConfig.mappingJobsFilePath.get}")
-            CommandExecutionContext(sparkSession)
+            println(s"Invalid MappingJob file at the specified path found in the config:${ToFhirConfig.mappingJobFilePath.get}")
+            CommandExecutionContext(toFhirEngine)
         }
       } else {
-        CommandExecutionContext(sparkSession)
+        CommandExecutionContext(toFhirEngine)
       }
   }
 
-  def start(): Unit = {
-    init()
+  def start(toFhirEngine: ToFhirEngine): Unit = {
+    init(toFhirEngine)
 
     print(getWelcomeMessage)
     println()

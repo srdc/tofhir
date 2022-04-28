@@ -8,25 +8,25 @@ import java.net.URI
 
 class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
 
-  val repositoryFolderUri1: URI = getClass.getResource("/test-mappings-1").toURI
-  val repositoryFolderUri2: URI = getClass.getResource("/test-mappings-2").toURI
-  val mappingRepository1: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri1)
-  val mappingRepository2: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri2)
-
   "A FhirMappingRepository" should "correctly read and parse the mapping files under the given mappings folder" in {
-    val patientMapping = mappingRepository1.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/patient-mapping")
+    val patientMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/patient-mapping")
     patientMapping.name shouldBe "patient-mapping"
     patientMapping.mapping.length shouldBe 1
     patientMapping.mapping.head.expression.value.isEmpty shouldBe false
 
-    val observationMapping = mappingRepository1.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/other-observation-mapping")
+    val observationMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/other-observation-mapping")
     observationMapping.name shouldBe "other-observation-mapping"
     observationMapping.mapping.length shouldBe 3
     observationMapping.mapping.head.expression.value.isEmpty shouldBe false
+
+    val labResultsMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
+    labResultsMapping.name shouldBe "lab-results-mapping"
+    labResultsMapping.mapping.length shouldBe 1
+    labResultsMapping.mapping.head.expression.value.isEmpty shouldBe false
   }
 
   it should "correctly arrange the relative paths of the context definitions" in {
-    val observationMapping = mappingRepository1.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/other-observation-mapping")
+    val observationMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/other-observation-mapping")
     val contextDefinition = observationMapping.context("obsConceptMap")
     contextDefinition.url.isDefined shouldBe true
     val contextFile = new File(contextDefinition.url.get)
@@ -34,13 +34,13 @@ class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
   }
 
   it should "throw exception when an unknown mapping is requested" in {
-    the[FhirMappingException] thrownBy mappingRepository1.getFhirMappingByUrl("some-unknown-url") should have message s"FhirMapping with url some-unknown-url cannot be found in folder $repositoryFolderUri1"
+    the[FhirMappingException] thrownBy mappingRepository.getFhirMappingByUrl("some-unknown-url") should have message s"FhirMapping with url some-unknown-url cannot be found in folder $repositoryFolderUri"
   }
 
   it should "correctly load concept map context definitions" in {
-    val observationMapping = mappingRepository1.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/other-observation-mapping")
+    val observationMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/other-observation-mapping")
     val contextDefinition = observationMapping.context("obsConceptMap")
-    val mappingContextLoader = new MappingContextLoader(mappingRepository1)
+    val mappingContextLoader = new MappingContextLoader(mappingRepository)
     mappingContextLoader.retrieveContext(contextDefinition) map { context =>
       val conceptMapContext = context.asInstanceOf[ConceptMapContext]
       conceptMapContext.concepts.size shouldBe 13
@@ -53,9 +53,9 @@ class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
   }
 
   it should "correctly load concept map context definitions from another directory" in {
-    val labResultsMapping = mappingRepository2.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
+    val labResultsMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
     val contextDefinition = labResultsMapping.context("obsConceptMap")
-    val mappingContextLoader = new MappingContextLoader(mappingRepository1)
+    val mappingContextLoader = new MappingContextLoader(mappingRepository)
     mappingContextLoader.retrieveContext(contextDefinition) map { context =>
       val conceptMapContext = context.asInstanceOf[ConceptMapContext]
       conceptMapContext.concepts.size shouldBe 13
@@ -68,9 +68,9 @@ class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
   }
 
   it should "correctly load unit conversion mapping definitions" in {
-    val labResultsMapping = mappingRepository2.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
+    val labResultsMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
     val unitConversionContextDefinition = labResultsMapping.context("labResultUnitConversion")
-    val mappingContextLoader = new MappingContextLoader(mappingRepository2)
+    val mappingContextLoader = new MappingContextLoader(mappingRepository)
     mappingContextLoader.retrieveContext(unitConversionContextDefinition) map { context =>
       val unitConversionContext = context.asInstanceOf[UnitConversionContext]
       unitConversionContext.conversionFunctions.size shouldBe 25

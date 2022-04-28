@@ -1,8 +1,7 @@
 package io.onfhir.tofhir.model
 
+import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import org.json4s.JsonAST.{JString, JValue}
-
-import java.net.URI
 
 /**
  * Interface for data source settings/configurations
@@ -33,12 +32,12 @@ trait DataSourceSettings {
  *
  * @param name          Human friendly name for the source organization for data source
  * @param sourceUri     Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
- * @param dataFolderUri Path to the folder all source data is located
+ * @param dataFolderPath Path to the folder all source data is located
  */
-case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderUri: URI) extends DataSourceSettings
+case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderPath: String) extends DataSourceSettings
 
 /**
- * Comman interface for sink settings
+ * Common interface for sink settings
  */
 trait FhirSinkSettings
 
@@ -48,7 +47,8 @@ trait FhirSinkSettings
  * @param fhirRepoUrl      FHIR endpoint root url
  * @param securitySettings Security settings if target API is secured
  */
-case class FhirRepositorySinkSettings(fhirRepoUrl: String, securitySettings: Option[FhirRepositorySecuritySettings] = None) extends FhirSinkSettings
+case class FhirRepositorySinkSettings(fhirRepoUrl: String, securitySettings: Option[FhirRepositorySecuritySettings] = None,
+                                      writeErrorHandling: MappingErrorHandling) extends FhirSinkSettings
 
 /**
  * Security settings for FHIR API access
@@ -102,4 +102,11 @@ object SourceFileFormats {
   final val AVRO = "avro"
 }
 
-case class FhirMappingJob(id: String, mappingRepositoryUri: URI, schemaRepositoryUri: URI, sinkSettings: FhirSinkSettings, tasks: Seq[FhirMappingTask])
+case class FhirMappingJob(id: String, sourceSettings: DataSourceSettings, sinkSettings: FhirSinkSettings, mappings: Seq[SimpleFhirMappingDefinition], mappingErrorHandling: MappingErrorHandling) {
+  def tasks: Seq[FhirMappingTask] = { // Return Seq[FhirMappingTask] from Seq[SimpleFhirMappingDefinition]
+    // TODO: This is a dirty solution which assumes FileSystemSource and FileSystemSourceSettings from the FhirMappingJob definition.
+    //  And it assumes that all mapping tasks have the same sourceContext with a single element whose name is "source".
+    mappings.map(m => FhirMappingTask(m.mappingRef, Map("source" -> FileSystemSource(m.filePath, SourceFileFormats.CSV, sourceSettings.asInstanceOf[FileSystemSourceSettings]))))
+  }
+}
+case class SimpleFhirMappingDefinition(mappingRef: String, filePath: String)

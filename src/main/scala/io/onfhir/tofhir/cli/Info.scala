@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.cli
 
-import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, FhirSinkSettings}
+import io.onfhir.tofhir.model.{DataSourceSettings, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSourceSettings}
 
 import scala.util.{Failure, Success}
 
@@ -48,19 +48,24 @@ object Info {
       throw new IllegalStateException("!!! I am trying to serialize the MappingJob from the context, but it is not there!!!")
     }
     val mj = context.fhirMappingJob.get
-    val reposStr = s"Mapping Job ID: ${mj.id}\n" +
-      s"\tMapping Repository URI: ${mj.mappingRepositoryUri}\n" +
-      s"\tSchema Repository URI: ${mj.schemaRepositoryUri}\n"
+    val sourceSettingsStr = mj.sourceSettings match {
+      case settings: FileSystemSourceSettings =>
+        s"\tFile System Source Settings:\n" +
+          s"\t\tName: ${settings.name},\n" +
+          s"\t\tSource URI: ${settings.sourceUri},\n" +
+          s"\t\tData Folder Path: ${settings.dataFolderPath}"
+      case _: DataSourceSettings => "\tNo Source Settings\n"
+    }
     val sinkSettingsStr = mj.sinkSettings match {
       case settings: FhirRepositorySinkSettings =>
         s"\tFHIR Repository URL: ${settings.fhirRepoUrl}\n"
-      case _: FhirSinkSettings => "No Sink Settings\n"
+      case _: FhirSinkSettings => "\tNo Sink Settings\n"
     }
 
     val tasks = context.mappingNameUrlMap
       .map { case (name, url) => s"\t\t$name -> $url" } // Convert to string
     val tasksStr = "\tTasks:\n" + tasks.mkString("\n")
 
-    reposStr + sinkSettingsStr + tasksStr
+    s"Mapping Job ID: ${mj.id}\n" + sourceSettingsStr + sinkSettingsStr + tasksStr
   }
 }

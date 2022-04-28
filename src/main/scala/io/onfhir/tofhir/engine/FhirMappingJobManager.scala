@@ -2,11 +2,13 @@ package io.onfhir.tofhir.engine
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.Resource
-import io.onfhir.tofhir.config.{MAPPING_ERROR_HANDLING, ToFhirConfig}
+import io.onfhir.tofhir.config.MappingErrorHandling
+import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import io.onfhir.tofhir.model._
 import io.onfhir.util.JsonFormatter._
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.ext.URISerializer
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.Serialization
 import org.json4s.{Formats, JObject, ShortTypeHints}
 
@@ -30,7 +32,8 @@ class FhirMappingJobManager(
                              fhirMappingRepository: IFhirMappingRepository,
                              contextLoader: IMappingContextLoader,
                              schemaLoader: IFhirSchemaLoader,
-                             spark: SparkSession
+                             spark: SparkSession,
+                             mappingErrorHandling: MappingErrorHandling
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
 
   private val logger: Logger = Logger(this.getClass)
@@ -111,7 +114,7 @@ class FhirMappingJobManager(
       val configurationContext = task.sourceContext(sourceNames.head).settings.toConfigurationContext
       //Construct the mapping service
       val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping)
-      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService)
+      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandling)
     })
   }
 
@@ -176,9 +179,9 @@ object MappingTaskExecutor {
    * @param fhirMappingService
    * @return
    */
-  def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService): Dataset[String] = {
+  def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, errorHandlingType: MappingErrorHandling): Dataset[String] = {
     fhirMappingService.sources match {
-      case Seq(_) => executeMappingOnSingleSource(spark, df, fhirMappingService)
+      case Seq(_) => executeMappingOnSingleSource(spark, df, fhirMappingService, errorHandlingType)
       //Executing on multiple sources
       case _ => throw new NotImplementedError()
     }
@@ -191,7 +194,7 @@ object MappingTaskExecutor {
    * @param fhirMappingService
    * @return
    */
-  private def executeMappingOnSingleSource(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService): Dataset[String] = {
+  private def executeMappingOnSingleSource(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, errorHandlingType: MappingErrorHandling): Dataset[String] = {
     import spark.implicits._
     val result =
       df
@@ -202,14 +205,14 @@ object MappingTaskExecutor {
           } catch {
             case e: FhirMappingException =>
               logger.error(e.getMessage, e)
-              if (ToFhirConfig.mappingErrorHandling == MAPPING_ERROR_HANDLING.CONTINUE) {
+              if (errorHandlingType == MappingErrorHandling.CONTINUE) {
                 Seq.empty[Resource]
               } else {
                 throw e
               }
             case e: TimeoutException =>
               logger.error(s"TimeoutException. A single row could not be mapped to FHIR in 5 seconds. The row JObject: ${Serialization.write(jo)}")
-              if (ToFhirConfig.mappingErrorHandling == MAPPING_ERROR_HANDLING.CONTINUE) {
+              if (errorHandlingType == MappingErrorHandling.CONTINUE) {
                 Seq.empty[Resource]
               } else {
                 throw e
@@ -225,16 +228,16 @@ object MappingTaskExecutor {
 object FhirMappingJobManager {
 
   implicit lazy val formats: Formats =
-    Serialization.formats(ShortTypeHints(List(classOf[FhirRepositorySinkSettings], classOf[FileSystemSource]))) +
-      URISerializer
+    Serialization.formats(ShortTypeHints(List(classOf[FhirRepositorySinkSettings], classOf[FileSystemSource], classOf[FileSystemSourceSettings]))) +
+      new EnumNameSerializer(MappingErrorHandling)
 
-  def saveMappingJobsToFile(fhirMappingJobs: Seq[FhirMappingJob], filePath: String): Unit = {
-    Files.write(Paths.get(filePath), Serialization.writePretty(fhirMappingJobs).getBytes(StandardCharsets.UTF_8))
+  def saveMappingJobToFile(fhirMappingJob: FhirMappingJob, filePath: String): Unit = {
+    Files.write(Paths.get(filePath), Serialization.writePretty(fhirMappingJob).getBytes(StandardCharsets.UTF_8))
   }
 
-  def readMappingJobFromFile(filePath: String): Seq[FhirMappingJob] = {
+  def readMappingJobFromFile(filePath: String): FhirMappingJob = {
     val source = Source.fromFile(filePath, StandardCharsets.UTF_8.name())
     val fileContent = try source.mkString finally source.close()
-    org.json4s.jackson.JsonMethods.parse(fileContent).extract[Seq[FhirMappingJob]]
+    org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
   }
 }
