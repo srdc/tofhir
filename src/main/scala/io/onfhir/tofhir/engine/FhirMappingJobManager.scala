@@ -54,10 +54,7 @@ class FhirMappingJobManager(
         executeTask(task) // Retrieve the source data and execute the mapping
           .map(dataset => fhirWriter.write(dataset)) // Write the created FHIR Resources to the FhirWriter
       }
-    } map { ret =>
-      logger.debug(s"MappingJob execution finished for MappingJob: $id.")
-      ret
-    }
+    } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: $id.") }
   }
 
   /**
