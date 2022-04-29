@@ -1,5 +1,6 @@
 package io.onfhir.tofhir.engine
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
@@ -30,6 +31,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
     sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv", sourceType = SourceFileFormats.CSV, settings = dataSourceSettings))
   )
+  implicit val actorSystem = ActorSystem("FhirMappingJobManagerTest")
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
   val fhirServerIsAvailable: Boolean =
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)

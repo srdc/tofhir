@@ -1,5 +1,6 @@
 package io.onfhir.tofhir.engine
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
@@ -31,6 +32,7 @@ class Pilot2IntegrationTest extends ToFhirTestSpec {
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
 
   val fhirSinkSetting: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", writeErrorHandling = MappingErrorHandling.CONTINUE)
+  implicit val actorSystem = ActorSystem("Pilot2IntegrationTest")
   val onFhirClient = OnFhirNetworkClient.apply(fhirSinkSetting.fhirRepoUrl)
 
   val fhirServerIsAvailable =

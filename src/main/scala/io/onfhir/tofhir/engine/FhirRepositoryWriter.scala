@@ -1,15 +1,15 @@
 package io.onfhir.tofhir.engine
 
+import akka.actor.ActorSystem
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder}
 import io.onfhir.client.OnFhirNetworkClient
-import io.onfhir.client.OnFhirNetworkClient.system.dispatcher
 import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.model.{FhirMappingException, FhirRepositorySinkSettings}
 import org.apache.spark.sql.Dataset
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -31,6 +31,8 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
     import io.onfhir.util.JsonFormatter._
     df
       .foreachPartition { partition: Iterator[String] =>
+        implicit val actorSystem = ActorSystem("FhirRepositoryWriter")
+        implicit val executionContext = actorSystem.dispatcher
         val onFhirClient = OnFhirNetworkClient.apply(sinkSettings.fhirRepoUrl) // A FhirClient for each partition
         partition
           .grouped(ToFhirConfig.fhirWriterBatchGroupSize)
