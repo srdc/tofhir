@@ -1,9 +1,8 @@
 package io.onfhir.tofhir.engine
 
-import com.fasterxml.jackson.databind.MappingIterator
 import com.fasterxml.jackson.dataformat.csv.{CsvMapper, CsvSchema}
 import com.typesafe.scalalogging.Logger
-import io.onfhir.tofhir.model.{ConceptMapContext, FhirMappingContext, FhirMappingContextCategories, FhirMappingContextDefinition, UnitConversionContext}
+import io.onfhir.tofhir.model._
 
 import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -31,7 +30,7 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
 
   def retrieveContext(contextDefinition: FhirMappingContextDefinition): Future[FhirMappingContext] = {
     if (contextDefinition.url.isDefined) {
-      logger.debug("The context definition for the mapping repository is defined at a URL:{}. It will be loaded...", contextDefinition.url.get)
+      //logger.debug("The context definition for the mapping repository is defined at a URL:{}. It will be loaded...", contextDefinition.url.get)
       // FIXME: To build the context, we only accept CSV files with a header to read from.
       contextDefinition.category match {
         case FhirMappingContextCategories.CONCEPT_MAP => readConceptMapContextFromCSV(contextDefinition.url.get).map { concepts => ConceptMapContext(concepts) }

@@ -53,7 +53,7 @@ object Info {
         s"\tFile System Source Settings:\n" +
           s"\t\tName: ${settings.name},\n" +
           s"\t\tSource URI: ${settings.sourceUri},\n" +
-          s"\t\tData Folder Path: ${settings.dataFolderPath}"
+          s"\t\tData Folder Path: ${settings.dataFolderPath}\n"
       case _: DataSourceSettings => "\tNo Source Settings\n"
     }
     val sinkSettingsStr = mj.sinkSettings match {

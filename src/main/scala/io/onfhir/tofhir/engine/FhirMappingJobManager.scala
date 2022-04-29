@@ -15,6 +15,7 @@ import org.json4s.{Formats, JObject, ShortTypeHints}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.TimeoutException
+import scala.collection.IterableOnce.iterableOnceExtensionMethods
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
@@ -48,12 +49,14 @@ class FhirMappingJobManager(
    */
   override def executeMappingJob(id: String, tasks: Seq[FhirMappingTask], sinkSettings: FhirSinkSettings): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
-    tasks
-      .map(t => executeTask(t)) // Retrieve the source data and execute the mapping
-      .map { f => f.map(fhirResourcesDataSet => fhirWriter.write(fhirResourcesDataSet)) } // Write the created FHIR Resources to the FhirWriter
-    match {
-      case Seq(r) => r // Execute it if there is only a single Future
-      case oth => oth.reduce((f1, f2) => f1.flatMap(_ => f2)) // Execute the Futures in the Sequence consecutively (not in parallel)
+    tasks.foldLeft(Future.apply()) { (f, task) =>
+      f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
+        executeTask(task) // Retrieve the source data and execute the mapping
+          .map(dataset => fhirWriter.write(dataset)) // Write the created FHIR Resources to the FhirWriter
+      }
+    } map { ret =>
+      logger.debug(s"MappingJob execution finished for MappingJob: $id.")
+      ret
     }
   }
 
@@ -213,8 +216,10 @@ object MappingTaskExecutor {
             case e: TimeoutException =>
               logger.error(s"TimeoutException. A single row could not be mapped to FHIR in 5 seconds. The row JObject: ${Serialization.write(jo)}")
               if (errorHandlingType == MappingErrorHandling.CONTINUE) {
+                logger.debug("Continuing the processing of mappings...")
                 Seq.empty[Resource]
               } else {
+                logger.debug("Will halt the mapping execution!")
                 throw e
               }
           }

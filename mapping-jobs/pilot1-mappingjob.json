@@ -1,25 +1,101 @@
 {
-  "id" : "pilot1-mapping-job",
-  "sourceSettings" : {
-    "jsonClass" : "FileSystemSourceSettings",
-    "name" : "pilot1-source",
-    "sourceUri" : "https://aiccelerate.eu/data-integration-suite/pilot1-data",
-    "dataFolderPath" : "test-data/pilot1"
+  "id": "pilot1-mapping-job",
+  "sourceSettings": {
+    "jsonClass": "FileSystemSourceSettings",
+    "name": "pilot1-source",
+    "sourceUri": "https://aiccelerate.eu/data-integration-suite/pilot1-data",
+    "dataFolderPath": "test-data/pilot1"
   },
-  "sinkSettings" : {
-    "jsonClass" : "FhirRepositorySinkSettings",
-    "fhirRepoUrl" : "http://localhost:8081/fhir",
-    "writeErrorHandling" : "continue"
+  "sinkSettings": {
+    "jsonClass": "FhirRepositorySinkSettings",
+    "fhirRepoUrl": "http://localhost:8081/fhir",
+    "writeErrorHandling": "continue"
   },
-  "mappings" : [ {
-    "mappingRef" : "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping",
-    "filePath" : "anesthesia-observations.csv"
-  }, {
-    "mappingRef" : "https://aiccelerate.eu/fhir/mappings/pilot1/background-information-mapping",
-    "filePath" : "background-information.csv"
-  }, {
-    "mappingRef" : "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping",
-    "filePath" : "conditions.csv"
-  }  ],
-  "mappingErrorHandling" : "continue"
+  "mappingErrorHandling": "continue",
+  "mappings": [
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
+      "filePath": "patients.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/practitioner-mapping",
+      "filePath": "practitioners.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/hospital-unit-mapping",
+      "filePath": "hospital-unit.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/workshift-mapping",
+      "filePath": "workshift.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-plan-mapping",
+      "filePath": "surgery-plans.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/operation-episode-encounter-mapping",
+      "filePath": "operation-episode-encounters.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-details-mapping",
+      "filePath": "surgery-details.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping",
+      "filePath": "conditions.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/patient-reported-conditions-mapping",
+      "filePath": "patient-reported-conditions.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/medication-used-mapping",
+      "filePath": "medication-used.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/medication-administration-mapping",
+      "filePath": "medication-administration.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/health-behavior-assessment-mapping",
+      "filePath": "health-behavior-assessment.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/background-information-mapping",
+      "filePath": "background-information.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-assessment-mapping",
+      "filePath": "preoperative-assessment.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-risks-mapping",
+      "filePath": "preoperative-risk-factors.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-symptoms-mapping",
+      "filePath": "preoperative-symptoms.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/radiological-studies-mapping",
+      "filePath": "radiological-studies.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/lab-results-mapping",
+      "filePath": "lab-results.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/vital-signs-mapping",
+      "filePath": "vitalsigns.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping",
+      "filePath": "anesthesia-observations.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/other-observation-mapping",
+      "filePath": "other-observations.csv"
+    }
+  ]
 }
