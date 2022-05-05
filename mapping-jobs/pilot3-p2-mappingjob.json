@@ -1,0 +1,49 @@
+{
+  "id": "pilot3-p2-mapping-job",
+  "sourceSettings": {
+    "jsonClass": "FileSystemSourceSettings",
+    "name": "pilot3-p2-source",
+    "sourceUri": "https://aiccelerate.eu/data-integration-suite/pilot3-p2-data",
+    "dataFolderPath": "test-data/pilot3-p2"
+  },
+  "sinkSettings": {
+    "jsonClass": "FhirRepositorySinkSettings",
+    "fhirRepoUrl": "http://localhost:8081/fhir",
+    "writeErrorHandling": "continue"
+  },
+  "mappingErrorHandling": "continue",
+  "mappings": [
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/patient-mapping",
+      "filePath": "patients.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/condition-mapping",
+      "filePath": "conditions.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/medication-used-mapping",
+      "filePath": "medications-used.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/medication-administration-mapping",
+      "filePath": "medication-administrations.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/lab-results-mapping",
+      "filePath": "lab-results.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/neurooncological-observation-mapping",
+      "filePath": "neurooncological-observations.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/symptom-observation-mapping",
+      "filePath": "symptoms.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot3-p2/vital-signs-mapping",
+      "filePath": "vitalsigns.csv"
+    }
+  ]
+}

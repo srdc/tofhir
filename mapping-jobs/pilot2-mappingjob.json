@@ -1,0 +1,49 @@
+{
+  "id": "pilot2-mapping-job",
+  "sourceSettings": {
+    "jsonClass": "FileSystemSourceSettings",
+    "name": "pilot2-source",
+    "sourceUri": "https://aiccelerate.eu/data-integration-suite/pilot2-data",
+    "dataFolderPath": "test-data/pilot2"
+  },
+  "sinkSettings": {
+    "jsonClass": "FhirRepositorySinkSettings",
+    "fhirRepoUrl": "http://localhost:8081/fhir",
+    "writeErrorHandling": "continue"
+  },
+  "mappingErrorHandling": "continue",
+  "mappings": [
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/patient-mapping",
+      "filePath": "patients.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/encounter-mapping",
+      "filePath": "encounters.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/condition-mapping",
+      "filePath": "conditions.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/medication-used-mapping",
+      "filePath": "medication-used.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/device-used-mapping",
+      "filePath": "device-used.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/symptom-existence-mapping",
+      "filePath": "parkinson-symptom-existence.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/symptom-assessment-mapping",
+      "filePath": "parkinson-symptom-assessments.csv"
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/other-assessments-mapping",
+      "filePath": "other-assessments.csv"
+    }
+  ]
+}
