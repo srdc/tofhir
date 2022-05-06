@@ -4,8 +4,9 @@ import io.onfhir.tofhir.config.ToFhirConfig
 import io.onfhir.tofhir.engine.{FhirMappingFolderRepository, IFhirMappingRepository, IMappingContextLoader, MappingContextLoader, SchemaFolderRepository}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.scalatest._
-import org.scalatest.matchers._
+import org.scalatest.{Inside, Inspectors, OptionValues}
+import org.scalatest.flatspec.AsyncFlatSpec
+import org.scalatest.matchers.should
 
 import java.net.URI
 

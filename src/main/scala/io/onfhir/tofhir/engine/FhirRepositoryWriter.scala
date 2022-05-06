@@ -31,6 +31,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
     import io.onfhir.util.JsonFormatter._
     df
       .foreachPartition { partition: Iterator[String] =>
+        // FIXME: We do not terminate this ActorSystem and this may create issues.
         implicit val actorSystem = ActorSystem("FhirRepositoryWriter")
         implicit val executionContext = actorSystem.dispatcher
         val onFhirClient = OnFhirNetworkClient.apply(sinkSettings.fhirRepoUrl) // A FhirClient for each partition

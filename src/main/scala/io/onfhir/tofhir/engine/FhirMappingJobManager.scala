@@ -49,7 +49,7 @@ class FhirMappingJobManager(
    */
   override def executeMappingJob(id: String, tasks: Seq[FhirMappingTask], sinkSettings: FhirSinkSettings): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
-    tasks.foldLeft(Future.apply()) { (f, task) => // Initial empty Future
+    tasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         executeTask(task) // Retrieve the source data and execute the mapping
           .map(dataset => fhirWriter.write(dataset)) // Write the created FHIR Resources to the FhirWriter

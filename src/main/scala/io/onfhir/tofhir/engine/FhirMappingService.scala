@@ -81,6 +81,7 @@ class FhirMappingService(
         resources.flatMap {
           case a: JArray => a.arr.map(_.asInstanceOf[Resource])
           case o: JObject => Seq(o)
+          case _ => throw new IllegalStateException("This is an unexpected situation. Among the FHIR resources returned by evaluatedExpression, there is something which is neither JArray nor JObject.")
         }
       )
   }

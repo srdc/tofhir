@@ -23,6 +23,9 @@ class Info extends Command {
             }
             println("ERROR MESSAGE OF THE PREVIOUS EXECUTION:")
             println(ex.getMessage + "\n")
+          case None =>
+            // This should not be the case since I already do an isCompleted check, but let's remove the compiler warning
+            println("I am still running the task(s) defined in the loaded Mapping Job.")
         }
       } else {
         if(context.runningStatus.get._1.isDefined) {
