@@ -7,7 +7,8 @@ object CommandFactory {
       case "help" => new Help()
       case "info" => new Info()
       case "load" => new Load()
-      case "run" => new Run()
+      case "run" | "execute" => new Run()
+      case "exit" | "quit" => new Exit()
       case cmd => new Unknown(cmd)
     }
   }
