@@ -44,6 +44,8 @@ class Run extends Command {
             task -> f
           }
         }
+
+        context.toFhirEngine.reloadRepositories()
         context.withStatus(Some(runningStatus))
       }
     }
