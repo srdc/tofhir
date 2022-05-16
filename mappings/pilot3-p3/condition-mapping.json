@@ -1,0 +1,63 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot3-p3/condition-mapping",
+  "name": "condition-mapping",
+  "title": "Mapping of condition schema for pilot-3 p3 (HSJD) to AIC-Condition FHIR profile",
+  "source": [{
+    "alias": "source",
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p3-condition"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Condition",
+          "id": "{{mpp:getHashedId('Condition', conditionID & pid & code & onsetDateTime.toString())}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{conditionID & pid & code & onsetDateTime.toString()}}"
+            }
+          ],
+          "clinicalStatus": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+                "code": "{{clinicalStatus}}"
+              }
+            ]
+          },
+          "severity": {
+            "{{#svt}}": "{{severity}}",
+            "{{?}}": {
+              "coding": [
+                {
+                  "system": "http://www.snomed.org/",
+                  "code": "{{%svt}}"
+                }
+              ]
+            }
+          },
+          "code": {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/sid/icd-10",
+                "code": "{{code}}",
+                "display": "{{? codeDisplay}}"
+              }
+            ]
+          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "onsetDateTime": "{{onsetDateTime}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterID)}}"
+        }
+      }
+    }
+  ]
+}

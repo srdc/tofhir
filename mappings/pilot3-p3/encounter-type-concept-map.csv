@@ -1,0 +1,7 @@
+source_code,source_system,source_display
+183452005,http://snomed.info/sct,ER Visit (Emergency hospital admission)
+305731000,http://snomed.info/sct,Nurse Visit (Seen by Nurse)
+305647009,http://snomed.info/sct,Pediatrician Visit (Seen by pediatrician)
+310348003,http://snomed.info/sct,Psychologist Visit (Seen by psychologist)
+305354007,http://snomed.info/sct,Pediatric Ward Stay
+305353001,http://snomed.info/sct,PICU Stay (Admission to PICU)

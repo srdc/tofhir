@@ -1,0 +1,10 @@
+source_code,source_system,source_display,target_unit
+707621005,http://snomed.info/sct,"Gross Motor Function Classification System (GMFCS)",{score}
+281400004,http://snomed.info/sct,"Ramsay scale",{score}
+386554004,http://snomed.info/sct,"Glasgow coma scale (GCS)",{score}
+443709007,http://snomed.info/sct,"Pediatric modified Glasgow coma scale",{score}
+pedsql,https://aiccelerate.eu/fhir/CodeSystem/pediatric-assessments,"Pediatric Quality of Life Inventory (PEDS-QL)",{score}
+pqol,https://aiccelerate.eu/fhir/CodeSystem/pediatric-assessments,"Perceived Quality of Life Scale",{score}
+zarit,https://aiccelerate.eu/fhir/CodeSystem/pediatric-assessments,"Zarit scale of caregiver burden",{score}
+dme-c,https://aiccelerate.eu/fhir/CodeSystem/pediatric-assessments,"Caregiver's emotional discomfort scale",{score}
+38215-0,http://loinc.org,"Pain severity total [Score] FLACC",{score}

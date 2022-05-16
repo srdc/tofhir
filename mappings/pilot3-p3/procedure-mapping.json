@@ -1,0 +1,66 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/pilot3-p3/procedure-mapping",
+  "name": "procedure-mapping",
+  "title": "Mapping of procedure schema for pilot-3 p3 (HSJD) to AIC-PediatricPalliativeCareProcedure FHIR profile",
+  "source": [
+    {
+      "alias": "source",
+      "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p3-procedure"
+    }
+  ],
+  "context": {
+    "procedureConceptMap": {
+      "category": "concept-map",
+      "url": "./procedures-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Procedure",
+          "id": "{{mpp:getHashedId('Procedure', procedureID)}}",
+          "meta": {
+            "profile": [
+              "https://aiccelerate.eu/fhir/StructureDefinition/AIC-PediatricPalliativeCareProcedure"
+            ],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{procedureID}}"
+            }
+          ],
+          "status": "completed",
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "{{mpp:getConcept(%procedureConceptMap, code, 'category_system')}}",
+                  "code": "{{mpp:getConcept(%procedureConceptMap, code, 'category_code')}}",
+                  "display": "{{mpp:getConcept(%procedureConceptMap, code, 'category_display')}}"
+                }
+              ]
+            }
+          ],
+          "code": {
+            "coding": [
+              {
+                "system": "{{mpp:getConcept(%procedureConceptMap, code, 'source_system')}}",
+                "code": "{{code}}",
+                "display": "{{mpp:getConcept(%procedureConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterID)}}",
+          "performedDateTime": "{{date}}"
+        }
+      }
+    }
+  ]
+}

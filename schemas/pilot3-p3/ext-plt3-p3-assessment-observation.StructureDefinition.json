@@ -1,0 +1,107 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p3-assessment-observation",
+  "name": "Ext-plt3-p3-assessment-observation",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt3-p3-assessment-observation",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt3-p3-assessment-observation",
+        "path": "Ext-plt3-p3-assessment-observation",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p3-assessment-observation.observationID",
+        "path": "Ext-plt3-p3-assessment-observation.observationID",
+        "short": "Unique identifier for this assessment observation",
+        "definition": "Unique identifier for this observation record",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p3-assessment-observation.pid",
+        "path": "Ext-plt3-p3-assessment-observation.pid",
+        "short": "Patient identifier",
+        "definition": "Unique patient identifier  (a pseudoynm)",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p3-assessment-observation.observationDateTime",
+        "path": "Ext-plt3-p3-assessment-observation.observationDateTime",
+        "short": "Date for this observation",
+        "definition": "Date and time for this assessment.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p3-assessment-observation.code",
+        "path": "Ext-plt3-p3-assessment-observation.code",
+        "short": "Code for this assessment",
+        "definition": "Code for this assessment observation.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt3-p3-assessment-observation.value",
+        "path": "Ext-plt3-p3-assessment-observation.value",
+        "short": "Value of this assessment",
+        "definition": "Value of this assessment observation.",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "decimal",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/decimal"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
