@@ -36,17 +36,15 @@
             }
           ],
           "status": "completed",
-          "category": [
-            {
-              "coding": [
-                {
-                  "system": "{{mpp:getConcept(%procedureConceptMap, code, 'category_system')}}",
-                  "code": "{{mpp:getConcept(%procedureConceptMap, code, 'category_code')}}",
-                  "display": "{{mpp:getConcept(%procedureConceptMap, code, 'category_display')}}"
-                }
-              ]
-            }
-          ],
+          "category": {
+            "coding": [
+              {
+                "system": "{{mpp:getConcept(%procedureConceptMap, code, 'category_system')}}",
+                "code": "{{mpp:getConcept(%procedureConceptMap, code, 'category_code')}}",
+                "display": "{{mpp:getConcept(%procedureConceptMap, code, 'category_display')}}"
+              }
+            ]
+          },
           "code": {
             "coding": [
               {

@@ -2,10 +2,12 @@
   "url": "https://aiccelerate.eu/fhir/mappings/pilot3-p3/patient-mapping",
   "name": "patient-mapping",
   "title": "Mapping of patient schema for pilot-3 p3 (HSJD) to AIC-Patient FHIR profile",
-  "source": [{
-    "alias": "source",
-    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p3-patient"
-  }],
+  "source": [
+    {
+      "alias": "source",
+      "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt3-p3-patient"
+    }
+  ],
   "mapping": [
     {
       "expression": {
@@ -15,7 +17,9 @@
           "resourceType": "Patient",
           "id": "{{mpp:getHashedId('Patient',pid)}}",
           "meta": {
-            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"],
+            "profile": [
+              "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"
+            ],
             "source": "{{%sourceSystem.sourceUri}}"
           },
           "active": true,
@@ -28,12 +32,14 @@
           ],
           "gender": "{{gender}}",
           "birthDate": "{{birthDate}}",
-          "address": {
-            "use": "home",
-            "type": "both",
-            "postalCode": "{{postalCode}}",
-            "country": "{{country}}"
-          }
+          "address": [
+            {
+              "use": "home",
+              "type": "both",
+              "postalCode": "{{postalCode}}",
+              "country": "{{country}}"
+            }
+          ]
         }
       }
     }
