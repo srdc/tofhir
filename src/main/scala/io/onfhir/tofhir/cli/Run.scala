@@ -44,6 +44,7 @@ class Run extends Command {
             task -> f
           }
         }
+
         context.withStatus(Some(runningStatus))
       }
     }
