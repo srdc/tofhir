@@ -45,8 +45,6 @@ class Run extends Command {
           }
         }
 
-        context.toFhirEngine.mappingRepository
-        context.toFhirEngine.schemaRepository
         context.withStatus(Some(runningStatus))
       }
     }
