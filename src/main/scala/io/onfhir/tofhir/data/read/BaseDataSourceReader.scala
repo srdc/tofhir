@@ -1,4 +1,4 @@
-package io.onfhir.tofhir.engine
+package io.onfhir.tofhir.data.read
 
 import io.onfhir.tofhir.model.FhirMappingSourceContext
 import org.apache.spark.sql.DataFrame

@@ -27,6 +27,7 @@
         <jackson-csv.version>2.13.2</jackson-csv.version>
         <logback.version>1.2.11</logback.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
+        <postgres.version>42.3.3</postgres.version>
     </properties>
 
     <build>
@@ -240,6 +241,13 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-csv</artifactId>
             <version>${jackson-csv.version}</version>
+        </dependency>
+
+        <!-- Postgres driver for Spark Read JDBC -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgres.version}</version>
         </dependency>
 
         <!-- For Unit testing -->
