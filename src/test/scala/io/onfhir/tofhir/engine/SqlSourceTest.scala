@@ -2,35 +2,58 @@ package io.onfhir.tofhir.engine
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
+import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.model.{FhirMappingTask, FhirRepositorySinkSettings, SqlSource, SqlSourceSettings}
 import io.onfhir.tofhir.util.FhirMappingUtility
-import io.onfhir.tofhir.utils.H2DatabaseUtil
 import io.onfhir.util.JsonFormatter.formats
 import org.scalatest.BeforeAndAfterAll
 
+import java.io.FileNotFoundException
+import java.nio.charset.StandardCharsets
+import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
+import scala.io.{BufferedSource, Source}
 import scala.util.Try
 
 class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
+  val logger: Logger = Logger(this.getClass)
+
+  val DATABASE_URL = "jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE"
+
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    H2DatabaseUtil.runSqlQuery("patients-otherobservations-populate.sql")
+    runSqlQuery("patients-otherobservations-populate.sql")
   }
 
   override protected def afterAll(): Unit = {
-    H2DatabaseUtil.runSqlQuery("patients-otherobservations-drop.sql")
+    runSqlQuery("patients-otherobservations-drop.sql")
     super.afterAll()
   }
 
+  def runSqlQuery(fileName: String): Unit = {
+    logger.info("Running query file: " +  fileName)
+    val con: Connection = DriverManager.getConnection(DATABASE_URL)
+    val stm: Statement = con.createStatement
+    try{
+      val source: BufferedSource = Source.fromFile(getClass.getResource("/sql/" + fileName).toURI.getPath, StandardCharsets.UTF_8.name())
+      val sql: String = try source.mkString finally source.close()
+      stm.execute(sql)
+    }catch {
+      case _: FileNotFoundException =>
+        val msg = "The file cannot be found at the specified path"
+        logger.error(msg)
+    }
+  }
+
   val sqlSourceSettings: SqlSourceSettings = SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
-    databaseUrl = H2DatabaseUtil.DATABASE_URL, username = "", password = "")
+    databaseUrl = DATABASE_URL, username = "", password = "")
 
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
 
