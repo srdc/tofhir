@@ -8,37 +8,29 @@ import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.model.{FhirMappingTask, FhirRepositorySinkSettings, SqlSource, SqlSourceSettings}
 import io.onfhir.tofhir.util.FhirMappingUtility
+import io.onfhir.tofhir.utils.H2DatabaseUtil
+import io.onfhir.util.JsonFormatter.formats
+import org.scalatest.BeforeAndAfterAll
 
-import java.io.FileNotFoundException
-import java.nio.charset.StandardCharsets
-import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
-import scala.io.{BufferedSource, Source}
 import scala.util.Try
 
-class SqlSourceTest extends ToFhirTestSpec {
+class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
-  val DATABASE_URL: String = s"jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE"
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    H2DatabaseUtil.runSqlQuery("patients-otherobservations-populate.sql")
+  }
 
-  val con: Connection = DriverManager.getConnection(DATABASE_URL)
-  val stm: Statement = con.createStatement
-  try{
-    val source: BufferedSource = Source.fromFile(getClass.getResource("/test-data/patients.sql").toURI.getPath, StandardCharsets.UTF_8.name())
-    val sql: String = try source.mkString finally source.close()
-    stm.execute(sql)
-  }catch {
-    case _: FileNotFoundException =>
-      println(s"The file cannot be found at the specified path")
+  override protected def afterAll(): Unit = {
+    H2DatabaseUtil.runSqlQuery("patients-otherobservations-drop.sql")
+    super.afterAll()
   }
 
   val sqlSourceSettings: SqlSourceSettings = SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
-    databaseUrl = DATABASE_URL, username = "", password = "")
-
-  val patientMappingTask: FhirMappingTask = FhirMappingTask(
-    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceContext = Map("source" -> SqlSource("patients", sqlSourceSettings)))
+    databaseUrl = H2DatabaseUtil.DATABASE_URL, username = "", password = "")
 
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
 
@@ -49,6 +41,14 @@ class SqlSourceTest extends ToFhirTestSpec {
   val fhirServerIsAvailable: Boolean =
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
       .getOrElse(false)
+
+  val patientMappingTask: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+    sourceContext = Map("source" -> SqlSource("patients", sqlSourceSettings)))
+
+  val otherObsMappingTask: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
+    sourceContext = Map("source" -> SqlSource("otherobservations", sqlSourceSettings)))
 
   "Patient mapping" should "should read data from SQL source and map it" in {
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
@@ -71,4 +71,27 @@ class SqlSourceTest extends ToFhirTestSpec {
         unit shouldBe()
       )
   }
+
+  "Other observations mapping" should "should read data from SQL source and map it" in {
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObsMappingTask) map { results =>
+      results.size shouldBe 14
+      val observation = results.head
+      FHIRUtil.extractResourceType(observation) shouldBe "Observation"
+      (observation \ "encounter" \ "reference").extract[String] shouldBe FhirMappingUtility.getHashedReference("Encounter", "e1")
+      (observation \ "code" \ "coding" \ "code").extract[Seq[String]].head shouldBe "9110-8"
+      (observation \ "valueQuantity" \ "value").extract[Int] shouldBe 450
+    }
+  }
+
+  it should "map test data and write it to FHIR repo successfully" in {
+    assume(fhirServerIsAvailable)
+    fhirMappingJobManager
+      .executeMappingJob(tasks = Seq(otherObsMappingTask), sinkSettings = fhirSinkSetting)
+      .map(unit =>
+        unit shouldBe()
+      )
+  }
+
 }
+
