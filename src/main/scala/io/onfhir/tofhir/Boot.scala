@@ -8,7 +8,7 @@ import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
  */
 object Boot extends App {
   val toFhirEngine = new ToFhirEngine(ToFhirConfig.appName, ToFhirConfig.sparkMaster,
-    ToFhirConfig.mappingRepositoryFolderPath, ToFhirConfig.schemaRepositoryFolderPath, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
+    ToFhirConfig.mappingRepositoryFolderPath, ToFhirConfig.schemaRepositoryFolderPath)
 
   CommandLineInterface.start(toFhirEngine)
 }

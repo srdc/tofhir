@@ -1,14 +1,12 @@
 package io.onfhir.tofhir
 
-import io.onfhir.tofhir.config.MappingErrorHandling
-import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import io.onfhir.tofhir.engine._
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
 import java.nio.file.Paths
 
-class ToFhirEngine(appName: String, sparkMaster: String, repositoryFolderPath: String, schemaRepositoryPath: String, val errorHandling: MappingErrorHandling = MappingErrorHandling.CONTINUE) {
+class ToFhirEngine(appName: String, sparkMaster: String, repositoryFolderPath: String, schemaRepositoryPath: String) {
 
   private val sparkConf: SparkConf = new SparkConf()
     .setAppName(appName)

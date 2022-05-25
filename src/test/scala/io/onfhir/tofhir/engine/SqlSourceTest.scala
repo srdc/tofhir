@@ -58,7 +58,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
   val sqlSourceSettings: SqlSourceSettings = SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
     databaseUrl = DATABASE_URL, username = "", password = "")
 
-  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
+  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
 
   val fhirSinkSetting: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", writeErrorHandling = MappingErrorHandling.CONTINUE)
   implicit val actorSystem: ActorSystem = ActorSystem("SqlSourceTest")
@@ -77,7 +77,6 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     sourceContext = Map("source" -> SqlSource("otherobservations", sqlSourceSettings)))
 
   "Patient mapping" should "should read data from SQL source and map it" in {
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
       results.size shouldBe 10
       val patient1 = results.head
@@ -99,7 +98,6 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
   }
 
   "Other observations mapping" should "should read data from SQL source and map it" in {
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
     fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObsMappingTask) map { results =>
       results.size shouldBe 14
       val observation = results.head
