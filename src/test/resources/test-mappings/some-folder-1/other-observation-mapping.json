@@ -41,7 +41,7 @@
           },
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{time}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
           "valueQuantity": {
             "value": "{{value.toDecimal()}}",
             "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
@@ -79,7 +79,7 @@
           },
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{time}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
           "valueQuantity": {
             "value": "{{value.split('-')[0].toDecimal()}}",
             "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
@@ -182,7 +182,7 @@
           },
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "context": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{time}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
           "dosage": {
             "dose": {
               "value": "{{value.toDecimal()}}",

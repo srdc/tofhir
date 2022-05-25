@@ -31,7 +31,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
     sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv", sourceType = SourceFileFormats.CSV, settings = dataSourceSettings))
   )
-  implicit val actorSystem = ActorSystem("FhirMappingJobManagerTest")
+  implicit val actorSystem: ActorSystem = ActorSystem("FhirMappingJobManagerTest")
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
   val fhirServerIsAvailable: Boolean =
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
@@ -46,7 +46,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     mappingErrorHandling = MappingErrorHandling.CONTINUE)
 
   "A FhirMappingJobManager" should "execute the patient mapping task and return the results" in {
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
       results.size shouldBe 10
       val patient1 = results.head
@@ -69,7 +69,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
   }
 
   it should "execute the other observation mapping task and return the results" in {
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObservationMappingTask) map { results =>
       results.size shouldBe 14
       val observation1 = results.head
@@ -96,7 +96,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
   it should "execute the mapping job with multiple mapping tasks and write the results into a FHIR repository" in {
     assume(fhirServerIsAvailable)
 
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingJob(tasks = Seq(patientMappingTask, otherObservationMappingTask), sinkSettings = fhirSinkSettings) flatMap { response =>
       onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p8")).executeAndReturnResource() flatMap { p1Resource =>
         FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p8")
@@ -104,12 +104,10 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
         FHIRUtil.extractValue[String](p1Resource, "birthDate") shouldBe "2010-01-10"
 
         onFhirClient.search("Observation").where("code", "1035-5").executeAndReturnBundle() flatMap { observationBundle =>
-          observationBundle.searchResults.size shouldBe 1
           (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
             FhirMappingUtility.getHashedReference("Patient", "p1")
 
           onFhirClient.search("MedicationAdministration").where("code", "313002").executeAndReturnBundle() map { medicationAdministrationBundle =>
-            medicationAdministrationBundle.searchResults.size shouldBe 1
             (medicationAdministrationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
               FhirMappingUtility.getHashedReference("Patient", "p4")
           }

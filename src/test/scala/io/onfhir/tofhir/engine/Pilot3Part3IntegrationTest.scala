@@ -27,7 +27,7 @@ class Pilot3Part3IntegrationTest extends ToFhirTestSpec {
 
   val dataSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings("test-source-1", "http://hsjd.es", Paths.get("test-data/pilot3-p3").toAbsolutePath.toString)
 
-  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.withName(ToFhirConfig.mappingErrorHandling))
+  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
 
   val fhirSinkSetting: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", writeErrorHandling = MappingErrorHandling.CONTINUE)
   implicit val actorSystem: ActorSystem = ActorSystem("Pilot3Part3IntegrationTest")

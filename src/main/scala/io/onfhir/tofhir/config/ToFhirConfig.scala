@@ -20,9 +20,6 @@ object ToFhirConfig {
   /** Path to the folder where the schema definitions are kept. */
   lazy val schemaRepositoryFolderPath: String = Try(config.getString("mappings.schemas.repository.folder-path")).getOrElse("schemas")
 
-  /** Error handling mechanism of the mappings to indicate whether  */
-  lazy val mappingErrorHandling: String = Try(config.getString("mappings.error-handling")).getOrElse(MappingErrorHandling.CONTINUE.toString)
-
   /** Absolute file path to the MappingJobs file while initiating the Data Integration Suite */
   lazy val mappingJobFilePath: Option[String] = Try(config.getString("mapping-job.file-path")).toOption
 

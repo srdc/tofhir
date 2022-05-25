@@ -4,6 +4,8 @@ import com.typesafe.scalalogging.Logger
 import io.onfhir.api.Resource
 import io.onfhir.tofhir.config.MappingErrorHandling
 import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
+import io.onfhir.tofhir.data.read.DataSourceReaderFactory
+import io.onfhir.tofhir.data.write.FhirWriterFactory
 import io.onfhir.tofhir.model._
 import io.onfhir.util.JsonFormatter._
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}

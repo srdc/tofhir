@@ -27,8 +27,8 @@
             }
           ],
           "gender": "{{gender}}",
-          "birthDate": "{{birthDate}}",
-          "deceasedDateTime": "{{? deceasedDateTime}}",
+          "birthDate": "{{birthDate.utl:toFhirDateTime()}}",
+          "deceasedDateTime": "{{? deceasedDateTime.utl:toFhirDateTime()}}",
           "address": {
             "{{#pc}}": "{{homePostalCode}}",
             "{{?}}": [

@@ -1,8 +1,7 @@
-package io.onfhir.tofhir.engine
+package io.onfhir.tofhir.data.write
 
-
-import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, FhirSinkSettings, MappedFhirResource}
-import org.apache.spark.sql.{DataFrame, Dataset}
+import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, FhirSinkSettings}
+import org.apache.spark.sql.Dataset
 
 /**
  * Base class for FHIR resource writer

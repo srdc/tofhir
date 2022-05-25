@@ -27,6 +27,7 @@
         <jackson-csv.version>2.13.2</jackson-csv.version>
         <logback.version>1.2.11</logback.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
+        <postgres.version>42.3.3</postgres.version>
     </properties>
 
     <build>
@@ -184,6 +185,11 @@
         </dependency>
         <dependency>
             <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-path_${scala.binary.version}</artifactId>
+            <version>${onfhir.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.onfhir</groupId>
             <artifactId>onfhir-template-engine_${scala.binary.version}</artifactId>
             <version>${onfhir-template-engine.version}</version>
         </dependency>
@@ -242,11 +248,26 @@
             <version>${jackson-csv.version}</version>
         </dependency>
 
+        <!-- Postgres driver for Spark Read JDBC -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgres.version}</version>
+        </dependency>
+
         <!-- For Unit testing -->
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.binary.version}</artifactId>
             <version>${scalatest.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- For database testing -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.1.210</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

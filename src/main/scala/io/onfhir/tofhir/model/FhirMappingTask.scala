@@ -3,6 +3,8 @@ package io.onfhir.tofhir.model
 import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import org.json4s.JsonAST.{JString, JValue}
 
+import java.util.Properties
+
 /**
  * Interface for data source settings/configurations
  */
@@ -35,6 +37,16 @@ trait DataSourceSettings {
  * @param dataFolderPath Path to the folder all source data is located
  */
 case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderPath: String) extends DataSourceSettings
+
+/**
+ *
+ * @param name          Human friendly name for the source organization for data source
+ * @param sourceUri     Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
+ * @param databaseUrl   Connection URL of the SQL database
+ * @param username      Username for database connection
+ * @param password      Password for database connection
+ */
+case class SqlSourceSettings(name: String, sourceUri: String, databaseUrl: String, username: String, password: String) extends DataSourceSettings
 
 /**
  * Common interface for sink settings
@@ -91,6 +103,15 @@ trait FhirMappingSourceContext extends Serializable {
  * @param sourceType Source format for the file See[SourceFileFormats]
  */
 case class FileSystemSource(path: String, sourceType: String, override val settings: FileSystemSourceSettings) extends FhirMappingSourceContext
+
+// TODO: Check how we can use SQL queries in addition to the table names.
+/**
+ * Context/configuration for one of the source of the mapping that will read the source data from file an SQL database
+ *
+ * @param tableName Name of the table (because Spark jdbc method accepts tableName).
+ * @param settings Settings for the SQL source
+ */
+case class SqlSource(tableName: String, override val settings: SqlSourceSettings) extends FhirMappingSourceContext
 
 /**
  * List of source file formats supported by tofhir

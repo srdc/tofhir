@@ -1,6 +1,7 @@
 package io.onfhir.tofhir
 
-import io.onfhir.tofhir.config.ToFhirConfig
+import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
+import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.engine.{FhirMappingFolderRepository, IFhirMappingRepository, IMappingContextLoader, MappingContextLoader, SchemaFolderRepository}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -12,6 +13,9 @@ import java.net.URI
 
 abstract class ToFhirTestSpec extends AsyncFlatSpec with should.Matchers with
   OptionValues with Inside with Inspectors {
+
+  val mappingErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
+  val fhirWriteErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
 
   val repositoryFolderUri: URI = getClass.getResource(ToFhirConfig.mappingRepositoryFolderPath).toURI
   val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri)

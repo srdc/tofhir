@@ -19,7 +19,7 @@ class Run extends Command {
       } else {
         val mappingJob = context.fhirMappingJob.get
         val fhirMappingJobManager = new FhirMappingJobManager(context.toFhirEngine.mappingRepository, context.toFhirEngine.contextLoader,
-          context.toFhirEngine.schemaRepository, context.toFhirEngine.sparkSession, context.toFhirEngine.errorHandling)
+          context.toFhirEngine.schemaRepository, context.toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
 
         val runningStatus = if (args.isEmpty) {
           // Execute all tasks in the mapping job

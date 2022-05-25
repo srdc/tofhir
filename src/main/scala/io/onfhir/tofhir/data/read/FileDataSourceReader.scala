@@ -1,6 +1,6 @@
-package io.onfhir.tofhir.engine
+package io.onfhir.tofhir.data.read
 
-import io.onfhir.tofhir.model.{FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
+import io.onfhir.tofhir.model.{FileSystemSource, SourceFileFormats}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
