@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
 import scala.io.{BufferedSource, Source}
-import scala.util.Try
+import scala.util.{Failure, Success, Try, Using}
 
 class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
@@ -29,26 +29,29 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    runSqlQuery("patients-otherobservations-populate.sql")
+    val sql = readFileContent("/sql/patients-otherobservations-populate.sql")
+    runSQL(sql)
   }
 
   override protected def afterAll(): Unit = {
-    runSqlQuery("patients-otherobservations-drop.sql")
+    val sql = readFileContent("/sql/patients-otherobservations-drop.sql")
+    runSQL(sql)
     super.afterAll()
   }
 
-  def runSqlQuery(fileName: String): Unit = {
-    logger.info("Running query file: " +  fileName)
-    val con: Connection = DriverManager.getConnection(DATABASE_URL)
-    val stm: Statement = con.createStatement
-    try{
-      val source: BufferedSource = Source.fromFile(getClass.getResource("/sql/" + fileName).toURI.getPath, StandardCharsets.UTF_8.name())
-      val sql: String = try source.mkString finally source.close()
+  private def readFileContent(fileName: String): String = {
+    val source: BufferedSource = Source.fromInputStream(getClass.getResourceAsStream(fileName))
+    try source.mkString finally source.close()
+  }
+
+  private def runSQL(sql: String): Boolean = {
+    Using.Manager { use =>
+      val con: Connection = use(DriverManager.getConnection(DATABASE_URL))
+      val stm: Statement = use(con.createStatement)
       stm.execute(sql)
-    }catch {
-      case _: FileNotFoundException =>
-        val msg = "The file cannot be found at the specified path"
-        logger.error(msg)
+    } match {
+      case Success(value) => value
+      case Failure(e)     => throw e
     }
   }
 
