@@ -1,8 +1,0 @@
-conditionID,pid,code,codeDisplay,clinicalStatus,severity,onsetDateTime,encounterID
-c1,p1,J13,Pneumonia due to Streptococcus pneumoniae,active,24484000,2021-10-15,e1
-,p1,M89.9,"Disorder of bone, unspecified",active,6736007,2021-11-02,e2
-c3,p2,R69,Unknown and unspecified causes of morbidity,active,255604002,2020-02-12,
-c4,p3,Q76.4,"Other congenital malformations of spine, not associated with scoliosis",active,,2020-03-20,e3
-c5,p4,Q76.4,"Other congenital malformations of spine, not associated with scoliosis",active,,2020-03-20,
-,p4,J13,Pneumonia due to Streptococcus pneumoniae,active,,2020-03-20,
-c6,p5,Q67.5,Congenital deformity of spine,active,6736007,2020-03-20,e4

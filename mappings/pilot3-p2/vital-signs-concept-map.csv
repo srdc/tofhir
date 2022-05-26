@@ -1,9 +1,0 @@
-source_code,source_display,profile,unit
-29463-7,Weight,http://hl7.org/fhir/StructureDefinition/bodyweight,kg
-8302-2,Height,http://hl7.org/fhir/StructureDefinition/bodyheight,cm
-39156-5,BMI,http://hl7.org/fhir/StructureDefinition/bmi,kg/m2
-2708-6,SpO2,http://hl7.org/fhir/StructureDefinition/oxygensat,%
-8867-4,Heart rate,http://hl7.org/fhir/StructureDefinition/heartrate,/min
-85354-9,Blood Pressure,http://hl7.org/fhir/StructureDefinition/bp,mm[Hg]
-8310-5,Temperature,http://hl7.org/fhir/StructureDefinition/bodytemp,Cel
-9279-1,Respiration rate,http://hl7.org/fhir/StructureDefinition/resprate,/min

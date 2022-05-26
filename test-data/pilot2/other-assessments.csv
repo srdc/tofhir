@@ -1,6 +1,0 @@
-observationID,pid,startDate,endDate,code,score,encounterID
-oo1,p1,2017-05-10T11:20:00+01:00,,72172-0,5,e1
-oo2,p1,2017-05-10T11:25:00+01:00,,pd-cfrs,6,e1
-oo3,p1,2017-05-10T11:20:00+01:00,,bis-11,4,e1
-oo4,p2,2012-04-10,,tmt-a,2,
-oo5,p3,2012-04-10,,mta,7,

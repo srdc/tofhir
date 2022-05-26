@@ -1,8 +1,0 @@
-source_code,target_code,target_display
-R0,LA26542-3,"R0 - Complete resection, margins histologically negative, no residual tumor left after resection (primary tumor, regional nodes)"
-R1,LA26543-1,"R1 - Incomplete resection, margins histologically involved, microscopic tumor remains after resection of gross disease (primary tumor, regional nodes"
-R2,LA26544-9,"R2 - Incomplete resection, margins macroscopically involved or gross disease remains after subtotal resection (eg primary tumor, regional nodes, or liver metastasis)"
-CR,LA28366-5,Complete response
-PR,LA28369-9,Partial response
-SD,LA28371-5,Stable disease
-PD,LA28370-7,Progressive disease

@@ -1,6 +1,0 @@
-pid,startTime,endTime,code,codeDisplay,dose,doseUnit,encounterId
-p1,2005-05-29T10:10:00+01:00,,L01XA01,medication1,10,mg,e1
-p2,2005-05-29T10:20:00+01:00,,L01AD02,,20,mg,
-p3,2005-05-29T11:10:00+01:00,2005-05-29T11:50:00+01:00,L01CA02,medication2,30,U,
-p4,2005-02-10T10:10:00+01:00,,L01AA01,,25,mg,e3
-p5,2005-01-29T10:10:00+01:00,,L01CB01,,40.5,mg,
