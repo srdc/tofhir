@@ -5,19 +5,67 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.onfhir</groupId>
-    <artifactId>tofhir-engine_2.13</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>tofhir_2.13</artifactId>
+    <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+
+    <name>toFHIR</name>
+    <description>toFHIR is a high-performance and scalable data transformation suite that can read existing data from
+        various sources (CSV/Test/JSON/Parquet/Avro files, relational databases, Hive tables) and transform to FHIR
+        resources through mapping definitions.
+    </description>
+    <url>https://tofhir.io</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>sinaci</id>
+            <name>Ali Anıl Sınacı</name>
+            <email>anil@srdc.com.tr</email>
+            <organization>SRDC Corp.</organization>
+            <organizationUrl>https://www.srdc.com.tr</organizationUrl>
+        </developer>
+        <developer>
+            <id>tnamli</id>
+            <name>Tuncay Namlı</name>
+            <email>tuncay@srdc.com.tr</email>
+            <organization>SRDC Corp.</organization>
+            <organizationUrl>https://www.srdc.com.tr</organizationUrl>
+        </developer>
+        <developer>
+            <id>YemreGurses</id>
+            <name>Yunus Emre Gürses</name>
+            <email>yunusemre@srdc.com.tr</email>
+            <organization>SRDC Corp.</organization>
+            <organizationUrl>https://www.srdc.com.tr</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/srdc/tofhir.git</connection>
+        <developerConnection>scm:git:ssh://github.com:srdc/tofhir.git</developerConnection>
+        <url>https://github.com/srdc/tofhir/tree/main</url>
+    </scm>
+
+    <modules>
+        <module>tofhir-engine</module>
+    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.version>1.0-SNAPSHOT</project.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
 
-        <!--Dependency versions-->
         <scala.version>2.13.8</scala.version>
         <scala.binary.version>2.13</scala.binary.version>
+
+        <!--Dependency versions-->
         <scala-logging.version>3.9.4</scala-logging.version>
         <onfhir.version>3.2-SNAPSHOT</onfhir.version>
         <fhir-template-engine.version>1.0-SNAPSHOT</fhir-template-engine.version>
@@ -28,249 +76,216 @@
         <logback.version>1.2.11</logback.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
         <postgres.version>42.3.3</postgres.version>
+        <h2db.version>2.1.210</h2db.version>
     </properties>
 
     <build>
-        <sourceDirectory>src/main/scala</sourceDirectory>
-        <testSourceDirectory>src/test/scala</testSourceDirectory>
-        <plugins>
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>4.6.1</version>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-                    <encoding>UTF-8</encoding>
-                    <args>
-                        <arg>-deprecation</arg>
-                        <arg>-feature</arg>
-                    </args>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>scala-compile-first</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>scala-test-compile</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.2</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M6</version>
-                <configuration>
-                    <skipTests>true</skipTests>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest-maven-plugin</artifactId>
-                <version>2.0.2</version>
-                <configuration>
-                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                    <junitxml>.</junitxml>
-                    <filereports>TestSuite.txt</filereports>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <finalName>tofhir-standalone</finalName>
-                            <transformers>
-                                <!-- add Main-Class to manifest file -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.onfhir.tofhir.Boot</mainClass>
-                                </transformer>
-
-                                <!-- Append reference.conf to jar configurations for Akka to run -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>reference.conf</resource>
-                                </transformer>
-
-                                <!-- To fix the problem of: “Failed to find data source: parquet” when making a fat jar with maven -->
-                                <!-- https://stackoverflow.com/questions/39455491/failed-to-find-data-source-parquet-when-making-a-fat-jar-with-maven/39465892#39465892 -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <version>4.6.1</version>
+                    <configuration>
+                        <scalaVersion>${scala.version}</scalaVersion>
+                        <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+                        <encoding>UTF-8</encoding>
+                        <args>
+                            <arg>-deprecation</arg>
+                            <arg>-feature</arg>
+                        </args>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>scala-compile-first</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>scala-test-compile</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>testCompile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.2.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.0.0-M6</version>
+                    <configuration>
+                        <skipTests>true</skipTests>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.scalatest</groupId>
+                    <artifactId>scalatest-maven-plugin</artifactId>
+                    <version>2.0.2</version>
+                    <configuration>
+                        <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                        <junitxml>.</junitxml>
+                        <filereports>TestSuite.txt</filereports>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>test</id>
+                            <goals>
+                                <goal>test</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.3.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
-    <dependencies>
-        <!-- Scala Library itself-->
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Scala Library itself-->
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-library</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
 
-        <!-- Scala Logging -->
-        <dependency>
-            <groupId>com.typesafe.scala-logging</groupId>
-            <artifactId>scala-logging_${scala.binary.version}</artifactId>
-            <version>${scala-logging.version}</version>
-        </dependency>
+            <!-- Scala Logging -->
+            <dependency>
+                <groupId>com.typesafe.scala-logging</groupId>
+                <artifactId>scala-logging_${scala.binary.version}</artifactId>
+                <version>${scala-logging.version}</version>
+            </dependency>
 
-        <!-- Logback dependencies -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
-        </dependency>
+            <!-- Logback dependencies -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
 
-        <!-- onFHIR dependencies -->
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-expression_${scala.binary.version}</artifactId>
-            <version>${onfhir.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-client_${scala.binary.version}</artifactId>
-            <version>${onfhir.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-r4_${scala.binary.version}</artifactId>
-            <version>${onfhir.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-path_${scala.binary.version}</artifactId>
-            <version>${onfhir.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>fhir-template-engine_${scala.binary.version}</artifactId>
-            <version>${fhir-template-engine.version}</version>
-        </dependency>
+            <!-- onFHIR dependencies -->
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-expression_${scala.binary.version}</artifactId>
+                <version>${onfhir.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-client_${scala.binary.version}</artifactId>
+                <version>${onfhir.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-r4_${scala.binary.version}</artifactId>
+                <version>${onfhir.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-path_${scala.binary.version}</artifactId>
+                <version>${onfhir.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>fhir-template-engine_${scala.binary.version}</artifactId>
+                <version>${fhir-template-engine.version}</version>
+            </dependency>
 
-        <!-- JSON4S -->
-        <dependency>
-            <groupId>org.json4s</groupId>
-            <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
-            <version>${json4s.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.json4s</groupId>
-            <artifactId>json4s-ext_${scala.binary.version}</artifactId>
-            <version>${json4s.version}</version>
-        </dependency>
-        <!-- Spark dependencies -->
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <!-- This is to meet the hard dependency of Spark on log4j -->
-            <!-- https://stackoverflow.com/questions/70374165/how-to-override-log4j-with-log4j2-version-to-resolve-socketserver-class-vulnera -->
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-1.2-api</artifactId>
-            <version>2.16.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_${scala.binary.version}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
+            <!-- JSON4S -->
+            <dependency>
+                <groupId>org.json4s</groupId>
+                <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
+                <version>${json4s.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.json4s</groupId>
+                <artifactId>json4s-ext_${scala.binary.version}</artifactId>
+                <version>${json4s.version}</version>
+            </dependency>
+            <!-- Spark dependencies -->
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-core_${scala.binary.version}</artifactId>
+                <version>${spark.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>log4j</groupId>
+                        <artifactId>log4j</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <!-- This is to meet the hard dependency of Spark on log4j -->
+                <!-- https://stackoverflow.com/questions/70374165/how-to-override-log4j-with-log4j2-version-to-resolve-socketserver-class-vulnera -->
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-1.2-api</artifactId>
+                <version>2.16.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-sql_${scala.binary.version}</artifactId>
+                <version>${spark.version}</version>
+            </dependency>
 
-        <!-- Application Configuration -->
-        <dependency>
-            <groupId>com.typesafe</groupId>
-            <artifactId>config</artifactId>
-            <version>${typesafe.config.version}</version>
-        </dependency>
+            <!-- Application Configuration -->
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>${typesafe.config.version}</version>
+            </dependency>
 
-        <!-- For csv parsing -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-csv</artifactId>
-            <version>${jackson-csv.version}</version>
-        </dependency>
+            <!-- For csv parsing -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-csv</artifactId>
+                <version>${jackson-csv.version}</version>
+            </dependency>
 
-        <!-- Postgres driver for Spark Read JDBC -->
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>${postgres.version}</version>
-        </dependency>
+            <!-- Postgres driver for Spark Read JDBC -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgres.version}</version>
+            </dependency>
 
-        <!-- For Unit testing -->
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${scala.binary.version}</artifactId>
-            <version>${scalatest.version}</version>
-            <scope>test</scope>
-        </dependency>
+            <!-- For Unit testing -->
+            <dependency>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest_${scala.binary.version}</artifactId>
+                <version>${scalatest.version}</version>
+                <scope>test</scope>
+            </dependency>
 
-        <!-- For database testing -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>2.1.210</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+            <!-- For database testing -->
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2db.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <repositories>
         <repository>
@@ -282,5 +297,18 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <name>Sonatype Nexus Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <name>Nexus Release Repository</name>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+    </distributionManagement>
 
 </project>
