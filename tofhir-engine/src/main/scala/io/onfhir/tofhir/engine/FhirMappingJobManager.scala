@@ -87,10 +87,21 @@ class FhirMappingJobManager(
       throw FhirMappingException(s"Invalid mapping task, source context is not given for some mapping source(s) ${sourceNames.diff(namesForSuppliedSourceContexts).mkString(", ")}")
 
     //Get the source schemas
-    val sources = fhirMapping.source.map(s => (s.alias, schemaLoader.getSchema(s.url), task.sourceContext(s.alias)))
+    val sources = fhirMapping.source.map(s => {
+      if (s.url.isEmpty) {
+        (s.alias, null, task.sourceContext(s.alias))
+      } else {
+        (s.alias, schemaLoader.getSchema(s.url.get), task.sourceContext(s.alias))
+      }
+    })
     //Read sources into Spark as DataFrame
     val sourceDataFrames =
       sources.map {
+        case (alias, schema, sourceContext) if schema == null =>
+          alias ->
+            DataSourceReaderFactory
+              .apply(spark, sourceContext)
+              .read(sourceContext)
         case (alias, schema, sourceContext) =>
           alias ->
             DataSourceReaderFactory

@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.data.read
 
-import io.onfhir.tofhir.model.{FhirMappingSourceContext, FileSystemSource, SqlSource}
+import io.onfhir.tofhir.model.{FhirMappingSourceContext, FileSystemSource, SqlQuerySource, SqlSource}
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -19,6 +19,7 @@ object DataSourceReaderFactory {
     mappingSourceContext match {
       case _: FileSystemSource => new FileDataSourceReader(spark).asInstanceOf[BaseDataSourceReader[T]]
       case _: SqlSource => new SqlSourceReader(spark).asInstanceOf[BaseDataSourceReader[T]]
+      case _: SqlQuerySource => new SqlQuerySourceReader(spark).asInstanceOf[BaseDataSourceReader[T]]
       case _ => throw new NotImplementedError()
     }
   }

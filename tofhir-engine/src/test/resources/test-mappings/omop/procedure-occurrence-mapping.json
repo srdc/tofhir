@@ -1,0 +1,53 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/omop/procedure-occurrence-mapping",
+  "name": "procedure-occurrence-mapping",
+  "title": "Mapping of omop procedure occurrence to AIC-Procedure FHIR profile",
+  "source": [
+    {
+      "alias": "source"
+    }
+  ],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Procedure",
+          "id": "{{mpp:getHashedId('Procedure', procedure_occurrence_id.toString())}}",
+          "meta": {
+            "profile": [
+              "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Procedure"
+            ],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "status": "completed",
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{procedure_occurrence_id.toString()}}"
+            }
+          ],
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', visit_occurrence_id.toString())}}",
+          "subject": "{{? mpp:createFhirReferenceWithHashedId('Patient', person_id.toString())}}",
+          "code": {
+            "coding": [
+              {
+                "code": "{{concept_code}}",
+                "system": "{{vocabulary_id}}",
+                "display": "{{concept_name}}"
+              }
+            ]
+          },
+          "performedDateTime": "{{procedure_date | procedure_datetime}}",
+          "performer": [
+            {
+              "actor": "{{? mpp:createFhirReferenceWithHashedId('Practitioner', provider_id.toString())}}"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/omop/care-site-mapping",
+  "name": "care-site-mapping",
+  "title": "Mapping of omop care-site to AIC-Organization FHIR profile",
+  "source": [{
+    "alias": "source"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Organization",
+          "id": "{{mpp:getHashedId('Organization',care_site_id.toString()))}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Organization"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{care_site_id.toString()}}"
+            }
+          ],
+          "name": "{{? care_site_name}}",
+          "type": [{
+            "coding": [
+              {
+                "code": "{{concept_code}}",
+                "system": "{{vocabulary_id}}",
+                "display": "{{concept_name}}"
+              }
+            ]
+          }],
+          "address": [{
+            "line": ["{{? address_1}}", "{{? address_2}}"],
+            "city": "{{? city}}",
+            "state": "{{? state}}",
+            "postalCode": "{{? zip}}"
+          }]
+        }
+      }
+    }
+  ]
+}

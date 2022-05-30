@@ -114,6 +114,14 @@ case class FileSystemSource(path: String, sourceType: String, override val setti
 case class SqlSource(tableName: String, override val settings: SqlSourceSettings) extends FhirMappingSourceContext
 
 /**
+ * Context/configuration for one of the source of the mapping that will read the source data from file an SQL database
+ *
+ * @param query    Sql query to execute
+ * @param settings Settings for the SQL source
+ */
+case class SqlQuerySource(query: String, override val settings: SqlSourceSettings) extends FhirMappingSourceContext
+
+/**
  * List of source file formats supported by tofhir
  */
 object SourceFileFormats {
