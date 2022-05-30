@@ -1,0 +1,45 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/patient-sql-mapping",
+  "name": "patient-mapping",
+  "title": "Mapping of patient schema for pilots to AIC-Patient FHIR profile",
+  "source": [{
+    "alias": "source"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Patient",
+          "id": "{{mpp:getHashedId('Patient',pid)}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "active": true,
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{pid}}"
+            }
+          ],
+          "gender": "{{gender}}",
+          "birthDate": "{{birthDate.utl:toFhirDateTime()}}",
+          "deceasedDateTime": "{{? deceasedDateTime.utl:toFhirDateTime()}}",
+          "address": {
+            "{{#pc}}": "{{homePostalCode}}",
+            "{{?}}": [
+              {
+                "use": "home",
+                "type": "both",
+                "postalCode": "{{%pc}}"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
