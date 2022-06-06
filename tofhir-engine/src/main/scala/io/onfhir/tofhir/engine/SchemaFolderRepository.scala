@@ -29,11 +29,8 @@ class SchemaFolderRepository(folderUri: URI) extends AbstractFhirSchemaLoader {
    * @param url
    * @return
    */
-  override def loadSchema(url: String): Resource = {
-    schemas.get(url) match {
-      case Some(schema) => schema
-      case None => throw FhirMappingException(s"Schema with url $url not found in folder $folderUri!")
-    }
+  override def loadSchema(url: String): Option[Resource] = {
+    schemas.get(url)
   }
 
   /**

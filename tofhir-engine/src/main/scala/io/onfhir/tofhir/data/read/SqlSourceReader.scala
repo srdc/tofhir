@@ -1,6 +1,7 @@
 package io.onfhir.tofhir.data.read
 
-import io.onfhir.tofhir.model.SqlSource
+import com.typesafe.scalalogging.Logger
+import io.onfhir.tofhir.model.{FhirMappingException, SqlSource}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -10,21 +11,37 @@ import java.util.Properties
  *
  * @param spark
  */
-class SqlSourceReader(spark:SparkSession) extends BaseDataSourceReader[SqlSource]{
+class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSource] {
+
+  private val logger: Logger = Logger(this.getClass)
 
   /**
    * Read the source data for the given task
    *
    * @param mappingSource Context/configuration information for mapping source
-   * @param schema        Schema for the source
    * @return
    */
-  override def read(mappingSource: SqlSource, schema: StructType): DataFrame = {
-    val connectionProperties = new Properties()
-    connectionProperties.put("user", mappingSource.settings.username)
-    connectionProperties.put("password", mappingSource.settings.password)
+  override def read(mappingSource: SqlSource, schema: Option[StructType]): DataFrame = {
+    if (mappingSource.tableName.isDefined && mappingSource.query.isDefined) {
+      throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} should not be specified at the same time.")
+    }
+    if (mappingSource.tableName.isEmpty && mappingSource.query.isEmpty) {
+      throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} cannot be empty at the same time. One of them must be provided.")
+    }
+
+    if(schema.isDefined) {
+      logger.debug("There is a schema definitions for the SqlSource, but I cannot enforce it while reading from the database. Hence, ignoring...")
+    }
+
+    // As in spark jdbc read docs, instead of a full table you could also use a subquery in parentheses.
+    val dbTable: String = mappingSource.tableName.getOrElse(s"( ${mappingSource.query.get} ) queryGeneratedTable")
 
     spark.read
-      .jdbc(mappingSource.settings.databaseUrl, mappingSource.tableName, connectionProperties)
+      .format("jdbc")
+      .option("url", mappingSource.settings.databaseUrl)
+      .option("dbtable", dbTable)
+      .option("user", mappingSource.settings.username)
+      .option("password", mappingSource.settings.password)
+      .load()
   }
 }
