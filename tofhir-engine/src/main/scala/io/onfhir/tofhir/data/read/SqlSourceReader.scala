@@ -23,11 +23,24 @@ class SqlSourceReader(spark:SparkSession) extends BaseDataSourceReader[SqlSource
    * @return
    */
   override def read(mappingSource: SqlSource): DataFrame = {
-    val connectionProperties = new Properties()
-    connectionProperties.put("user", mappingSource.settings.username)
-    connectionProperties.put("password", mappingSource.settings.password)
+    if (mappingSource.query.isDefined && mappingSource.tableName.isDefined){
+      throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} should not be specified at the same time.")
+    }
+
+    var dbTable: String = ""
+    if (mappingSource.query.isDefined){
+      // As in spark jdbc read docs, instead of a full table you could also use a subquery in parentheses.
+      dbTable = s"( ${mappingSource.query.get} ) queryGeneratedTable"
+    } else{
+      dbTable = mappingSource.tableName.get
+    }
 
     spark.read
-      .jdbc(mappingSource.settings.databaseUrl, mappingSource.tableName, connectionProperties)
+      .format("jdbc")
+      .option("url", mappingSource.settings.databaseUrl)
+      .option("dbtable", dbTable)
+      .option("user", mappingSource.settings.username)
+      .option("password", mappingSource.settings.password)
+      .load()
   }
 }

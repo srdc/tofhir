@@ -1,0 +1,37 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
+  "name": "location-mapping",
+  "title": "Mapping of location to AIC-Location FHIR profile",
+  "source": [{
+    "alias": "source"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Location",
+          "id": "{{mpp:getHashedId('Location',location_id.toString())}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-Location"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "identifier": [
+            {
+              "use": "official",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{location_id.toString()}}"
+            }
+          ],
+          "address": {
+            "line": ["{{? address_1}}", "{{? address_2}}"],
+            "city": "{{? city}}",
+            "state": "{{? state}}",
+            "postalCode": "{{? zip}}"
+          }
+        }
+      }
+    }
+  ]
+}

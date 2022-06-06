@@ -111,7 +111,7 @@ case class FileSystemSource(path: String, sourceType: String, override val setti
  * @param tableName Name of the table (because Spark jdbc method accepts tableName).
  * @param settings Settings for the SQL source
  */
-case class SqlSource(tableName: String, override val settings: SqlSourceSettings) extends FhirMappingSourceContext
+case class SqlSource(tableName: Option[String] = None, query: Option[String] = None, override val settings: SqlSourceSettings) extends FhirMappingSourceContext
 
 /**
  * List of source file formats supported by tofhir
