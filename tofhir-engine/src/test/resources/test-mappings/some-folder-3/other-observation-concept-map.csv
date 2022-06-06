@@ -1,0 +1,14 @@
+source_code,source_system,source_display,unit,profile
+9110-8,http://loinc.org,Bleeding (cumulative),mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+1335-9,http://loinc.org,Blood bags used (cumulative),mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+1299-7,http://loinc.org,Trom (cumulative) given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+1035-5,http://loinc.org,Octoplas (cumulative) given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+1298-9,http://loinc.org,RBC given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+38214-3,http://loinc.org,VASmax (0-10),{score},https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+9187-6,http://loinc.org,Urine Output,cm3,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+445619006,http://snomed.info/sct,NEWS score,{score},https://aiccelerate.eu/fhir/StructureDefinition/AIC-NEWSScore
+445597002,http://snomed.info/sct,PEWS score,{score},https://aiccelerate.eu/fhir/StructureDefinition/AIC-PEWSScore
+9269-2,http://loinc.org,Galscow Coma Scale (GCS),{score},https://aiccelerate.eu/fhir/StructureDefinition/AIC-GlascowComaScaleObservation
+313002,http://www.nlm.nih.gov/research/umls/rxnorm,NaCl0.9% (cumulative) given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration
+35629,http://www.nlm.nih.gov/research/umls/rxnorm,Ringer  (cumulative) given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration
+33834,http://www.nlm.nih.gov/research/umls/rxnorm,Plasmalyte  (cumulative) given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration

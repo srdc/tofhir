@@ -69,11 +69,11 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
       .getOrElse(false)
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
-    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-sql-mapping",
     sourceContext = Map("source" -> SqlSource("patients", sqlSourceSettings)))
 
   val otherObsMappingTask: FhirMappingTask = FhirMappingTask(
-    mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-sql-mapping",
     sourceContext = Map("source" -> SqlSource("otherobservations", sqlSourceSettings)))
 
   "Patient mapping" should "should read data from SQL source and map it" in {

@@ -9,20 +9,17 @@ import java.nio.file.Paths
 /**
  * Reader from file system
  * @param spark           Spark session
- * @param sourceSettings  File system source settings
  */
 class FileDataSourceReader(spark:SparkSession) extends BaseDataSourceReader[FileSystemSource]{
-
   /**
    * Read the source data for the given task
    *
    * @param mappingSource
+   * @param schema
    * @return
    */
   override def read(mappingSource: FileSystemSource, schema:StructType): DataFrame = {
-    val dataFolderPath = Paths.get(mappingSource.settings.dataFolderPath).normalize().toString
-    val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
-    val finalPath = Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString
+    val finalPath = generateFilePath(mappingSource)
     mappingSource.sourceType match {
       case SourceFileFormats.CSV =>
         spark.read
@@ -36,4 +33,31 @@ class FileDataSourceReader(spark:SparkSession) extends BaseDataSourceReader[File
       case _ => throw new NotImplementedError()
     }
   }
+
+  /**
+   * Read the source data without schema for the given task
+   *
+   * @param mappingSource
+   * @return
+   */
+  override def read(mappingSource: FileSystemSource): DataFrame = {
+    val finalPath = generateFilePath(mappingSource)
+    mappingSource.sourceType match {
+      case SourceFileFormats.CSV =>
+        spark.read
+          .option("header", true)
+          .option("inferSchema", true)
+          .csv(finalPath)
+      case SourceFileFormats.JSON => spark.read.json(finalPath)
+      case SourceFileFormats.PARQUET => spark.read.parquet(finalPath)
+      case _ => throw new NotImplementedError()
+    }
+  }
+
+  def generateFilePath(mappingSource: FileSystemSource): String = {
+    val dataFolderPath = Paths.get(mappingSource.settings.dataFolderPath).normalize().toString
+    val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
+    Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString
+  }
+
 }
