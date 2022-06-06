@@ -3,7 +3,8 @@
   "name": "patient-mapping",
   "title": "Mapping of patient schema for pilots to AIC-Patient FHIR profile",
   "source": [{
-    "alias": "source"
+    "alias": "source",
+    "url": "https://some-url-for-metadata-purposes"
   }],
   "mapping": [
     {

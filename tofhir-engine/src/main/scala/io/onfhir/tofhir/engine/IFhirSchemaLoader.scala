@@ -8,8 +8,9 @@ import org.apache.spark.sql.types.StructType
 trait IFhirSchemaLoader {
   /**
    * Read the schema given with the url and convert it to the Spark schema
+   *
    * @param schemaUrl URL of the schema
    * @return
    */
-  def getSchema(schemaUrl:String):StructType
+  def getSchema(schemaUrl: String): Option[StructType]
 }

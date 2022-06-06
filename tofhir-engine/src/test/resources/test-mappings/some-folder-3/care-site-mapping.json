@@ -3,7 +3,8 @@
   "name": "care-site-mapping",
   "title": "Mapping of care-site to AIC-Organization FHIR profile",
   "source": [{
-    "alias": "source"
+    "alias": "source",
+    "url": "https://some-url-for-metadata-purposes"
   }],
   "mapping": [
     {

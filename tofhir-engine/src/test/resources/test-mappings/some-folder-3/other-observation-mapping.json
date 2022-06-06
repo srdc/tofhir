@@ -3,7 +3,8 @@
   "name": "other-observation-mapping",
   "title": "Mapping of schema Other Observation to AIC-IntraOperativeObservation, AIC-MedicationAdministration, AIC-NEWSScore, AIC-PEWSScore and AIC-GlascowScale FHIR profiles",
   "source": [{
-    "alias": "source"
+    "alias": "source",
+    "url": "https://some-url-for-metadata-purposes"
   }],
   "context": {
     "obsConceptMap":  {

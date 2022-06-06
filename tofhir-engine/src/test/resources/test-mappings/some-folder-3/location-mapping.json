@@ -3,7 +3,8 @@
   "name": "location-mapping",
   "title": "Mapping of location to AIC-Location FHIR profile",
   "source": [{
-    "alias": "source"
+    "alias": "source",
+    "url": "https://some-url-for-metadata-purposes"
   }],
   "mapping": [
     {

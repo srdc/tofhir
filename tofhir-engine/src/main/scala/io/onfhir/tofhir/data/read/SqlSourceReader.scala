@@ -1,5 +1,6 @@
 package io.onfhir.tofhir.data.read
 
+import com.typesafe.scalalogging.Logger
 import io.onfhir.tofhir.model.{FhirMappingException, SqlSource}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -10,11 +11,9 @@ import java.util.Properties
  *
  * @param spark
  */
-class SqlSourceReader(spark:SparkSession) extends BaseDataSourceReader[SqlSource]{
+class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSource] {
 
-  override def read(mappingSource: SqlSource, schema: StructType): DataFrame = {
-    throw FhirMappingException(s"Invalid method call, schema should not be specified for sql source mappings")
-  }
+  private val logger: Logger = Logger(this.getClass)
 
   /**
    * Read the source data for the given task
@@ -22,18 +21,20 @@ class SqlSourceReader(spark:SparkSession) extends BaseDataSourceReader[SqlSource
    * @param mappingSource Context/configuration information for mapping source
    * @return
    */
-  override def read(mappingSource: SqlSource): DataFrame = {
-    if (mappingSource.query.isDefined && mappingSource.tableName.isDefined){
+  override def read(mappingSource: SqlSource, schema: Option[StructType]): DataFrame = {
+    if (mappingSource.tableName.isDefined && mappingSource.query.isDefined) {
       throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} should not be specified at the same time.")
     }
-
-    var dbTable: String = ""
-    if (mappingSource.query.isDefined){
-      // As in spark jdbc read docs, instead of a full table you could also use a subquery in parentheses.
-      dbTable = s"( ${mappingSource.query.get} ) queryGeneratedTable"
-    } else{
-      dbTable = mappingSource.tableName.get
+    if (mappingSource.tableName.isEmpty && mappingSource.query.isEmpty) {
+      throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} cannot be empty at the same time. One of them must be provided.")
     }
+
+    if(schema.isDefined) {
+      logger.debug("There is a schema definitions for the SqlSource, but I cannot enforce it while reading from the database. Hence, ignoring...")
+    }
+
+    // As in spark jdbc read docs, instead of a full table you could also use a subquery in parentheses.
+    val dbTable: String = mappingSource.tableName.getOrElse(s"( ${mappingSource.query.get} ) queryGeneratedTable")
 
     spark.read
       .format("jdbc")

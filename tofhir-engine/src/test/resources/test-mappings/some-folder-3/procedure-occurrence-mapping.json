@@ -2,11 +2,10 @@
   "url": "https://aiccelerate.eu/fhir/mappings/procedure-occurrence-sql-mapping",
   "name": "procedure-occurrence-mapping",
   "title": "Mapping of procedure occurrence to AIC-Procedure FHIR profile",
-  "source": [
-    {
-      "alias": "source"
-    }
-  ],
+  "source": [{
+      "alias": "source",
+      "url": "https://some-url-for-metadata-purposes"
+    }],
   "mapping": [
     {
       "expression": {

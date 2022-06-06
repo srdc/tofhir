@@ -36,7 +36,7 @@ case class FhirMapping(id:String = UUID.randomUUID().toString,
  * @param url           URL to the StructureDefinition of the source format for validation and deserialization purposes
  * @param description   Description of the source
  */
-case class FhirMappingSource(alias:String, url:Option[String], description:Option[String] = None)
+case class FhirMappingSource(alias:String, url:String, description:Option[String] = None)
 
 /**
  * Context information for mapping evaluation
