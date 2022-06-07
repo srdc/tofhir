@@ -232,7 +232,8 @@ object MappingTaskExecutor {
 object FhirMappingJobManager {
 
   implicit lazy val formats: Formats =
-    Serialization.formats(ShortTypeHints(List(classOf[FhirRepositorySinkSettings], classOf[FileSystemSource], classOf[FileSystemSourceSettings]))) +
+    Serialization.formats(ShortTypeHints(List(classOf[FhirRepositorySinkSettings], classOf[FileSystemSource], classOf[FileSystemSourceSettings],
+      classOf[FileSourceMappingDefinition], classOf[SqlSourceMappingDefinition], classOf[SqlSource], classOf[SqlSourceSettings]))) +
       new EnumNameSerializer(MappingErrorHandling)
 
   def saveMappingJobToFile(fhirMappingJob: FhirMappingJob, filePath: String): Unit = {
