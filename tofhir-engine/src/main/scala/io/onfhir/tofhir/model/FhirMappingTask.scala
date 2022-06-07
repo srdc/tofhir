@@ -104,12 +104,13 @@ trait FhirMappingSourceContext extends Serializable {
  */
 case class FileSystemSource(path: String, sourceType: String, override val settings: FileSystemSourceSettings) extends FhirMappingSourceContext
 
-// TODO: Check how we can use SQL queries in addition to the table names.
 /**
  * Context/configuration for one of the source of the mapping that will read the source data from file an SQL database
+ * Any of tableName and query must be defined. Not both, not neither
  *
- * @param tableName Name of the table (because Spark jdbc method accepts tableName).
- * @param settings Settings for the SQL source
+ * @param tableName Name of the table
+ * @param query     Query to execute in the database
+ * @param settings  Settings for the SQL source
  */
 case class SqlSource(tableName: Option[String] = None, query: Option[String] = None, override val settings: SqlSourceSettings) extends FhirMappingSourceContext
 
@@ -125,9 +126,34 @@ object SourceFileFormats {
 
 case class FhirMappingJob(id: String, sourceSettings: DataSourceSettings, sinkSettings: FhirSinkSettings, mappings: Seq[SimpleFhirMappingDefinition], mappingErrorHandling: MappingErrorHandling) {
   def tasks: Seq[FhirMappingTask] = { // Return Seq[FhirMappingTask] from Seq[SimpleFhirMappingDefinition]
-    // TODO: This is a dirty solution which assumes FileSystemSource and FileSystemSourceSettings from the FhirMappingJob definition.
-    //  And it assumes that all mapping tasks have the same sourceContext with a single element whose name is "source".
-    mappings.map(m => FhirMappingTask(m.mappingRef, Map("source" -> FileSystemSource(m.filePath, SourceFileFormats.CSV, sourceSettings.asInstanceOf[FileSystemSourceSettings]))))
+    // TODO: This is a dirty solution which assumes that all mapping tasks have the same sourceContext with a single element whose name is "source".
+    mappings.map {
+      case FileSourceMappingDefinition(filePath, mappingRef) => FhirMappingTask(mappingRef, Map("source" -> FileSystemSource(filePath, SourceFileFormats.CSV, sourceSettings.asInstanceOf[FileSystemSourceSettings])))
+      case SqlSourceMappingDefinition(tableName, query, mappingRef) => FhirMappingTask(mappingRef, Map("source" -> SqlSource(tableName, query, sourceSettings.asInstanceOf[SqlSourceSettings])))
+    }
   }
 }
-case class SimpleFhirMappingDefinition(mappingRef: String, filePath: String)
+
+/**
+ * Interface for source mapping definition
+ */
+trait SimpleFhirMappingDefinition{
+  val mappingRef: String
+}
+
+/**
+ *
+ * @param filePath   Path of the file
+ * @param mappingRef Mapping url corresponding to mapping repository
+ */
+case class FileSourceMappingDefinition(filePath: String, mappingRef: String) extends SimpleFhirMappingDefinition
+
+/**
+ *
+ * @param tableName  Table name to execute select query in the database
+ * @param query      Query to execute in the database
+ * @param mappingRef Mapping url corresponding to mapping repository
+ */
+
+case class SqlSourceMappingDefinition(tableName: Option[String], query: Option[String], mappingRef: String) extends SimpleFhirMappingDefinition
+
