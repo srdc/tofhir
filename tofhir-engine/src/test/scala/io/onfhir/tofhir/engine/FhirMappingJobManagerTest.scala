@@ -41,8 +41,8 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(id = "test-mapping-job",
     sourceSettings = dataSourceSettings,
     sinkSettings = fhirSinkSettings,
-    mappings = Seq(SimpleFhirMappingDefinition(patientMappingTask.mappingRef, patientMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path),
-      SimpleFhirMappingDefinition(otherObservationMappingTask.mappingRef, otherObservationMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path)),
+    mappings = Seq(FileSourceMappingDefinition(patientMappingTask.mappingRef, patientMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path),
+      FileSourceMappingDefinition(otherObservationMappingTask.mappingRef, otherObservationMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path)),
     mappingErrorHandling = MappingErrorHandling.CONTINUE)
 
   "A FhirMappingJobManager" should "execute the patient mapping task and return the results" in {
