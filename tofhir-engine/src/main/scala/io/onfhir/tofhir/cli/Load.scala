@@ -17,9 +17,9 @@ class Load extends Command {
         println(s"There are more than one arguments to load command. I will only process: $filePath")
       }
       try {
-        val mappingJobs = FhirMappingJobManager.readMappingJobFromFile(filePath)
+        val mappingJob = FhirMappingJobManager.readMappingJobFromFile(filePath)
         println("The following FhirMappingJob successfully loaded.")
-        val newContext = CommandExecutionContext(context.toFhirEngine, Some(mappingJobs), Load.getMappingNameUrlTuples(mappingJobs.tasks, context.toFhirEngine.mappingRepository))
+        val newContext = CommandExecutionContext(context.toFhirEngine, Some(mappingJob), Load.getMappingNameUrlTuples(mappingJob.tasks, context.toFhirEngine.mappingRepository))
         println(Info.serializeMappingJobToCommandLine(newContext))
         newContext
       } catch {

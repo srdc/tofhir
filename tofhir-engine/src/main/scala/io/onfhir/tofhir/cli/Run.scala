@@ -1,9 +1,8 @@
 package io.onfhir.tofhir.cli
 
-import io.onfhir.tofhir.engine.{FhirMappingFolderRepository, FhirMappingJobManager, MappingContextLoader, SchemaFolderRepository}
+import io.onfhir.tofhir.engine.FhirMappingJobManager
 import io.onfhir.tofhir.model.FhirMappingTask
 
-import java.nio.file.Paths
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
