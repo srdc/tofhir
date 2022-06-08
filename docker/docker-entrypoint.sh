@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 JAVA_CMD="java -Xms256m -Xmx3g -jar "
 
