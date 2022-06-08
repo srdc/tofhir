@@ -37,4 +37,4 @@ fi
 # Finally, tell which jar to run
 JAVA_CMD+="tofhir-standalone.jar"
 
-eval $JAVA_CMD
+eval $JAVA_CMD "$@"
