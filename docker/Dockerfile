@@ -1,0 +1,25 @@
+# Stage 0
+FROM maven:3.6-openjdk-11 AS builder
+
+ENV TOFHIR_HOME /usr/local/tofhir
+RUN mkdir -p "$TOFHIR_HOME"
+WORKDIR $TOFHIR_HOME
+
+COPY . ./
+
+# Build without running the unit and integration tests
+RUN mvn package -Pxtest
+
+# Stage 1
+FROM openjdk:11-jre-slim
+
+ENV TOFHIR_HOME /usr/local/tofhir
+RUN mkdir -p "$TOFHIR_HOME"
+WORKDIR $TOFHIR_HOME
+
+COPY --from=builder $TOFHIR_HOME/tofhir-engine/target/tofhir-standalone.jar .
+
+COPY docker/docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
