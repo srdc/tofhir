@@ -68,31 +68,38 @@ class FhirMappingService(
           fresults
             .flatMap {
               case (cntx, results) =>
+                logger.debug("mapToFhir: Expression will be evaluated...")
                 templateEngine
                   .evaluateExpression(mpp.expression, cntx, source) //Evaluate the template expression
-                  .map(r => // Get result of the evaluated expression
+                  .map { r => // Get result of the evaluated expression
+                    logger.debug("mapToFhir: Expression evaluated on source.\n Expression: ${Serialization.write(mpp.expression)}\n Source: ${Serialization.write(source)}\n")
                     (cntx + (mpp.expression.name -> r)) -> //Append the new result to dynamic context params set
                       (results :+ r) //Append the result to result set (resources are accumulating)
-                  )
+                  }
                   .recover {
                     case e: FhirExpressionException =>
                       val msg = s"Error while evaluating the mapping expression.\n Expression: ${Serialization.write(mpp.expression)}\n Source: ${Serialization.write(source)}\n"
+                      logger.error(msg, e)
                       throw FhirMappingException(msg, e)
+                    case e =>
+                      val msg = s"Unknown exception while evaluating the mapping expression.\n Expression: ${Serialization.write(mpp.expression)}\n Source: ${Serialization.write(source)}\n"
+                      logger.error(msg, e)
+                      throw e
                   }
             }
+      } map { accumulation =>
+      accumulation._2 // Get the accumulated result set
+    } map { resources =>
+      logger.debug(s"There are ${resources.size} resources as a result of the mapToFhir")
+      logger.debug("*********************")
+      logger.debug(resources.map(_.toJson).mkString("\n"))
+      logger.debug("*********************\n")
+      resources.flatMap {
+        case a: JArray => a.arr.map(_.asInstanceOf[Resource])
+        case o: JObject => Seq(o)
+        case _ => throw new IllegalStateException("This is an unexpected situation. Among the FHIR resources returned by evaluatedExpression, there is something which is neither JArray nor JObject.")
       }
-      .map(_._2) // Get the accumulated result set
-      .map { resources =>
-        logger.debug(s"There are ${resources.size} resources as a result of the mapToFhir")
-        logger.debug("*********************")
-        logger.debug(resources.map(_.toJson).mkString("\n"))
-        logger.debug("*********************\n")
-        resources.flatMap {
-          case a: JArray => a.arr.map(_.asInstanceOf[Resource])
-          case o: JObject => Seq(o)
-          case _ => throw new IllegalStateException("This is an unexpected situation. Among the FHIR resources returned by evaluatedExpression, there is something which is neither JArray nor JObject.")
-        }
-      }
+    }
   }
 
   /**
