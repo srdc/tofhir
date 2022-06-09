@@ -9,7 +9,6 @@ import io.onfhir.tofhir.data.write.FhirWriterFactory
 import io.onfhir.tofhir.model._
 import io.onfhir.util.JsonFormatter._
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
-import org.json4s.ext.URISerializer
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.Serialization
 import org.json4s.{Formats, JObject, ShortTypeHints}
@@ -17,7 +16,6 @@ import org.json4s.{Formats, JObject, ShortTypeHints}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.TimeoutException
-import scala.collection.IterableOnce.iterableOnceExtensionMethods
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
@@ -79,6 +77,7 @@ class FhirMappingJobManager(
    * @return
    */
   private def executeTask(task: FhirMappingTask): Future[Dataset[String]] = {
+    logger.debug(s"executeTask: A single FhirMappingTask is being executed. Task-mappingRef:${task.mappingRef}")
     //Retrieve the FHIR mapping definition
     val fhirMapping = fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
     val sourceNames = fhirMapping.source.map(_.alias).toSet
@@ -104,20 +103,20 @@ class FhirMappingJobManager(
     //df.show(10)
 
     //Load the contextual data for the mapping
-    Future
-      .sequence(
-        fhirMapping
-          .context
-          .toSeq
-          .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
-      ).map(loadedContextMap => {
+    Future.sequence(
+      fhirMapping
+        .context
+        .toSeq
+        .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
+    ) map { loadedContextMap =>
       //Get configuration context
       val sourceNames = fhirMapping.source.map(_.alias)
       val configurationContext = task.sourceContext(sourceNames.head).settings.toConfigurationContext
       //Construct the mapping service
       val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping)
+      logger.debug("executeTask: Contexts are loaded and the mapping is ready to be executed.")
       MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandling)
-    })
+    }
   }
 
   /**
@@ -197,33 +196,37 @@ object MappingTaskExecutor {
    * @return
    */
   private def executeMappingOnSingleSource(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, errorHandlingType: MappingErrorHandling): Dataset[String] = {
+    logger.debug(s"executeMappingOnSingleSource: Each row of the dataset will be mapped to FHIR by the fhirMappingService.")
     import spark.implicits._
     val result =
-      df
-        .flatMap(row => {
-          val jo = convertRowToJObject(row)
-          val resources = try {
-            Await.result(fhirMappingService.mapToFhir(jo), Duration.apply(5, "seconds"))
-          } catch {
-            case e: FhirMappingException =>
-              logger.error(e.getMessage, e)
-              if (errorHandlingType == MappingErrorHandling.CONTINUE) {
-                Seq.empty[Resource]
-              } else {
-                throw e
-              }
-            case e: TimeoutException =>
-              logger.error(s"TimeoutException. A single row could not be mapped to FHIR in 5 seconds. The row JObject: ${Serialization.write(jo)}")
-              if (errorHandlingType == MappingErrorHandling.CONTINUE) {
-                logger.debug("Continuing the processing of mappings...")
-                Seq.empty[Resource]
-              } else {
-                logger.debug("Will halt the mapping execution!")
-                throw e
-              }
-          }
-          resources.map(_.toJson)
-        })
+      df.flatMap(row => {
+        val jo = convertRowToJObject(row)
+        logger.debug("executeMappingOnSingleSource: A row is converted to JObject.")
+        val resources = try {
+          val result = Await.result(fhirMappingService.mapToFhir(jo), Duration.apply(10, "seconds"))
+          logger.debug("executeMappingOnSingleSource: A row is converted to JObject.")
+          result
+        } catch {
+          case e: FhirMappingException =>
+            logger.error(e.getMessage, e)
+            if (errorHandlingType == MappingErrorHandling.CONTINUE) {
+              Seq.empty[Resource]
+            } else {
+              throw e
+            }
+          case e: TimeoutException =>
+            logger.error(s"TimeoutException. A single row could not be mapped to FHIR in 5 seconds. The row JObject: ${Serialization.write(jo)}")
+            if (errorHandlingType == MappingErrorHandling.CONTINUE) {
+              logger.debug("Continuing the processing of mappings...")
+              Seq.empty[Resource]
+            } else {
+              logger.debug("Will halt the mapping execution!")
+              throw e
+            }
+        }
+        logger.debug(s"A total of ${resources.size} successfully created from a single row.")
+        resources.map(_.toJson)
+      })
     result
   }
 

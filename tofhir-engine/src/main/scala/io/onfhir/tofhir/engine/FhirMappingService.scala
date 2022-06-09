@@ -27,6 +27,8 @@ class FhirMappingService(
                           mappings: Seq[FhirMappingExpression]
                         ) extends IFhirMappingService {
 
+  private val logger: Logger = Logger(this.getClass)
+
   /**
    * Template expression handler that will perform the mapping by executing the placeholder expressions
    */
@@ -47,6 +49,7 @@ class FhirMappingService(
    * @return
    */
   override def mapToFhir(source: JObject): Future[Seq[Resource]] = {
+    logger.debug(s"mapToFhir is called with source: ${source.toJson}")
     //Find out eligible mappings on this source JObject based on preconditions
     val eligibleMappings =
       mappings
@@ -55,6 +58,8 @@ class FhirMappingService(
             .precondition
             .forall(prc => templateEngine.fhirPathEvaluator.satisfies(prc.expression.get, source))
         )
+
+    logger.debug(s"There are ${eligibleMappings.size} eligible mappings on the source object w.r.t the preconditions")
 
     //Execute the eligible mappings sequentially while appending previous mapping results as context parameter
     eligibleMappings
@@ -77,13 +82,17 @@ class FhirMappingService(
             }
       }
       .map(_._2) // Get the accumulated result set
-      .map(resources =>
+      .map { resources =>
+        logger.debug(s"There are ${resources.size} resources as a result of the mapToFhir")
+        logger.debug("*********************")
+        logger.debug(resources.map(_.toJson).mkString("\n"))
+        logger.debug("*********************\n")
         resources.flatMap {
           case a: JArray => a.arr.map(_.asInstanceOf[Resource])
           case o: JObject => Seq(o)
           case _ => throw new IllegalStateException("This is an unexpected situation. Among the FHIR resources returned by evaluatedExpression, there is something which is neither JArray nor JObject.")
         }
-      )
+      }
   }
 
   /**
