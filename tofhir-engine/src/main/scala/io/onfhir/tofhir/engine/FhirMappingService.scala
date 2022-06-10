@@ -72,7 +72,7 @@ class FhirMappingService(
                 templateEngine
                   .evaluateExpression(mpp.expression, cntx, source) //Evaluate the template expression
                   .map { r => // Get result of the evaluated expression
-                    logger.debug("mapToFhir: Expression evaluated on source.\n Expression: ${Serialization.write(mpp.expression)}\n Source: ${Serialization.write(source)}\n")
+                    logger.debug(s"mapToFhir: Expression evaluated on source.\n Expression: ${Serialization.write(mpp.expression)}\n Source: ${Serialization.write(source)}\n")
                     (cntx + (mpp.expression.name -> r)) -> //Append the new result to dynamic context params set
                       (results :+ r) //Append the result to result set (resources are accumulating)
                   }
