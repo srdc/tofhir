@@ -50,7 +50,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
             } catch {
               case e: Throwable =>
                 val msg = "!!!There is an error while writing resources to the FHIR Repository."
-                logger.error(msg)
+                logger.error(msg, e)
                 if (sinkSettings.writeErrorHandling == MappingErrorHandling.HALT) {
                   throw FhirMappingException(msg, e)
                 }

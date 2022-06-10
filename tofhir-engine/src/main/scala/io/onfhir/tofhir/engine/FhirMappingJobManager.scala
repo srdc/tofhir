@@ -69,7 +69,7 @@ class FhirMappingJobManager(
    */
   override def executeMappingTask(id: String, task: FhirMappingTask, sinkSettings: FhirSinkSettings): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
-    executeTask(task) map { f => fhirWriter.write(f) }
+    executeTask(task) map { dataset => fhirWriter.write(dataset) }
   }
 
   /**
