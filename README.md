@@ -41,8 +41,26 @@ This command loads the mapping job located in the path. After that, the mapping 
 
 Mapping Definitions
 -------------------
-The app expects mappings and schemas under the folder named `mappings` and `schemas` respectively by default. 
-But a user can also specify the path to the mappings and schemas folder by using `application.conf` file or VM options.
+With a config file like the example below, we can specify the location of schemas and mappings and the mapping-job it will use at startup.
+
+```conf
+mappings = {
+  # The repository where the mapping definition are kept.
+  repository = {
+    folder-path = "mappings"
+  }
+  # Configuration of the schemas used in the mapping definitions.
+  schemas = {
+    repository = { # The repository where the schema definitions are kept.
+      folder-path = "schemas"
+    }
+  }
+}
+
+# Absolute path to the JSON file for the MappingJob definition to load at the beginning
+mapping-job.file-path = "mapping-jobs/pilot1-mappingjob.json"
+
+```
 
 All files of mapping jobs, mappings and schemas are expected to be in the JSON format and all of them have their own structure.
 
