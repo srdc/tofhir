@@ -62,8 +62,6 @@ mapping-job.file-path = "mapping-jobs/pilot1-mappingjob.json"
 
 ```
 
-All files of mapping jobs, mappings and schemas are expected to be in the JSON format and all of them have their own structure.
-
 ##### Mapping Job
 
 Example of a Mapping Job definition file:
@@ -100,7 +98,7 @@ The json snippet above illustrates the structure of an example mapping job.
 `sourceSettings` defines the source settings of the mapping job. The source settings config is used to connect to the source data.
 In this case, the source type of data is file system source and `dataFolderPath` defines the path of the source data.
 
-Assuming onFhir is running on the system, `sinkSettings` defines onFhir configurations to connect to the data destination.
+Assuming onFHIR is running on the system, `sinkSettings` defines onFHIR configurations to connect to the data destination.
 
 `mappings` is a list mapping refs that mapping job includes. For a purpose of illustration, the mapping job above includes two mappings: 
 - https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping
@@ -167,7 +165,7 @@ The real magic in mappings happens in the `expression` field.
 toFHIR uses the expression to generate the FHIR resources by using [onfhir-template-engine](https://github.com/aiccelerate/onfhir-template-engine). 
 By doing so, it can generate the FHIR resources based on the source data.
 
-The json keys in the `expression.value` represent the FHIR resource properties. 
-On the value sides, onfhir-template-engine is used to interpret the source data. 
-You can get more information how template engine works on the GitHub page.
+The json keys in the `expression.value` represent the FHIR resource attributes. That is, we write the FHIR resource structure 
+by providing the values through a template language where we can access the fields of the source data as defined by its schema.
+On the value sides, onfhir-template-engine is used to interpret the source data. You can get more information how template engine works on the GitHub page.
 
