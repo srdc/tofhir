@@ -1,21 +1,32 @@
 # toFHIR
 toFHIR is a data mapping tool to transform existing datasets from various types of sources to HL7 FHIR. 
-It is a tool for data integration and data harmonization.
-The entry point of the tool is the command line interface (CLI) and works with certain commands.
+It can be used as a library or standalone tool for data integration and data transformation into HL7 FHIR.
+The standalone mode accepts command line arguments to either run a batch execution right away or to start a command
+line interface (CLI) to accept certain commands.
 
 Requirements
 ------------
 
-toFhir requires the following to run:
+toFHIR requires the following to run:
 
 * Java 11.0.2 or higher
 * Scala 2.13 or higher
-* [onfhir](https://github.com/srdc/onfhir) R4
+* An HL7 FHIR repository if you would like to persist the created resources (e.g., [onfhir](https://github.com/srdc/onfhir))
 
-CLI and Usage
--------------
+Usage
+-----
 
-toFhir serves via CLI with certain commands:
+If no arguments are provided, toFHIR starts the command line interface (CLI). Possible arguments to the executable are as follows:
+- `cli`: Starts the CLI. This is the default command if no arguments are provided.
+- `run`: Runs the configured mapping-job as a batch job and shuts down after finishing. `run` command accepts the following parameters:
+  - `--job`: The path to the mapping-job to be executed. If provided, overrides the path provided to the JVM as the configuration parameter.
+  - `--mappings`: The path to the mappings folder. If provided, overrides the path provided to the JVM as the configuration parameter.
+  - `--schemas`: The path to the schemas folder. If provided, overrides the path provided to the JVM as the configuration parameter.
+
+CLI
+---
+
+toFHIR serves via CLI with certain commands:
 - `help`: Displays the help text and see the available commands and their use.
 - `info`: See info about the loaded Mapping Job.
 - `load`: Loads a Mapping Job Load the Mapping Job definition file from the path.
@@ -135,7 +146,7 @@ Example of a Mapping definition file:
 The json snippet above illustrates the structure of an example mapping.
 It can be seen that exemplified mapping job in the previous section includes the mapping shown here.
 The real magic in mappings happens in the `expression` field.
-toFhir uses the expression to generate the FHIR resources by using [onfhir-template-engine](https://github.com/aiccelerate/onfhir-template-engine). 
+toFHIR uses the expression to generate the FHIR resources by using [onfhir-template-engine](https://github.com/aiccelerate/onfhir-template-engine). 
 By doing so, it can generate the FHIR resources based on the source data.
 
 The json keys in the `expression.value` represent the FHIR resource properties. 
