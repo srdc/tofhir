@@ -39,6 +39,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
 
   val testMappingJobFilePath: String = getClass.getResource("/test-mappingjob.json").toURI.getPath
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(id = "test-mapping-job",
+    cronExpression = Option.empty,
     sourceSettings = dataSourceSettings,
     sinkSettings = fhirSinkSettings,
     mappings = Seq(FileSourceMappingDefinition(patientMappingTask.mappingRef, patientMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path),
