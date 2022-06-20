@@ -5,10 +5,11 @@ import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
-import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
+import io.onfhir.tofhir.config.MappingErrorHandling
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.FhirMappingUtility
 import io.onfhir.util.JsonFormatter.formats
+import it.sauronsoftware.cron4j.Scheduler
 
 import java.io.File
 import java.nio.file.Paths
@@ -38,7 +39,10 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
       .getOrElse(false)
 
   val testMappingJobFilePath: String = getClass.getResource("/test-mappingjob.json").toURI.getPath
+  val testScheduleMappingJobFilePath: String = getClass.getResource("/test-schedule-mappingjob.json").toURI.getPath
+
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(id = "test-mapping-job",
+    cronExpression = Option.empty,
     sourceSettings = dataSourceSettings,
     sinkSettings = fhirSinkSettings,
     mappings = Seq(FileSourceMappingDefinition(patientMappingTask.mappingRef, patientMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path),
@@ -134,7 +138,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     val lTask = lMappingJob.tasks.head
     val lFileSystemSource = lTask.sourceContext("source").asInstanceOf[FileSystemSource]
     val task = FhirMappingTask(lTask.mappingRef,
-      Map("source" -> FileSystemSource(lFileSystemSource.path,lFileSystemSource.sourceType,
+      Map("source" -> FileSystemSource(lFileSystemSource.path, lFileSystemSource.sourceType,
         FileSystemSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri,
           Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
 
@@ -152,7 +156,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     val tasks = lMappingJob.tasks.map { task =>
       val lFileSystemSource = task.sourceContext("source").asInstanceOf[FileSystemSource]
       FhirMappingTask(task.mappingRef,
-        Map("source" -> FileSystemSource(lFileSystemSource.path,lFileSystemSource.sourceType,
+        Map("source" -> FileSystemSource(lFileSystemSource.path, lFileSystemSource.sourceType,
           FileSystemSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri,
             Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
     }
@@ -161,6 +165,28 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     fhirMappingJobManager.executeMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings) map { unit =>
       unit shouldBe()
     }
+  }
+
+  it should "execute the FhirScheduledMappingJob with sink settings restored from a file" in {
+    assume(fhirServerIsAvailable)
+    val lMappingJob: FhirMappingJob = FhirMappingJobManager.readMappingJobFromFile(testScheduleMappingJobFilePath)
+
+    // I do the following dirty thing because our data reading mechanism should both handle the relative paths while running and while testing.
+    val tasks: Seq[FhirMappingTask] = lMappingJob.tasks.map { task =>
+      val lFileSystemSource = task.sourceContext("source").asInstanceOf[FileSystemSource]
+      FhirMappingTask(task.mappingRef,
+        Map("source" -> FileSystemSource(lFileSystemSource.path, lFileSystemSource.sourceType,
+          FileSystemSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri,
+            Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
+    }
+
+
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
+    val scheduler = fhirMappingJobManager.scheduleMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings, cronExpression = lMappingJob.cronExpression.get)
+
+    Thread.sleep(60000) // wait the job for one min to finish once
+    scheduler shouldBe a[Scheduler]
+
   }
 
 }

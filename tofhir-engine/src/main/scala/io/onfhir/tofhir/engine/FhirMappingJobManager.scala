@@ -8,6 +8,7 @@ import io.onfhir.tofhir.data.read.DataSourceReaderFactory
 import io.onfhir.tofhir.data.write.FhirWriterFactory
 import io.onfhir.tofhir.model._
 import io.onfhir.util.JsonFormatter._
+import it.sauronsoftware.cron4j.Scheduler
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.ext.URISerializer
 import org.json4s.ext.EnumNameSerializer
@@ -57,6 +58,34 @@ class FhirMappingJobManager(
           .map(dataset => fhirWriter.write(dataset)) // Write the created FHIR Resources to the FhirWriter
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: $id.") }
+  }
+
+  /**
+   * Schedule to execute the given mapping job with given cron expression and write the resulting FHIR resources to the given sink
+   *x
+   * @param id           Unique job identifier
+   * @param tasks        Mapping tasks that will be executed in sequential
+   * @param sinkSettings FHIR sink settings (can be a FHIR repository, file system, kafka)
+   * @return
+   */
+  override def scheduleMappingJob(id: String, tasks: Seq[FhirMappingTask], sinkSettings: FhirSinkSettings, cronExpression: String): Scheduler = {
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    val s = new Scheduler()
+    // Schedule a task.
+    s.schedule(cronExpression, new Runnable() {
+      override def run(): Unit = {
+        println(s"Running scheduled job with the expression: ${cronExpression}")
+        tasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
+          f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
+            executeTask(task) // Retrieve the source data and execute the mapping
+              .map(dataset => fhirWriter.write(dataset)) // Write the created FHIR Resources to the FhirWriter
+          }
+        } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: $id.") }
+      }
+    })
+    // Start the scheduler.
+    s.start()
+    s
   }
 
   /**
