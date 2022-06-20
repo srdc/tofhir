@@ -2,6 +2,7 @@ package io.onfhir.tofhir.cli
 
 import io.onfhir.tofhir.ToFhirEngine
 import io.onfhir.tofhir.engine.FhirMappingJobManager
+import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.MappingException
 
 import java.io.FileNotFoundException
@@ -71,7 +72,8 @@ object CommandLineInterface {
   }
 
   /**
-   * Run the given mappingJob as a batch and exit the process.
+   * Schedule a task to be executed at a given time in the given mappingJob.
+   * If no cron expression provided, run the given mappingJob as a batch and exit the process.
    *
    * @param toFhirEngine
    * @param mappingJobFilePath
@@ -84,8 +86,23 @@ object CommandLineInterface {
     val mappingJob = FhirMappingJobManager.readMappingJobFromFile(mappingJobFilePath.get)
     val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
       toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
-    val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
-    Await.result(f, Duration.Inf)
+
+    if(mappingJob.cronExpression.isEmpty) {
+      val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
+      Await.result(f, Duration.Inf)
+    } else {
+      val s = new Scheduler()
+      // Schedule a task.
+      s.schedule(mappingJob.cronExpression.get, new Runnable() {
+        override def run(): Unit = {
+          println(s"Schedule job using the expression: ${mappingJob.cronExpression.get}")
+          val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
+          Await.result(f, Duration.Inf)
+        }
+      })
+      // Start the scheduler.
+      s.start()
+    }
   }
 
   /**
