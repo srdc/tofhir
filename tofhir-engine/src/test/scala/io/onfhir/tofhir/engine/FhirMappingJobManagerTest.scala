@@ -184,7 +184,6 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
             Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
     }
 
-
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
     val scheduler = fhirMappingJobManager.scheduleMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings, cronExpression = lMappingJob.cronExpression.get)
     var jobCompleted = false
@@ -212,6 +211,21 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
       Thread.sleep(1000)
     }
 
-    scheduler shouldBe a[Scheduler]
+    onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p8")).executeAndReturnResource() flatMap { p1Resource =>
+      FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p8")
+      FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "female"
+      FHIRUtil.extractValue[String](p1Resource, "birthDate") shouldBe "2010-01-10"
+
+      onFhirClient.search("Observation").where("code", "1035-5").executeAndReturnBundle() flatMap { observationBundle =>
+        (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
+          FhirMappingUtility.getHashedReference("Patient", "p1")
+
+        onFhirClient.search("MedicationAdministration").where("code", "313002").executeAndReturnBundle() map { medicationAdministrationBundle =>
+          (medicationAdministrationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
+            FhirMappingUtility.getHashedReference("Patient", "p4")
+        }
+      }
+    }
+
   }
 }
