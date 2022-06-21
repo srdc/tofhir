@@ -9,7 +9,7 @@ import io.onfhir.tofhir.config.MappingErrorHandling
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.FhirMappingUtility
 import io.onfhir.util.JsonFormatter.formats
-import it.sauronsoftware.cron4j.Scheduler
+import it.sauronsoftware.cron4j.{Scheduler, SchedulerListener, TaskExecutor}
 
 import java.io.File
 import java.nio.file.Paths
@@ -167,7 +167,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     }
   }
 
-  it should "execute the FhirScheduledMappingJob with sink settings restored from a file" in {
+  it should "schedule a FhirMappingJob with cron and sink settings restored from a file" in {
     assume(fhirServerIsAvailable)
     val lMappingJob: FhirMappingJob = FhirMappingJobManager.readMappingJobFromFile(testScheduleMappingJobFilePath)
 
@@ -183,10 +183,31 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
     val scheduler = fhirMappingJobManager.scheduleMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings, cronExpression = lMappingJob.cronExpression.get)
+    var jobCompleted = false
 
-    Thread.sleep(60000) // wait the job for one min to finish once
+    val schedulerListener = new SchedulerListener {
+
+      def taskLaunching(executor: TaskExecutor): Unit = {
+        println("Mapping job launched!")
+      }
+
+      def taskSucceeded(executor: TaskExecutor): Unit = {
+        println("Mapping job completed!")
+        jobCompleted = true
+      }
+
+      def taskFailed(executor: TaskExecutor, exception: Throwable): Unit = {
+        println("Task failed due to an exception!")
+        exception.printStackTrace()
+        jobCompleted = true
+      }
+    }
+
+    scheduler.addSchedulerListener(schedulerListener)
+    while (!jobCompleted) {
+      Thread.sleep(1000)
+    }
+
     scheduler shouldBe a[Scheduler]
-
   }
-
 }
