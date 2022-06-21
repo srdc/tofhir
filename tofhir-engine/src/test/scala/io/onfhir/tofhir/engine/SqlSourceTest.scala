@@ -54,6 +54,8 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     }
   }
 
+  val testSqlMappingJobFilePath: String = getClass.getResource("/test-sql-mappingjob.json").toURI.getPath
+
   val sqlSourceSettings: SqlSourceSettings = SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
     databaseUrl = DATABASE_URL, username = "", password = "")
 
@@ -199,6 +201,25 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
       .map(unit =>
         unit shouldBe()
       )
+  }
+
+  it should "execute the FhirMappingJob with SQL source and sink settings restored from a file" in {
+    assume(fhirServerIsAvailable)
+    val lMappingJob = FhirMappingJobManager.readMappingJobFromFile(testSqlMappingJobFilePath)
+
+    // I do the following dirty thing because our data reading mechanism should both handle the relative paths while running and while testing.
+    val tasks = lMappingJob.tasks.map { task =>
+      val lFileSystemSource = task.sourceContext("source").asInstanceOf[SqlSource]
+      FhirMappingTask(task.mappingRef,
+        Map("source" -> SqlSource(lFileSystemSource.tableName, lFileSystemSource.query,
+          SqlSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri, lFileSystemSource.settings.databaseUrl,
+            lFileSystemSource.settings.username, lFileSystemSource.settings.password))))
+    }
+
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
+    fhirMappingJobManager.executeMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings) map { unit =>
+      unit shouldBe()
+    }
   }
 
 }
