@@ -1,0 +1,28 @@
+{
+  "id": "test-schedule-mapping-job",
+  "cronExpression": "* * * * *",
+  "sourceSettings": {
+    "jsonClass": "FileSystemSourceSettings",
+    "name": "test-source",
+    "sourceUri": "https://aiccelerate.eu/data-integration-suite/test-data",
+    "dataFolderPath": "/test-data"
+  },
+  "sinkSettings": {
+    "jsonClass": "FhirRepositorySinkSettings",
+    "fhirRepoUrl": "http://localhost:8081/fhir",
+    "writeErrorHandling": "halt"
+  },
+  "mappings": [
+    {
+      "jsonClass": "FileSourceMappingDefinition",
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+      "filePath": "patients.csv"
+    },
+    {
+      "jsonClass": "FileSourceMappingDefinition",
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
+      "filePath": "other-observations.csv"
+    }
+  ],
+  "mappingErrorHandling": "halt"
+}
