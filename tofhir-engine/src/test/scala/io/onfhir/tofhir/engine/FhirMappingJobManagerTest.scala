@@ -2,6 +2,7 @@ package io.onfhir.tofhir.engine
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
+import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
@@ -19,6 +20,9 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 class FhirMappingJobManagerTest extends ToFhirTestSpec {
+
+  private val logger: Logger = Logger(this.getClass)
+
 
   val dataSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data",
     Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString)
@@ -188,16 +192,16 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     val schedulerListener = new SchedulerListener {
 
       def taskLaunching(executor: TaskExecutor): Unit = {
-        println("Mapping job launched!")
+        logger.info(s"Scheduled mapping job launched: ${executor.getTask}")
       }
 
       def taskSucceeded(executor: TaskExecutor): Unit = {
-        println("Mapping job completed!")
+        logger.info("Scheduled mapping job completed!")
         jobCompleted = true
       }
 
       def taskFailed(executor: TaskExecutor, exception: Throwable): Unit = {
-        println("Task failed due to an exception!")
+        logger.info("Scheduled mapping job failed due to an exception!")
         exception.printStackTrace()
         jobCompleted = true
       }

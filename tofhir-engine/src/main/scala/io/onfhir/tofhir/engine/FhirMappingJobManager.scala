@@ -74,7 +74,7 @@ class FhirMappingJobManager(
     // Schedule a task.
     s.schedule(cronExpression, new Runnable() {
       override def run(): Unit = {
-        println(s"Running scheduled job with the expression: ${cronExpression}")
+        logger.info(s"Running scheduled job with the expression: ${cronExpression}")
         tasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
           f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
             executeTask(task) // Retrieve the source data and execute the mapping
