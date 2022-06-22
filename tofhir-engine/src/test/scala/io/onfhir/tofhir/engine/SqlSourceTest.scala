@@ -3,6 +3,7 @@ package io.onfhir.tofhir.engine
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import com.typesafe.scalalogging.Logger
+import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
@@ -15,8 +16,8 @@ import org.scalatest.BeforeAndAfterAll
 
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Future}
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Try, Using}
 
@@ -114,9 +115,16 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(patientMappingTask), sinkSettings = fhirSinkSetting)
-      .map(unit =>
-        unit shouldBe()
-      )
+      .flatMap(_ => {
+        //Delete patients
+        var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
+        (1 to 10).foreach { i =>
+          batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i.toString )))
+        }
+        batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+          res.httpStatus shouldBe StatusCodes.OK
+        }
+      })
   }
 
   "Other observations mapping" should "should read data from SQL source and map it" in {
@@ -134,9 +142,24 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(otherObsMappingTask), sinkSettings = fhirSinkSetting)
-      .map(unit =>
-        unit shouldBe()
-      )
+      .flatMap(_ => {
+        // Delete all observations
+        var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
+        val obsSearchFutures = (1 to 10).map(i => {
+          onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p"+i))
+            .executeAndReturnBundle()
+        })
+        Future.sequence(obsSearchFutures) flatMap { obsBundleList =>
+          obsBundleList.foreach(observationBundle => {
+            observationBundle.searchResults.foreach(obs =>
+              batchRequest = batchRequest.entry(_.delete("Observation", (obs \ "id").extract[String]))
+            )
+          })
+          batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+            res.httpStatus shouldBe StatusCodes.OK
+          }
+        }
+      })
   }
 
   "Care site mapping" should "should read data from SQL source and map it" in {
@@ -156,9 +179,16 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(careSiteMappingTask), sinkSettings = fhirSinkSetting)
-      .map(unit =>
-        unit shouldBe()
-      )
+      .flatMap(_ => {
+        //Delete care sites
+        var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
+        (1 to 2).foreach { i =>
+          batchRequest = batchRequest.entry(_.delete("Organization", FhirMappingUtility.getHashedId("Organization", i.toString )))
+        }
+        batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+          res.httpStatus shouldBe StatusCodes.OK
+        }
+      })
   }
 
   "Location mapping" should "should read data from SQL source and map it" in {
@@ -176,9 +206,16 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(locationMappingTask), sinkSettings = fhirSinkSetting)
-      .map(unit =>
-        unit shouldBe()
-      )
+      .flatMap(_ => {
+        //Delete locations
+        var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
+        (1 to 5).foreach { i =>
+          batchRequest = batchRequest.entry(_.delete("Location", FhirMappingUtility.getHashedId("Location", i.toString )))
+        }
+        batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+          res.httpStatus shouldBe StatusCodes.OK
+        }
+      })
   }
 
   "Procedure occurrence mapping" should "should read data from SQL source and map it" in {
@@ -198,9 +235,16 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(tasks = Seq(procedureOccurrenceMappingTask), sinkSettings = fhirSinkSetting)
-      .map(unit =>
-        unit shouldBe()
-      )
+      .flatMap(_ => {
+        //Delete procedures
+        var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
+        (1 to 5).foreach { i =>
+          batchRequest = batchRequest.entry(_.delete("Procedure", FhirMappingUtility.getHashedId("Procedure", i.toString)))
+        }
+        batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+          res.httpStatus shouldBe StatusCodes.OK
+        }
+      })
   }
 
   it should "execute the FhirMappingJob with SQL source and sink settings restored from a file" in {
@@ -217,8 +261,21 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     }
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
-    fhirMappingJobManager.executeMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings) map { unit =>
-      unit shouldBe()
+    fhirMappingJobManager.executeMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings) flatMap { unit =>
+      //Delete written resources
+      var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
+      (1 to 10).foreach { i =>
+        batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i.toString )))
+      }
+      (1 to 2).foreach { i =>
+        batchRequest = batchRequest.entry(_.delete("Organization", FhirMappingUtility.getHashedId("Organization", i.toString )))
+      }
+      (1 to 5).foreach { i =>
+        batchRequest = batchRequest.entry(_.delete("Location", FhirMappingUtility.getHashedId("Location", i.toString )))
+      }
+      batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+        res.httpStatus shouldBe StatusCodes.OK
+      }
     }
   }
 

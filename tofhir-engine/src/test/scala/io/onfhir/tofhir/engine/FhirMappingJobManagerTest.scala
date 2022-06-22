@@ -3,6 +3,7 @@ package io.onfhir.tofhir.engine
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import com.typesafe.scalalogging.Logger
+import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
@@ -10,19 +11,39 @@ import io.onfhir.tofhir.config.MappingErrorHandling
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.FhirMappingUtility
 import io.onfhir.util.JsonFormatter.formats
-import it.sauronsoftware.cron4j.{Scheduler, SchedulerListener, TaskExecutor}
+import org.scalatest.Assertion
 
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Future}
 import scala.util.Try
 
 class FhirMappingJobManagerTest extends ToFhirTestSpec {
 
   private val logger: Logger = Logger(this.getClass)
 
+  private def deleteResources(): Future[Assertion] = {
+    // Start delete operation of written resources on the FHIR
+    var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
+    // Delete all patients between p1-p10 and related observations
+    val obsSearchFutures = (1 to 10).map(i => {
+      batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p"+i)))
+      onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p"+i))
+        .executeAndReturnBundle()
+    })
+    Future.sequence(obsSearchFutures) flatMap { obsBundleList =>
+      obsBundleList.foreach(observationBundle => {
+        observationBundle.searchResults.foreach(obs =>
+          batchRequest = batchRequest.entry(_.delete("Observation", (obs \ "id").extract[String]))
+        )
+      })
+      batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+        res.httpStatus shouldBe StatusCodes.OK
+      }
+    }
+  }
 
   val dataSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data",
     Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString)
@@ -115,9 +136,10 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
           (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
             FhirMappingUtility.getHashedReference("Patient", "p1")
 
-          onFhirClient.search("MedicationAdministration").where("code", "313002").executeAndReturnBundle() map { medicationAdministrationBundle =>
+          onFhirClient.search("MedicationAdministration").where("code", "313002").executeAndReturnBundle() flatMap { medicationAdministrationBundle =>
             (medicationAdministrationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
               FhirMappingUtility.getHashedReference("Patient", "p4")
+            deleteResources()
           }
         }
       }
@@ -166,66 +188,10 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     }
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
-    fhirMappingJobManager.executeMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings) map { unit =>
+    fhirMappingJobManager.executeMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings) flatMap { unit =>
       unit shouldBe()
+      deleteResources()
     }
   }
 
-  it should "schedule a FhirMappingJob with cron and sink settings restored from a file" in {
-    assume(fhirServerIsAvailable)
-    val lMappingJob: FhirMappingJob = FhirMappingJobManager.readMappingJobFromFile(testScheduleMappingJobFilePath)
-
-    // I do the following dirty thing because our data reading mechanism should both handle the relative paths while running and while testing.
-    val tasks: Seq[FhirMappingTask] = lMappingJob.tasks.map { task =>
-      val lFileSystemSource = task.sourceContext("source").asInstanceOf[FileSystemSource]
-      FhirMappingTask(task.mappingRef,
-        Map("source" -> FileSystemSource(lFileSystemSource.path, lFileSystemSource.sourceType,
-          FileSystemSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri,
-            Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
-    }
-
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
-    val scheduler = fhirMappingJobManager.scheduleMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings, cronExpression = lMappingJob.cronExpression.get)
-    var jobCompleted = false
-
-    val schedulerListener = new SchedulerListener {
-
-      def taskLaunching(executor: TaskExecutor): Unit = {
-        logger.info(s"Scheduled mapping job launched: ${executor.getTask}")
-      }
-
-      def taskSucceeded(executor: TaskExecutor): Unit = {
-        logger.info("Scheduled mapping job completed!")
-        jobCompleted = true
-      }
-
-      def taskFailed(executor: TaskExecutor, exception: Throwable): Unit = {
-        logger.info("Scheduled mapping job failed due to an exception!")
-        exception.printStackTrace()
-        jobCompleted = true
-      }
-    }
-
-    scheduler.addSchedulerListener(schedulerListener)
-    while (!jobCompleted) {
-      Thread.sleep(1000)
-    }
-
-    onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p8")).executeAndReturnResource() flatMap { p1Resource =>
-      FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p8")
-      FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "female"
-      FHIRUtil.extractValue[String](p1Resource, "birthDate") shouldBe "2010-01-10"
-
-      onFhirClient.search("Observation").where("code", "1035-5").executeAndReturnBundle() flatMap { observationBundle =>
-        (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
-          FhirMappingUtility.getHashedReference("Patient", "p1")
-
-        onFhirClient.search("MedicationAdministration").where("code", "313002").executeAndReturnBundle() map { medicationAdministrationBundle =>
-          (medicationAdministrationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
-            FhirMappingUtility.getHashedReference("Patient", "p4")
-        }
-      }
-    }
-
-  }
 }

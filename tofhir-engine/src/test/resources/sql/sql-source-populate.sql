@@ -149,15 +149,15 @@ INSERT INTO procedure_occurrence
 (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_datetime, procedure_end_date,
  procedure_end_datetime, procedure_type_concept_id, modifier_concept_id, quantity, provider_id, visit_occurrence_id,
  visit_detail_id, procedure_source_value, procedure_source_concept_id, modifier_source_value)
-VALUES (108599947, 906440, 2008238, '2010-04-25', NULL, NULL, NULL, 38000251, NULL, NULL, 48878, 43483680, NULL, '9904',
+VALUES (1, 906440, 2008238, '2010-04-25', NULL, NULL, NULL, 38000251, NULL, NULL, 48878, 43483680, NULL, '9904',
         2008238, NULL),
-       (114598132, 956309, 2000064, '2010-05-13', NULL, NULL, NULL, 38000251, NULL, NULL, 12731, 45887852, NULL, '0066',
+       (2, 956309, 2000064, '2010-05-13', NULL, NULL, NULL, 38000251, NULL, NULL, 12731, 45887852, NULL, '0066',
         2000064, NULL),
-       (275191342, 2296927, 2005199, '2008-03-29', NULL, NULL, NULL, 38000251, NULL, NULL, 202664, 110204292, NULL,
+       (3, 2296927, 2005199, '2008-03-29', NULL, NULL, NULL, 38000251, NULL, NULL, 202664, 110204292, NULL,
         '7806', 2005199, NULL),
-       (134276546, 1121148, 2005595, '2009-08-20', NULL, NULL, NULL, 38000251, NULL, NULL, 14272, 53771451, NULL,
+       (4, 1121148, 2005595, '2009-08-20', NULL, NULL, NULL, 38000251, NULL, NULL, 14272, 53771451, NULL,
         '7994', 2005595, NULL),
-       (265732251, 2218124, 2001220, '2008-05-08', NULL, NULL, NULL, 38000251, NULL, NULL, 47376, 106415668, NULL,
+       (5, 2218124, 2001220, '2008-05-08', NULL, NULL, NULL, 38000251, NULL, NULL, 47376, 106415668, NULL,
         '2761', 2001220, NULL);
 
 INSERT INTO concept
