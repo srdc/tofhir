@@ -124,7 +124,7 @@ object SourceFileFormats {
   final val AVRO = "avro"
 }
 
-case class FhirMappingJob(id: String, cronExpression: Option[String], sourceSettings: DataSourceSettings, sinkSettings: FhirSinkSettings, mappings: Seq[SimpleFhirMappingDefinition], mappingErrorHandling: MappingErrorHandling) {
+case class FhirMappingJob(id: String, schedulingSettings: Option[SchedulingSettings], sourceSettings: DataSourceSettings, sinkSettings: FhirSinkSettings, mappings: Seq[SimpleFhirMappingDefinition], mappingErrorHandling: MappingErrorHandling) {
   def tasks: Seq[FhirMappingTask] = { // Return Seq[FhirMappingTask] from Seq[SimpleFhirMappingDefinition]
     // TODO: This is a dirty solution which assumes that all mapping tasks have the same sourceContext with a single element whose name is "source".
     mappings.map {
@@ -157,3 +157,4 @@ case class FileSourceMappingDefinition(filePath: String, mappingRef: String) ext
 
 case class SqlSourceMappingDefinition(tableName: Option[String], query: Option[String], mappingRef: String) extends SimpleFhirMappingDefinition
 
+case class SchedulingSettings(cronExpression: String, initialTime: Option[String])

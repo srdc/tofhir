@@ -6,6 +6,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import java.nio.file.Paths
+import java.time.LocalDateTime
 
 /**
  * Reader from file system
@@ -23,7 +24,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    * @param schema        Optional schema for the source
    *  @return
    */
-  override def read(mappingSource: FileSystemSource, schema: Option[StructType]): DataFrame = {
+  override def read(mappingSource: FileSystemSource, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
     val dataFolderPath = Paths.get(mappingSource.settings.dataFolderPath).normalize().toString
     val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
     val finalPath = Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString

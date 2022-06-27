@@ -39,8 +39,21 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
           batchRequest = batchRequest.entry(_.delete("Observation", (obs \ "id").extract[String]))
         )
       })
-      batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
-        res.httpStatus shouldBe StatusCodes.OK
+      // delete MedicationAdministration records by patient
+      val medicationAdminSearchFutures = List(1,2,4).map(i => {
+        batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p"+i)))
+        onFhirClient.search("MedicationAdministration").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p"+i))
+          .executeAndReturnBundle()
+      })
+      Future.sequence(medicationAdminSearchFutures) flatMap { medicationAdminBundleList =>
+        medicationAdminBundleList.foreach(medicationAdminBundle => {
+          medicationAdminBundle.searchResults.foreach(mAdmin =>
+            batchRequest = batchRequest.entry(_.delete("MedicationAdministration", (mAdmin \ "id").extract[String]))
+          )
+        })
+        batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+          res.httpStatus shouldBe StatusCodes.OK
+        }
       }
     }
   }
@@ -67,7 +80,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
   val testScheduleMappingJobFilePath: String = getClass.getResource("/test-schedule-mappingjob.json").toURI.getPath
 
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(id = "test-mapping-job",
-    cronExpression = Option.empty,
+    schedulingSettings = Option.empty,
     sourceSettings = dataSourceSettings,
     sinkSettings = fhirSinkSettings,
     mappings = Seq(FileSourceMappingDefinition(patientMappingTask.mappingRef, patientMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path),

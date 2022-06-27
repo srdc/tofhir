@@ -1,9 +1,10 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingSourceContext, FhirMappingTask, FhirSinkSettings}
+import io.onfhir.tofhir.model.{FhirMappingTask, FhirSinkSettings, SchedulingSettings}
 import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.JObject
 
+import java.time.LocalDateTime
 import java.util.UUID
 import scala.concurrent.Future
 
@@ -22,7 +23,8 @@ trait IFhirMappingJobManager {
    */
   def executeMappingJob(id: String = UUID.randomUUID().toString,
                         tasks: Seq[FhirMappingTask],
-                        sinkSettings: FhirSinkSettings): Future[Unit]
+                        sinkSettings: FhirSinkSettings,
+                        timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty): Future[Unit]
 
   /**
    * Schedule to execute the given mapping job with given cron expression and write the resulting FHIR resources to the given sink
@@ -36,8 +38,7 @@ trait IFhirMappingJobManager {
   def scheduleMappingJob(id: String = UUID.randomUUID().toString,
                         tasks: Seq[FhirMappingTask],
                         sinkSettings: FhirSinkSettings,
-                        cronExpression: String): Scheduler
-
+                        schedulingSettings: SchedulingSettings): Scheduler
   /**
    * Execute the given mapping task and write the resulting FHIR resources to the given sink
    *

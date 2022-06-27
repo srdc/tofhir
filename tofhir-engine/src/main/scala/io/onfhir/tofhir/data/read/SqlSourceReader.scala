@@ -5,6 +5,7 @@ import io.onfhir.tofhir.model.{FhirMappingException, SqlSource}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+import java.time.LocalDateTime
 import java.util.Properties
 
 /**
@@ -21,7 +22,7 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
    * @param mappingSource Context/configuration information for mapping source
    * @return
    */
-  override def read(mappingSource: SqlSource, schema: Option[StructType]): DataFrame = {
+  override def read(mappingSource: SqlSource, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
     if (mappingSource.tableName.isDefined && mappingSource.query.isDefined) {
       throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} should not be specified at the same time.")
     }
@@ -34,7 +35,15 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
     }
 
     // As in spark jdbc read docs, instead of a full table you could also use a subquery in parentheses.
-    val dbTable: String = mappingSource.tableName.getOrElse(s"( ${mappingSource.query.get} ) queryGeneratedTable")
+    val dbTable: String = mappingSource.tableName.getOrElse({
+      if (timeRange.isDefined) {
+        val (fromTs, toTs) = timeRange.get
+        val query = mappingSource.query.get.replace("$fromTs", "'" + fromTs.toString + "'").replace("$toTs", "'" + toTs.toString + "'")
+        s"( $query ) queryGeneratedTable"
+      } else {
+        s"( ${mappingSource.query.get} ) queryGeneratedTable"
+      }
+    })
 
     spark.read
       .format("jdbc")

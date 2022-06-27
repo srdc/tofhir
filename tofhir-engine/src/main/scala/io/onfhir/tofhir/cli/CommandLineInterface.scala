@@ -84,11 +84,11 @@ object CommandLineInterface {
     val mappingJob = FhirMappingJobManager.readMappingJobFromFile(mappingJobFilePath.get)
     val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
       toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
-    if(mappingJob.cronExpression.isEmpty) {
+    if(mappingJob.schedulingSettings.isEmpty) {
       val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
       Await.result(f, Duration.Inf)
     } else {
-      fhirMappingJobManager.scheduleMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings, cronExpression = mappingJob.cronExpression.get)
+      fhirMappingJobManager.scheduleMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings, schedulingSettings = mappingJob.schedulingSettings.get)
     }
 
   }
