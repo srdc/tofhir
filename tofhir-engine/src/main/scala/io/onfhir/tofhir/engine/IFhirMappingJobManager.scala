@@ -31,14 +31,14 @@ trait IFhirMappingJobManager {
    * @param id
    * @param tasks
    * @param sinkSettings
-   * @param cronExpression
+   * @param schedulingSettings
    * @return
    */
 
   def scheduleMappingJob(id: String = UUID.randomUUID().toString,
                         tasks: Seq[FhirMappingTask],
                         sinkSettings: FhirSinkSettings,
-                        schedulingSettings: SchedulingSettings): Scheduler
+                        schedulingSettings: SchedulingSettings): Unit
   /**
    * Execute the given mapping task and write the resulting FHIR resources to the given sink
    *

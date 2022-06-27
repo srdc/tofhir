@@ -10,6 +10,8 @@ import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.FhirMappingUtility
 import io.onfhir.util.JsonFormatter.formats
+import it.sauronsoftware.cron4j.Scheduler
+import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.scalatest.flatspec.AnyFlatSpec
@@ -23,7 +25,6 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, Future}
-import scala.reflect.io.Directory
 import scala.util.Try
 
 class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues with Inside with Inspectors  {
@@ -73,6 +74,10 @@ class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues 
   val schemaRepositoryURI: URI = getClass.getResource(ToFhirConfig.schemaRepositoryFolderPath).toURI
   val schemaRepository = new SchemaFolderRepository(schemaRepositoryURI)
 
+  val scheduler = new Scheduler()
+  val mappingJobSyncTimesURI: URI = getClass.getResource(ToFhirConfig.mappingJobSyncTimesFolderPath.get).toURI
+  val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, mappingJobSyncTimesURI)
+
   val sparkConf: SparkConf = new SparkConf()
     .setAppName(ToFhirConfig.appName)
     .setMaster(ToFhirConfig.sparkMaster)
@@ -113,13 +118,13 @@ class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues 
             Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
     }
 
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling,  Some(mappingJobScheduler))
     fhirMappingJobManager.scheduleMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
-
+    scheduler.start() //job set to run every minute
     Thread.sleep(60000) //wait for the job to be executed once
 
-    val directory = new Directory(new File("/mapping-job-runtimes"))
-    directory.deleteRecursively()
+    val directory = new File(mappingJobSyncTimesURI)
+    FileUtils.cleanDirectory(directory)
 
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p8")).executeAndReturnResource() flatMap { p1Resource =>
       FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p8")

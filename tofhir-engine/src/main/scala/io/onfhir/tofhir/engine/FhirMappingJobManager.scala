@@ -8,13 +8,13 @@ import io.onfhir.tofhir.data.read.DataSourceReaderFactory
 import io.onfhir.tofhir.data.write.FhirWriterFactory
 import io.onfhir.tofhir.model._
 import io.onfhir.util.JsonFormatter._
-import it.sauronsoftware.cron4j.Scheduler
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.Serialization
 import org.json4s.{Formats, JObject, ShortTypeHints}
 
 import java.io.{File, FileNotFoundException, FileWriter}
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.time.{Instant, LocalDateTime, ZoneOffset}
@@ -37,7 +37,8 @@ class FhirMappingJobManager(
                              contextLoader: IMappingContextLoader,
                              schemaLoader: IFhirSchemaLoader,
                              spark: SparkSession,
-                             mappingErrorHandling: MappingErrorHandling
+                             mappingErrorHandling: MappingErrorHandling,
+                             mappingJobScheduler: Option[MappingJobScheduler] = Option.empty
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
 
   private val logger: Logger = Logger(this.getClass)
@@ -69,44 +70,36 @@ class FhirMappingJobManager(
    * @param sinkSettings FHIR sink settings (can be a FHIR repository, file system, kafka)
    * @return
    */
-  override def scheduleMappingJob(id: String, tasks: Seq[FhirMappingTask], sinkSettings: FhirSinkSettings, schedulingSettings: SchedulingSettings): Scheduler = {
-    val s = new Scheduler()
-
+  override def scheduleMappingJob(id: String, tasks: Seq[FhirMappingTask], sinkSettings: FhirSinkSettings, schedulingSettings: SchedulingSettings): Unit = {
     val startTime = if (schedulingSettings.initialTime.isEmpty) {
       logger.info(s"initialTime is not specified in the mappingJob. I will sync all the data from midnight, January 1, 1970 to the next run time.")
       Instant.ofEpochMilli(0L).atOffset(ZoneOffset.UTC).toLocalDateTime
     } else {
       LocalDateTime.parse(schedulingSettings.initialTime.get)
     }
-    // Schedule a task.
-
-    val taskId = s.schedule(schedulingSettings.cronExpression, new Runnable() {
+    // Schedule a task
+    val taskId = mappingJobScheduler.get.scheduler.schedule(schedulingSettings.cronExpression, new Runnable() {
       override def run(): Unit = {
         val scheduledJob = runnableMappingJob(id, startTime, tasks, sinkSettings, schedulingSettings)
         Await.result(scheduledJob, Duration.Inf)
       }
     })
-    // Start the scheduler.
-    s.start()
-    s
   }
 
     private def runnableMappingJob(id: String, startTime: LocalDateTime, tasks: Seq[FhirMappingTask],
                                    sinkSettings: FhirSinkSettings, schedulingSettings: SchedulingSettings) = {
-      val timeRange = getScheduledTimeRange(id, startTime)
+      val timeRange = getScheduledTimeRange(id, mappingJobScheduler.get.folderUri, startTime)
       logger.info(s"Running scheduled job with the expression: ${schedulingSettings.cronExpression}")
       logger.info(s"Synchronizing data between ${timeRange._1} and ${timeRange._2}")
-      //write last sync time to the file
-      val writer = new FileWriter(s"mapping-job-runtimes/$id.txt", true)
-      try writer.write(timeRange._2.toString + "\n") finally writer.close()
+      val writer = new FileWriter(s"${mappingJobScheduler.get.folderUri.getPath}/$id.txt", true)
+      try writer.write(timeRange._2.toString + "\n") finally writer.close() //write last sync time to the file
       executeMappingJob(id, tasks, sinkSettings, Some(timeRange))
     }
 
-  private def getScheduledTimeRange(mappingJobId: String, startTime: LocalDateTime):(LocalDateTime, LocalDateTime) = {
-    if (!Files.exists(Paths.get("mapping-job-runtimes/"))) new File("mapping-job-runtimes/").mkdir()
+  private def getScheduledTimeRange(mappingJobId: String, folderUri: URI, startTime: LocalDateTime):(LocalDateTime, LocalDateTime) = {
+    if(!new File(folderUri).exists || !new File(folderUri).isDirectory) throw new FileNotFoundException(s"Folder cannot be found: ${folderUri.toString}")
     try {
-      //read last sync time from file
-      val source = Source.fromFile(s"mapping-job-runtimes/$mappingJobId.txt")
+      val source = Source.fromFile(s"${folderUri.getPath}/$mappingJobId.txt") //read last sync time from file
       val lines = source.getLines()
       val lastLine = lines.foldLeft("") { case (_, line) => line }
       (LocalDateTime.parse(lastLine), LocalDateTime.now()) //(lastSyncTime, currentTime)}
