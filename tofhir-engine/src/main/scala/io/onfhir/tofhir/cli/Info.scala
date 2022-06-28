@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.cli
 
-import io.onfhir.tofhir.model.{DataSourceSettings, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSourceSettings}
+import io.onfhir.tofhir.model.{DataSourceSettings, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSourceSettings, SqlSourceSettings}
 
 import scala.util.{Failure, Success}
 
@@ -57,6 +57,13 @@ object Info {
           s"\t\tName: ${settings.name},\n" +
           s"\t\tSource URI: ${settings.sourceUri},\n" +
           s"\t\tData Folder Path: ${settings.dataFolderPath}\n"
+      case settings: SqlSourceSettings =>
+        s"\tSql Source Settings:\n" +
+          s"\t\tName: ${settings.name},\n" +
+          s"\t\tSource URI: ${settings.sourceUri},\n" +
+          s"\t\tDatabase URL: ${settings.databaseUrl},\n" +
+          s"\t\tUsername: ${settings.username},\n" +
+          s"\t\tPassword: ********\n"
       case _: DataSourceSettings => "\tNo Source Settings\n"
     }
     val sinkSettingsStr = mj.sinkSettings match {
