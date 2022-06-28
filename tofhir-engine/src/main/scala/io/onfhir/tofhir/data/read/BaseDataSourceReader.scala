@@ -4,6 +4,8 @@ import io.onfhir.tofhir.model.FhirMappingSourceContext
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 
+import java.time.LocalDateTime
+
 /**
  * Base data source reader
  */
@@ -16,7 +18,7 @@ abstract class BaseDataSourceReader[T <: FhirMappingSourceContext] {
    * @param schema        Schema for the source
    * @return
    */
-  def read(mappingSource: T, schema: Option[StructType]): DataFrame
+  def read(mappingSource: T, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame
 
 }
 

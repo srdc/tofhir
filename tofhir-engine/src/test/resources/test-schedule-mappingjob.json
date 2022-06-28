@@ -1,6 +1,9 @@
 {
   "id": "test-schedule-mapping-job",
-  "cronExpression": "* * * * *",
+  "schedulingSettings": {
+    "cronExpression": "* * * * *",
+    "initialTime": "2020-01-01T00:00:00"
+  },
   "sourceSettings": {
     "jsonClass": "FileSystemSourceSettings",
     "name": "test-source",

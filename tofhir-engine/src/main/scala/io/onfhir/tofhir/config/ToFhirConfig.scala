@@ -26,4 +26,7 @@ object ToFhirConfig {
   /** The # of FHIR resources in the group while executing (create/update) a batch operation. */
   lazy val fhirWriterBatchGroupSize: Int = Try(config.getInt("fhir-writer.batch-group-size")) .getOrElse(10)
 
+  /** Path to the folder where the execution times of scheduled mapping jobs are kept. */
+  lazy val mappingJobSyncTimesFolderPath: Option[String] = Try(config.getString("mapping-job-sync-times.folder-path")).toOption
+
 }

@@ -1,10 +1,14 @@
 package io.onfhir.tofhir.cli
 
 import io.onfhir.tofhir.ToFhirEngine
-import io.onfhir.tofhir.engine.FhirMappingJobManager
+import io.onfhir.tofhir.config.ToFhirConfig
+import io.onfhir.tofhir.engine.{FhirMappingJobManager, MappingJobScheduler}
+import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.MappingException
 
 import java.io.FileNotFoundException
+import java.net.URI
+import java.nio.file.Paths
 import java.util.Scanner
 import scala.annotation.tailrec
 import scala.concurrent.Await
@@ -76,19 +80,26 @@ object CommandLineInterface {
    * @param toFhirEngine
    * @param mappingJobFilePath
    */
-  def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String]): Unit = {
+  def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String], mappingJobSyncTimes: Option[String]): Unit = {
     if(mappingJobFilePath.isEmpty) {
       println("There are no jobs to run. Exiting...")
       System.exit(1)
     }
     val mappingJob = FhirMappingJobManager.readMappingJobFromFile(mappingJobFilePath.get)
-    val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
-      toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
-    if(mappingJob.cronExpression.isEmpty) {
+    if(mappingJob.schedulingSettings.isEmpty) {
+      val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
+        toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
       val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
       Await.result(f, Duration.Inf)
     } else {
-      fhirMappingJobManager.scheduleMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings, cronExpression = mappingJob.cronExpression.get)
+      val scheduler = new Scheduler()
+      val mappingJobSyncTimesURI: URI = Paths.get(mappingJobSyncTimes.get).toUri
+      val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, mappingJobSyncTimesURI)
+
+      val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
+        toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
+      fhirMappingJobManager.scheduleMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings, schedulingSettings = mappingJob.schedulingSettings.get)
+      scheduler.start()
     }
 
   }
@@ -110,6 +121,8 @@ object CommandLineInterface {
         nextArg(map ++ Map("mappings" -> value), tail)
       case "--schemas" :: value :: tail =>
         nextArg(map ++ Map("schemas" -> value), tail)
+      case "--syncTimes" :: value :: tail =>
+        nextArg(map ++ Map("syncTimes" -> value), tail)
       case str :: tail =>
         nextArg(map ++ Map("command" -> str), tail)
       case unknown :: _ =>
