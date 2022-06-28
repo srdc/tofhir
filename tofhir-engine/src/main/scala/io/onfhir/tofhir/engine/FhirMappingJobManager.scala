@@ -49,9 +49,12 @@ class FhirMappingJobManager(
    * @param id           Unique job identifier
    * @param tasks        Mapping tasks that will be executed in sequential
    * @param sinkSettings FHIR sink settings (can be a FHIR repository, file system, kafka)
+   * @param timeRange    Time range for source data to map if given
    * @return
    */
-  override def executeMappingJob(id: String, tasks: Seq[FhirMappingTask], sinkSettings: FhirSinkSettings,
+  override def executeMappingJob(id: String,
+                                 tasks: Seq[FhirMappingTask],
+                                 sinkSettings: FhirSinkSettings,
                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
     tasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
@@ -86,16 +89,34 @@ class FhirMappingJobManager(
     })
   }
 
+  /**
+   * Runnable for scheduled periodic mapping job
+   * @param id                  Job identifier
+   * @param startTime           Initial start time for source data
+   * @param tasks               Mapping tasks
+   * @param sinkSettings        FHIR sink settings/configurations
+   * @param schedulingSettings  Scheduling information
+   * @return
+   */
     private def runnableMappingJob(id: String, startTime: LocalDateTime, tasks: Seq[FhirMappingTask],
-                                   sinkSettings: FhirSinkSettings, schedulingSettings: SchedulingSettings) = {
+                                   sinkSettings: FhirSinkSettings, schedulingSettings: SchedulingSettings):Future[Unit] = {
       val timeRange = getScheduledTimeRange(id, mappingJobScheduler.get.folderUri, startTime)
       logger.info(s"Running scheduled job with the expression: ${schedulingSettings.cronExpression}")
       logger.info(s"Synchronizing data between ${timeRange._1} and ${timeRange._2}")
-      val writer = new FileWriter(s"${mappingJobScheduler.get.folderUri.getPath}/$id.txt", true)
-      try writer.write(timeRange._2.toString + "\n") finally writer.close() //write last sync time to the file
       executeMappingJob(id, tasks, sinkSettings, Some(timeRange))
+        .map(_ => {
+          val writer = new FileWriter(s"${mappingJobScheduler.get.folderUri.getPath}/$id.txt", true)
+          try writer.write(timeRange._2.toString + "\n") finally writer.close() //write last sync time to the file
+        })
     }
 
+  /**
+   * Read the latest synchronization time point for the job
+   * @param mappingJobId  Job identifier
+   * @param folderUri     Folder for sync files
+   * @param startTime     Initial start time for the job (for source data)
+   * @return
+   */
   private def getScheduledTimeRange(mappingJobId: String, folderUri: URI, startTime: LocalDateTime):(LocalDateTime, LocalDateTime) = {
     if(!new File(folderUri).exists || !new File(folderUri).isDirectory) throw new FileNotFoundException(s"Folder cannot be found: ${folderUri.toString}")
     try {
@@ -123,8 +144,8 @@ class FhirMappingJobManager(
 
   /**
    * Execute a single mapping task.
-   *
-   * @param task A #FhirMappingTask to be executed.
+   * @param task        A #FhirMappingTask to be executed.
+   * @param timeRange   Time range for the source data to load
    * @return
    */
   private def executeTask(task: FhirMappingTask, timeRange: Option[(LocalDateTime, LocalDateTime)]): Future[Dataset[String]] = {
@@ -160,12 +181,12 @@ class FhirMappingJobManager(
           .toSeq
           .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
       ).map(loadedContextMap => {
-      //Get configuration context
-      val sourceNames = fhirMapping.source.map(_.alias)
-      val configurationContext = task.sourceContext(sourceNames.head).settings.toConfigurationContext
-      //Construct the mapping service
-      val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping)
-      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandling)
+        //Get configuration context
+        val sourceNames = fhirMapping.source.map(_.alias)
+        val configurationContext = task.sourceContext(sourceNames.head).settings.toConfigurationContext
+        //Construct the mapping service
+        val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping)
+        MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandling)
     })
   }
 
