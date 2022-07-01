@@ -18,7 +18,7 @@ abstract class BaseDataSourceReader[T <: FhirMappingSourceContext] {
    * @param schema        Schema for the source
    * @return
    */
-  def read(mappingSource: T, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame
+  def read(mappingSource: T, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty): DataFrame
 
 }
 
