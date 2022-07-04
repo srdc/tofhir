@@ -30,7 +30,7 @@ import java.net.URI
 import java.time.Duration
 import java.util.{Collections, Properties, UUID}
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, duration}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
@@ -121,8 +121,7 @@ class StreamingTest extends AnyFlatSpec with OptionValues with Inside with Inspe
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
       .getOrElse(false)
 
-  val fhirMappingStreamingJobManager = new FhirMappingStreamingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.HALT)
-
+  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, MappingErrorHandling.HALT)
 
   it should "check the test container working" in {
     val topicName = "testTopic"
@@ -185,7 +184,8 @@ class StreamingTest extends AnyFlatSpec with OptionValues with Inside with Inspe
   }
 
   it should "consume patients and observations data and map and write to the fhir repository" in {
-    val streamingQuery: StreamingQuery = fhirMappingStreamingJobManager.executeMappingJob(tasks = Seq(patientMappingTask, otherObservationMappingTask), sinkSettings = fhirSinkSettings)
+    assume(fhirServerIsAvailable)
+    val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = Seq(patientMappingTask, otherObservationMappingTask), sinkSettings = fhirSinkSettings)
     streamingQuery.awaitTermination(10000L) //wait for 10 seconds to consume and write to the fhir repo and terminate
   }
 
@@ -201,7 +201,7 @@ class StreamingTest extends AnyFlatSpec with OptionValues with Inside with Inspe
         deleteResources()
       }
     }
-    Await.result(searchTest, scala.concurrent.duration.Duration.Inf)
+    Await.result(searchTest, duration.Duration(10, duration.SECONDS))
   }
 
 }

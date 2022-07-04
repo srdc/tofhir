@@ -1,0 +1,24 @@
+{
+  "id": "kafka-mapping-job",
+  "sourceSettings": {
+    "jsonClass": "StreamingSourceSettings",
+    "name": "kafka-source",
+    "sourceUri": "https://aiccelerate.eu/data-integration-suite/kafka-data",
+    "bootstrapServers": "localhost:9092"
+  },
+  "sinkSettings": {
+    "jsonClass": "FhirRepositorySinkSettings",
+    "fhirRepoUrl": "http://localhost:8081/fhir",
+    "writeErrorHandling": "halt"
+  },
+  "mappingErrorHandling": "halt",
+  "mappings": [
+    {
+      "jsonClass": "StreamingSourceMappingDefinition",
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+      "topicName": "patients",
+      "groupId": "tofhir",
+      "startingOffsets": "earliest"
+    }
+  ]
+}
