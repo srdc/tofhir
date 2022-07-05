@@ -1,8 +1,8 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.path.{FhirPathEvaluator, FhirPathException}
+import io.onfhir.path.FhirPathEvaluator
 import io.onfhir.tofhir.ToFhirTestSpec
-import io.onfhir.tofhir.model.{ConceptMapContext, FhirMapping, FhirMappingContextDefinition, FhirMappingException}
+import io.onfhir.tofhir.model.{FhirMapping, FhirMappingContextDefinition}
 import org.json4s.{JNull, JObject}
 
 class FhirPathMappingFunctionsTest extends ToFhirTestSpec {

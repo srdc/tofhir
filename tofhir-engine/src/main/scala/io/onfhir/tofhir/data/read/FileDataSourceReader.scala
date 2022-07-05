@@ -22,7 +22,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    *
    * @param mappingSource Context/configuration information for mapping source
    * @param schema        Optional schema for the source
-   *  @return
+   * @return
    */
   override def read(mappingSource: FileSystemSource, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
     val dataFolderPath = Paths.get(mappingSource.settings.dataFolderPath).normalize().toString

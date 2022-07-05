@@ -7,7 +7,6 @@ import org.apache.spark.sql.Dataset
  * Base class for FHIR resource writer
  *
  * @param sinkSettings
- * @tparam S
  */
 abstract class BaseFhirWriter(sinkSettings: FhirSinkSettings) extends Serializable {
   /**

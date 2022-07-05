@@ -16,7 +16,7 @@ import scala.util.Try
 /**
  * Repository that keeps all mappings and other data in folder
  *
- * @param folderPath Path to the folder
+ * @param folderUri Path to the folder
  */
 class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository {
   private val logger: Logger = Logger(this.getClass)

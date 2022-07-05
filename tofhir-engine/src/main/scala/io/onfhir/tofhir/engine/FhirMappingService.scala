@@ -1,6 +1,5 @@
 package io.onfhir.tofhir.engine
 
-import com.typesafe.scalalogging.Logger
 import io.onfhir.api.Resource
 import io.onfhir.expression.FhirExpressionException
 import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}

@@ -81,7 +81,7 @@ class FhirMappingJobManager(
         .map(t => Await.result(executeTask(t, Option.empty), Duration.Inf))
         .reduce((ts1, ts2) => ts1.union(ts2))
 
-    val datasetWrite = (dataset:Dataset[String], batchN:Long) => fhirWriter.write(dataset)
+    val datasetWrite = (dataset: Dataset[String], batchN: Long) => fhirWriter.write(dataset)
 
     mappedResourcesDf
       .writeStream
@@ -91,7 +91,7 @@ class FhirMappingJobManager(
 
   /**
    * Schedule to execute the given mapping job with given cron expression and write the resulting FHIR resources to the given sink
-   *x
+   *
    * @param id           Unique job identifier
    * @param tasks        Mapping tasks that will be executed in sequential
    * @param sinkSettings FHIR sink settings (can be a FHIR repository, file system, kafka)
@@ -115,34 +115,36 @@ class FhirMappingJobManager(
 
   /**
    * Runnable for scheduled periodic mapping job
-   * @param id                  Job identifier
-   * @param startTime           Initial start time for source data
-   * @param tasks               Mapping tasks
-   * @param sinkSettings        FHIR sink settings/configurations
-   * @param schedulingSettings  Scheduling information
+   *
+   * @param id                 Job identifier
+   * @param startTime          Initial start time for source data
+   * @param tasks              Mapping tasks
+   * @param sinkSettings       FHIR sink settings/configurations
+   * @param schedulingSettings Scheduling information
    * @return
    */
-    private def runnableMappingJob(id: String, startTime: LocalDateTime, tasks: Seq[FhirMappingTask],
-                                   sinkSettings: FhirSinkSettings, schedulingSettings: SchedulingSettings):Future[Unit] = {
-      val timeRange = getScheduledTimeRange(id, mappingJobScheduler.get.folderUri, startTime)
-      logger.info(s"Running scheduled job with the expression: ${schedulingSettings.cronExpression}")
-      logger.info(s"Synchronizing data between ${timeRange._1} and ${timeRange._2}")
-      executeMappingJob(id, tasks, sinkSettings, Some(timeRange))
-        .map(_ => {
-          val writer = new FileWriter(s"${mappingJobScheduler.get.folderUri.getPath}/$id.txt", true)
-          try writer.write(timeRange._2.toString + "\n") finally writer.close() //write last sync time to the file
-        })
-    }
+  private def runnableMappingJob(id: String, startTime: LocalDateTime, tasks: Seq[FhirMappingTask],
+                                 sinkSettings: FhirSinkSettings, schedulingSettings: SchedulingSettings): Future[Unit] = {
+    val timeRange = getScheduledTimeRange(id, mappingJobScheduler.get.folderUri, startTime)
+    logger.info(s"Running scheduled job with the expression: ${schedulingSettings.cronExpression}")
+    logger.info(s"Synchronizing data between ${timeRange._1} and ${timeRange._2}")
+    executeMappingJob(id, tasks, sinkSettings, Some(timeRange))
+      .map(_ => {
+        val writer = new FileWriter(s"${mappingJobScheduler.get.folderUri.getPath}/$id.txt", true)
+        try writer.write(timeRange._2.toString + "\n") finally writer.close() //write last sync time to the file
+      })
+  }
 
   /**
    * Read the latest synchronization time point for the job
-   * @param mappingJobId  Job identifier
-   * @param folderUri     Folder for sync files
-   * @param startTime     Initial start time for the job (for source data)
+   *
+   * @param mappingJobId Job identifier
+   * @param folderUri    Folder for sync files
+   * @param startTime    Initial start time for the job (for source data)
    * @return
    */
-  private def getScheduledTimeRange(mappingJobId: String, folderUri: URI, startTime: LocalDateTime):(LocalDateTime, LocalDateTime) = {
-    if(!new File(folderUri).exists || !new File(folderUri).isDirectory) throw new FileNotFoundException(s"Folder cannot be found: ${folderUri.toString}")
+  private def getScheduledTimeRange(mappingJobId: String, folderUri: URI, startTime: LocalDateTime): (LocalDateTime, LocalDateTime) = {
+    if (!new File(folderUri).exists || !new File(folderUri).isDirectory) throw new FileNotFoundException(s"Folder cannot be found: ${folderUri.toString}")
     try {
       val source = Source.fromFile(s"${folderUri.getPath}/$mappingJobId.txt") //read last sync time from file
       val lines = source.getLines()
@@ -168,8 +170,9 @@ class FhirMappingJobManager(
 
   /**
    * Execute a single mapping task.
-   * @param task        A #FhirMappingTask to be executed.
-   * @param timeRange   Time range for the source data to load
+   *
+   * @param task      A #FhirMappingTask to be executed.
+   * @param timeRange Time range for the source data to load
    * @return
    */
   private def executeTask(task: FhirMappingTask, timeRange: Option[(LocalDateTime, LocalDateTime)]): Future[Dataset[String]] = {
@@ -215,7 +218,7 @@ class FhirMappingJobManager(
   }
 
   /**
-   * Handle the joining of source data framees
+   * Handle the joining of source data frames
    *
    * @param task             Mapping task definition
    * @param sourceDataFrames Source data frames loaded
@@ -233,9 +236,8 @@ class FhirMappingJobManager(
   /**
    * Execute the given mapping job and return the resulting FHIR resources
    *
-   * @param id             Unique job identifier
-   * @param sourceSettings Data source settings and configurations
-   * @param task           Mapping task that will be executed
+   * @param id   Unique job identifier
+   * @param task Mapping task that will be executed
    * @return
    */
   override def executeMappingTaskAndReturn(id: String, task: FhirMappingTask): Future[Seq[JObject]] = {
@@ -256,7 +258,7 @@ object MappingTaskExecutor {
   /**
    * Convert input row for mapping to JObject
    *
-   * @param row
+   * @param row Row to be converted to JObject
    * @return
    */
   def convertRowToJObject(row: Row): JObject = {
@@ -270,9 +272,9 @@ object MappingTaskExecutor {
   /**
    * Executing the mapping and returning the dataframe for FHIR resources
    *
-   * @param spark
-   * @param df
-   * @param fhirMappingService
+   * @param spark              Spark session
+   * @param df                 DataFrame to be mapped
+   * @param fhirMappingService Mapping service for a specific FhirMapping together with contextual data and mapping scripts
    * @return
    */
   def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, errorHandlingType: MappingErrorHandling): Dataset[String] = {
@@ -285,9 +287,9 @@ object MappingTaskExecutor {
 
   /**
    *
-   * @param spark
-   * @param df
-   * @param fhirMappingService
+   * @param spark              Spark session
+   * @param df                 DataFrame to be mapped
+   * @param fhirMappingService Mapping service for a specific FhirMapping together with contextual data and mapping scripts
    * @return
    */
   private def executeMappingOnSingleSource(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, errorHandlingType: MappingErrorHandling): Dataset[String] = {

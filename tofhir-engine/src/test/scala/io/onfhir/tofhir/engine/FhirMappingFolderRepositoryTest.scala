@@ -4,7 +4,6 @@ import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.model.{ConceptMapContext, FhirMappingException, UnitConversionContext}
 
 import java.io.File
-import java.net.URI
 
 class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
 

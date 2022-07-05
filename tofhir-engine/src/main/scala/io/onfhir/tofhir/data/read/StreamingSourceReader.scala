@@ -12,7 +12,7 @@ import java.time.LocalDateTime
  *
  * @param spark
  */
-class StreamingSourceReader(spark: SparkSession) extends BaseDataSourceReader[StreamingSource]  {
+class StreamingSourceReader(spark: SparkSession) extends BaseDataSourceReader[StreamingSource] {
 
   private val logger: Logger = Logger(this.getClass)
 

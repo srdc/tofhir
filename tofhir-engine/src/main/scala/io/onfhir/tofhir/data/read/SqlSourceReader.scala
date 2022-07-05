@@ -6,7 +6,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import java.time.LocalDateTime
-import java.util.Properties
 
 /**
  *
@@ -34,7 +33,7 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
       logger.debug("There is a schema definitions for the SqlSource, but I cannot enforce it while reading from the database. Hence, ignoring...")
     }
 
-    // As in spark jdbc read docs, instead of a full table you could also use a subquery in parentheses.
+    // As in spark jdbc read docs, instead of a full table you could also use a sub-query in parentheses.
     val dbTable: String = mappingSource.tableName.getOrElse({
       if (timeRange.isDefined) {
         val (fromTs, toTs) = timeRange.get

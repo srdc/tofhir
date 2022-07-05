@@ -1,8 +1,6 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.tofhir.model.{FhirMapping, FhirMappingContext}
-
-import scala.concurrent.Future
+import io.onfhir.tofhir.model.FhirMapping
 
 trait IFhirMappingRepository {
   /**

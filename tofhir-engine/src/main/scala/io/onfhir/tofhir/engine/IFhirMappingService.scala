@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.engine
 
 import io.onfhir.api.Resource
-import io.onfhir.tofhir.model.{FhirMappingException, MappedFhirResource}
+import io.onfhir.tofhir.model.FhirMappingException
 import org.json4s.JsonAST.JObject
 
 import scala.concurrent.Future

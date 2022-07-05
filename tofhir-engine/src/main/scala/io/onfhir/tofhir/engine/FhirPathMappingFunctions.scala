@@ -1,11 +1,9 @@
 package io.onfhir.tofhir.engine
 
-import com.google.common.hash.Hashing
-import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
 import io.onfhir.path._
-import io.onfhir.tofhir.model.{ConceptMapContext, FhirMappingContext, FhirMappingException, UnitConversionContext}
+import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
+import io.onfhir.tofhir.model.{ConceptMapContext, FhirMappingContext, UnitConversionContext}
 import io.onfhir.tofhir.util.FhirMappingUtility
-import org.apache.commons.codec.binary.StringUtils
 import org.json4s.{JObject, JString}
 
 

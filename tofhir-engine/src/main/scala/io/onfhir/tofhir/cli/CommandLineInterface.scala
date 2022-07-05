@@ -1,7 +1,6 @@
 package io.onfhir.tofhir.cli
 
 import io.onfhir.tofhir.ToFhirEngine
-import io.onfhir.tofhir.config.ToFhirConfig
 import io.onfhir.tofhir.engine.{FhirMappingJobManager, MappingJobScheduler}
 import io.onfhir.tofhir.model.StreamingSourceSettings
 import it.sauronsoftware.cron4j.Scheduler
@@ -113,7 +112,7 @@ object CommandLineInterface {
   /**
    * Parse the command line arguments.
    *
-   * @param map The map where the argumentName -> value pairs are kept. Start with an empty Map[String, Any].
+   * @param map  The map where the argumentName -> value pairs are kept. Start with an empty Map[String, Any].
    * @param list The list of the arguments
    * @return
    */

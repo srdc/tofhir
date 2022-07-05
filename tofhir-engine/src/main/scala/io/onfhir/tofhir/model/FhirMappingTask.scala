@@ -3,8 +3,6 @@ package io.onfhir.tofhir.model
 import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import org.json4s.JsonAST.{JString, JValue}
 
-import java.util.Properties
-
 /**
  * Interface for data source settings/configurations
  */
@@ -32,19 +30,19 @@ trait DataSourceSettings {
 
 /**
  *
- * @param name          Human friendly name for the source organization for data source
- * @param sourceUri     Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
+ * @param name           Human friendly name for the source organization for data source
+ * @param sourceUri      Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
  * @param dataFolderPath Path to the folder all source data is located
  */
 case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderPath: String) extends DataSourceSettings
 
 /**
  *
- * @param name          Human friendly name for the source organization for data source
- * @param sourceUri     Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
- * @param databaseUrl   Connection URL of the SQL database
- * @param username      Username for database connection
- * @param password      Password for database connection
+ * @param name        Human friendly name for the source organization for data source
+ * @param sourceUri   Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
+ * @param databaseUrl Connection URL of the SQL database
+ * @param username    Username for database connection
+ * @param password    Password for database connection
  */
 case class SqlSourceSettings(name: String, sourceUri: String, databaseUrl: String, username: String, password: String) extends DataSourceSettings
 
@@ -156,7 +154,7 @@ case class FhirMappingJob(id: String, schedulingSettings: Option[SchedulingSetti
 /**
  * Interface for source mapping definition
  */
-trait SimpleFhirMappingDefinition{
+trait SimpleFhirMappingDefinition {
   val mappingRef: String
 }
 
@@ -185,4 +183,11 @@ case class SqlSourceMappingDefinition(tableName: Option[String], query: Option[S
  */
 case class StreamingSourceMappingDefinition(topicName: String, groupId: String, startingOffsets: String, mappingRef: String) extends SimpleFhirMappingDefinition
 
+/**
+ * Cron expression showing the times of scheduled task needed. More info: https://www.sauronsoftware.it/projects/cron4j/
+ *
+ * @param cronExpression A UNIX crontab-like pattern is a string split in five space separated parts
+ * @param initialTime    If not specified, toFhir generates a time range between Java beginning (January 1, 1970) and next run time of task
+ *                       If specified, toFhir generates a time range between initial time and next run time of task
+ */
 case class SchedulingSettings(cronExpression: String, initialTime: Option[String])
