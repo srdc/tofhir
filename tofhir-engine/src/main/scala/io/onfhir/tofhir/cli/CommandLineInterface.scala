@@ -3,6 +3,7 @@ package io.onfhir.tofhir.cli
 import io.onfhir.tofhir.ToFhirEngine
 import io.onfhir.tofhir.config.ToFhirConfig
 import io.onfhir.tofhir.engine.{FhirMappingJobManager, MappingJobScheduler}
+import io.onfhir.tofhir.model.StreamingSourceSettings
 import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.MappingException
 
@@ -89,8 +90,13 @@ object CommandLineInterface {
     if(mappingJob.schedulingSettings.isEmpty) {
       val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
         toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
-      val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
-      Await.result(f, Duration.Inf)
+      if (mappingJob.sourceSettings.isInstanceOf[StreamingSourceSettings]) {
+        val streamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
+        streamingQuery.awaitTermination()
+      } else {
+        val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
+        Await.result(f, Duration.Inf)
+      }
     } else {
       val scheduler = new Scheduler()
       val mappingJobSyncTimesURI: URI = Paths.get(mappingJobSyncTimes.get).toUri

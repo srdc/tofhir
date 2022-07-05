@@ -49,6 +49,14 @@ case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderP
 case class SqlSourceSettings(name: String, sourceUri: String, databaseUrl: String, username: String, password: String) extends DataSourceSettings
 
 /**
+ *
+ * @param name             Human friendly name for the source organization for data source
+ * @param sourceUri        Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
+ * @param bootstrapServers Kafka bootstrap server(s) with port, may be comma seperated list (localhost:9092,localhost:9091)
+ */
+case class StreamingSourceSettings(name: String, sourceUri: String, bootstrapServers: String) extends DataSourceSettings
+
+/**
  * Common interface for sink settings
  */
 trait FhirSinkSettings
@@ -105,7 +113,7 @@ trait FhirMappingSourceContext extends Serializable {
 case class FileSystemSource(path: String, sourceType: String, override val settings: FileSystemSourceSettings) extends FhirMappingSourceContext
 
 /**
- * Context/configuration for one of the source of the mapping that will read the source data from file an SQL database
+ * Context/configuration for one of the source of the mapping that will read the source data from an SQL database
  * Any of tableName and query must be defined. Not both, not neither
  *
  * @param tableName Name of the table
@@ -113,6 +121,16 @@ case class FileSystemSource(path: String, sourceType: String, override val setti
  * @param settings  Settings for the SQL source
  */
 case class SqlSource(tableName: Option[String] = None, query: Option[String] = None, override val settings: SqlSourceSettings) extends FhirMappingSourceContext
+
+/**
+ * Context/configuration for one of the source of the mapping that will read the source data from a streaming service
+ *
+ * @param topicName       The topic(s) to subscribe, may be comma seperated string list (topic1,topic2)
+ * @param groupId         The Kafka group id to use in Kafka consumer while reading from Kafka
+ * @param startingOffsets The start point when a query is started
+ * @param settings        Settings for the stream source
+ */
+case class StreamingSource(topicName: String, groupId: String, startingOffsets: String, override val settings: StreamingSourceSettings) extends FhirMappingSourceContext
 
 /**
  * List of source file formats supported by tofhir
@@ -130,6 +148,7 @@ case class FhirMappingJob(id: String, schedulingSettings: Option[SchedulingSetti
     mappings.map {
       case FileSourceMappingDefinition(filePath, mappingRef) => FhirMappingTask(mappingRef, Map("source" -> FileSystemSource(filePath, SourceFileFormats.CSV, sourceSettings.asInstanceOf[FileSystemSourceSettings])))
       case SqlSourceMappingDefinition(tableName, query, mappingRef) => FhirMappingTask(mappingRef, Map("source" -> SqlSource(tableName, query, sourceSettings.asInstanceOf[SqlSourceSettings])))
+      case StreamingSourceMappingDefinition(topicName, groupId, startingOffsets, mappingRef) => FhirMappingTask(mappingRef, Map("source" -> StreamingSource(topicName, groupId, startingOffsets, sourceSettings.asInstanceOf[StreamingSourceSettings])))
     }
   }
 }
@@ -156,5 +175,14 @@ case class FileSourceMappingDefinition(filePath: String, mappingRef: String) ext
  */
 
 case class SqlSourceMappingDefinition(tableName: Option[String], query: Option[String], mappingRef: String) extends SimpleFhirMappingDefinition
+
+/**
+ *
+ * @param topicName       The topic(s) to subscribe, may be comma seperated string list (topic1,topic2)
+ * @param groupId         The Kafka group id to use in Kafka consumer while reading from Kafka
+ * @param startingOffsets The start point when a query is started
+ * @param mappingRef      Mapping url corresponding to mapping repository
+ */
+case class StreamingSourceMappingDefinition(topicName: String, groupId: String, startingOffsets: String, mappingRef: String) extends SimpleFhirMappingDefinition
 
 case class SchedulingSettings(cronExpression: String, initialTime: Option[String])

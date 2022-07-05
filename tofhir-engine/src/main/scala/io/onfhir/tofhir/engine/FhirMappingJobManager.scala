@@ -8,6 +8,7 @@ import io.onfhir.tofhir.data.read.DataSourceReaderFactory
 import io.onfhir.tofhir.data.write.FhirWriterFactory
 import io.onfhir.tofhir.model._
 import io.onfhir.util.JsonFormatter._
+import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.Serialization
@@ -63,6 +64,29 @@ class FhirMappingJobManager(
           .map(dataset => fhirWriter.write(dataset)) // Write the created FHIR Resources to the FhirWriter
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: $id.") }
+  }
+
+  /**
+   * Start streaming mapping job
+   *
+   * @param id           Job identifier
+   * @param tasks        Mapping tasks that will be executed in parallel in stream mode
+   * @param sinkSettings FHIR sink settings (can be a FHIR repository, file system, kafka)
+   * @return
+   */
+  override def startMappingJobStream(id: String, tasks: Seq[FhirMappingTask], sinkSettings: FhirSinkSettings): StreamingQuery = {
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    val mappedResourcesDf =
+      tasks
+        .map(t => Await.result(executeTask(t, Option.empty), Duration.Inf))
+        .reduce((ts1, ts2) => ts1.union(ts2))
+
+    val datasetWrite = (dataset:Dataset[String], batchN:Long) => fhirWriter.write(dataset)
+
+    mappedResourcesDf
+      .writeStream
+      .foreachBatch(datasetWrite)
+      .start()
   }
 
   /**
@@ -303,7 +327,8 @@ object FhirMappingJobManager {
 
   implicit lazy val formats: Formats =
     Serialization.formats(ShortTypeHints(List(classOf[FhirRepositorySinkSettings], classOf[FileSystemSource], classOf[FileSystemSourceSettings],
-      classOf[FileSourceMappingDefinition], classOf[SqlSourceMappingDefinition], classOf[SqlSource], classOf[SqlSourceSettings]))) +
+      classOf[FileSourceMappingDefinition], classOf[SqlSourceMappingDefinition], classOf[StreamingSourceMappingDefinition], classOf[SqlSource],
+      classOf[SqlSourceSettings], classOf[StreamingSourceSettings], classOf[StreamingSource]))) +
       new EnumNameSerializer(MappingErrorHandling)
 
   def saveMappingJobToFile(fhirMappingJob: FhirMappingJob, filePath: String): Unit = {
