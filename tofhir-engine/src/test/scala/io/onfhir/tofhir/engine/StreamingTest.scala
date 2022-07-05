@@ -186,10 +186,11 @@ class StreamingTest extends AnyFlatSpec with OptionValues with Inside with Inspe
   it should "consume patients and observations data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
     val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = Seq(patientMappingTask, otherObservationMappingTask), sinkSettings = fhirSinkSettings)
-    streamingQuery.awaitTermination(10000L) //wait for 10 seconds to consume and write to the fhir repo and terminate
+    streamingQuery.awaitTermination(20000L) //wait for 30 seconds to consume and write to the fhir repo and terminate
   }
 
   it should "test whether fhir resources are written successfully" in {
+    assume(fhirServerIsAvailable)
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
       FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p1")
       FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "male"
@@ -201,7 +202,7 @@ class StreamingTest extends AnyFlatSpec with OptionValues with Inside with Inspe
         deleteResources()
       }
     }
-    Await.result(searchTest, duration.Duration(10, duration.SECONDS))
+    Await.result(searchTest, duration.Duration(20, duration.SECONDS))
   }
 
 }
