@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.data.read
 
 import com.typesafe.scalalogging.Logger
-import io.onfhir.tofhir.model.StreamingSource
+import io.onfhir.tofhir.model.{KafkaSource, KafkaSourceSettings}
 import org.apache.spark.sql.functions.from_json
 import org.apache.spark.sql.types.{StringType, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -12,7 +12,7 @@ import java.time.LocalDateTime
  *
  * @param spark
  */
-class StreamingSourceReader(spark: SparkSession) extends BaseDataSourceReader[StreamingSource] {
+class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaSource, KafkaSourceSettings] {
 
   private val logger: Logger = Logger(this.getClass)
 
@@ -23,7 +23,7 @@ class StreamingSourceReader(spark: SparkSession) extends BaseDataSourceReader[St
    * @param schema        Schema for the source
    * @return
    */
-  override def read(mappingSource: StreamingSource, schema: Option[StructType] = Option.empty, timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty): DataFrame = {
+  override def read(mappingSource: KafkaSource, sourceSettings: KafkaSourceSettings, schema: Option[StructType] = Option.empty, timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty): DataFrame = {
     import spark.implicits._
 
     if(schema.isEmpty) {
@@ -33,7 +33,7 @@ class StreamingSourceReader(spark: SparkSession) extends BaseDataSourceReader[St
     val df = spark
       .readStream
       .format("kafka")
-      .option("kafka.bootstrap.servers", mappingSource.settings.bootstrapServers)
+      .option("kafka.bootstrap.servers", sourceSettings.bootstrapServers)
       .option("subscribe", mappingSource.topicName)
       .option("startingOffsets", mappingSource.startingOffsets)
       .option("inferSchema", true)

@@ -85,17 +85,20 @@ class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues 
     .set("spark.ui.enabled", "false")
   val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
 
-  val dataSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data",
-    Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString)
+  val dataSourceSettings =
+    Map(
+      "source" ->
+        FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data", Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString)
+    )
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", writeErrorHandling = MappingErrorHandling.CONTINUE)
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = "patients.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+    sourceContext = Map("source" -> FileSystemSource(path = "patients.csv"))
   )
   val otherObservationMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv", sourceType = SourceFileFormats.CSV, settings = dataSourceSettings))
+    sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv"))
   )
   implicit val actorSystem: ActorSystem = ActorSystem("SchedulingTest")
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
@@ -109,17 +112,8 @@ class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues 
     assume(fhirServerIsAvailable)
     val lMappingJob: FhirMappingJob = FhirMappingJobManager.readMappingJobFromFile(testScheduleMappingJobFilePath)
 
-    // I do the following dirty thing because our data reading mechanism should both handle the relative paths while running and while testing.
-    val tasks: Seq[FhirMappingTask] = lMappingJob.tasks.map { task =>
-      val lFileSystemSource = task.sourceContext("source").asInstanceOf[FileSystemSource]
-      FhirMappingTask(task.mappingRef,
-        Map("source" -> FileSystemSource(lFileSystemSource.path, lFileSystemSource.sourceType,
-          FileSystemSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri,
-            Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
-    }
-
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling,  Some(mappingJobScheduler))
-    fhirMappingJobManager.scheduleMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
+    fhirMappingJobManager.scheduleMappingJob(tasks = lMappingJob.mappings, sourceSettings = dataSourceSettings, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
     scheduler.start() //job set to run every minute
     Thread.sleep(60000) //wait for the job to be executed once
 

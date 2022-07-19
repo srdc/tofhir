@@ -19,7 +19,7 @@ class Load extends Command {
       try {
         val mappingJob = FhirMappingJobManager.readMappingJobFromFile(filePath)
         println("The following FhirMappingJob successfully loaded.")
-        val newContext = CommandExecutionContext(context.toFhirEngine, Some(mappingJob), Load.getMappingNameUrlTuples(mappingJob.tasks, context.toFhirEngine.mappingRepository))
+        val newContext = CommandExecutionContext(context.toFhirEngine, Some(mappingJob), Load.getMappingNameUrlTuples(mappingJob.mappings, context.toFhirEngine.mappingRepository))
         println(Info.serializeMappingJobToCommandLine(newContext))
         newContext
       } catch {

@@ -58,17 +58,20 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     }
   }
 
-  val dataSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data",
-    Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString)
+  val dataSourceSettings =
+    Map(
+      "source" ->
+        FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data", Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString)
+    )
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", writeErrorHandling = MappingErrorHandling.CONTINUE)
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = "patients.csv", sourceType = SourceFileFormats.CSV, dataSourceSettings))
+    sourceContext = Map("source" -> FileSystemSource(path = "patients.csv"))
   )
   val otherObservationMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv", sourceType = SourceFileFormats.CSV, settings = dataSourceSettings))
+    sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv"))
   )
   implicit val actorSystem: ActorSystem = ActorSystem("FhirMappingJobManagerTest")
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
@@ -77,19 +80,24 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
       .getOrElse(false)
 
   val testMappingJobFilePath: String = getClass.getResource("/test-mappingjob.json").toURI.getPath
-  val testScheduleMappingJobFilePath: String = getClass.getResource("/test-schedule-mappingjob.json").toURI.getPath
 
-  val fhirMappingJob: FhirMappingJob = FhirMappingJob(id = "test-mapping-job",
-    schedulingSettings = Option.empty,
-    sourceSettings = dataSourceSettings,
-    sinkSettings = fhirSinkSettings,
-    mappings = Seq(FileSourceMappingDefinition(patientMappingTask.mappingRef, patientMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path),
-      FileSourceMappingDefinition(otherObservationMappingTask.mappingRef, otherObservationMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path)),
+  val fhirMappingJob: FhirMappingJob =
+    FhirMappingJob(
+      id = "test-mapping-job",
+      schedulingSettings = Option.empty,
+      sourceSettings = dataSourceSettings,
+      sinkSettings = fhirSinkSettings,
+      mappings = Seq(
+      patientMappingTask,
+      otherObservationMappingTask
+      //FileSourceMappingDefinition(patientMappingTask.mappingRef, patientMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path),
+      //FileSourceMappingDefinition(otherObservationMappingTask.mappingRef, otherObservationMappingTask.sourceContext("source").asInstanceOf[FileSystemSource].path)
+      ),
     mappingErrorHandling = MappingErrorHandling.CONTINUE)
 
   "A FhirMappingJobManager" should "execute the patient mapping task and return the results" in {
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask, sourceSettings =  dataSourceSettings) map { results =>
       results.size shouldBe 10
       val patient1 = results.head
       FHIRUtil.extractResourceType(patient1) shouldBe "Patient"
@@ -112,7 +120,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
 
   it should "execute the other observation mapping task and return the results" in {
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObservationMappingTask) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObservationMappingTask, sourceSettings =  dataSourceSettings) map { results =>
       results.size shouldBe 14
       val observation1 = results.head
       FHIRUtil.extractResourceType(observation1) shouldBe "Observation"
@@ -139,7 +147,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     assume(fhirServerIsAvailable)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingJob(tasks = Seq(patientMappingTask, otherObservationMappingTask), sinkSettings = fhirSinkSettings) flatMap { response =>
+    fhirMappingJobManager.executeMappingJob(tasks = Seq(patientMappingTask, otherObservationMappingTask), sourceSettings =  dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
       onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p8")).executeAndReturnResource() flatMap { p1Resource =>
         FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p8")
         FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "female"
@@ -166,7 +174,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     f.exists() shouldBe true
 
     val lMappingJobs = FhirMappingJobManager.readMappingJobFromFile(lFileName)
-    lMappingJobs.tasks.size shouldBe 2
+    lMappingJobs.mappings.size shouldBe 2
     f.delete() shouldBe true
   }
 
@@ -174,15 +182,10 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     val lMappingJob = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
 
     // I do the following dirty thing because our data reading mechanism should both handle the relative paths while running and while testing.
-    val lTask = lMappingJob.tasks.head
-    val lFileSystemSource = lTask.sourceContext("source").asInstanceOf[FileSystemSource]
-    val task = FhirMappingTask(lTask.mappingRef,
-      Map("source" -> FileSystemSource(lFileSystemSource.path, lFileSystemSource.sourceType,
-        FileSystemSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri,
-          Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
+    val lTask = lMappingJob.mappings.head
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = task) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = lTask, sourceSettings = lMappingJob.sourceSettings) map { results =>
       results.size shouldBe 10
     }
   }
@@ -191,17 +194,8 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec {
     assume(fhirServerIsAvailable)
     val lMappingJob = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
 
-    // I do the following dirty thing because our data reading mechanism should both handle the relative paths while running and while testing.
-    val tasks = lMappingJob.tasks.map { task =>
-      val lFileSystemSource = task.sourceContext("source").asInstanceOf[FileSystemSource]
-      FhirMappingTask(task.mappingRef,
-        Map("source" -> FileSystemSource(lFileSystemSource.path, lFileSystemSource.sourceType,
-          FileSystemSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri,
-            Paths.get(getClass.getResource(lFileSystemSource.settings.dataFolderPath).toURI).normalize().toAbsolutePath.toString))))
-    }
-
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
-    fhirMappingJobManager.executeMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings) flatMap { unit =>
+    fhirMappingJobManager.executeMappingJob(tasks = lMappingJob.mappings, sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings) flatMap { unit =>
       unit shouldBe()
       deleteResources()
     }

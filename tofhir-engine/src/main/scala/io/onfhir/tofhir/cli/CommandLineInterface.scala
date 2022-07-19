@@ -2,7 +2,7 @@ package io.onfhir.tofhir.cli
 
 import io.onfhir.tofhir.ToFhirEngine
 import io.onfhir.tofhir.engine.{FhirMappingJobManager, MappingJobScheduler}
-import io.onfhir.tofhir.model.StreamingSourceSettings
+import io.onfhir.tofhir.model.KafkaSourceSettings
 import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.MappingException
 
@@ -27,7 +27,7 @@ object CommandLineInterface {
           val mappingJob = FhirMappingJobManager.readMappingJobFromFile(mappingJobFilePath.get)
           CommandExecutionContext(toFhirEngine = toFhirEngine,
             fhirMappingJob = Some(mappingJob),
-            mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJob.tasks, toFhirEngine.mappingRepository))
+            mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJob.mappings, toFhirEngine.mappingRepository))
         } catch {
           case _: FileNotFoundException =>
             println(s"The file cannot be found at the specified path found in the config:${mappingJobFilePath.get}")
@@ -89,11 +89,11 @@ object CommandLineInterface {
     if(mappingJob.schedulingSettings.isEmpty) {
       val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
         toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
-      if (mappingJob.sourceSettings.isInstanceOf[StreamingSourceSettings]) {
-        val streamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
+      if (mappingJob.sourceSettings.isInstanceOf[KafkaSourceSettings]) {
+        val streamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = mappingJob.mappings, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings)
         streamingQuery.awaitTermination()
       } else {
-        val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
+        val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.mappings, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings)
         Await.result(f, Duration.Inf)
       }
     } else {
@@ -103,7 +103,7 @@ object CommandLineInterface {
 
       val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
         toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
-      fhirMappingJobManager.scheduleMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings, schedulingSettings = mappingJob.schedulingSettings.get)
+      fhirMappingJobManager.scheduleMappingJob(tasks = mappingJob.mappings, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings, schedulingSettings = mappingJob.schedulingSettings.get)
       scheduler.start()
     }
 

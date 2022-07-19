@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.cli
 
-import io.onfhir.tofhir.model.{DataSourceSettings, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSourceSettings, SqlSourceSettings}
+import io.onfhir.tofhir.model.{DataSourceSettings, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSourceSettings, KafkaSourceSettings, SqlSourceSettings}
 
 import scala.util.{Failure, Success}
 
@@ -51,21 +51,26 @@ object Info {
       throw new IllegalStateException("!!! I am trying to serialize the MappingJob from the context, but it is not there!!!")
     }
     val mj = context.fhirMappingJob.get
-    val sourceSettingsStr = mj.sourceSettings match {
-      case settings: FileSystemSourceSettings =>
-        s"\tFile System Source Settings:\n" +
+    val sourceSettingsStr = mj.sourceSettings.map {
+      case (sourceAlias, settings: FileSystemSourceSettings) =>
+        s"\tFile System Source Settings for '$sourceAlias':\n" +
           s"\t\tName: ${settings.name},\n" +
           s"\t\tSource URI: ${settings.sourceUri},\n" +
           s"\t\tData Folder Path: ${settings.dataFolderPath}\n"
-      case settings: SqlSourceSettings =>
-        s"\tSql Source Settings:\n" +
+      case  (sourceAlias,settings: SqlSourceSettings) =>
+        s"\tSql Source Settings for '$sourceAlias':\n" +
           s"\t\tName: ${settings.name},\n" +
           s"\t\tSource URI: ${settings.sourceUri},\n" +
           s"\t\tDatabase URL: ${settings.databaseUrl},\n" +
           s"\t\tUsername: ${settings.username},\n" +
           s"\t\tPassword: ********\n"
-      case _: DataSourceSettings => "\tNo Source Settings\n"
-    }
+      case (sourceAlias, settings:KafkaSourceSettings) =>
+        s"\tKafka Source Settings for '$sourceAlias':\n" +
+          s"\t\tName: ${settings.name},\n" +
+          s"\t\tSource URI: ${settings.sourceUri},\n" +
+          s"\t\tBootstrap servers: ${settings.bootstrapServers}\n"
+      case  _ => "\tNo Source Settings\n"
+    }.mkString("\n")
     val sinkSettingsStr = mj.sinkSettings match {
       case settings: FhirRepositorySinkSettings =>
         s"\tFHIR Repository URL: ${settings.fhirRepoUrl}\n"

@@ -34,7 +34,7 @@ import scala.concurrent.{Await, Future, duration}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
-class StreamingTest extends AnyFlatSpec with OptionValues with Inside with Inspectors with Matchers with BeforeAndAfterAll {
+class KafkaSourceTest extends AnyFlatSpec with OptionValues with Inside with Inspectors with Matchers with BeforeAndAfterAll {
 
   override protected def afterAll(): Unit = {
     if (adminClient != null) adminClient.close()
@@ -102,17 +102,19 @@ class StreamingTest extends AnyFlatSpec with OptionValues with Inside with Inspe
     .set("spark.ui.enabled", "false")
   val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
 
-  val streamingSourceSettings: StreamingSourceSettings = StreamingSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort")
+  val streamingSourceSettings =
+    Map("source" -> KafkaSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort"))
+
 
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", writeErrorHandling = MappingErrorHandling.CONTINUE)
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceContext = Map("source" -> StreamingSource(topicName = "patients", groupId = "tofhir", startingOffsets = "earliest", streamingSourceSettings))
+    sourceContext = Map("source" -> KafkaSource(topicName = "patients", groupId = "tofhir", startingOffsets = "earliest"))
   )
   val otherObservationMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-    sourceContext = Map("source" -> StreamingSource(topicName = "observations", groupId = "tofhir", startingOffsets = "earliest", settings = streamingSourceSettings))
+    sourceContext = Map("source" -> KafkaSource(topicName = "observations", groupId = "tofhir", startingOffsets = "earliest"))
   )
 
   implicit val actorSystem: ActorSystem = ActorSystem("StreamingTest")
@@ -185,7 +187,7 @@ class StreamingTest extends AnyFlatSpec with OptionValues with Inside with Inspe
 
   it should "consume patients and observations data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
-    val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = Seq(patientMappingTask, otherObservationMappingTask), sinkSettings = fhirSinkSettings)
+    val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = Seq(patientMappingTask, otherObservationMappingTask), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
     streamingQuery.awaitTermination(20000L) //wait for 30 seconds to consume and write to the fhir repo and terminate
   }
 

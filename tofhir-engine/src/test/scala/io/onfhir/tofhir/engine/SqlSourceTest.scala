@@ -57,8 +57,11 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   val testSqlMappingJobFilePath: String = getClass.getResource("/test-sql-mappingjob.json").toURI.getPath
 
-  val sqlSourceSettings: SqlSourceSettings = SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
-    databaseUrl = DATABASE_URL, username = "", password = "")
+  val sqlSourceSettings =
+    Map(
+      "source" ->
+        SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
+    )
 
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
 
@@ -73,11 +76,11 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
   // sql tablename mappings tasks
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-sql-mapping",
-    sourceContext = Map("source" -> SqlSource(tableName = Some("patients"), settings = sqlSourceSettings)))
+    sourceContext = Map("source" -> SqlSource(tableName = Some("patients"))))
 
   val otherObsMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-sql-mapping",
-    sourceContext = Map("source" -> SqlSource(tableName = Some("otherobservations"), settings = sqlSourceSettings)))
+    sourceContext = Map("source" -> SqlSource(tableName = Some("otherobservations"))))
 
   // sql query mappings tasks
   val careSiteMappingTask: FhirMappingTask = FhirMappingTask(
@@ -85,22 +88,22 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     sourceContext = Map("source" -> SqlSource(
       query = Some("select cs.care_site_id, cs.care_site_name, c.concept_code, c.vocabulary_id, c.concept_name, l.address_1, l.address_2, l.city, l.state, l.zip " +
         "from care_site cs, location l, concept c " +
-        "where cs.location_id = l.location_id and cs.place_of_service_concept_id = c.concept_id"), settings = sqlSourceSettings)))
+        "where cs.location_id = l.location_id and cs.place_of_service_concept_id = c.concept_id"))))
 
   val locationMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
     sourceContext = Map("source" -> SqlSource(
-      query = Some("select * from location"), settings = sqlSourceSettings)))
+      query = Some("select * from location"))))
 
   val procedureOccurrenceMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/procedure-occurrence-sql-mapping",
     sourceContext = Map("source" -> SqlSource(
       query = Some("select po.procedure_occurrence_id, po.visit_occurrence_id, po.person_id, c.concept_code, c.vocabulary_id, c.concept_name, " +
         "po.procedure_date, po.procedure_datetime, po.provider_id " +
-        "from procedure_occurrence po left join concept c on po.procedure_concept_id = c.concept_id"), settings = sqlSourceSettings)))
+        "from procedure_occurrence po left join concept c on po.procedure_concept_id = c.concept_id"))))
 
   "Patient mapping" should "should read data from SQL source and map it" in {
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask, sourceSettings = sqlSourceSettings) map { results =>
       results.size shouldBe 10
       val patient1 = results.head
       FHIRUtil.extractResourceType(patient1) shouldBe "Patient"
@@ -114,7 +117,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     //Send it to our fhir repo if they are also validated
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(tasks = Seq(patientMappingTask), sinkSettings = fhirSinkSetting)
+      .executeMappingJob(tasks = Seq(patientMappingTask), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
       .flatMap(_ => {
         //Delete patients
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -128,7 +131,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
   }
 
   "Other observations mapping" should "should read data from SQL source and map it" in {
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObsMappingTask) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObsMappingTask, sourceSettings = sqlSourceSettings) map { results =>
       results.size shouldBe 14
       val observation = results.head
       FHIRUtil.extractResourceType(observation) shouldBe "Observation"
@@ -141,7 +144,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
   it should "map test data and write it to FHIR repo successfully" in {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(tasks = Seq(otherObsMappingTask), sinkSettings = fhirSinkSetting)
+      .executeMappingJob(tasks = Seq(otherObsMappingTask), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
       .flatMap(_ => {
         // Delete all observations
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -164,7 +167,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   "Care site mapping" should "should read data from SQL source and map it" in {
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = careSiteMappingTask) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = careSiteMappingTask, sourceSettings = sqlSourceSettings) map { results =>
       results.size shouldBe 2
       val organization1 = results.head
       FHIRUtil.extractResourceType(organization1) shouldBe "Organization"
@@ -178,7 +181,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     //Send it to our fhir repo if they are also validated
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(tasks = Seq(careSiteMappingTask), sinkSettings = fhirSinkSetting)
+      .executeMappingJob(tasks = Seq(careSiteMappingTask), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
       .flatMap(_ => {
         //Delete care sites
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -193,7 +196,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   "Location mapping" should "should read data from SQL source and map it" in {
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = locationMappingTask) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = locationMappingTask, sourceSettings = sqlSourceSettings) map { results =>
       results.size shouldBe 5
       val location = results.head
       FHIRUtil.extractResourceType(location) shouldBe "Location"
@@ -205,7 +208,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
   it should "map test data and write it to FHIR repo successfully" in {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(tasks = Seq(locationMappingTask), sinkSettings = fhirSinkSetting)
+      .executeMappingJob(tasks = Seq(locationMappingTask), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
       .flatMap(_ => {
         //Delete locations
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -220,7 +223,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   "Procedure occurrence mapping" should "should read data from SQL source and map it" in {
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = procedureOccurrenceMappingTask) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = procedureOccurrenceMappingTask, sourceSettings = sqlSourceSettings) map { results =>
       results.size shouldBe 5
       val procedureOccurrence = results.head
       FHIRUtil.extractResourceType(procedureOccurrence) shouldBe "Procedure"
@@ -234,7 +237,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
   it should "map test data and write it to FHIR repo successfully" in {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(tasks = Seq(procedureOccurrenceMappingTask), sinkSettings = fhirSinkSetting)
+      .executeMappingJob(tasks = Seq(procedureOccurrenceMappingTask), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
       .flatMap(_ => {
         //Delete procedures
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -251,17 +254,9 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
     assume(fhirServerIsAvailable)
     val lMappingJob = FhirMappingJobManager.readMappingJobFromFile(testSqlMappingJobFilePath)
 
-    // I do the following dirty thing because our data reading mechanism should both handle the relative paths while running and while testing.
-    val tasks = lMappingJob.tasks.map { task =>
-      val lFileSystemSource = task.sourceContext("source").asInstanceOf[SqlSource]
-      FhirMappingTask(task.mappingRef,
-        Map("source" -> SqlSource(lFileSystemSource.tableName, lFileSystemSource.query,
-          SqlSourceSettings(lFileSystemSource.settings.name, lFileSystemSource.settings.sourceUri, lFileSystemSource.settings.databaseUrl,
-            lFileSystemSource.settings.username, lFileSystemSource.settings.password))))
-    }
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
-    fhirMappingJobManager.executeMappingJob(tasks = tasks, sinkSettings = lMappingJob.sinkSettings) flatMap { unit =>
+    fhirMappingJobManager.executeMappingJob(tasks = lMappingJob.mappings, sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings) flatMap { unit =>
       //Delete written resources
       var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
       (1 to 10).foreach { i =>

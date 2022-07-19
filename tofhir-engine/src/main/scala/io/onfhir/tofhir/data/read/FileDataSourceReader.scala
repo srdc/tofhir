@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.data.read
 
 import com.typesafe.scalalogging.Logger
-import io.onfhir.tofhir.model.{FileSystemSource, SourceFileFormats}
+import io.onfhir.tofhir.model.{FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -13,7 +13,7 @@ import java.time.LocalDateTime
  *
  * @param spark Spark session
  */
-class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[FileSystemSource] {
+class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[FileSystemSource, FileSystemSourceSettings] {
 
   private val logger: Logger = Logger(this.getClass)
 
@@ -24,8 +24,8 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    * @param schema        Optional schema for the source
    * @return
    */
-  override def read(mappingSource: FileSystemSource, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
-    val dataFolderPath = Paths.get(mappingSource.settings.dataFolderPath).normalize().toString
+  override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
+    val dataFolderPath = Paths.get(sourceSettings.dataFolderPath).normalize().toString
     val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
     val finalPath = Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString
 

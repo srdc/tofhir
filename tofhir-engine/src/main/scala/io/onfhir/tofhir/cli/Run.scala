@@ -22,7 +22,7 @@ class Run extends Command {
 
         val runningStatus = if (args.isEmpty) {
           // Execute all tasks in the mapping job
-          val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.tasks, sinkSettings = mappingJob.sinkSettings)
+          val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.mappings, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings)
           Option.empty[FhirMappingTask] -> f
         } else {
           // Understand whether the argument is the name or the URL of the mapping and then find/execute it.
@@ -34,12 +34,12 @@ class Run extends Command {
           } else {
             args.head
           }
-          val task = mappingJob.tasks.find(_.mappingRef == mappingUrl)
+          val task = mappingJob.mappings.find(_.mappingRef == mappingUrl)
           if (task.isEmpty) {
             println(s"There is no such mapping: $mappingUrl")
             task -> Future.failed(new IllegalArgumentException(s"The mapping URL: $mappingUrl cannot be found!"))
           } else {
-            val f = fhirMappingJobManager.executeMappingTask(task = task.get, sinkSettings = mappingJob.sinkSettings)
+            val f = fhirMappingJobManager.executeMappingTask(task = task.get, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings)
             task -> f
           }
         }

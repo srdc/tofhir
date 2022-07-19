@@ -1,10 +1,12 @@
 {
   "id": "test-mapping-job",
   "sourceSettings": {
-    "jsonClass": "FileSystemSourceSettings",
-    "name": "test-source",
-    "sourceUri": "https://aiccelerate.eu/data-integration-suite/test-data",
-    "dataFolderPath": "/test-data"
+    "source": {
+      "jsonClass": "FileSystemSourceSettings",
+      "name": "test-source",
+      "sourceUri": "https://aiccelerate.eu/data-integration-suite/test-data",
+      "dataFolderPath": "./tofhir-engine/src/test/resources/test-data"
+    }
   },
   "sinkSettings": {
     "jsonClass": "FhirRepositorySinkSettings",
@@ -13,14 +15,22 @@
   },
   "mappings": [
     {
-      "jsonClass": "FileSourceMappingDefinition",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-      "filePath": "patients.csv"
+      "sourceContext": {
+        "source": {
+          "jsonClass": "FileSystemSource",
+          "path": "patients.csv"
+        }
+      }
     },
     {
-      "jsonClass": "FileSourceMappingDefinition",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-      "filePath": "other-observations.csv"
+      "sourceContext": {
+        "source": {
+          "jsonClass": "FileSystemSource",
+          "path": "other-observations.csv"
+        }
+      }
     }
   ],
   "mappingErrorHandling": "halt"

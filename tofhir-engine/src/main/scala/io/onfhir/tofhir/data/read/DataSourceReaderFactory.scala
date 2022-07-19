@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.data.read
 
-import io.onfhir.tofhir.model.{FhirMappingSourceContext, FileSystemSource, SqlSource, StreamingSource}
+import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingSourceContext, FileSystemSource, FileSystemSourceSettings, KafkaSource, KafkaSourceSettings, SqlSource, SqlSourceSettings}
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -15,11 +15,11 @@ object DataSourceReaderFactory {
    * @param mappingSourceContext Mapping source context
    * @return
    */
-  def apply[T <: FhirMappingSourceContext](spark: SparkSession, mappingSourceContext: T): BaseDataSourceReader[T] = {
-    mappingSourceContext match {
-      case _: FileSystemSource => new FileDataSourceReader(spark).asInstanceOf[BaseDataSourceReader[T]]
-      case _: SqlSource => new SqlSourceReader(spark).asInstanceOf[BaseDataSourceReader[T]]
-      case _: StreamingSource => new StreamingSourceReader(spark).asInstanceOf[BaseDataSourceReader[T]]
+  def apply[T <: FhirMappingSourceContext, S<:DataSourceSettings](spark: SparkSession, mappingSourceContext: T, sourceSettings:S): BaseDataSourceReader[T,S] = {
+    (mappingSourceContext -> sourceSettings) match {
+      case (_: FileSystemSource, _:FileSystemSourceSettings) => new FileDataSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]
+      case (_: SqlSource, _:SqlSourceSettings) => new SqlSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]
+      case (_: KafkaSource, _:KafkaSourceSettings) => new KafkaSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]
       case _ => throw new NotImplementedError()
     }
   }
