@@ -68,7 +68,7 @@
         <!--Dependency versions-->
         <scala-logging.version>3.9.4</scala-logging.version>
         <onfhir.version>3.2-SNAPSHOT</onfhir.version>
-        <fhir-template-engine.version>1.0-SNAPSHOT</fhir-template-engine.version>
+        <onfhir-template-engine.version>1.0-SNAPSHOT</onfhir-template-engine.version>
         <json4s.version>3.7.0-M11</json4s.version>
         <scalatest.version>3.1.4</scalatest.version>
         <spark.version>3.2.1</spark.version>
@@ -201,8 +201,8 @@
             </dependency>
             <dependency>
                 <groupId>io.onfhir</groupId>
-                <artifactId>fhir-template-engine_${scala.binary.version}</artifactId>
-                <version>${fhir-template-engine.version}</version>
+                <artifactId>onfhir-template-engine_${scala.binary.version}</artifactId>
+                <version>${onfhir-template-engine.version}</version>
             </dependency>
 
             <!-- JSON4S -->

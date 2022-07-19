@@ -33,7 +33,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
       .foreachPartition { partition: Iterator[String] =>
         import Execution.actorSystem
         implicit val executionContext = actorSystem.dispatcher
-        val onFhirClient = OnFhirNetworkClient.apply(sinkSettings.fhirRepoUrl) // A FhirClient for each partition
+        val onFhirClient = sinkSettings.createOnFhirClient  // A FhirClient for each partition
         partition
           .grouped(ToFhirConfig.fhirWriterBatchGroupSize)
           .foreach(rowGroup => {

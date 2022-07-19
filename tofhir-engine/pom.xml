@@ -119,7 +119,7 @@
         </dependency>
         <dependency>
             <groupId>io.onfhir</groupId>
-            <artifactId>fhir-template-engine_${scala.binary.version}</artifactId>
+            <artifactId>onfhir-template-engine_${scala.binary.version}</artifactId>
         </dependency>
 
         <!-- JSON4S -->
