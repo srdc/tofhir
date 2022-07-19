@@ -89,7 +89,7 @@ object CommandLineInterface {
     if(mappingJob.schedulingSettings.isEmpty) {
       val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
         toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
-      if (mappingJob.sourceSettings.isInstanceOf[KafkaSourceSettings]) {
+      if (mappingJob.sourceSettings("source").isInstanceOf[KafkaSourceSettings]) {
         val streamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = mappingJob.mappings, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings)
         streamingQuery.awaitTermination()
       } else {
