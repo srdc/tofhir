@@ -1,0 +1,30 @@
+{
+  "id": "pilot2-mapping-streaming-job",
+  "sourceSettings": {
+    "source": {
+      "jsonClass": "FileSystemSourceSettings",
+      "name": "pilot2-source",
+      "sourceUri": "https://aiccelerate.eu/data-integration-suite/pilot2-data",
+      "dataFolderPath": "./src/test/resources/test-data",
+      "asStream": true
+    }
+  },
+  "sinkSettings": {
+    "jsonClass": "FhirRepositorySinkSettings",
+    "fhirRepoUrl": "http://localhost:8081/fhir",
+    "writeErrorHandling": "continue"
+  },
+  "mappingErrorHandling": "continue",
+  "mappings": [
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/patient-mapping",
+      "sourceContext": {
+        "source": {
+          "jsonClass": "FileSystemSource",
+          "path": "patients_csv",
+          "fileFormat": "csv"
+        }
+      }
+    }
+  ]
+}

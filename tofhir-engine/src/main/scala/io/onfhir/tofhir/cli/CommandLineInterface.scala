@@ -95,7 +95,7 @@ object CommandLineInterface {
           toFhirEngine.sparkSession,
           mappingJob.mappingErrorHandling
         )
-      if (mappingJob.sourceSettings("source").isInstanceOf[KafkaSourceSettings]) {
+      if (mappingJob.sourceSettings.exists(_._2.asStream)) {
         val streamingQuery =
           fhirMappingJobManager
             .startMappingJobStream(

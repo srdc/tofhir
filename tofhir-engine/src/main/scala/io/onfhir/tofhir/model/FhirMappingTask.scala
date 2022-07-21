@@ -15,11 +15,12 @@ trait FhirMappingSourceContext extends Serializable
 /**
  * Context/configuration for one of the source of the mapping that will read the source data from file system
  *
- * @param path       File path to the source file
- * @param sourceType Source format for the file See[SourceFileFormats]
+ * @param path        File path to the source file  e.g. patients.csv
+ * @param fileFormat  Format of the file (csv | json | parquet) if it can not be inferred from path e.g. csv
+ * @param options     Further options for the format (Spark Data source options for the format e.g. For csv -> https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option)
  */
-case class FileSystemSource(path: String) extends FhirMappingSourceContext {
-  def sourceType:String = path.split('.').last
+case class FileSystemSource(path: String, fileFormat:Option[String] = None, options:Map[String, String] = Map.empty[String, String]) extends FhirMappingSourceContext {
+  def sourceType:String = fileFormat.getOrElse(path.split('.').last)
 }
 /**
  * Context/configuration for one of the source of the mapping that will read the source data from an SQL database

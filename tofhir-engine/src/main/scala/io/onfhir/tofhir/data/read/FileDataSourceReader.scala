@@ -1,6 +1,5 @@
 package io.onfhir.tofhir.data.read
 
-import com.typesafe.scalalogging.Logger
 import io.onfhir.tofhir.model.{FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -15,8 +14,6 @@ import java.time.LocalDateTime
  */
 class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[FileSystemSource, FileSystemSourceSettings] {
 
-  private val logger: Logger = Logger(this.getClass)
-
   /**
    * Read the source data
    *
@@ -25,29 +22,48 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    * @return
    */
   override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
+    //Construct final path to the folder or file
     val dataFolderPath = Paths.get(sourceSettings.dataFolderPath).normalize().toString
     val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
     val finalPath = Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString
 
-    var inferSchema = false
-    var enforceSchema = true
-    if(schema.isEmpty) {
-      logger.warn("I would like to have a schema definition while reading data from the file system. But you did not provide, hence I will try to infer the schema and read data accordingly.")
-      inferSchema = true
-      enforceSchema = false
-    }
-
+    //Based on source type
     mappingSource.sourceType match {
-      case SourceFileFormats.CSV =>
-        spark.read
-          .option("header", true) //TODO make this optional
-          .option("inferSchema", inferSchema)
-          .option("enforceSchema", enforceSchema) //Enforce the given schema
-          .schema(schema.orNull)
-          .csv(finalPath)
-      case SourceFileFormats.JSON => spark.read.schema(schema.orNull).json(finalPath)
-      case SourceFileFormats.PARQUET => spark.read.schema(schema.orNull).parquet(finalPath)
-      case _ => throw new NotImplementedError()
-    }
+        case SourceFileFormats.CSV =>
+          //Options that we infer for csv
+          val inferSchema = schema.isEmpty
+          val enforceSchema = schema.isDefined
+          val includeHeader = mappingSource.options.get("header").forall(_ == "true")
+
+          //Other options
+          val otherOptions = mappingSource.options.filterNot(o => o._1 == "header" || o._1 == "inferSchema" || o._1 == "enforceSchema")
+          if(sourceSettings.asStream)
+            spark.readStream
+              .option("header", includeHeader)
+              .option("inferSchema", inferSchema)
+              .option("enforceSchema", enforceSchema) //Enforce the given schema
+              .options(otherOptions)
+              .schema(schema.orNull)
+              .csv(finalPath)
+          else
+            spark.read
+              .option("header", includeHeader)
+              .option("inferSchema", inferSchema)
+              .option("enforceSchema", enforceSchema) //Enforce the given schema
+              .options(otherOptions)
+              .schema(schema.orNull)
+              .csv(finalPath)
+        case SourceFileFormats.JSON =>
+          if(sourceSettings.asStream)
+            spark.readStream.options(mappingSource.options).schema(schema.orNull).json(finalPath)
+          else
+            spark.read.options(mappingSource.options).schema(schema.orNull).json(finalPath)
+        case SourceFileFormats.PARQUET =>
+          if(sourceSettings.asStream)
+            spark.readStream.options(mappingSource.options).schema(schema.orNull).parquet(finalPath)
+          else
+            spark.read.options(mappingSource.options).schema(schema.orNull).parquet(finalPath)
+        case _ => throw new NotImplementedError()
+      }
   }
 }

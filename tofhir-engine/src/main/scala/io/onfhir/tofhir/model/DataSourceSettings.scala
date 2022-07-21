@@ -18,6 +18,10 @@ trait DataSourceSettings {
   val sourceUri: String
 
   /**
+   * Whether the data is coming in streaming mode
+   */
+  val asStream:Boolean = false
+  /**
    * Return the context params that will be supplied to mapping tasks
    *
    * @return
@@ -33,8 +37,9 @@ trait DataSourceSettings {
  * @param name           Human friendly name for the source organization for data source
  * @param sourceUri      Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
  * @param dataFolderPath Path to the folder all source data is located
+ * @param asStream       Whether to listen the given folders for new files and run the mapping in stream mode
  */
-case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderPath: String) extends DataSourceSettings
+case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderPath: String, override val asStream:Boolean=false) extends DataSourceSettings
 
 /**
  *
@@ -52,5 +57,7 @@ case class SqlSourceSettings(name: String, sourceUri: String, databaseUrl: Strin
  * @param sourceUri        Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
  * @param bootstrapServers Kafka bootstrap server(s) with port, may be comma seperated list (localhost:9092,localhost:9091)
  */
-case class KafkaSourceSettings(name: String, sourceUri: String, bootstrapServers: String) extends DataSourceSettings
+case class KafkaSourceSettings(name: String, sourceUri: String, bootstrapServers: String) extends DataSourceSettings {
+  override val asStream: Boolean = true
+}
 
