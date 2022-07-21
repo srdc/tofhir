@@ -1,0 +1,57 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/mapping-using-identity-service",
+  "name": "mapping-using-identity-service",
+  "title": "Mapping of schema Other Observation to AIC-IntraOperativeObservation, AIC-MedicationAdministration, AIC-NEWSScore, AIC-PEWSScore and AIC-GlascowScale FHIR profiles",
+  "source": [{
+    "alias": "source",
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-other-observation"
+  }],
+  "context": {
+    "obsConceptMap":  {
+      "category": "concept-map",
+      "url": "./other-observation-concept-map.csv"
+    }
+  },
+  "mapping": [
+    {
+      "precondition": {
+        "name": "isSimpleObservation",
+        "language": "text/fhirpath",
+        "expression": "code != '9269-2' and code != '313002' and code!= '35629' and code != '33834'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
+          "meta": {
+            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "{{mpp:getConcept(%obsConceptMap, code, 'source_system')}}",
+                "code": "{{code}}",
+                "display": "{{? trms:lookupDisplay('119323008','http://snomed.info/sct','de')}}"
+              }
+            ]
+          },
+          "subject": {
+            "reference": "{{idxs:resolveIdentifier('Patient', pid, 'https://aiccelerate.eu/data-integration-suite/test-data')}}"
+          },
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
+          "valueQuantity": {
+            "value": "{{value.toDecimal()}}",
+            "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
+            "system": "http://unitsofmeasure.org",
+            "code": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}"
+          }
+        }
+      }
+    }
+  ]
+}

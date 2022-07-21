@@ -1,7 +1,6 @@
 package io.onfhir.tofhir.model
 
 import akka.actor.ActorSystem
-import io.onfhir.api.client.IOnFhirClient
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 
@@ -19,7 +18,7 @@ trait FhirSinkSettings
  */
 case class FhirRepositorySinkSettings(fhirRepoUrl: String,
                                       securitySettings: Option[IFhirRepositorySecuritySettings] = None,
-                                      writeErrorHandling: MappingErrorHandling) extends FhirSinkSettings {
+                                      writeErrorHandling: MappingErrorHandling) extends FhirSinkSettings with IdentityServiceSettings with TerminologyServiceSettings {
   /**
    * Create an OnFhir client
    * @param actorSystem

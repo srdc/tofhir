@@ -1,10 +1,11 @@
 package io.onfhir.tofhir.engine
 
 import io.onfhir.api.Resource
+import io.onfhir.api.service.{IFhirIdentityService, IFhirTerminologyService}
 import io.onfhir.expression.FhirExpressionException
 import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.template.FhirTemplateExpressionHandler
-import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingException, FhirMappingExpression}
+import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingException, FhirMappingExpression, IdentityServiceSettings, TerminologyServiceSettings}
 import io.onfhir.util.JsonFormatter._
 import org.json4s.JsonAST.JArray
 import org.json4s.jackson.Serialization
@@ -16,27 +17,36 @@ import scala.concurrent.Future
 /**
  * Mapping service for a specific FhirMapping together with contextual data and mapping scripts
  *
- * @param sources  List of source aliases
- * @param context  Context data
- * @param mappings Mapping scripts
+ * @param sources                     List of source aliases
+ * @param context                     Context data for mappings
+ * @param mappings                    Mapping scripts
+ * @param terminologyServiceSettings  Settings for terminology service to use within mappings (e.g. lookupDisplay)
+ * @param identityServiceSettings     Settings for identity service to use within mappings (e.g. resolveIdentifier)
  */
 class FhirMappingService(
                           val sources: Seq[String],
                           context: Map[String, FhirMappingContext],
-                          mappings: Seq[FhirMappingExpression]
+                          mappings: Seq[FhirMappingExpression],
+                          terminologyServiceSettings: Option[TerminologyServiceSettings],
+                          identityServiceSettings: Option[IdentityServiceSettings]
                         ) extends IFhirMappingService {
+
+  lazy val terminologyService = terminologyServiceSettings.map(setting => IntegratedServiceFactory.createTerminologyService(setting))
+  lazy val identityService = identityServiceSettings.map(setting => IntegratedServiceFactory.createIdentityService(setting))
 
   /**
    * Template expression handler that will perform the mapping by executing the placeholder expressions
    */
-  val templateEngine =
+  lazy val templateEngine =
     new FhirTemplateExpressionHandler(
       context.filter(_._2.isInstanceOf[ConfigurationContext]).map(c => c._1 -> c._2.toContextObject), // Provide the static contexts
       Map(
         "mpp" -> new FhirMappingFunctionsFactory(context.filterNot(_._2.isInstanceOf[ConfigurationContext])),
         FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory,
         FhirPathNavFunctionsFactory.defaultPrefix -> FhirPathNavFunctionsFactory
-      ) //Add our mapping function library
+      ), //Add our mapping function library,
+      terminologyService,
+      identityService
     )
 
   /**

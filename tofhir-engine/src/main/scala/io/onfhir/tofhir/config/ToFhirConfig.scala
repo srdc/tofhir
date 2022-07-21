@@ -2,8 +2,10 @@ package io.onfhir.tofhir.config
 
 import com.typesafe.config.{Config, ConfigFactory}
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.Duration
 import scala.util.Try
-
+import scala.jdk.DurationConverters._
 object ToFhirConfig {
 
   protected val config: Config = ConfigFactory.load()
@@ -28,5 +30,10 @@ object ToFhirConfig {
 
   /** Path to the folder where the execution times of scheduled mapping jobs are kept. */
   lazy val mappingJobSyncTimesFolderPath: Option[String] = Try(config.getString("mapping-job-sync-times.folder-path")).toOption
+
+  /**
+   * Timeout for a single mapping
+   */
+  lazy val mappingTimeout:Duration = Try(config.getDuration("mapping-timeout").toScala).toOption.getOrElse(Duration.apply(5 , TimeUnit.SECONDS))
 
 }

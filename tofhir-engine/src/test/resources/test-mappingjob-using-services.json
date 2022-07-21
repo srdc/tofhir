@@ -1,0 +1,56 @@
+{
+  "id": "test-mapping-job",
+  "sourceSettings": {
+    "source": {
+      "jsonClass": "FileSystemSourceSettings",
+      "name": "test-source",
+      "sourceUri": "https://aiccelerate.eu/data-integration-suite/test-data",
+      "dataFolderPath": "./src/test/resources/test-data"
+    }
+  },
+  "sinkSettings": {
+    "jsonClass": "FhirRepositorySinkSettings",
+    "fhirRepoUrl": "http://localhost:8081/fhir",
+    "writeErrorHandling": "halt"
+  },
+  "terminologyServiceSettings": {
+    "jsonClass": "LocalFhirTerminologyServiceSettings",
+    "folderPath": "./src/test/resources/terminology-service",
+    "conceptMapFiles": [
+      {
+        "fileName": "sample-concept-map.csv",
+        "conceptMapUrl": "http://example.com/fhir/ConceptMap/sample1",
+        "sourceValueSet": "http://terminology.hl7.org/ValueSet/v2-0487",
+        "targetValueSet": "http://snomed.info/sct?fhir_vs"
+      }
+    ],
+    "codeSystemFiles": [
+      {
+        "fileName":"sample-code-system.csv",
+        "codeSystem": "http://snomed.info/sct"
+      }
+    ]
+  },
+  "useFhirSinkAsIdentityService": true,
+  "mappings": [
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+      "sourceContext": {
+        "source": {
+          "jsonClass": "FileSystemSource",
+          "path": "patients.csv"
+        }
+      }
+    },
+    {
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/mapping-using-identity-service",
+      "sourceContext": {
+        "source": {
+          "jsonClass": "FileSystemSource",
+          "path": "other-observations.csv"
+        }
+      }
+    }
+  ],
+  "mappingErrorHandling": "halt"
+}

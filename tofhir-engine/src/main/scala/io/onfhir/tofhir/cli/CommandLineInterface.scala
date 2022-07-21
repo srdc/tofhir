@@ -87,13 +87,35 @@ object CommandLineInterface {
     }
     val mappingJob = FhirMappingJobManager.readMappingJobFromFile(mappingJobFilePath.get)
     if(mappingJob.schedulingSettings.isEmpty) {
-      val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
-        toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling)
+      val fhirMappingJobManager =
+        new FhirMappingJobManager(
+          toFhirEngine.mappingRepository,
+          toFhirEngine.contextLoader,
+          toFhirEngine.schemaRepository,
+          toFhirEngine.sparkSession,
+          mappingJob.mappingErrorHandling
+        )
       if (mappingJob.sourceSettings("source").isInstanceOf[KafkaSourceSettings]) {
-        val streamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = mappingJob.mappings, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings)
+        val streamingQuery =
+          fhirMappingJobManager
+            .startMappingJobStream(
+              tasks = mappingJob.mappings,
+              sourceSettings = mappingJob.sourceSettings,
+              sinkSettings = mappingJob.sinkSettings,
+              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+              identityServiceSettings = mappingJob.getIdentityServiceSettings()
+            )
         streamingQuery.awaitTermination()
       } else {
-        val f = fhirMappingJobManager.executeMappingJob(tasks = mappingJob.mappings, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings)
+        val f =
+          fhirMappingJobManager
+            .executeMappingJob(
+              tasks = mappingJob.mappings,
+              sourceSettings = mappingJob.sourceSettings,
+              sinkSettings = mappingJob.sinkSettings,
+              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+              identityServiceSettings = mappingJob.getIdentityServiceSettings()
+            )
         Await.result(f, Duration.Inf)
       }
     } else {
@@ -101,9 +123,17 @@ object CommandLineInterface {
       val mappingJobSyncTimesURI: URI = Paths.get(mappingJobSyncTimes.get).toUri
       val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, mappingJobSyncTimesURI)
 
-      val fhirMappingJobManager = new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader,
-        toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
-      fhirMappingJobManager.scheduleMappingJob(tasks = mappingJob.mappings, sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings, schedulingSettings = mappingJob.schedulingSettings.get)
+      val fhirMappingJobManager =
+        new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader, toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
+      fhirMappingJobManager
+        .scheduleMappingJob(
+          tasks = mappingJob.mappings,
+          sourceSettings = mappingJob.sourceSettings,
+          sinkSettings = mappingJob.sinkSettings,
+          schedulingSettings = mappingJob.schedulingSettings.get,
+          terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+          identityServiceSettings = mappingJob.getIdentityServiceSettings()
+        )
       scheduler.start()
     }
 

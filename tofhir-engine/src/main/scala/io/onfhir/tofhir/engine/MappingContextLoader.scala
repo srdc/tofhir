@@ -3,6 +3,7 @@ package io.onfhir.tofhir.engine
 import com.fasterxml.jackson.dataformat.csv.{CsvMapper, CsvSchema}
 import com.typesafe.scalalogging.Logger
 import io.onfhir.tofhir.model._
+import io.onfhir.tofhir.util.CsvUtil
 
 import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,18 +52,7 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
    */
   private def readFromCSV(filePath: String): Future[Seq[Map[String, String]]] = {
     Future {
-      val csvFile = new File(filePath)
-      val csvMapper = new CsvMapper()
-      val csvSchema = CsvSchema.emptySchema().withHeader()
-
-      val javaList: java.util.List[java.util.Map[String, String]] =
-        csvMapper.readerFor(classOf[java.util.Map[String, String]]) // read each line into a Map[String, String]
-          .`with`(csvSchema) // where the key of the map will be the column name according to the first (header) row
-          .readValues(csvFile)
-          .readAll() // Read all lines as a List of Map
-      CollectionConverters.asScala(javaList)
-        .toSeq // convert the outer List to Scala Seq
-        .map(CollectionConverters.asScala(_).toMap) // convert each inner Java Map to Scala Map
+      CsvUtil.readFromCSV(filePath)
     }
   }
 
