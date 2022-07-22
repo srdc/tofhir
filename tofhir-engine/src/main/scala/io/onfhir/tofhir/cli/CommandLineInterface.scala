@@ -2,7 +2,7 @@ package io.onfhir.tofhir.cli
 
 import io.onfhir.tofhir.ToFhirEngine
 import io.onfhir.tofhir.engine.{FhirMappingJobManager, MappingJobScheduler}
-import io.onfhir.tofhir.model.KafkaSourceSettings
+import io.onfhir.tofhir.util.FhirMappingJobFormatter
 import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.MappingException
 
@@ -24,7 +24,7 @@ object CommandLineInterface {
     this.commandExecutionContext =
       if (mappingJobFilePath.isDefined) {
         try {
-          val mappingJob = FhirMappingJobManager.readMappingJobFromFile(mappingJobFilePath.get)
+          val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(mappingJobFilePath.get)
           CommandExecutionContext(toFhirEngine = toFhirEngine,
             fhirMappingJob = Some(mappingJob),
             mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJob.mappings, toFhirEngine.mappingRepository))
@@ -85,7 +85,7 @@ object CommandLineInterface {
       println("There are no jobs to run. Exiting...")
       System.exit(1)
     }
-    val mappingJob = FhirMappingJobManager.readMappingJobFromFile(mappingJobFilePath.get)
+    val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(mappingJobFilePath.get)
     if(mappingJob.schedulingSettings.isEmpty) {
       val fhirMappingJobManager =
         new FhirMappingJobManager(

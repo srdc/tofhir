@@ -1,7 +1,8 @@
 package io.onfhir.tofhir.cli
 
-import io.onfhir.tofhir.engine.{FhirMappingJobManager, IFhirMappingRepository}
+import io.onfhir.tofhir.engine.IFhirMappingRepository
 import io.onfhir.tofhir.model.FhirMappingTask
+import io.onfhir.tofhir.util.FhirMappingJobFormatter
 import org.json4s.MappingException
 
 import java.io.FileNotFoundException
@@ -17,7 +18,7 @@ class Load extends Command {
         println(s"There are more than one arguments to load command. I will only process: $filePath")
       }
       try {
-        val mappingJob = FhirMappingJobManager.readMappingJobFromFile(filePath)
+        val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(filePath)
         println("The following FhirMappingJob successfully loaded.")
         val newContext = CommandExecutionContext(context.toFhirEngine, Some(mappingJob), Load.getMappingNameUrlTuples(mappingJob.mappings, context.toFhirEngine.mappingRepository))
         println(Info.serializeMappingJobToCommandLine(newContext))

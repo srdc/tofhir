@@ -9,7 +9,7 @@ import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.config.MappingErrorHandling
 import io.onfhir.tofhir.model.{FhirMappingTask, FhirRepositorySinkSettings, SqlSource, SqlSourceSettings}
-import io.onfhir.tofhir.util.FhirMappingUtility
+import io.onfhir.tofhir.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import io.onfhir.util.JsonFormatter.formats
 import org.json4s.JsonAST.JObject
 import org.scalatest.BeforeAndAfterAll
@@ -252,7 +252,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   it should "execute the FhirMappingJob with SQL source and sink settings restored from a file" in {
     assume(fhirServerIsAvailable)
-    val lMappingJob = FhirMappingJobManager.readMappingJobFromFile(testSqlMappingJobFilePath)
+    val lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testSqlMappingJobFilePath)
 
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)

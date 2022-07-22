@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.cli
 
 import io.onfhir.tofhir.engine.FhirMappingJobManager
-import io.onfhir.tofhir.model.{FhirMappingTask, FhirRepositorySinkSettings}
+import io.onfhir.tofhir.model.FhirMappingTask
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

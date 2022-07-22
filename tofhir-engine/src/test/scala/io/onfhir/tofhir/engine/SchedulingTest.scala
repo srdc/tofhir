@@ -8,7 +8,7 @@ import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.model._
-import io.onfhir.tofhir.util.FhirMappingUtility
+import io.onfhir.tofhir.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import io.onfhir.util.JsonFormatter.formats
 import it.sauronsoftware.cron4j.Scheduler
 import org.apache.commons.io.FileUtils
@@ -110,7 +110,7 @@ class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues 
 
   it should "schedule a FhirMappingJob with cron and sink settings restored from a file" in {
     assume(fhirServerIsAvailable)
-    val lMappingJob: FhirMappingJob = FhirMappingJobManager.readMappingJobFromFile(testScheduleMappingJobFilePath)
+    val lMappingJob: FhirMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testScheduleMappingJobFilePath)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling,  Some(mappingJobScheduler))
     fhirMappingJobManager.scheduleMappingJob(tasks = lMappingJob.mappings, sourceSettings = dataSourceSettings, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)

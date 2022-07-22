@@ -10,7 +10,7 @@ import io.onfhir.path.util.FhirPathUtil
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.config.MappingErrorHandling
 import io.onfhir.tofhir.model._
-import io.onfhir.tofhir.util.FhirMappingUtility
+import io.onfhir.tofhir.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import io.onfhir.util.JsonFormatter.formats
 import org.scalatest.{Assertion, BeforeAndAfterAll}
 
@@ -173,17 +173,17 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   it should "save and read FhirMappingJob objects to/from a file" in {
     val lFileName = "tmp-mappingjob.json"
-    FhirMappingJobManager.saveMappingJobToFile(fhirMappingJob, lFileName)
+    FhirMappingJobFormatter.saveMappingJobToFile(fhirMappingJob, lFileName)
     val f = new File(lFileName)
     f.exists() shouldBe true
 
-    val lMappingJobs = FhirMappingJobManager.readMappingJobFromFile(lFileName)
+    val lMappingJobs = FhirMappingJobFormatter.readMappingJobFromFile(lFileName)
     lMappingJobs.mappings.size shouldBe 2
     f.delete() shouldBe true
   }
 
   it should "execute the FhirMappingJob restored from a file" in {
-    var lMappingJob = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
+    var lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobFilePath)
     lMappingJob = lMappingJob.copy(sourceSettings = dataSourceSettings)
 
     // I do the following dirty thing because our data reading mechanism should both handle the relative paths while running and while testing.
@@ -197,7 +197,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   it should "execute the FhirMappingJob with sink settings restored from a file" in {
     assume(fhirServerIsAvailable)
-    var lMappingJob = FhirMappingJobManager.readMappingJobFromFile(testMappingJobFilePath)
+    var lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobFilePath)
     lMappingJob = lMappingJob.copy(sourceSettings = dataSourceSettings)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
@@ -234,7 +234,7 @@ class FhirMappingJobManagerTest extends ToFhirTestSpec with BeforeAndAfterAll {
 
   it should "execute the FhirMappingJob using an identity service" in {
     assume(fhirServerIsAvailable)
-    var lMappingJob = FhirMappingJobManager.readMappingJobFromFile(testMappingJobWithIdentityServiceFilePath)
+    var lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobWithIdentityServiceFilePath)
     lMappingJob = lMappingJob.copy(sourceSettings = dataSourceSettings)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
