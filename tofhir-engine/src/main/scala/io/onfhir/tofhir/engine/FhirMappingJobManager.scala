@@ -395,15 +395,21 @@ object FhirMappingJobManager {
     Serialization
       .formats(
         ShortTypeHints(List(
+          //Sink settings
           classOf[FhirRepositorySinkSettings],
+          classOf[FileSystemSinkSettings],
+          //Source types
           classOf[FileSystemSource],
           classOf[KafkaSource],
           classOf[SqlSource],
+          //Source settings
           classOf[FileSystemSourceSettings],
           classOf[SqlSourceSettings],
           classOf[KafkaSourceSettings],
+          // Authorization types
           classOf[BearerTokenAuthorizationSettings],
           classOf[BasicAuthenticationSettings],
+          //Terminology setvices
           classOf[LocalFhirTerminologyServiceSettings]
      ))) +
       new EnumNameSerializer(MappingErrorHandling)

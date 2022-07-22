@@ -2,7 +2,6 @@ package io.onfhir.tofhir.data.write
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder}
-import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.engine.Execution
 import io.onfhir.tofhir.model.{FhirMappingException, FhirRepositorySinkSettings}

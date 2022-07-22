@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.data.write
 
-import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, FhirSinkSettings}
+import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSinkSettings}
 import org.apache.spark.sql.Dataset
 
 /**
@@ -24,6 +24,7 @@ object FhirWriterFactory {
   def apply(sinkSettings: FhirSinkSettings): BaseFhirWriter = {
     sinkSettings match {
       case frs: FhirRepositorySinkSettings => new FhirRepositoryWriter(frs)
+      case fsss:FileSystemSinkSettings => new FileSystemWriter(fsss)
       case _ => throw new NotImplementedError()
     }
   }

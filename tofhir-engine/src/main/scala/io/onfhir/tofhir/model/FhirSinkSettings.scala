@@ -10,6 +10,21 @@ import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 trait FhirSinkSettings
 
 /**
+ * Settings to write mapped FHIR resources to file system
+ * @param path                      Path to the folder or file to write the resources
+ * @param fileFormat                File format if not inferred from the path
+ * @param numOfPartitions           Number of partitions for the file (for distributed fs)
+ * @param options                   Further options (Spark data source write options)
+ */
+case class FileSystemSinkSettings(path:String,
+                                  fileFormat:Option[String] = None,
+                                  numOfPartitions:Int = 1,
+                                  options:Map[String,String] = Map.empty[String, String]) extends FhirSinkSettings {
+  def sinkType:String = fileFormat.getOrElse(path.split('.').last)
+
+}
+
+/**
  * Settings for a FHIR repository to store the mapped resources
  *
  * @param fhirRepoUrl         FHIR endpoint root url
