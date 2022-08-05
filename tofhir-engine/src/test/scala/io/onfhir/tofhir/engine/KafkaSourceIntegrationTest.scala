@@ -21,7 +21,7 @@ import org.apache.spark.sql.streaming.StreamingQuery
 import org.rnorth.ducttape.unreliables.Unreliables
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Assertion, BeforeAndAfterAll, Inside, Inspectors, OptionValues}
+import org.scalatest.{Assertion, BeforeAndAfterAll, Ignore, Inside, Inspectors, OptionValues}
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.utility.DockerImageName
 import io.onfhir.util.JsonFormatter.formats
@@ -34,7 +34,8 @@ import scala.concurrent.{Await, Future, duration}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
-class KafkaSourceTest extends AnyFlatSpec with OptionValues with Inside with Inspectors with Matchers with BeforeAndAfterAll {
+@Ignore
+class KafkaSourceIntegrationTest extends AnyFlatSpec with OptionValues with Inside with Inspectors with Matchers with BeforeAndAfterAll {
 
   override protected def afterAll(): Unit = {
     if (adminClient != null) adminClient.close()

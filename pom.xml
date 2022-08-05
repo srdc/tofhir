@@ -138,6 +138,21 @@
                             <goals>
                                 <goal>test</goal>
                             </goals>
+                            <configuration>
+                                <suffixes>
+                                    ^(IntegrationTest|IT)
+                                </suffixes>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>integration-test</id>
+                            <phase>integration-test</phase>
+                            <goals><goal>test</goal></goals>
+                            <configuration>
+                                <suffixes>
+                                    IntegrationTest|IT
+                                </suffixes>
+                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
