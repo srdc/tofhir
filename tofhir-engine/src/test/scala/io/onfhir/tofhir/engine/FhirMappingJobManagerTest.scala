@@ -6,12 +6,12 @@ import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
-import io.onfhir.path.util.FhirPathUtil
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.config.MappingErrorHandling
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import io.onfhir.util.JsonFormatter.formats
+import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
 
 import java.io.File
@@ -21,7 +21,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Try
 
-class FhirMappingJobManagerTest extends ToFhirTestSpec with BeforeAndAfterAll {
+class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
 
   private val logger: Logger = Logger(this.getClass)
 

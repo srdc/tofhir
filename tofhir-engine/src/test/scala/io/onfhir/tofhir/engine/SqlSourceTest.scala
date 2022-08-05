@@ -13,6 +13,7 @@ import io.onfhir.tofhir.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import io.onfhir.util.JsonFormatter.formats
 import org.json4s.JsonAST.JObject
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
@@ -21,7 +22,7 @@ import scala.concurrent.{Await, Future}
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Try, Using}
 
-class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
+class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
 
   val logger: Logger = Logger(this.getClass)
 
@@ -51,7 +52,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
       stm.execute(sql)
     } match {
       case Success(value) => value
-      case Failure(e)     => throw e
+      case Failure(e) => throw e
     }
   }
 
@@ -122,7 +123,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
         //Delete patients
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
         (1 to 10).foreach { i =>
-          batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i.toString )))
+          batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i.toString)))
         }
         batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
           res.httpStatus shouldBe StatusCodes.OK
@@ -149,7 +150,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
         // Delete all observations
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
         val obsSearchFutures = (1 to 10).map(i => {
-          onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p"+i))
+          onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p" + i))
             .executeAndReturnBundle()
         })
         Future.sequence(obsSearchFutures) flatMap { obsBundleList =>
@@ -186,7 +187,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
         //Delete care sites
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
         (1 to 2).foreach { i =>
-          batchRequest = batchRequest.entry(_.delete("Organization", FhirMappingUtility.getHashedId("Organization", i.toString )))
+          batchRequest = batchRequest.entry(_.delete("Organization", FhirMappingUtility.getHashedId("Organization", i.toString)))
         }
         batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
           res.httpStatus shouldBe StatusCodes.OK
@@ -213,7 +214,7 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
         //Delete locations
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
         (1 to 5).foreach { i =>
-          batchRequest = batchRequest.entry(_.delete("Location", FhirMappingUtility.getHashedId("Location", i.toString )))
+          batchRequest = batchRequest.entry(_.delete("Location", FhirMappingUtility.getHashedId("Location", i.toString)))
         }
         batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
           res.httpStatus shouldBe StatusCodes.OK
@@ -260,13 +261,13 @@ class SqlSourceTest extends ToFhirTestSpec with BeforeAndAfterAll {
       //Delete written resources
       var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
       (1 to 10).foreach { i =>
-        batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i.toString )))
+        batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i.toString)))
       }
       (1 to 2).foreach { i =>
-        batchRequest = batchRequest.entry(_.delete("Organization", FhirMappingUtility.getHashedId("Organization", i.toString )))
+        batchRequest = batchRequest.entry(_.delete("Organization", FhirMappingUtility.getHashedId("Organization", i.toString)))
       }
       (1 to 5).foreach { i =>
-        batchRequest = batchRequest.entry(_.delete("Location", FhirMappingUtility.getHashedId("Location", i.toString )))
+        batchRequest = batchRequest.entry(_.delete("Location", FhirMappingUtility.getHashedId("Location", i.toString)))
       }
       batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
         res.httpStatus shouldBe StatusCodes.OK

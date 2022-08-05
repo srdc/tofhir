@@ -5,37 +5,32 @@ import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
-import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
-import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
+import io.onfhir.tofhir.ToFhirTestSpec
+import io.onfhir.tofhir.config.MappingErrorHandling
 import io.onfhir.tofhir.engine.Execution.actorSystem.dispatcher
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.FhirMappingUtility
-import it.sauronsoftware.cron4j.Scheduler
+import io.onfhir.util.JsonFormatter.formats
 import org.apache.kafka.clients.admin.{AdminClient, AdminClientConfig, NewTopic}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.rnorth.ducttape.unreliables.Unreliables
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Assertion, BeforeAndAfterAll, Ignore, Inside, Inspectors, OptionValues}
+import org.scalatest.{Assertion, BeforeAndAfterAll, Ignore}
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.utility.DockerImageName
-import io.onfhir.util.JsonFormatter.formats
 
-import java.net.URI
 import java.time.Duration
-import java.util.{Collections, Properties, UUID}
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{Await, Future, duration}
+import java.util.{Collections, Properties, UUID}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Future, duration}
 import scala.util.Try
 
 @Ignore
-class KafkaSourceIntegrationTest extends AnyFlatSpec with OptionValues with Inside with Inspectors with Matchers with BeforeAndAfterAll {
+class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with BeforeAndAfterAll {
 
   override protected def afterAll(): Unit = {
     if (adminClient != null) adminClient.close()
@@ -79,31 +74,8 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with OptionValues with Insi
 
   val producer = new KafkaProducer[String, String](producerProperties, new StringSerializer, new StringSerializer)
   val consumer = new KafkaConsumer[String, String](consumerProperties, new StringDeserializer, new StringDeserializer)
-  //
 
-  val mappingErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
-  val fhirWriteErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
-
-  val repositoryFolderUri: URI = getClass.getResource(ToFhirConfig.mappingRepositoryFolderPath).toURI
-  val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri)
-
-  val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)
-
-  val schemaRepositoryURI: URI = getClass.getResource(ToFhirConfig.schemaRepositoryFolderPath).toURI
-  val schemaRepository = new SchemaFolderRepository(schemaRepositoryURI)
-
-  val scheduler = new Scheduler()
-  val mappingJobSyncTimesURI: URI = getClass.getResource(ToFhirConfig.mappingJobSyncTimesFolderPath.get).toURI
-  val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, mappingJobSyncTimesURI)
-
-  val sparkConf: SparkConf = new SparkConf()
-    .setAppName(ToFhirConfig.appName)
-    .setMaster(ToFhirConfig.sparkMaster)
-    .set("spark.driver.allowMultipleContexts", "false")
-    .set("spark.ui.enabled", "false")
-  val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-
-  val streamingSourceSettings =
+  val streamingSourceSettings: Map[String, KafkaSourceSettings] =
     Map("source" -> KafkaSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort"))
 
 

@@ -2,17 +2,15 @@ package io.onfhir.tofhir
 
 import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
-import io.onfhir.tofhir.engine.{FhirMappingFolderRepository, IFhirMappingRepository, IMappingContextLoader, MappingContextLoader, SchemaFolderRepository}
+import io.onfhir.tofhir.engine._
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inside, Inspectors, OptionValues}
-import org.scalatest.flatspec.AsyncFlatSpec
-import org.scalatest.matchers.should
 
 import java.net.URI
 
-abstract class ToFhirTestSpec extends AsyncFlatSpec with should.Matchers with
-  OptionValues with Inside with Inspectors {
+trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspectors {
 
   val mappingErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
   val fhirWriteErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT

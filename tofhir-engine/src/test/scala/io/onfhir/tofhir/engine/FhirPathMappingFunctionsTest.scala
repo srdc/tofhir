@@ -4,8 +4,9 @@ import io.onfhir.path.FhirPathEvaluator
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.model.{FhirMapping, FhirMappingContextDefinition}
 import org.json4s.{JNull, JObject}
+import org.scalatest.flatspec.AsyncFlatSpec
 
-class FhirPathMappingFunctionsTest extends ToFhirTestSpec {
+class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
 
   val labResultMapping: FhirMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
   val conceptMapContextDefinition: FhirMappingContextDefinition = labResultMapping.context("obsConceptMap")

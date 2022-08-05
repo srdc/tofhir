@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
+import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.model._
@@ -14,9 +15,8 @@ import it.sauronsoftware.cron4j.Scheduler
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
+import org.scalatest.Assertion
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should
-import org.scalatest.{Assertion, Inside, Inspectors, OptionValues}
 
 import java.io.File
 import java.net.URI
@@ -27,14 +27,14 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, Future}
 import scala.util.Try
 
-class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues with Inside with Inspectors  {
+class SchedulingTest extends AnyFlatSpec with ToFhirTestSpec {
 
   private def deleteResources(): Future[Assertion] = {
     var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
     // Delete all patients between p1-p10 and related observations
     val obsSearchFutures = (1 to 10).map(i => {
-      batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p"+i)))
-      onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p"+i))
+      batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i)))
+      onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p" + i))
         .executeAndReturnBundle()
     })
     Future.sequence(obsSearchFutures) flatMap { obsBundleList =>
@@ -44,9 +44,9 @@ class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues 
         )
       })
       // delete MedicationAdministration records by patient
-      val medicationAdminSearchFutures = List(1,2,4).map(i => {
-        batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p"+i)))
-        onFhirClient.search("MedicationAdministration").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p"+i))
+      val medicationAdminSearchFutures = List(1, 2, 4).map(i => {
+        batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i)))
+        onFhirClient.search("MedicationAdministration").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p" + i))
           .executeAndReturnBundle()
       })
       Future.sequence(medicationAdminSearchFutures) flatMap { medicationAdminBundleList =>
@@ -63,29 +63,11 @@ class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues 
     }
   }
 
-  val mappingErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
-  val fhirWriteErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
-
-  val repositoryFolderUri: URI = getClass.getResource(ToFhirConfig.mappingRepositoryFolderPath).toURI
-  val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri)
-
-  val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)
-
-  val schemaRepositoryURI: URI = getClass.getResource(ToFhirConfig.schemaRepositoryFolderPath).toURI
-  val schemaRepository = new SchemaFolderRepository(schemaRepositoryURI)
-
   val scheduler = new Scheduler()
   val mappingJobSyncTimesURI: URI = getClass.getResource(ToFhirConfig.mappingJobSyncTimesFolderPath.get).toURI
   val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, mappingJobSyncTimesURI)
 
-  val sparkConf: SparkConf = new SparkConf()
-    .setAppName(ToFhirConfig.appName)
-    .setMaster(ToFhirConfig.sparkMaster)
-    .set("spark.driver.allowMultipleContexts", "false")
-    .set("spark.ui.enabled", "false")
-  val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-
-  val dataSourceSettings =
+  val dataSourceSettings: Map[String, FileSystemSourceSettings] =
     Map(
       "source" ->
         FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data", Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString)
@@ -112,7 +94,7 @@ class SchedulingTest extends AnyFlatSpec with should.Matchers with OptionValues 
     assume(fhirServerIsAvailable)
     val lMappingJob: FhirMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testScheduleMappingJobFilePath)
 
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling,  Some(mappingJobScheduler))
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling, Some(mappingJobScheduler))
     fhirMappingJobManager.scheduleMappingJob(tasks = lMappingJob.mappings, sourceSettings = dataSourceSettings, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
     scheduler.start() //job set to run every minute
     Thread.sleep(60000) //wait for the job to be executed once
