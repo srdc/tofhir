@@ -25,11 +25,11 @@ object Boot extends App {
         options.get("job").map(_.asInstanceOf[String])
       else
         ToFhirConfig.mappingJobFilePath
-    val syncTimesFolderPath =
+    val toFhirDb =
       if (options.contains("syncTimes")) options.get("syncTimes").map(_.asInstanceOf[String])
-      else ToFhirConfig.mappingJobSyncTimesFolderPath
+      else ToFhirConfig.toFhirDb
 
-    CommandLineInterface.runJob(toFhirEngine, mappingJobFilePath, syncTimesFolderPath)
+    CommandLineInterface.runJob(toFhirEngine, mappingJobFilePath, toFhirDb)
   }
 
 }

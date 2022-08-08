@@ -172,7 +172,10 @@ class FhirMappingJobManager(
    * @return
    */
   private def getScheduledTimeRange(mappingJobId: String, folderUri: URI, startTime: LocalDateTime): (LocalDateTime, LocalDateTime) = {
-    if (!new File(folderUri).exists || !new File(folderUri).isDirectory) throw new FileNotFoundException(s"Folder cannot be found: ${folderUri.toString}")
+    val file = new File(folderUri)
+    if (!file.exists || !file.isDirectory) {
+      file.mkdirs()
+    }
     try {
       val source = Source.fromFile(s"${folderUri.getPath}/$mappingJobId.txt") //read last sync time from file
       val lines = source.getLines()

@@ -80,7 +80,7 @@ object CommandLineInterface {
    * @param toFhirEngine
    * @param mappingJobFilePath
    */
-  def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String], mappingJobSyncTimes: Option[String]): Unit = {
+  def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String], toFhirDb: Option[String]): Unit = {
     if(mappingJobFilePath.isEmpty) {
       println("There are no jobs to run. Exiting...")
       System.exit(1)
@@ -120,8 +120,8 @@ object CommandLineInterface {
       }
     } else {
       val scheduler = new Scheduler()
-      val mappingJobSyncTimesURI: URI = Paths.get(mappingJobSyncTimes.get).toUri
-      val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, mappingJobSyncTimesURI)
+      val toFhirDbURI: URI = Paths.get(toFhirDb.get).toUri
+      val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDbURI)
 
       val fhirMappingJobManager =
         new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader, toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))

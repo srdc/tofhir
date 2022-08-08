@@ -6,21 +6,18 @@ import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
-import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
 import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import io.onfhir.util.JsonFormatter.formats
 import it.sauronsoftware.cron4j.Scheduler
 import org.apache.commons.io.FileUtils
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.SparkSession
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
 import java.net.URI
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -64,8 +61,11 @@ class SchedulingTest extends AnyFlatSpec with ToFhirTestSpec {
   }
 
   val scheduler = new Scheduler()
-  val mappingJobSyncTimesURI: URI = getClass.getResource(ToFhirConfig.mappingJobSyncTimesFolderPath.get).toURI
-  val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, mappingJobSyncTimesURI)
+
+  val resourcePath: URI = getClass.getResource("/").toURI
+  val toFhirDb: Path = Paths.get(resourcePath.resolve(ToFhirConfig.toFhirDb.get))
+
+  val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDb.toUri)
 
   val dataSourceSettings: Map[String, FileSystemSourceSettings] =
     Map(
@@ -99,7 +99,7 @@ class SchedulingTest extends AnyFlatSpec with ToFhirTestSpec {
     scheduler.start() //job set to run every minute
     Thread.sleep(60000) //wait for the job to be executed once
 
-    val directory = new File(mappingJobSyncTimesURI)
+    val directory = new File(toFhirDb.toUri)
     FileUtils.cleanDirectory(directory)
 
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p8")).executeAndReturnResource() flatMap { p1Resource =>
