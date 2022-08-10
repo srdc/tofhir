@@ -26,7 +26,7 @@ If no arguments are provided, toFHIR starts the command line interface (CLI). Po
   - `--job`: The path to the mapping-job to be executed. If provided, overrides the path provided to the JVM as the configuration parameter.
   - `--mappings`: The path to the mappings folder. If provided, overrides the path provided to the JVM as the configuration parameter.
   - `--schemas`: The path to the schemas folder. If provided, overrides the path provided to the JVM as the configuration parameter.
-  - `--syncTimes`: The path to the sync times log folder that is used for only scheduled jobs. If provided, overrides the path provided to the JVM as the configuration parameter.
+  - `--db`: The path to the database folder that is used for scheduled jobs. If provided, overrides the path provided to the JVM as the configuration parameter.
 
 ## CLI
 
@@ -216,7 +216,7 @@ the `filePath` field should be specified, and it represents the source file of e
 toFHIR supports streaming of file system in case you want to continuously monitor the changes on the source data and stream the
 newcoming/updated data to toFHIR mapping executions. This can be done with the `asStream` config parameter of the source.
 If it is set to `true`, toFHIR will monitor the FileSystemSource files defined at `filePath` paths and trigger the mapping
-executions in case the files are updated. This functionality can be used with the scheduled jobs (see below).
+executions in case the files are updated. 
 
 ```json
     "source": {

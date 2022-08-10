@@ -40,27 +40,27 @@ class FhirMappingJobManager(
   /**
    * Execute the given mapping job and write the resulting FHIR resources to given sink
    *
-   * @param id              Unique job identifier
-   * @param tasks           Mapping tasks that will be executed in sequential
-   * @param sourceSettings  Settings for the source system(s)
-   * @param sinkSettings    FHIR sink settings (can be a FHIR repository, file system, kafka)
-   * @param terminologyServiceSettings  Settings for terminology service to use within mappings (e.g. lookupDisplay)
-   * @param identityServiceSettings     Settings for identity service to use within mappings (e.g. resolveIdentifier)
-   * @param timeRange       Time range for source data to map if given
+   * @param id                         Unique job identifier
+   * @param tasks                      Mapping tasks that will be executed in sequential
+   * @param sourceSettings             Settings for the source system(s)
+   * @param sinkSettings               FHIR sink settings (can be a FHIR repository, file system, kafka)
+   * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
+   * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
+   * @param timeRange                  Time range for source data to map if given
    * @return
    */
   override def executeMappingJob(id: String,
                                  tasks: Seq[FhirMappingTask],
-                                 sourceSettings: Map[String,DataSourceSettings],
+                                 sourceSettings: Map[String, DataSourceSettings],
                                  sinkSettings: FhirSinkSettings,
                                  terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                                 identityServiceSettings:Option[IdentityServiceSettings] = None,
+                                 identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
 
     tasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
-        executeTask(task, sourceSettings,terminologyServiceSettings, identityServiceSettings, timeRange) // Retrieve the source data and execute the mapping
+        executeTask(task, sourceSettings, terminologyServiceSettings, identityServiceSettings, timeRange) // Retrieve the source data and execute the mapping
           .map(dataset => fhirWriter.write(dataset)) // Write the created FHIR Resources to the FhirWriter
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: $id.") }
@@ -69,20 +69,20 @@ class FhirMappingJobManager(
   /**
    * Start streaming mapping job
    *
-   * @param id           Job identifier
-   * @param tasks        Mapping tasks that will be executed in parallel in stream mode
-   * @param sourceSettings  Settings for the source system(s)
-   * @param sinkSettings FHIR sink settings (can be a FHIR repository, file system, kafka)
-   * @param terminologyServiceSettings  Settings for terminology service to use within mappings (e.g. lookupDisplay)
-   * @param identityServiceSettings     Settings for identity service to use within mappings (e.g. resolveIdentifier)
+   * @param id                         Job identifier
+   * @param tasks                      Mapping tasks that will be executed in parallel in stream mode
+   * @param sourceSettings             Settings for the source system(s)
+   * @param sinkSettings               FHIR sink settings (can be a FHIR repository, file system, kafka)
+   * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
+   * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
    * @return
    */
   override def startMappingJobStream(id: String,
                                      tasks: Seq[FhirMappingTask],
-                                     sourceSettings: Map[String,DataSourceSettings],
+                                     sourceSettings: Map[String, DataSourceSettings],
                                      sinkSettings: FhirSinkSettings,
                                      terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                                     identityServiceSettings:Option[IdentityServiceSettings] = None,
+                                     identityServiceSettings: Option[IdentityServiceSettings] = None,
                                     ): StreamingQuery = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
 
@@ -102,23 +102,28 @@ class FhirMappingJobManager(
   /**
    * Schedule to execute the given mapping job with given cron expression and write the resulting FHIR resources to the given sink
    *
-   * @param id                Unique job identifier
-   * @param tasks             Mapping tasks that will be executed in sequential
-   * @param sourceSettings    Settings for the source system(s)
-   * @param sinkSettings      FHIR sink settings (can be a FHIR repository, file system, kafka)
-   * @param schedulingSettings  Settings for scheduling the job
-   * @param terminologyServiceSettings  Settings for terminology service to use within mappings (e.g. lookupDisplay)
-   * @param identityServiceSettings     Settings for identity service to use within mappings (e.g. resolveIdentifier)
+   * @param id                         Unique job identifier
+   * @param tasks                      Mapping tasks that will be executed in sequential
+   * @param sourceSettings             Settings for the source system(s)
+   * @param sinkSettings               FHIR sink settings (can be a FHIR repository, file system, kafka)
+   * @param schedulingSettings         Settings for scheduling the job
+   * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
+   * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
    * @return
    */
   override def scheduleMappingJob(id: String,
                                   tasks: Seq[FhirMappingTask],
-                                  sourceSettings: Map[String,DataSourceSettings],
+                                  sourceSettings: Map[String, DataSourceSettings],
                                   sinkSettings: FhirSinkSettings,
                                   schedulingSettings: SchedulingSettings,
                                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                                  identityServiceSettings:Option[IdentityServiceSettings] = None,
+                                  identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  ): Unit = {
+
+    if (mappingJobScheduler.isEmpty) {
+      throw new IllegalStateException("scheduleMappingJob cannot be called if the FhirMappingJobManager's mappingJobScheduler is not configured.")
+    }
+
     val startTime = if (schedulingSettings.initialTime.isEmpty) {
       logger.info(s"initialTime is not specified in the mappingJob. I will sync all the data from midnight, January 1, 1970 to the next run time.")
       Instant.ofEpochMilli(0L).atOffset(ZoneOffset.UTC).toLocalDateTime
@@ -140,7 +145,7 @@ class FhirMappingJobManager(
    * @param id                 Job identifier
    * @param startTime          Initial start time for source data
    * @param tasks              Mapping tasks
-   * @param sourceSettings      Settings for the source system
+   * @param sourceSettings     Settings for the source system
    * @param sinkSettings       FHIR sink settings/configurations
    * @param schedulingSettings Scheduling information
    * @return
@@ -148,10 +153,10 @@ class FhirMappingJobManager(
   private def runnableMappingJob(id: String,
                                  startTime: LocalDateTime,
                                  tasks: Seq[FhirMappingTask],
-                                 sourceSettings: Map[String,DataSourceSettings],
+                                 sourceSettings: Map[String, DataSourceSettings],
                                  sinkSettings: FhirSinkSettings,
                                  terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                                 identityServiceSettings:Option[IdentityServiceSettings] = None,
+                                 identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  schedulingSettings: SchedulingSettings): Future[Unit] = {
     val timeRange = getScheduledTimeRange(id, mappingJobScheduler.get.folderUri, startTime)
     logger.info(s"Running scheduled job with the expression: ${schedulingSettings.cronExpression}")
@@ -189,20 +194,20 @@ class FhirMappingJobManager(
   /**
    * Execute the given mapping task and write the resulting FHIR resources to the given sink
    *
-   * @param id                Unique job identifier
-   * @param task              A Mapping task that will be executed
-   * @param sourceSettings    Settings for the source system(s)
-   * @param sinkSettings      FHIR sink settings (can be a FHIR repository, file system, kafka)
-   * @param terminologyServiceSettings  Settings for terminology service to use within mappings (e.g. lookupDisplay)
-   * @param identityServiceSettings     Settings for identity service to use within mappings (e.g. resolveIdentifier)
+   * @param id                         Unique job identifier
+   * @param task                       A Mapping task that will be executed
+   * @param sourceSettings             Settings for the source system(s)
+   * @param sinkSettings               FHIR sink settings (can be a FHIR repository, file system, kafka)
+   * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
+   * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
    * @return
    */
   override def executeMappingTask(id: String,
                                   task: FhirMappingTask,
-                                  sourceSettings: Map[String,DataSourceSettings],
+                                  sourceSettings: Map[String, DataSourceSettings],
                                   sinkSettings: FhirSinkSettings,
                                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                                  identityServiceSettings:Option[IdentityServiceSettings] = None,
+                                  identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  ): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
 
@@ -212,15 +217,15 @@ class FhirMappingJobManager(
   /**
    * Execute a single mapping task.
    *
-   * @param task              A #FhirMappingTask to be executed.
-   * @param sourceSettings    Settings for the source system
-   * @param timeRange         Time range for the source data to load
+   * @param task           A #FhirMappingTask to be executed.
+   * @param sourceSettings Settings for the source system
+   * @param timeRange      Time range for the source data to load
    * @return
    */
   private def executeTask(task: FhirMappingTask,
-                          sourceSettings: Map[String,DataSourceSettings],
+                          sourceSettings: Map[String, DataSourceSettings],
                           terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                          identityServiceSettings:Option[IdentityServiceSettings] = None,
+                          identityServiceSettings: Option[IdentityServiceSettings] = None,
                           timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Dataset[String]] = {
     //Retrieve the FHIR mapping definition
     val fhirMapping = fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
@@ -230,7 +235,7 @@ class FhirMappingJobManager(
       throw FhirMappingException(s"Invalid mapping task, source context is not given for some mapping source(s) ${sourceNames.diff(namesForSuppliedSourceContexts).mkString(", ")}")
 
     //Get the source schemas
-    val sources = fhirMapping.source.map(s => (s.alias, schemaLoader.getSchema(s.url), task.sourceContext(s.alias), sourceSettings.apply(s.alias),  timeRange))
+    val sources = fhirMapping.source.map(s => (s.alias, schemaLoader.getSchema(s.url), task.sourceContext(s.alias), sourceSettings.apply(s.alias), timeRange))
     //Read sources into Spark as DataFrame
     val sourceDataFrames =
       sources.map {
@@ -254,12 +259,12 @@ class FhirMappingJobManager(
           .toSeq
           .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
       ).map(loadedContextMap => {
-        //Get configuration context
-        val sourceNames = fhirMapping.source.map(_.alias)
-        val configurationContext = sources.head._4.toConfigurationContext
-        //Construct the mapping service
-        val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, terminologyServiceSettings, identityServiceSettings)
-        MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandling)
+      //Get configuration context
+      val sourceNames = fhirMapping.source.map(_.alias)
+      val configurationContext = sources.head._4.toConfigurationContext
+      //Construct the mapping service
+      val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, terminologyServiceSettings, identityServiceSettings)
+      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandling)
     })
   }
 
@@ -282,18 +287,18 @@ class FhirMappingJobManager(
   /**
    * Execute the given mapping job and return the resulting FHIR resources
    *
-   * @param id                Unique job identifier
-   * @param task              Mapping task that will be executed
-   * @param sourceSettings    Settings for the source system
-   * @param terminologyServiceSettings  Settings for terminology service to use within mappings (e.g. lookupDisplay)
-   * @param identityServiceSettings     Settings for identity service to use within mappings (e.g. resolveIdentifier)
+   * @param id                         Unique job identifier
+   * @param task                       Mapping task that will be executed
+   * @param sourceSettings             Settings for the source system
+   * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
+   * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
    * @return
    */
   override def executeMappingTaskAndReturn(id: String,
                                            task: FhirMappingTask,
-                                           sourceSettings: Map[String,DataSourceSettings],
+                                           sourceSettings: Map[String, DataSourceSettings],
                                            terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                                           identityServiceSettings:Option[IdentityServiceSettings] = None,
+                                           identityServiceSettings: Option[IdentityServiceSettings] = None,
                                           ): Future[Seq[JObject]] = {
     executeTask(task, sourceSettings, terminologyServiceSettings, identityServiceSettings)
       .map { dataFrame =>
