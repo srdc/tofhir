@@ -7,7 +7,7 @@ import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.tofhir.ToFhirTestSpec
-import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
+import io.onfhir.tofhir.config.{ErrorHandlingType, ToFhirConfig}
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import io.onfhir.util.JsonFormatter.formats
@@ -84,7 +84,7 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
 
   val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDb.toUri)
 
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", writeErrorHandling = MappingErrorHandling.CONTINUE)
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", errorHandling = Some(fhirWriteErrorHandling))
 
   implicit val actorSystem: ActorSystem = ActorSystem("SchedulingTest")
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)

@@ -1,7 +1,7 @@
 package io.onfhir.tofhir
 
-import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
-import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
+import io.onfhir.tofhir.config.ErrorHandlingType.ErrorHandlingType
+import io.onfhir.tofhir.config.{ErrorHandlingType, ToFhirConfig}
 import io.onfhir.tofhir.engine._
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -12,8 +12,8 @@ import java.net.URI
 
 trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspectors {
 
-  val mappingErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
-  val fhirWriteErrorHandling: MappingErrorHandling = MappingErrorHandling.HALT
+  val mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.HALT
+  val fhirWriteErrorHandling: ErrorHandlingType = ErrorHandlingType.HALT
 
   val repositoryFolderUri: URI = getClass.getResource(ToFhirConfig.mappingRepositoryFolderPath).toURI
   val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri)

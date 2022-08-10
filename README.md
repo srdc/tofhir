@@ -173,7 +173,7 @@ Example of a Mapping Job definition file with csv source type:
   "sinkSettings": {
     "jsonClass": "FhirRepositorySinkSettings",
     "fhirRepoUrl": "http://localhost:8081/fhir",
-    "writeErrorHandling": "continue"
+    "errorHandling": "continue"
   },
   "mappingErrorHandling": "continue",
   "mappings": [

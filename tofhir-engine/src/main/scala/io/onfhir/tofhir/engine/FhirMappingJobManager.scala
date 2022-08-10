@@ -1,7 +1,7 @@
 package io.onfhir.tofhir.engine
 
 import com.typesafe.scalalogging.Logger
-import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
+import io.onfhir.tofhir.config.ErrorHandlingType.ErrorHandlingType
 import io.onfhir.tofhir.data.read.DataSourceReaderFactory
 import io.onfhir.tofhir.data.write.FhirWriterFactory
 import io.onfhir.tofhir.model._
@@ -31,7 +31,7 @@ class FhirMappingJobManager(
                              contextLoader: IMappingContextLoader,
                              schemaLoader: IFhirSchemaLoader,
                              spark: SparkSession,
-                             mappingErrorHandling: MappingErrorHandling,
+                             mappingErrorHandlingType: ErrorHandlingType,
                              mappingJobScheduler: Option[MappingJobScheduler] = Option.empty
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
 
@@ -264,7 +264,7 @@ class FhirMappingJobManager(
       val configurationContext = sources.head._4.toConfigurationContext
       //Construct the mapping service
       val fhirMappingService = new FhirMappingService(fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, terminologyServiceSettings, identityServiceSettings)
-      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandling)
+      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandlingType)
     })
   }
 

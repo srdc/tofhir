@@ -2,8 +2,8 @@ package io.onfhir.tofhir.engine
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.Resource
-import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
-import io.onfhir.tofhir.config.{MappingErrorHandling, ToFhirConfig}
+import io.onfhir.tofhir.config.ErrorHandlingType.ErrorHandlingType
+import io.onfhir.tofhir.config.{ErrorHandlingType, ToFhirConfig}
 import io.onfhir.tofhir.model.FhirMappingException
 import io.onfhir.util.JsonFormatter._
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
@@ -39,7 +39,7 @@ object MappingTaskExecutor {
    * @param fhirMappingService Mapping service for a specific FhirMapping together with contextual data and mapping scripts
    * @return
    */
-  def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, errorHandlingType: MappingErrorHandling): Dataset[String] = {
+  def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, errorHandlingType: ErrorHandlingType): Dataset[String] = {
     fhirMappingService.sources match {
       case Seq(_) => executeMappingOnSingleSource(spark, df, fhirMappingService, errorHandlingType)
       //Executing on multiple sources
@@ -57,7 +57,7 @@ object MappingTaskExecutor {
   private def executeMappingOnSingleSource(spark: SparkSession,
                                            df: DataFrame,
                                            fhirMappingService: FhirMappingService,
-                                           errorHandlingType: MappingErrorHandling): Dataset[String] = {
+                                           errorHandlingType: ErrorHandlingType): Dataset[String] = {
     import spark.implicits._
     val result =
       df
@@ -68,14 +68,14 @@ object MappingTaskExecutor {
           } catch {
             case e: FhirMappingException =>
               logger.error(e.getMessage, e)
-              if (errorHandlingType == MappingErrorHandling.CONTINUE) {
+              if (errorHandlingType == ErrorHandlingType.CONTINUE) {
                 Seq.empty[Resource]
               } else {
                 throw e
               }
             case e: TimeoutException =>
               logger.error(s"TimeoutException. A single row could not be mapped to FHIR in 5 seconds. The row JObject: ${Serialization.write(jo)}")
-              if (errorHandlingType == MappingErrorHandling.CONTINUE) {
+              if (errorHandlingType == ErrorHandlingType.CONTINUE) {
                 logger.debug("Continuing the processing of mappings...")
                 Seq.empty[Resource]
               } else {
