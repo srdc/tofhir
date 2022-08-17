@@ -2,7 +2,7 @@ package io.onfhir.tofhir.model
 
 import akka.actor.ActorSystem
 import io.onfhir.client.OnFhirNetworkClient
-import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
+import io.onfhir.tofhir.config.ErrorHandlingType.ErrorHandlingType
 
 /**
  * Common interface for sink settings
@@ -29,11 +29,11 @@ case class FileSystemSinkSettings(path:String,
  *
  * @param fhirRepoUrl         FHIR endpoint root url
  * @param securitySettings    Security settings if target API is secured
- * @param writeErrorHandling  How to handle error while writing mapped FHIR resources to this FHIR repository
+ * @param errorHandling  How to handle error while writing mapped FHIR resources to this FHIR repository
  */
 case class FhirRepositorySinkSettings(fhirRepoUrl: String,
                                       securitySettings: Option[IFhirRepositorySecuritySettings] = None,
-                                      writeErrorHandling: MappingErrorHandling) extends FhirSinkSettings with IdentityServiceSettings with TerminologyServiceSettings {
+                                      errorHandling: Option[ErrorHandlingType]) extends FhirSinkSettings with IdentityServiceSettings with TerminologyServiceSettings {
   /**
    * Create an OnFhir client
    * @param actorSystem

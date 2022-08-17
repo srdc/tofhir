@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.util
 
-import io.onfhir.tofhir.config.MappingErrorHandling
+import io.onfhir.tofhir.config.ErrorHandlingType
 import io.onfhir.tofhir.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirRepositorySinkSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SqlSource, SqlSourceSettings}
 import org.json4s.{Formats, ShortTypeHints}
 import org.json4s.ext.EnumNameSerializer
@@ -36,7 +36,7 @@ object FhirMappingJobFormatter {
           //Terminology setvices
           classOf[LocalFhirTerminologyServiceSettings]
         ))) +
-      new EnumNameSerializer(MappingErrorHandling)
+      new EnumNameSerializer(ErrorHandlingType)
 
 
   /**

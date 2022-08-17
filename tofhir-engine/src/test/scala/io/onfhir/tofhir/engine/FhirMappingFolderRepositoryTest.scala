@@ -2,10 +2,11 @@ package io.onfhir.tofhir.engine
 
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.model.{ConceptMapContext, FhirMappingException, UnitConversionContext}
+import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.io.File
 
-class FhirMappingFolderRepositoryTest extends ToFhirTestSpec {
+class FhirMappingFolderRepositoryTest extends AsyncFlatSpec with ToFhirTestSpec {
 
   "A FhirMappingRepository" should "correctly read and parse the mapping files under the given mappings folder" in {
     val patientMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/patient-mapping")

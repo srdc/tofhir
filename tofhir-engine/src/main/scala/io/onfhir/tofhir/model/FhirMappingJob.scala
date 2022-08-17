@@ -1,6 +1,6 @@
 package io.onfhir.tofhir.model
 
-import io.onfhir.tofhir.config.MappingErrorHandling.MappingErrorHandling
+import io.onfhir.tofhir.config.ErrorHandlingType.ErrorHandlingType
 
 /**
  * A mapping job including one or more mapping tasks from a configured data source to a configured sink
@@ -22,7 +22,7 @@ case class FhirMappingJob(id: String,
                           identityServiceSettings: Option[IdentityServiceSettings] = None,
                           mappings: Seq[FhirMappingTask],
                           schedulingSettings: Option[SchedulingSettings] = None,
-                          mappingErrorHandling: MappingErrorHandling,
+                          mappingErrorHandling: ErrorHandlingType,
                           useFhirSinkAsIdentityService:Boolean = false
                          ) {
   /**

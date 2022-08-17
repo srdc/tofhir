@@ -2,28 +2,30 @@
   "id": "test-schedule-mapping-job",
   "schedulingSettings": {
     "cronExpression": "* * * * *",
-    "initialTime": "2020-01-01T00:00:00"
+    "initialTime": "2007-10-12T10:00:00"
   },
   "sourceSettings": {
     "source": {
-      "jsonClass": "FileSystemSourceSettings",
+      "jsonClass": "SqlSourceSettings",
       "name": "test-source",
       "sourceUri": "https://aiccelerate.eu/data-integration-suite/test-data",
-      "dataFolderPath": "/test-data"
+      "databaseUrl": "jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE",
+      "username": "",
+      "password": ""
     }
   },
   "sinkSettings": {
     "jsonClass": "FhirRepositorySinkSettings",
     "fhirRepoUrl": "http://localhost:8081/fhir",
-    "writeErrorHandling": "halt"
+    "errorHandling": "halt"
   },
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       "sourceContext": {
         "source": {
-          "jsonClass": "FileSystemSource",
-          "path": "patients.csv"
+          "jsonClass": "SqlSource",
+          "query": "select * from patients"
         }
       }
     },
@@ -31,8 +33,8 @@
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
       "sourceContext": {
         "source": {
-          "jsonClass": "FileSystemSource",
-          "path": "other-observations.csv"
+          "jsonClass": "SqlSource",
+          "query": "select * from otherobservations o WHERE o.time > $fromTs AND o.time < $toTs"
         }
       }
     }

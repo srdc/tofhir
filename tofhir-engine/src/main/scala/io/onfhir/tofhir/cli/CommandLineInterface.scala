@@ -80,7 +80,7 @@ object CommandLineInterface {
    * @param toFhirEngine
    * @param mappingJobFilePath
    */
-  def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String], mappingJobSyncTimes: Option[String]): Unit = {
+  def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String], toFhirDbFolderPath: Option[String]): Unit = {
     if(mappingJobFilePath.isEmpty) {
       println("There are no jobs to run. Exiting...")
       System.exit(1)
@@ -119,9 +119,13 @@ object CommandLineInterface {
         Await.result(f, Duration.Inf)
       }
     } else {
+      if(toFhirDbFolderPath.isEmpty) {
+        throw new IllegalArgumentException("runJob is called with a scheduled mapping job, but toFhir.db is not configured.");
+      }
+
       val scheduler = new Scheduler()
-      val mappingJobSyncTimesURI: URI = Paths.get(mappingJobSyncTimes.get).toUri
-      val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, mappingJobSyncTimesURI)
+      val toFhirDbURI: URI = Paths.get(toFhirDbFolderPath.get).toUri
+      val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDbURI)
 
       val fhirMappingJobManager =
         new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader, toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
@@ -156,8 +160,8 @@ object CommandLineInterface {
         nextArg(map ++ Map("mappings" -> value), tail)
       case "--schemas" :: value :: tail =>
         nextArg(map ++ Map("schemas" -> value), tail)
-      case "--syncTimes" :: value :: tail =>
-        nextArg(map ++ Map("syncTimes" -> value), tail)
+      case "--db" :: value :: tail =>
+        nextArg(map ++ Map("db" -> value), tail)
       case str :: tail =>
         nextArg(map ++ Map("command" -> str), tail)
       case unknown :: _ =>
