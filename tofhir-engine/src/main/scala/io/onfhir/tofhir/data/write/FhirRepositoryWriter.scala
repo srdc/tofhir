@@ -58,9 +58,9 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
             if (responseBundle.hasAnyError()) {
               val msg =
                 s"!!!There is an error while writing resources to the FHIR Repository.\n" +
-                  s"Repository URL: ${sinkSettings.fhirRepoUrl}\n" +
-                  s"Bundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
-                  s"Bundle response: ${responseBundle.bundle.toJson}"
+                  s"\tRepository URL: ${sinkSettings.fhirRepoUrl}\n" +
+                  s"\tBundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
+                  s"\tBundle response: ${responseBundle.bundle.toJson}"
               logger.error(msg)
               if (sinkSettings.writeErrorHandling == MappingErrorHandling.HALT) {
                 throw FhirMappingException(msg)
