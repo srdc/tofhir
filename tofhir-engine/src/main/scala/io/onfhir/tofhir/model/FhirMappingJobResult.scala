@@ -20,6 +20,7 @@ case class FhirMappingJobResult(jobId:String,
                                 numOfFhirResources:Long = -1,
                                 numOfFailedWrites:Long = -1
                                ) {
+  final val eventId:String = "MAPPING_JOB_RESULT"
   val  result:String = (numOfInvalids + numOfNotMapped + numOfFailedWrites) match {
     case 0 => "SUCCESS"
     case neg if neg < 0 => "FAILURE"
@@ -49,6 +50,7 @@ case class FhirMappingJobResult(jobId:String,
           .and(append("numOfInvalids", numOfInvalids)
           .and(append("numOfNotMapped", numOfNotMapped)
           .and(append("numOfFhirResources", numOfFhirResources)
-            .and(append("numOfFailedWrites", numOfFailedWrites)))))))
+            .and(append("numOfFailedWrites", numOfFailedWrites)
+              .and(append("eventId", eventId))))))))
   }
 }

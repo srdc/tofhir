@@ -25,7 +25,7 @@ case class FhirMappingResult(
                               source:Option[String] = None,
                               error:Option[FhirMappingError] = None
                             ) {
-
+  final val eventId:String = "MAPPING_RESULT"
   override def toString: String = {
     s"Mapping failure (${error.get.code}) for job '$jobId' and mapping '$mappingUrl'${mappingExpr.map(e => s" within expression '$e'").getOrElse("")}!\n"+
     s"\tSource: ${source.get}\n"+
@@ -44,7 +44,8 @@ case class FhirMappingResult(
           .and(appendRaw("source", source.get)
             .and(append("errorCode", error.get.code)
               .and(append("errorDesc", error.get.description)
-                .and(append("errorExpr", error.get.expression.orElse(null))))))))
+                .and(append("errorExpr", error.get.expression.orElse(null))
+                  .and(append("eventId", eventId))))))))
   }
 
 }
