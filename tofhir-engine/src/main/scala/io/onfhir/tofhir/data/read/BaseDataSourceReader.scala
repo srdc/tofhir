@@ -21,6 +21,16 @@ abstract class BaseDataSourceReader[T <: FhirMappingSourceContext, S<:DataSource
    */
   def read(mappingSource: T, sourceSettings:S, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty): DataFrame
 
+  /**
+   * Whether this reader needs a data type validation for columns after reading the source
+   */
+  val needTypeValidation:Boolean = false
+
+  /**
+   * Whether this reader needs cardinality validation for columns after reading the source
+   */
+  val needCardinalityValidation:Boolean = true
+
 }
 
 

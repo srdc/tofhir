@@ -33,7 +33,7 @@ case class FileSystemSinkSettings(path:String,
  */
 case class FhirRepositorySinkSettings(fhirRepoUrl: String,
                                       securitySettings: Option[IFhirRepositorySecuritySettings] = None,
-                                      errorHandling: Option[ErrorHandlingType]) extends FhirSinkSettings with IdentityServiceSettings with TerminologyServiceSettings {
+                                      errorHandling: Option[ErrorHandlingType] = None) extends FhirSinkSettings with IdentityServiceSettings with TerminologyServiceSettings {
   /**
    * Create an OnFhir client
    * @param actorSystem

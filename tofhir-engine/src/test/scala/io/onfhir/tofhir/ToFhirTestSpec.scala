@@ -24,7 +24,7 @@ trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspect
   val schemaRepository = new SchemaFolderRepository(schemaRepositoryURI)
 
   val sparkConf: SparkConf = new SparkConf()
-    .setAppName(ToFhirConfig.appName)
+    .setAppName(ToFhirConfig.sparkAppName)
     .setMaster(ToFhirConfig.sparkMaster)
     .set("spark.driver.allowMultipleContexts", "false")
     .set("spark.ui.enabled", "false")

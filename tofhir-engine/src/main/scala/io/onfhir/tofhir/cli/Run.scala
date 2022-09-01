@@ -32,6 +32,7 @@ class Run extends Command {
             val f =
               fhirMappingJobManager
                 .executeMappingJob(
+                  id = mappingJob.id,
                   tasks = mappingJob.mappings,
                   sourceSettings = mappingJob.sourceSettings,
                   sinkSettings = mappingJob.sinkSettings,

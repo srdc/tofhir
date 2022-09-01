@@ -11,6 +11,4 @@ import java.net.URI
  * @param scheduler
  * @param folderUri
  */
-case class MappingJobScheduler(scheduler: Scheduler, folderUri: URI) {
-
-}
+case class MappingJobScheduler(scheduler: Scheduler, folderUri: URI)

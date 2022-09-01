@@ -18,7 +18,7 @@ trait IFhirMappingService extends Serializable {
    * @return
    */
   @throws[FhirMappingException]
-  def mapToFhir(source:JObject):Future[Seq[Resource]]
+  def mapToFhir(source:JObject):Future[Seq[(String, Seq[Resource])]]
 
   /**
    * Map given source set into one or more FHIR resources based on the underlying mapping definition for this service
@@ -26,5 +26,5 @@ trait IFhirMappingService extends Serializable {
    * @return
    */
   @throws[FhirMappingException]
-  def mapToFhir(sources:Map[String, Seq[JObject]]):Future[Seq[Resource]]
+  def mapToFhir(sources:Map[String, Seq[JObject]]):Future[Seq[(String, Seq[Resource])]]
 }

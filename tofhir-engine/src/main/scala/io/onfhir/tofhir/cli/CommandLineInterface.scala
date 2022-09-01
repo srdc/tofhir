@@ -99,6 +99,7 @@ object CommandLineInterface {
         val streamingQuery =
           fhirMappingJobManager
             .startMappingJobStream(
+              id = mappingJob.id,
               tasks = mappingJob.mappings,
               sourceSettings = mappingJob.sourceSettings,
               sinkSettings = mappingJob.sinkSettings,
@@ -110,6 +111,7 @@ object CommandLineInterface {
         val f =
           fhirMappingJobManager
             .executeMappingJob(
+              id = mappingJob.id,
               tasks = mappingJob.mappings,
               sourceSettings = mappingJob.sourceSettings,
               sinkSettings = mappingJob.sinkSettings,
@@ -131,6 +133,7 @@ object CommandLineInterface {
         new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader, toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
       fhirMappingJobManager
         .scheduleMappingJob(
+          id = mappingJob.id,
           tasks = mappingJob.mappings,
           sourceSettings = mappingJob.sourceSettings,
           sinkSettings = mappingJob.sinkSettings,

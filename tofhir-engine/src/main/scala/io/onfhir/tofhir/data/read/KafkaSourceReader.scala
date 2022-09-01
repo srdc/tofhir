@@ -1,6 +1,5 @@
 package io.onfhir.tofhir.data.read
 
-import com.typesafe.scalalogging.Logger
 import io.onfhir.tofhir.model.{KafkaSource, KafkaSourceSettings}
 import org.apache.spark.sql.functions.from_json
 import org.apache.spark.sql.types.{StringType, StructType}
@@ -13,8 +12,6 @@ import java.time.LocalDateTime
  * @param spark
  */
 class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaSource, KafkaSourceSettings] {
-
-  private val logger: Logger = Logger(this.getClass)
 
   /**
    * Read the source data for the given task

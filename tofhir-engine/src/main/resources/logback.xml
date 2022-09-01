@@ -17,7 +17,7 @@
         </encoder>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <FileNamePattern>logs/data-integration-suite.%i.log.zip</FileNamePattern>
+            <FileNamePattern>logs/tofhir-engine.%i.log.zip</FileNamePattern>
             <MinIndex>1</MinIndex>
             <MaxIndex>10</MaxIndex>
         </rollingPolicy>
@@ -31,15 +31,50 @@
         <appender-ref ref="FILE" />
     </appender>
 
+    <appender name="FILE-AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/tofhir-mappings.log</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdc>false</includeMdc>
+            <fieldNames>
+                <thread>[ignore]</thread>
+                <version>[ignore]</version>
+                <loggerName>[ignore]</loggerName>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+        </encoder>
+        <!--encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} %-5level - %msg%n</Pattern>
+        </encoder-->
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <FileNamePattern>logs/tofhir-mappings.%i.log.zip</FileNamePattern>
+            <MinIndex>1</MinIndex>
+            <MaxIndex>10</MaxIndex>
+        </rollingPolicy>
+
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>10MB</MaxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <appender name="ASYNC-AUDIT" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE-AUDIT" />
+    </appender>
+
     <!-- By default, the level of the root level is set to DEBUG -->
     <root level="DEBUG">
         <appender-ref ref="ASYNC" />
         <appender-ref ref="STDOUT" />
     </root>
-    
+
+    <logger name="io.onfhir.tofhir.engine.SinkHandler" level="INFO">
+        <appender-ref ref="ASYNC-AUDIT" />
+    </logger>
+
     <!-- Suppress the repeating and annoying DEBUG level logs by these classes -->
     <logger name="org.apache.spark" level="WARN"/>
     <logger name="org.apache.hadoop" level="WARN"/>
+    <logger name="org.apache.htrace" level="WARN"/>
     <logger name="org.sparkproject" level="WARN"/>
     <logger name="io.netty" level="WARN"/>
     <logger name="ca.uhn.fhir" level="WARN"/>

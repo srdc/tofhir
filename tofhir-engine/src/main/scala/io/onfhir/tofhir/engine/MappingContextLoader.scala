@@ -1,14 +1,11 @@
 package io.onfhir.tofhir.engine
 
-import com.fasterxml.jackson.dataformat.csv.{CsvMapper, CsvSchema}
 import com.typesafe.scalalogging.Logger
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.CsvUtil
 
-import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.jdk.javaapi.CollectionConverters
 
 /**
  * Interface to load a context from definition

@@ -2,8 +2,9 @@ package io.onfhir.tofhir.data.write
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.tofhir.data.write.FileSystemWriter.SinkFileFormats
-import io.onfhir.tofhir.model.FileSystemSinkSettings
-import org.apache.spark.sql.{Dataset, SaveMode}
+import io.onfhir.tofhir.model.{FhirMappingResult, FileSystemSinkSettings}
+import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
+import org.apache.spark.util.CollectionAccumulator
 
 class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWriter(sinkSettings) {
   private val logger: Logger = Logger(this.getClass)
@@ -12,12 +13,14 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
    *
    * @param df Dataframe of serialized jsons
    */
-  override def write(df: Dataset[String]): Unit = {
+  override def write(spark:SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator:CollectionAccumulator[FhirMappingResult]): Unit = {
+    import spark.implicits._
     logger.debug("Created FHIR resources will be written to the given URL:{}", sinkSettings.path)
     sinkSettings.sinkType match {
       case SinkFileFormats.NDJSON =>
         val writer =
           df
+            .map(_.mappedResource.get)
             .coalesce(sinkSettings.numOfPartitions)
             .write
             .mode(SaveMode.Append)

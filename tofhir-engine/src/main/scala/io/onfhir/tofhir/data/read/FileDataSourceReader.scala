@@ -13,7 +13,6 @@ import java.time.LocalDateTime
  * @param spark Spark session
  */
 class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[FileSystemSource, FileSystemSourceSettings] {
-
   /**
    * Read the source data
    *
@@ -32,24 +31,26 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
         case SourceFileFormats.CSV =>
           //Options that we infer for csv
           val inferSchema = schema.isEmpty
-          val enforceSchema = schema.isDefined
+          //val enforceSchema = schema.isDefined
           val includeHeader = mappingSource.options.get("header").forall(_ == "true")
-
+          val fileFilter = mappingSource.options.getOrElse("pathGlobFilter", "*.csv")
           //Other options
           val otherOptions = mappingSource.options.filterNot(o => o._1 == "header" || o._1 == "inferSchema" || o._1 == "enforceSchema")
           if(sourceSettings.asStream)
             spark.readStream
+              .option("pathGlobFilter",fileFilter) // Ignore files without csv extension in default
+              .option("enforceSchema", false) //Enforce schema should be false (See https://spark.apache.org/docs/latest/sql-data-sources-csv.html)
               .option("header", includeHeader)
               .option("inferSchema", inferSchema)
-              .option("enforceSchema", enforceSchema) //Enforce the given schema
               .options(otherOptions)
               .schema(schema.orNull)
               .csv(finalPath)
           else
             spark.read
+              .option("pathGlobFilter", fileFilter) // Ignore files without csv extension in default
+              .option("enforceSchema", false) //Enforce schema should be false
               .option("header", includeHeader)
               .option("inferSchema", inferSchema)
-              .option("enforceSchema", enforceSchema) //Enforce the given schema
               .options(otherOptions)
               .schema(schema.orNull)
               .csv(finalPath)

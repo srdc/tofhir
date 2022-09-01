@@ -72,13 +72,15 @@
         <json4s.version>3.7.0-M11</json4s.version>
         <scalatest.version>3.1.4</scalatest.version>
         <spark.version>3.2.1</spark.version>
-        <jackson-csv.version>2.13.2</jackson-csv.version>
+        <jackson.version>2.12.7</jackson.version>
         <logback.version>1.2.11</logback.version>
+        <logstash-logback-encoder.version>7.2</logstash-logback-encoder.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
         <postgres.version>42.3.3</postgres.version>
         <h2db.version>2.1.210</h2db.version>
         <cron4j.version>2.2.5</cron4j.version>
         <testcontainers.kafka>1.17.3</testcontainers.kafka>
+        <log4j.version>2.16.0</log4j.version>
     </properties>
 
     <build>
@@ -174,25 +176,6 @@
                 <version>${scala.version}</version>
             </dependency>
 
-            <!-- Scala Logging -->
-            <dependency>
-                <groupId>com.typesafe.scala-logging</groupId>
-                <artifactId>scala-logging_${scala.binary.version}</artifactId>
-                <version>${scala-logging.version}</version>
-            </dependency>
-
-            <!-- Logback dependencies -->
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-core</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
-
             <!-- onFHIR dependencies -->
             <dependency>
                 <groupId>io.onfhir</groupId>
@@ -247,13 +230,51 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+
+
+            <!-- Scala Logging -->
             <dependency>
-                <!-- This is to meet the hard dependency of Spark on log4j -->
-                <!-- https://stackoverflow.com/questions/70374165/how-to-override-log4j-with-log4j2-version-to-resolve-socketserver-class-vulnera -->
+                <groupId>com.typesafe.scala-logging</groupId>
+                <artifactId>scala-logging_${scala.binary.version}</artifactId>
+                <version>${scala-logging.version}</version>
+            </dependency>
+
+            <!-- Logback dependencies -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-access</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>log4j-over-slf4j</artifactId>
+                <version>1.7.25</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash-logback-encoder.version}</version>
+            </dependency>
+
+            <!-- This is to meet the hard dependency of Spark on log4j -->
+            <!-- https://stackoverflow.com/questions/70374165/how-to-override-log4j-with-log4j2-version-to-resolve-socketserver-class-vulnera -->
+            <!--dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-1.2-api</artifactId>
-                <version>2.16.0</version>
-            </dependency>
+                <version>${log4j.version}</version>
+            </dependency-->
+
             <dependency>
                 <groupId>org.apache.spark</groupId>
                 <artifactId>spark-sql_${scala.binary.version}</artifactId>
@@ -267,11 +288,18 @@
                 <version>${typesafe.config.version}</version>
             </dependency>
 
+            <!-- Dependency from jackson-dataformat-csv and logstash-logback-encoder-->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
             <!-- For csv parsing -->
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-csv</artifactId>
-                <version>${jackson-csv.version}</version>
+                <version>${jackson.version}</version>
             </dependency>
 
             <!-- Postgres driver for Spark Read JDBC -->

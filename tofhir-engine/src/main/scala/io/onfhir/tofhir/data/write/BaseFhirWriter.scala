@@ -1,7 +1,8 @@
 package io.onfhir.tofhir.data.write
 
-import io.onfhir.tofhir.model.{FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSinkSettings}
-import org.apache.spark.sql.Dataset
+import io.onfhir.tofhir.model.{FhirMappingResult, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSinkSettings}
+import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.util.CollectionAccumulator
 
 /**
  * Base class for FHIR resource writer
@@ -14,7 +15,7 @@ abstract class BaseFhirWriter(sinkSettings: FhirSinkSettings) extends Serializab
    *
    * @param df
    */
-  def write(df: Dataset[String]): Unit
+  def write(sparkSession:SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator:CollectionAccumulator[FhirMappingResult]): Unit
 }
 
 /**
