@@ -47,7 +47,8 @@ class FhirMappingService(
         FhirPathNavFunctionsFactory.defaultPrefix -> FhirPathNavFunctionsFactory
       ), //Add our mapping function library,
       terminologyService,
-      identityService
+      identityService,
+      isSourceContentFhir = false
     )
 
   /**
