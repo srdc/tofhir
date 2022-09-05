@@ -38,7 +38,8 @@ case class FhirMappingResult(
    * @return
    */
   def toLogstashMarker:LogstashMarker = {
-    append("jobId", jobId)
+    val marker:LogstashMarker =
+      append("jobId", jobId)
       .and(append("mappingUrl", mappingUrl)
         .and(append("mappingExpr", mappingExpr.orElse(null))
           .and(appendRaw("source", source.get)
@@ -46,6 +47,11 @@ case class FhirMappingResult(
               .and(append("errorDesc", error.get.description)
                 .and(append("errorExpr", error.get.expression.orElse(null))
                   .and(append("eventId", eventId))))))))
+
+    if(mappedResource.isDefined && error.get.code == FhirMappingErrorCodes.INVALID_RESOURCE)
+      marker.and(appendRaw("mappedResource", mappedResource.get))
+    else
+     marker
   }
 
 }
