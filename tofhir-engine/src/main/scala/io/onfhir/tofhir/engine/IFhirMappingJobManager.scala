@@ -1,8 +1,7 @@
 package io.onfhir.tofhir.engine
 
-import io.onfhir.tofhir.model.{DataSourceSettings, FhirMappingTask, FhirSinkSettings, IdentityServiceSettings, SchedulingSettings, TerminologyServiceSettings}
+import io.onfhir.tofhir.model._
 import org.apache.spark.sql.streaming.StreamingQuery
-import org.json4s.JObject
 
 import java.time.LocalDateTime
 import java.util.UUID
@@ -91,7 +90,7 @@ trait IFhirMappingJobManager {
                         ): Future[Unit]
 
   /**
-   * Execute the given mapping task and return the resulting FHIR resources
+   * Execute the given mapping task and return the resulting FhirMappingResult
    *
    * @param id   Unique job identifier
    * @param task Mapping task that will be executed
@@ -105,5 +104,5 @@ trait IFhirMappingJobManager {
                                   sourceSettings: Map[String,DataSourceSettings],
                                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                   identityServiceSettings:Option[IdentityServiceSettings] = None
-                                 ): Future[Seq[JObject]]
+                                 ): Future[Seq[FhirMappingResult]]
 }

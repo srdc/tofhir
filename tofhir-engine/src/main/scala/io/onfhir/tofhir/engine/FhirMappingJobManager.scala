@@ -291,7 +291,7 @@ class FhirMappingJobManager(
   }
 
   /**
-   * Execute the given mapping job and return the resulting FHIR resources
+   * Execute the given mapping job and return the resulting FhirMappingResult
    *
    * @param id                         Unique job identifier
    * @param task                       Mapping task that will be executed
@@ -305,14 +305,11 @@ class FhirMappingJobManager(
                                            sourceSettings: Map[String, DataSourceSettings],
                                            terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                            identityServiceSettings: Option[IdentityServiceSettings] = None,
-                                          ): Future[Seq[JObject]] = {
-    import spark.implicits._
+                                          ): Future[Seq[FhirMappingResult]] = {
     executeTask(id, task, sourceSettings, terminologyServiceSettings, identityServiceSettings)
       .map { dataFrame =>
         dataFrame
-          .map(_.mappedResource.get) //TODO Return the results
           .collect() // Collect into an Array[String]
-          .map(_.parseJson) // Parse each JSON String into FHIR Resource where Resource is a JObject
           .toSeq // Convert to Seq[Resource]
       }
   }

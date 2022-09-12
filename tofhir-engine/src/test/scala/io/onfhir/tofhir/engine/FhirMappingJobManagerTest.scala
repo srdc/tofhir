@@ -3,6 +3,7 @@ package io.onfhir.tofhir.engine
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import com.typesafe.scalalogging.Logger
+import io.onfhir.api.Resource
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
@@ -10,7 +11,7 @@ import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.config.ErrorHandlingType
 import io.onfhir.tofhir.model._
 import io.onfhir.tofhir.util.{FhirMappingJobFormatter, FhirMappingUtility}
-import io.onfhir.util.JsonFormatter.formats
+import io.onfhir.util.JsonFormatter._
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
 
@@ -102,7 +103,14 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
   "A FhirMappingJobManager" should "execute the patient mapping task and return the results" in {
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask, sourceSettings =  dataSourceSettings) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTask, sourceSettings =  dataSourceSettings) map { mappingResults =>
+      val results = mappingResults.map(r => {
+        r.mappedResource shouldBe defined
+        val resource = r.mappedResource.get.parseJson
+        resource shouldBe a[Resource]
+        resource
+      })
+
       results.size shouldBe 10
       val patient1 = results.head
       FHIRUtil.extractResourceType(patient1) shouldBe "Patient"
@@ -125,7 +133,13 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
   it should "execute the other observation mapping task and return the results" in {
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObservationMappingTask, sourceSettings =  dataSourceSettings) map { results =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = otherObservationMappingTask, sourceSettings =  dataSourceSettings) map { mappingResults =>
+      val results = mappingResults.map(r => {
+        r.mappedResource shouldBe defined
+        val resource = r.mappedResource.get.parseJson
+        resource shouldBe a[Resource]
+        resource
+      })
       results.size shouldBe 14
       val observation1 = results.head
       FHIRUtil.extractResourceType(observation1) shouldBe "Observation"
@@ -224,6 +238,13 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     ))
 
     val result = Await.result(fhirMappingJobManager.executeMappingTaskAndReturn("test-task-with-terminology-service", mappingTask, dataSourceSettings, Some(terminologyServiceSettings)), Duration.Inf)
+      .map(mappingResult => {
+        mappingResult.mappedResource shouldBe defined
+        val resource = mappingResult.mappedResource.get.parseJson
+        resource shouldBe a[Resource]
+        resource
+      })
+
     result.length shouldBe 2
 
     FHIRUtil.extractValueOptionByPath[Seq[String]](result.head, "type.coding.code").getOrElse(Nil).toSet shouldEqual Set("309068002", "111")

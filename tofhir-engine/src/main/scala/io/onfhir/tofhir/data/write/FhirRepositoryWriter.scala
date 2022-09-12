@@ -2,11 +2,9 @@ package io.onfhir.tofhir.data.write
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder}
-import io.onfhir.api.util.FHIRUtil
 import io.onfhir.tofhir.config.{ErrorHandlingType, ToFhirConfig}
 import io.onfhir.tofhir.engine.Execution
-import io.onfhir.tofhir.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult, FhirRepositorySinkSettings}
-import io.onfhir.util.JsonFormatter
+import io.onfhir.tofhir.model._
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 import org.json4s.jackson.Serialization
