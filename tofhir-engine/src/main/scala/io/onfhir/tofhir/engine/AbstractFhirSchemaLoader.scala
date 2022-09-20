@@ -85,7 +85,7 @@ abstract class AbstractFhirSchemaLoader(majorFhirVersion: String = "R4") extends
         case Some(fhirType) =>
           fhirType match {
             case FHIR_DATA_TYPES.ID | FHIR_DATA_TYPES.URI | FHIR_DATA_TYPES.URL | FHIR_DATA_TYPES.CODE |
-                 FHIR_DATA_TYPES.STRING | FHIR_DATA_TYPES.OID | FHIR_DATA_TYPES.UUID => StringType
+                 FHIR_DATA_TYPES.STRING | FHIR_DATA_TYPES.OID | FHIR_DATA_TYPES.UUID | FHIR_DATA_TYPES.BASE64BINARY => StringType
             case FHIR_DATA_TYPES.DATE | FHIR_DATA_TYPES.TIME | FHIR_DATA_TYPES.DATETIME | FHIR_DATA_TYPES.INSTANT => StringType
             case FHIR_DATA_TYPES.DECIMAL => DoubleType
             case FHIR_DATA_TYPES.INTEGER | FHIR_DATA_TYPES.POSITIVEINT => IntegerType
