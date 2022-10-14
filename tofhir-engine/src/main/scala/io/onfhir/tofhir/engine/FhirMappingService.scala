@@ -4,10 +4,8 @@ import io.onfhir.api.Resource
 import io.onfhir.expression.FhirExpressionException
 import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.template.FhirTemplateExpressionHandler
-import io.onfhir.tofhir.model.{ConfigurationContext, FhirMappingContext, FhirMappingException, FhirMappingExpression, IdentityServiceSettings, TerminologyServiceSettings}
-import io.onfhir.util.JsonFormatter._
+import io.onfhir.tofhir.model._
 import org.json4s.JsonAST.JArray
-import org.json4s.jackson.Serialization
 import org.json4s.{JObject, JValue}
 
 import scala.concurrent.ExecutionContext.Implicits.global

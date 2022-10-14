@@ -1,6 +1,5 @@
 package io.onfhir.tofhir.engine
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
@@ -18,7 +17,7 @@ import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializ
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.rnorth.ducttape.unreliables.Unreliables
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.{Assertion, BeforeAndAfterAll, Ignore}
+import org.scalatest.{Assertion, BeforeAndAfterAll}
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.utility.DockerImageName
 
@@ -29,7 +28,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Future, duration}
 import scala.util.Try
 
-@Ignore
 class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with BeforeAndAfterAll {
 
   override protected def afterAll(): Unit = {
@@ -90,7 +88,6 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     sourceContext = Map("source" -> KafkaSource(topicName = "observations", groupId = "tofhir", startingOffsets = "earliest"))
   )
 
-  implicit val actorSystem: ActorSystem = ActorSystem("StreamingTest")
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
   val fhirServerIsAvailable: Boolean =
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)

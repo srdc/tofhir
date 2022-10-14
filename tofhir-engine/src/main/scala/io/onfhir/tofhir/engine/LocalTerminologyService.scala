@@ -8,10 +8,11 @@ import io.onfhir.tofhir.util.{CsvUtil, FileUtils}
 import org.json4s.{JArray, JBool, JObject, JString}
 
 import java.io.File
+import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, Future}
 
 
 /**
@@ -22,7 +23,7 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
   //All csv files given in the configured folder
   val relatedFiles:Map[String, File] =
     FileUtils
-      .getFilesFromFolder(new File(settings.folderPath), FileUtils.FileExtensions.CSV)
+      .getFilesFromFolder(new File(Paths.get(settings.folderPath).toUri), FileUtils.FileExtensions.CSV)
       .map(f => f.getName -> f)
       .toMap
 
@@ -36,7 +37,7 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
         cmf ->
           parseConceptMapGivenInCsv(
             relatedFiles.get(cmf.fileName) match {
-              case None => throw FhirMappingException(s"Missing tofhir ConceptMap CSV file '${cmf.fileName}' within configured folder '${settings.folderPath}'!")
+              case None => throw FhirMappingException(s"Missing toFHIR ConceptMap CSV file '${cmf.fileName}' within configured folder '${settings.folderPath}'!")
               case Some(f)=> f.getAbsolutePath
             }
       ))

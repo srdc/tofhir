@@ -1,5 +1,6 @@
 package io.onfhir.tofhir
 
+import akka.actor.ActorSystem
 import io.onfhir.tofhir.config.ErrorHandlingType.ErrorHandlingType
 import io.onfhir.tofhir.config.{ErrorHandlingType, ToFhirConfig}
 import io.onfhir.tofhir.engine._
@@ -29,4 +30,6 @@ trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspect
     .set("spark.driver.allowMultipleContexts", "false")
     .set("spark.ui.enabled", "false")
   val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+
+  implicit val actorSystem: ActorSystem = ActorSystem("toFhirEngineTest")
 }

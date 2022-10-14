@@ -2,13 +2,11 @@ package io.onfhir.tofhir.engine
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.tofhir.config.ErrorHandlingType.ErrorHandlingType
-import io.onfhir.tofhir.data.read.DataSourceReaderFactory
-import io.onfhir.tofhir.data.write.FhirWriterFactory
+import io.onfhir.tofhir.data.read.SourceHandler
+import io.onfhir.tofhir.data.write.{FhirWriterFactory, SinkHandler}
 import io.onfhir.tofhir.model._
-import io.onfhir.util.JsonFormatter._
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
-import org.json4s.JObject
 
 import java.io.{File, FileNotFoundException, FileWriter}
 import java.net.URI

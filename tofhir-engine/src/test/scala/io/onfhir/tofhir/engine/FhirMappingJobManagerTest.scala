@@ -1,6 +1,5 @@
 package io.onfhir.tofhir.engine
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.Resource
@@ -75,7 +74,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
     sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv"))
   )
-  implicit val actorSystem: ActorSystem = ActorSystem("FhirMappingJobManagerTest")
+
   implicit val ec:ExecutionContext = actorSystem.getDispatcher
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
   val fhirServerIsAvailable: Boolean =

@@ -11,8 +11,8 @@ import org.json4s.jackson.Serialization
 
 import java.util.UUID
 import java.util.concurrent.{TimeUnit, TimeoutException}
-import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, ExecutionContext}
 
 /**
  * Class to write the dataset to given FHIR repository
@@ -34,7 +34,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
     df
       .foreachPartition { partition: Iterator[FhirMappingResult] =>
         import Execution.actorSystem
-        implicit val executionContext = actorSystem.dispatcher
+        implicit val ec: ExecutionContext = actorSystem.dispatcher
         val onFhirClient = sinkSettings.createOnFhirClient  // A FhirClient for each partition
         partition
           .grouped(ToFhirConfig.fhirWriterBatchGroupSize)

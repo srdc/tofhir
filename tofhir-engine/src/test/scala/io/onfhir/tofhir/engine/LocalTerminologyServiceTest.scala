@@ -1,6 +1,5 @@
 package io.onfhir.tofhir.engine
 
-import akka.actor.ActorSystem
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.tofhir.ToFhirTestSpec
 import io.onfhir.tofhir.model.{CodeSystemFile, ConceptMapFile, LocalFhirTerminologyServiceSettings}
@@ -12,7 +11,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
 class LocalTerminologyServiceTest extends AsyncFlatSpec with ToFhirTestSpec {
-  implicit val actorSystem: ActorSystem = ActorSystem("LocalTerminologyServiceTest")
   implicit val ec: ExecutionContext = actorSystem.getDispatcher
   val terminologyServiceFolderPath: String = Paths.get(getClass.getResource("/terminology-service").toURI).normalize().toAbsolutePath.toString
   val settings: LocalFhirTerminologyServiceSettings = LocalFhirTerminologyServiceSettings(terminologyServiceFolderPath,

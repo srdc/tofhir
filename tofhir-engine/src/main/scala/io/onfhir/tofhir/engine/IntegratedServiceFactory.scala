@@ -21,7 +21,7 @@ object IntegratedServiceFactory {
       //If this is a FHIR repository settings, it means it is a terminology service
       case terminologyService: FhirRepositorySinkSettings =>
         import Execution.actorSystem
-        implicit val ec:ExecutionContext = actorSystem.dispatcher
+        implicit val ec: ExecutionContext = actorSystem.dispatcher
         new TerminologyServiceClient(terminologyService.createOnFhirClient(actorSystem))
       //If we are having a local terminology service
       case localTerminologySettings: LocalFhirTerminologyServiceSettings =>
@@ -31,6 +31,7 @@ object IntegratedServiceFactory {
 
   /**
    * Create corresponding identity service from the settings
+   *
    * @param identityServiceSettings Settings for the service
    * @param ec
    * @return

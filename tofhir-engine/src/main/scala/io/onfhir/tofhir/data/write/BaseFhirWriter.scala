@@ -15,7 +15,7 @@ abstract class BaseFhirWriter(sinkSettings: FhirSinkSettings) extends Serializab
    *
    * @param df
    */
-  def write(sparkSession:SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator:CollectionAccumulator[FhirMappingResult]): Unit
+  def write(sparkSession: SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator: CollectionAccumulator[FhirMappingResult]): Unit
 }
 
 /**
@@ -25,7 +25,7 @@ object FhirWriterFactory {
   def apply(sinkSettings: FhirSinkSettings): BaseFhirWriter = {
     sinkSettings match {
       case frs: FhirRepositorySinkSettings => new FhirRepositoryWriter(frs)
-      case fsss:FileSystemSinkSettings => new FileSystemWriter(fsss)
+      case fsss: FileSystemSinkSettings => new FileSystemWriter(fsss)
       case _ => throw new NotImplementedError()
     }
   }

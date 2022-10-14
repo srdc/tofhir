@@ -86,7 +86,7 @@ object CommandLineInterface {
       System.exit(1)
     }
     val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(mappingJobFilePath.get)
-    if(mappingJob.schedulingSettings.isEmpty) {
+    if (mappingJob.schedulingSettings.isEmpty) {
       val fhirMappingJobManager =
         new FhirMappingJobManager(
           toFhirEngine.mappingRepository,
@@ -126,7 +126,7 @@ object CommandLineInterface {
       }
 
       val scheduler = new Scheduler()
-      val toFhirDbURI: URI = Paths.get(toFhirDbFolderPath.get).toUri
+      val toFhirDbURI: URI = Paths.get(toFhirDbFolderPath.get, "scheduler").toUri
       val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDbURI)
 
       val fhirMappingJobManager =

@@ -1,15 +1,14 @@
 package io.onfhir.tofhir.engine
 
 import com.typesafe.scalalogging.Logger
-import io.onfhir.api.Resource
 import io.onfhir.expression.FhirExpressionException
 import io.onfhir.tofhir.config.ErrorHandlingType.ErrorHandlingType
 import io.onfhir.tofhir.config.{ErrorHandlingType, ToFhirConfig}
+import io.onfhir.tofhir.data.read.SourceHandler
 import io.onfhir.tofhir.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult}
 import io.onfhir.util.JsonFormatter._
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.JObject
-import org.json4s.jackson.Serialization
 
 import java.sql.Timestamp
 import java.time.Instant
