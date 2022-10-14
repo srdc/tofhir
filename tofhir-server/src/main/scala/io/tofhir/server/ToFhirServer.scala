@@ -1,7 +1,7 @@
 package io.tofhir.server
 
 import akka.actor.ActorSystem
-import io.onfhir.tofhir.engine.Execution
+import io.tofhir.engine.mapping.Execution
 import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirEndpoint
 
