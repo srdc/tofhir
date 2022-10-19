@@ -1,43 +1,49 @@
 package io.tofhir.server
 
 import akka.Done
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.common.config.WebServerConfig
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{Await, ExecutionContext, Future, Promise, blocking}
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent._
 import scala.io.StdIn
 import scala.util.{Failure, Success}
 
 object ToFhirHttpServer extends LazyLogging {
 
-  def start(route: Route, webServerConfig: WebServerConfig)(implicit actorSystem: ActorSystem): Unit = {
-    implicit val executionContext: ExecutionContext = actorSystem.dispatcher
+  def start(route: Route, webServerConfig: WebServerConfig)(implicit actorSystem: ActorSystem[_]): Unit = {
+    implicit val executionContext: ExecutionContext = actorSystem.executionContext
 
-    Http().newServerAt(webServerConfig.serverHost, webServerConfig.serverPort).bind(route) onComplete {
-      case Success(serverBinding) =>
-        serverBinding.addToCoordinatedShutdown(FiniteDuration.apply(60L, TimeUnit.SECONDS))
+    val serverBindingFuture = Http().newServerAt(webServerConfig.serverHost, webServerConfig.serverPort).bind(route)
+      .map(serverBinding => {
+        serverBinding.addToCoordinatedShutdown(hardTerminationDeadline = FiniteDuration(10, TimeUnit.SECONDS))
         serverBinding.whenTerminated onComplete {
           case Success(_) =>
-            actorSystem.log.info("Closing toFHIR server...")
+            logger.info("Closing toFHIR HTTP server...")
             actorSystem.terminate()
-            logger.info("toFHIR server gracefully terminated.")
+            logger.info("toFHIR HTTP server gracefully terminated.")
           case Failure(exception) =>
-            logger.error("Problem while gracefully terminating toFHIR server!", exception)
+            logger.error("Problem while gracefully terminating toFHIR HTTP server!", exception)
         }
-        logger.info("toFHIR server online at {}", webServerConfig.serverLocation)
+        serverBinding
+      })
 
-        //Wait for a shutdown signal
-        Await.ready(waitForShutdownSignal(), Duration.Inf)
-        serverBinding.terminate(FiniteDuration.apply(60L, TimeUnit.SECONDS))
-      case Failure(ex) =>
-        logger.error("Problem while binding to the onFhir FHIR server address and port!", ex)
+    var serverBinding: Option[Http.ServerBinding] = None
+    try {
+      serverBinding = Some(Await.result(serverBindingFuture, FiniteDuration(10L, TimeUnit.SECONDS)))
+    } catch {
+      case e: Exception =>
+        logger.error("Problem while binding to the given HTTP address and port!", e)
         actorSystem.terminate()
     }
+
+    //Wait for a shutdown signal
+    Await.ready(waitForShutdownSignal(), Duration.Inf)
+    serverBinding.get.terminate(FiniteDuration.apply(10L, TimeUnit.SECONDS))
   }
 
   protected def waitForShutdownSignal()(implicit executionContext: ExecutionContext): Future[Done] = {

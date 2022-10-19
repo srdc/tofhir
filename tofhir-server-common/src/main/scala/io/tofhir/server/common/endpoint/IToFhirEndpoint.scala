@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
  * Interface for any toFHIR Endpoint
  */
-trait ToFhirEndpoint {
+trait IToFhirEndpoint {
 
   /**
    * Handle a toFHIR REST call (common authorization and other task handling)
