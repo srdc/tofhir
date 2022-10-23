@@ -13,7 +13,7 @@ object Boot extends App {
   if (options.isEmpty || !options.contains("command") || options("command").asInstanceOf[String] == "cli") {
     val toFhirEngine = new ToFhirEngine(ToFhirConfig.sparkAppName, ToFhirConfig.sparkMaster,
       ToFhirConfig.mappingRepositoryFolderPath, ToFhirConfig.schemaRepositoryFolderPath)
-    CommandLineInterface.start(toFhirEngine, ToFhirConfig.mappingJobFilePath)
+    CommandLineInterface.start(toFhirEngine, ToFhirConfig.initialMappingJobFilePath)
   }
   //Run as batch job
   else if (options("command").asInstanceOf[String] == "run") {
@@ -24,7 +24,7 @@ object Boot extends App {
       if (options.contains("job"))
         options.get("job").map(_.asInstanceOf[String])
       else
-        ToFhirConfig.mappingJobFilePath
+        ToFhirConfig.initialMappingJobFilePath
 
     val toFhirDbFolderPath =
       if (options.contains("db")) options.get("db").map(_.asInstanceOf[String])

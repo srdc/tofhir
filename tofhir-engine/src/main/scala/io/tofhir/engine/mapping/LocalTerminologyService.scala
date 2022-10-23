@@ -2,13 +2,12 @@ package io.tofhir.engine.mapping
 
 import io.onfhir.api.service.IFhirTerminologyService
 import io.onfhir.api.util.FHIRUtil
-import LocalTerminologyService.{CodeSystemFileColumns, ConceptMapFileColumns, equivalenceCodes}
+import io.tofhir.engine.mapping.LocalTerminologyService.{CodeSystemFileColumns, ConceptMapFileColumns, equivalenceCodes}
 import io.tofhir.engine.model.{ConceptMapFile, FhirMappingException, LocalFhirTerminologyServiceSettings}
 import io.tofhir.engine.util.{CsvUtil, FileUtils}
 import org.json4s.{JArray, JBool, JObject, JString}
 
 import java.io.File
-import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -23,7 +22,7 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
   //All csv files given in the configured folder
   val relatedFiles:Map[String, File] =
     FileUtils
-      .getFilesFromFolder(new File(Paths.get(settings.folderPath).toUri), FileUtils.FileExtensions.CSV)
+      .getFilesFromFolder(new File(FileUtils.getPath(settings.folderPath).toUri), FileUtils.FileExtensions.CSV)
       .map(f => f.getName -> f)
       .toMap
 

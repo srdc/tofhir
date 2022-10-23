@@ -17,26 +17,26 @@ object ToFhirConfig {
    */
   lazy val toFhirConfig = config.getConfig("tofhir")
 
+  /** A path to a context file/directory from where any kind of file system reading should start. */
+  lazy val mappingJobFileContextPath: String = Try(toFhirConfig.getString("context-path")).getOrElse(".")
+
   /** Path to the folder where the mappings are kept. */
   lazy val mappingRepositoryFolderPath: String = Try(toFhirConfig.getString("mappings.repository.folder-path")).getOrElse("mappings")
 
   /** Path to the folder where the schema definitions are kept. */
   lazy val schemaRepositoryFolderPath: String = Try(toFhirConfig.getString("mappings.schemas.repository.folder-path")).getOrElse("schemas")
 
-  /**
-   * Timeout for a single mapping
-   */
+  /** Timeout for a single mapping */
   lazy val mappingTimeout: Duration = Try(toFhirConfig.getDuration("mappings.timeout").toScala).toOption.getOrElse(Duration.apply(5, TimeUnit.SECONDS))
 
   /** Absolute file path to the MappingJobs file while initiating the Data Integration Suite */
-  lazy val mappingJobFilePath: Option[String] = Try(toFhirConfig.getString("initial-job-file-path ")).toOption
+  lazy val initialMappingJobFilePath: Option[String] = Try(toFhirConfig.getString("mapping-jobs.initial-job-file-path")).toOption
 
   /** The # of FHIR resources in the group while executing (create/update) a batch operation. */
   lazy val fhirWriterBatchGroupSize: Int = Try(toFhirConfig.getInt("fhir-server-writer.batch-group-size")).getOrElse(10)
 
   /** Path to the folder where the execution times of scheduled mapping jobs are kept. */
   lazy val toFhirDb: Option[String] = Try(toFhirConfig.getString("db")).toOption
-
 
   /**
    * Spark configurations

@@ -15,18 +15,24 @@ if [ ! -z "$SPARK_MASTER" ]; then
   JAVA_CMD+="-Dspark.master=$SPARK_MASTER "
 fi
 
-# Configure mapping-related paths
+# Configure toFHIR mapping-related paths
+if [ ! -z "$CONTEXT_PATH" ]; then
+  JAVA_CMD+="-Dtofhir.context-path=$CONTEXT_PATH "
+fi
 if [ ! -z "$MAPPINGS_FOLDER" ]; then
-  JAVA_CMD+="-Dmappings.repository.folder-path=$MAPPINGS_FOLDER "
+  JAVA_CMD+="-Dtofhir.mappings.repository.folder-path=$MAPPINGS_FOLDER "
 fi
 if [ ! -z "$SCHEMAS_FOLDER" ]; then
-  JAVA_CMD+="-Dmappings.schemas.repository.folder-path=$SCHEMAS_FOLDER "
+  JAVA_CMD+="-Dtofhir.mappings.schemas.repository.folder-path=$SCHEMAS_FOLDER "
 fi
 if [ ! -z "$MAPPING_JOB" ]; then
-  JAVA_CMD+="-Dmapping-job.file-path=$MAPPING_JOB "
+  JAVA_CMD+="-Dtofhir.mapping-job.file-path=$MAPPING_JOB "
 fi
 if [ ! -z "$FHIR_BATCH_SIZE" ]; then
-  JAVA_CMD+="-Dfhir-writer.batch-group-size=$FHIR_BATCH_SIZE "
+  JAVA_CMD+="-Dtofhir.fhir-writer.batch-group-size=$FHIR_BATCH_SIZE "
+fi
+if [ ! -z "$DB_PATH" ]; then
+  JAVA_CMD+="-Dtofhir.db=$DB_PATH "
 fi
 
 # Delay the execution for this amount of seconds

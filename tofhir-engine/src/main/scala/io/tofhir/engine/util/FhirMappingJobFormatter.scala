@@ -55,7 +55,23 @@ object FhirMappingJobFormatter {
    */
   def readMappingJobFromFile(filePath: String): FhirMappingJob = {
     val source = Source.fromFile(filePath, StandardCharsets.UTF_8.name())
-    val fileContent = try source.mkString finally source.close()
+    val fileContent = try replaceEnvironmentVariables(source.mkString) finally source.close()
     org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
   }
+
+  private def replaceEnvironmentVariables(fileContent: String): String = {
+    var returningContent = fileContent;
+    //    val regex = """\$\{(.*?)\}""".r
+    EnvironmentVariable.values.foreach { e =>
+      val regex = "\\$\\{" + e.toString + "\\}"
+      if (sys.env.contains(e.toString)) returningContent = fileContent.replaceAll(regex, sys.env(e.toString))
+    }
+    returningContent
+  }
+
+  object EnvironmentVariable extends Enumeration {
+    type EnvironmentVariable = Value
+    final val FHIR_REPO_URL = Value("FHIR_REPO_URL");
+  }
+
 }

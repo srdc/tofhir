@@ -1,10 +1,10 @@
 package io.tofhir.engine.data.read
 
 import io.tofhir.engine.model.{FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
+import io.tofhir.engine.util.FileUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-import java.nio.file.Paths
 import java.time.LocalDateTime
 
 /**
@@ -21,10 +21,13 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    * @return
    */
   override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
-    //Construct final path to the folder or file
-    val dataFolderPath = Paths.get(sourceSettings.dataFolderPath).normalize().toString
-    val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
-    val finalPath = Paths.get(dataFolderPath, mappingFilePath).toAbsolutePath.toString
+//    //Construct final path to the folder or file
+//    val contextPath = Paths.get(ToFhirConfig.mappingJobFileContextPath).normalize().toString
+//    val dataFolderPath = Paths.get(sourceSettings.dataFolderPath).normalize().toString
+//    val mappingFilePath = Paths.get(mappingSource.path).normalize().toString
+//    val finalPath = Paths.get(contextPath, dataFolderPath, mappingFilePath)
+
+    val finalPath = FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
 
     //Based on source type
     mappingSource.sourceType match {
