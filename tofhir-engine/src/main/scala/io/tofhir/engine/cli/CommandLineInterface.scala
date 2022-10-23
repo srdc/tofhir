@@ -55,8 +55,8 @@ object CommandLineInterface {
 
     val pattern = """[^\s"']+|"([^"]*)"|'([^']*)'""".r // Regex to parse the command and the arguments
     val scanner = new Scanner(System.in)
-    while (true) {
-      print("\n$ ")
+    print("\n$ ")
+    while (scanner.hasNextLine) {
       val userInput = scanner.nextLine()
       val args = pattern.findAllMatchIn(userInput).map { m =>
         if (m.group(0).startsWith("\"")) m.group(1) // get rid of the quotes (") at the beginning and the end
@@ -66,6 +66,7 @@ object CommandLineInterface {
       val commandName = Try(args.head).getOrElse("")
       val commandArgs = Try(args.tail).getOrElse(Seq.empty[String])
       commandExecutionContext = CommandFactory.apply(commandName).execute(commandArgs, commandExecutionContext)
+      print("\n$ ")
     }
   }
 
