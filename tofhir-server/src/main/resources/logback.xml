@@ -67,7 +67,7 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="io.onfhir.tofhir.engine.SinkHandler" level="INFO">
+    <logger name="io.tofhir.engine.SinkHandler" level="INFO">
         <appender-ref ref="ASYNC-AUDIT" />
     </logger>
 
