@@ -11,13 +11,13 @@
 
     <!-- Send messages to a file at "***.log" -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/tofhir-engine.log</file>
+        <file>logs/tofhir-server.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
         </encoder>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <FileNamePattern>logs/tofhir-engine.%i.log.zip</FileNamePattern>
+            <FileNamePattern>logs/tofhir-server.%i.log.zip</FileNamePattern>
             <MinIndex>1</MinIndex>
             <MaxIndex>10</MaxIndex>
         </rollingPolicy>
@@ -67,7 +67,7 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="io.tofhir.engine.data.write.SinkHandler" level="INFO">
+    <logger name="io.tofhir.engine.SinkHandler" level="INFO">
         <appender-ref ref="ASYNC-AUDIT" />
     </logger>
 

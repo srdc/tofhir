@@ -6,8 +6,9 @@
 
     <groupId>io.onfhir</groupId>
     <artifactId>tofhir_2.13</artifactId>
-    <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+
+    <packaging>pom</packaging>
 
     <name>toFHIR</name>
     <description>toFHIR is a high-performance and scalable data transformation suite that can read existing data from
@@ -55,6 +56,8 @@
 
     <modules>
         <module>tofhir-engine</module>
+        <module>tofhir-server</module>
+        <module>tofhir-server-common</module>
     </modules>
 
     <properties>
@@ -70,7 +73,7 @@
         <onfhir.version>3.2-SNAPSHOT</onfhir.version>
         <onfhir-template-engine.version>1.0-SNAPSHOT</onfhir-template-engine.version>
         <json4s.version>3.7.0-M11</json4s.version>
-        <scalatest.version>3.1.4</scalatest.version>
+        <scalatest.version>3.2.13</scalatest.version>
         <spark.version>3.2.1</spark.version>
         <jackson.version>2.12.7</jackson.version>
         <logback.version>1.2.11</logback.version>
@@ -81,6 +84,8 @@
         <cron4j.version>2.2.5</cron4j.version>
         <testcontainers.kafka>1.17.3</testcontainers.kafka>
         <log4j.version>2.16.0</log4j.version>
+        <akka.version>2.6.20</akka.version>
+        <akka-http.version>10.2.10</akka-http.version>
     </properties>
 
     <build>
@@ -128,7 +133,7 @@
                 <plugin>
                     <groupId>org.scalatest</groupId>
                     <artifactId>scalatest-maven-plugin</artifactId>
-                    <version>2.0.2</version>
+                    <version>2.2.0</version>
                     <configuration>
                         <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                         <junitxml>.</junitxml>
@@ -140,21 +145,6 @@
                             <goals>
                                 <goal>test</goal>
                             </goals>
-                            <configuration>
-                                <suffixes>
-                                    ^(IntegrationTest|IT)
-                                </suffixes>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>integration-test</id>
-                            <phase>integration-test</phase>
-                            <goals><goal>test</goal></goals>
-                            <configuration>
-                                <suffixes>
-                                    IntegrationTest|IT
-                                </suffixes>
-                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
@@ -231,7 +221,6 @@
                 </exclusions>
             </dependency>
 
-
             <!-- Scala Logging -->
             <dependency>
                 <groupId>com.typesafe.scala-logging</groupId>
@@ -260,25 +249,10 @@
                 <artifactId>log4j-over-slf4j</artifactId>
                 <version>1.7.25</version>
             </dependency>
-
             <dependency>
                 <groupId>net.logstash.logback</groupId>
                 <artifactId>logstash-logback-encoder</artifactId>
                 <version>${logstash-logback-encoder.version}</version>
-            </dependency>
-
-            <!-- This is to meet the hard dependency of Spark on log4j -->
-            <!-- https://stackoverflow.com/questions/70374165/how-to-override-log4j-with-log4j2-version-to-resolve-socketserver-class-vulnera -->
-            <!--dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-1.2-api</artifactId>
-                <version>${log4j.version}</version>
-            </dependency-->
-
-            <dependency>
-                <groupId>org.apache.spark</groupId>
-                <artifactId>spark-sql_${scala.binary.version}</artifactId>
-                <version>${spark.version}</version>
             </dependency>
 
             <!-- Application Configuration -->
@@ -288,6 +262,18 @@
                 <version>${typesafe.config.version}</version>
             </dependency>
 
+            <!-- Apache Spark-->
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-sql_${scala.binary.version}</artifactId>
+                <version>${spark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-sql-kafka-0-10_${scala.binary.version}</artifactId>
+                <version>${spark.version}</version>
+            </dependency>
+
             <!-- Dependency from jackson-dataformat-csv and logstash-logback-encoder-->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -295,7 +281,7 @@
                 <version>${jackson.version}</version>
             </dependency>
 
-            <!-- For csv parsing -->
+            <!-- For CSV parsing -->
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-csv</artifactId>
@@ -307,6 +293,60 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgres.version}</version>
+            </dependency>
+
+            <!-- cron4j -->
+            <dependency>
+                <groupId>it.sauronsoftware.cron4j</groupId>
+                <artifactId>cron4j</artifactId>
+                <version>${cron4j.version}</version>
+            </dependency>
+
+            <!-- Akka HTTP Suite -->
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-http_${scala.binary.version}</artifactId>
+                <version>${akka-http.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-http-core_${scala.binary.version}</artifactId>
+                <version>${akka-http.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-http-caching_${scala.binary.version}</artifactId>
+                <version>${akka-http.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-actor-typed_${scala.binary.version}</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-stream-typed_${scala.binary.version}</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+
+            <!-- toFHIR Dependencies -->
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>tofhir-server-common_2.13</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>tofhir-engine_2.13</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Testkit for Akka Http-->
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-http-testkit_${scala.binary.version}</artifactId>
+                <version>${akka.http.version}</version>
+                <scope>test</scope>
             </dependency>
 
             <!-- For Unit testing -->
@@ -324,24 +364,15 @@
                 <version>${h2db.version}</version>
                 <scope>test</scope>
             </dependency>
-            <!-- cron4j -->
-            <dependency>
-                <groupId>it.sauronsoftware.cron4j</groupId>
-                <artifactId>cron4j</artifactId>
-                <version>${cron4j.version}</version>
-            </dependency>
-            <!-- streaming -->
-            <dependency>
-                <groupId>org.apache.spark</groupId>
-                <artifactId>spark-sql-kafka-0-10_${scala.binary.version}</artifactId>
-                <version>${spark.version}</version>
-            </dependency>
+
+            <!-- Test containers to initialize Kafka during tests -->
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>kafka</artifactId>
                 <version>${testcontainers.kafka}</version>
                 <scope>test</scope>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 
