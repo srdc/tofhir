@@ -32,6 +32,11 @@ object ToFhirConfig {
   /** Absolute file path to the MappingJobs file while initiating the Data Integration Suite */
   lazy val initialMappingJobFilePath: Option[String] = Try(toFhirConfig.getString("mapping-jobs.initial-job-file-path")).toOption
 
+  /**
+   * Number of partitions for to repartition the source data before executing the mappings for mapping jobs
+   */
+  lazy val partitionsForMappingJobs:Option[Int] = Try(toFhirConfig.getInt("mapping-jobs.numOfPartitions")).toOption
+
   /** The # of FHIR resources in the group while executing (create/update) a batch operation. */
   lazy val fhirWriterBatchGroupSize: Int = Try(toFhirConfig.getInt("fhir-server-writer.batch-group-size")).getOrElse(10)
 

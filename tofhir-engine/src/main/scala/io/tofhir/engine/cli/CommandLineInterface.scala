@@ -71,7 +71,7 @@ object CommandLineInterface {
   }
 
   private def getWelcomeMessage: String = {
-    "Welcome to the CLI of AICCELERATE Data Integration Suite\n" +
+    "Welcome to the CLI of toFHIR Data Integration Engine\n" +
       "You can use the help command to see available commands and arguments."
   }
 

@@ -2,6 +2,7 @@ package io.tofhir.engine.mapping
 
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
+import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.data.write.{FhirWriterFactory, SinkHandler}
 import io.tofhir.engine.model.{DataSourceSettings, FhirMappingException, FhirMappingResult, FhirMappingTask, FhirSinkSettings, IdentityServiceSettings, SchedulingSettings, TerminologyServiceSettings}
@@ -251,9 +252,14 @@ class FhirMappingJobManager(
       }
     //TODO Implement multiple source mappings, and input data resolution at those cases
     val df = handleJoin(task, sourceDataFrames)
+    val repartitionedDf =
+      ToFhirConfig.partitionsForMappingJobs match {
+        case None => df
+        case Some(p) => df.repartition(p)
+      }
 
-    //df.printSchema()
-    //df.show(10)
+    //repartitionedDf.printSchema()
+    //repartitionedDf.show(10)
 
     //Load the contextual data for the mapping
     Future
@@ -268,7 +274,7 @@ class FhirMappingJobManager(
       val configurationContext = sources.head._4.toConfigurationContext
       //Construct the mapping service
       val fhirMappingService = new FhirMappingService(jobId,fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, terminologyServiceSettings, identityServiceSettings)
-      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandlingType)
+      MappingTaskExecutor.executeMapping(spark, repartitionedDf, fhirMappingService, mappingErrorHandlingType)
     })
   }
 
