@@ -194,6 +194,27 @@ object MappingTaskExecutor {
             logger.debug("Mapping timeout, halting the mapping execution!")
             throw e
           }
+
+        case oth:Exception =>
+          if (errorHandlingType == ErrorHandlingType.CONTINUE) {
+            logger.error("Unexpected problem while executing the mappings...", oth)
+            Seq(
+              FhirMappingResult(
+                jobId = fhirMappingService.jobId,
+                mappingUrl = fhirMappingService.mappingUrl,
+                mappingExpr = None,
+                timestamp = Timestamp.from(Instant.now()),
+                source = Some(jo.toJson),
+                error = Some(FhirMappingError(
+                  code = FhirMappingErrorCodes.UNEXPECTED_PROBLEM,
+                  description = "Exception:" + oth.getMessage
+                ))
+              )
+            )
+          } else {
+            logger.error("Unexpected problem while executing the mappings...", oth)
+            throw oth
+          }
       }
     results
   }

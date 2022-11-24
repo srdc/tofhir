@@ -82,4 +82,6 @@ object FhirMappingErrorCodes {
   final val FHIR_API_TIMEOUT = "fhir_api_timeout"
   // Problem in Terminology or Identity service interactions
   final val SERVICE_PROBLEM = "service_error"
+
+  final val UNEXPECTED_PROBLEM = "unexpected_problem"
 }
