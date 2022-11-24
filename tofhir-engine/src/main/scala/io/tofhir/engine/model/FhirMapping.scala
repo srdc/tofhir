@@ -60,9 +60,31 @@ object FhirMappingContextCategories {
 }
 
 /**
+ * Provides the details about FHIR interaction to persist the new information
+ * @param `type`      FHIR interaction type e.g. create | update | patch
+ *                    For FHIR patch interaction, the mapped content should be arranged accordingly (JSON patch or FHIR Path patch)
+ * @param rlocator    Only required for FHIR Patch and provides either FHIR resource locator (e.g. Patient/ ) if required for the interaction (required for FHIR patch).
+ *                    Note: Placeholders can be used to construct this
+ *
+ *                    e.g., Observation/{{resourceId}}
+ *                    e.g. Observation/315653
+ * @param condition   FHIR search statement indicating the condition to update or create (FHIR conditional create/update/patch).
+ *                    For conditional patch, either rid or condition should be given
+ *                    Note: Placeholders can be used to construct this
+ *
+ *                    e.g. Appending a new language to Patient resource --> language:not=en
+ */
+case class FhirInteraction(`type`:String, rid:Option[String] = None, condition:Option[String] = None)
+
+/**
  * Mapping expression
  *
- * @param expression   FHIR expression that defines the mapping
- * @param precondition A precondition FHIR expression for this mapping
+ * @param expression      FHIR expression that defines the mapping
+ * @param precondition    A precondition FHIR expression for this mapping
+ * @param fhirInteraction Provides information about the FHIR Interaction to persist the mapped information. If not given
+ *                        FHIR Update interaction is used and the mapped content is expected to be a FHIR resource.
  */
-case class FhirMappingExpression(expression: FhirExpression, precondition: Option[FhirExpression] = None)
+case class FhirMappingExpression(expression: FhirExpression,
+                                 precondition: Option[FhirExpression] = None,
+                                 fhirInteraction: Option[FhirInteraction] = None
+                                )

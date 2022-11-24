@@ -2,7 +2,7 @@ package io.tofhir.engine.mapping
 
 import io.onfhir.api.Resource
 import io.onfhir.api.service.{IFhirIdentityService, IFhirTerminologyService}
-import io.tofhir.engine.model.FhirMappingException
+import io.tofhir.engine.model.{FhirInteraction, FhirMappingException}
 import org.json4s.JsonAST.JObject
 
 import scala.concurrent.Future
@@ -15,10 +15,10 @@ trait IFhirMappingService extends Serializable {
   /**
    * For single source mappings, map the given source into one or more FHIR resources based on the underlying mapping definition for this service
    * @param source
-   * @return
+   * @return  Mapping expression identifier, Mapped resources, optional FHIR interaction for persistence details
    */
   @throws[FhirMappingException]
-  def mapToFhir(source:JObject):Future[Seq[(String, Seq[Resource])]]
+  def mapToFhir(source:JObject):Future[Seq[(String, Seq[Resource], Option[FhirInteraction])]]
 
   /**
    * Map given source set into one or more FHIR resources based on the underlying mapping definition for this service
@@ -26,5 +26,5 @@ trait IFhirMappingService extends Serializable {
    * @return
    */
   @throws[FhirMappingException]
-  def mapToFhir(sources:Map[String, Seq[JObject]]):Future[Seq[(String, Seq[Resource])]]
+  def mapToFhir(sources:Map[String, Seq[JObject]]):Future[Seq[(String, Seq[Resource],Option[FhirInteraction])]]
 }

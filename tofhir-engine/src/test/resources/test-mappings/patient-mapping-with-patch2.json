@@ -1,0 +1,64 @@
+{
+  "url": "https://aiccelerate.eu/fhir/mappings/patient-mapping-with-patch2",
+  "name": "patient-mapping-with-patch2",
+  "title": "Mapping of some patient data to a conditional FHIR patch for FHIR Patient resource",
+  "source": [{
+    "alias": "source",
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-patient-extra"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Parameters",
+          "parameter": [
+            {
+              "name": "operation",
+              "part": [
+                {
+                  "name": "type",
+                  "valueCode": "add"
+                },
+                {
+                  "name": "path",
+                  "valueString": "Patient"
+                },
+                {
+                  "name": "name",
+                  "valueString": "communication"
+                },
+                {
+                  "name": "value",
+                  "part": [
+                    {
+                      "name": "language",
+                      "valueCodeableConcept": {
+                        "coding": [
+                          {
+                            "system":"urn:ietf:bcp:47",
+                            "code": "{{language}}"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "name": "preferred",
+                      "valueBoolean": true
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "fhirInteraction": {
+        "type": "patch",
+        "rid": "Patient",
+        "condition": "?_id={{mpp:getHashedId('Patient',pid)}}&language:not=urn:ietf:bcp:47|{{language}}"
+      }
+    }
+  ]
+}

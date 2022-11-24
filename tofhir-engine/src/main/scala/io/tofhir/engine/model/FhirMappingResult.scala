@@ -15,6 +15,7 @@ import net.logstash.logback.marker.Markers._
  * @param mappedResource    If successful, JSON serialization of the FHIR resource generated via the mapping
  * @param source            If there is a problem in the process, the JSON serialization of the source data
  * @param error             If there is a problem in the process, description of the problem
+ * @param fhirInteraction   FHIR interaction details to persist the mapped result
  */
 case class FhirMappingResult(
                               jobId:String,
@@ -23,7 +24,8 @@ case class FhirMappingResult(
                               timestamp:Timestamp,
                               mappedResource:Option[String] = None,
                               source:Option[String] = None,
-                              error:Option[FhirMappingError] = None
+                              error:Option[FhirMappingError] = None,
+                              fhirInteraction:Option[FhirInteraction] = None
                             ) {
   final val eventId:String = "MAPPING_RESULT"
   override def toString: String = {

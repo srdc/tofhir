@@ -1,0 +1,108 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-patient-extra",
+  "name": "Ext-patient-extra",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-patient-extra",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-patient-extra",
+        "path": "Ext-patient-extra",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-patient-extra.pid",
+        "path": "Ext-patient-extra.pid",
+        "short": "Patient identifier",
+        "definition": "Patient identifier",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-patient-extra.maritalStatusCode",
+        "path": "Ext-patient-extra.maritalStatusCode",
+        "short": "Marital status code",
+        "definition": "Marital status code",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-patient-extra.maritalStatusDisplay",
+        "path": "Ext-patient-extra.maritalStatusDisplay",
+        "short": "Marital status",
+        "definition": "Marital status",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-patient-extra.gender",
+        "path": "Ext-patient-extra.gender",
+        "short": "Gender of patient",
+        "definition": "Gender of patient",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-patient-extra.language",
+        "path": "Ext-patient-extra.language",
+        "short": "Language of patient",
+        "definition": "Language of patient",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      }
+
+    ]
+  }
+}

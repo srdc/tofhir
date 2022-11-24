@@ -1,13 +1,18 @@
 package io.tofhir.engine.data.write
 
+import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.Logger
+import io.onfhir.api.FHIR_INTERACTIONS
 import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder}
+import io.onfhir.api.util.FHIRUtil
+import io.onfhir.util.JsonFormatter
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.mapping.Execution
-import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult, FhirRepositorySinkSettings}
+import io.tofhir.engine.model.{FhirInteraction, FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult, FhirRepositorySinkSettings}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
-import org.json4s.jackson.Serialization
+import org.json4s.JArray
+import org.json4s.jackson.{JsonMethods, Serialization}
 
 import java.util.UUID
 import java.util.concurrent.{TimeUnit, TimeoutException}
@@ -39,13 +44,53 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         partition
           .grouped(ToFhirConfig.fhirWriterBatchGroupSize)
           .foreach(rowGroup => {
+            //Create a UUID for each entry
             val resourcesToCreate = rowGroup.map(r => s"urn:uuid:${UUID.randomUUID()}" -> r)
             val resourceMap = resourcesToCreate.toMap
+            // Construct a FHIR batch operation from each entry
             var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
-            resourcesToCreate.foreach(row => {
-              val resource = row._2.mappedResource.get.parseJson
-              batchRequest = batchRequest.entry(row._1, _.update(resource))
-            })
+            resourcesToCreate
+              .foreach  {
+                case (uuid, mappingResult) =>
+                  mappingResult
+                    .fhirInteraction
+                    .getOrElse(FhirInteraction(FHIR_INTERACTIONS.UPDATE)) match {
+                      //FHIR Update (update or create by update)
+                      case FhirInteraction(FHIR_INTERACTIONS.UPDATE, _, None) =>
+                        val resource = mappingResult.mappedResource.get.parseJson
+                        batchRequest = batchRequest.entry(uuid, _.update(resource))
+                      //FHIR Conditional update
+                      case FhirInteraction(FHIR_INTERACTIONS.UPDATE, _, Some(condition)) =>
+                        val resource = mappingResult.mappedResource.get.parseJson
+                        val searchParams = Uri(condition).query().toMultiMap
+                        batchRequest = batchRequest.entry(uuid, _.update(resource).where(searchParams))
+                      //FHIR Create
+                      case FhirInteraction(FHIR_INTERACTIONS.CREATE, _, None) =>
+                        val resource = mappingResult.mappedResource.get.parseJson
+                        batchRequest = batchRequest.entry(uuid, _.create(resource))
+                      // FHIR Conditional create, if not exists
+                      case FhirInteraction(FHIR_INTERACTIONS.CREATE, _, Some(condition)) =>
+                        val resource = mappingResult.mappedResource.get.parseJson
+                        val searchParams = Uri(condition).query().toMultiMap
+                        batchRequest = batchRequest.entry(uuid, _.create(resource).where(searchParams))
+                      //FHIR Patch
+                      case FhirInteraction(FHIR_INTERACTIONS.PATCH, Some(rtypeAndId), None) =>
+                        val patchContent =  JsonMethods.parse(mappingResult.mappedResource.get)
+                        val (_, rtype, rid, _) = FHIRUtil.parseReferenceValue(rtypeAndId)
+                        batchRequest =
+                          batchRequest
+                            .entry(uuid, _.patch(rtype, rid)
+                            .patchContent(patchContent))
+                      //Conditional patch
+                      case FhirInteraction(FHIR_INTERACTIONS.PATCH, Some(rtype), Some(condition)) =>
+                        val patchContent = JsonMethods.parse(mappingResult.mappedResource.get)
+                        val searchParams = Uri(condition).query().toMultiMap
+
+                        batchRequest =
+                          batchRequest
+                            .entry(uuid, _.patch(rtype).where(searchParams).patchContent(patchContent))
+                    }
+              }
             batchRequest = batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder]
             logger.debug("Batch Update request will be sent to the FHIR repository for {} resources.", rowGroup.size)
             var responseBundle: FHIRTransactionBatchBundle = null

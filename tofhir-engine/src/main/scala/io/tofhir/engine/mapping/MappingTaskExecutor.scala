@@ -8,7 +8,7 @@ import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
-import org.json4s.JObject
+import org.json4s.{JArray, JObject}
 
 import java.sql.Timestamp
 import java.time.Instant
@@ -107,7 +107,19 @@ object MappingTaskExecutor {
       try {
         val mappedResources = Await.result(fhirMappingService.mapToFhir(jo), ToFhirConfig.mappingTimeout)
         mappedResources.flatMap {
-          case (mappingExpr, resources) =>
+          //If this is a JSON Patch, the resources are patches so return it as single result
+          case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "json-patch") =>
+            Seq(FhirMappingResult(
+              jobId = fhirMappingService.jobId,
+              mappingUrl = fhirMappingService.mappingUrl,
+              mappingExpr = Some(mappingExpr),
+              timestamp = Timestamp.from(Instant.now()),
+              source = Some(jo.toJson),
+              mappedResource = Some(JArray(resources.toList).toJson),
+              fhirInteraction = fhirInteraction
+            ))
+          //Otherwise return each resource as a separate mapping result
+          case (mappingExpr, resources, fhirInteraction) =>
             resources.map(r =>
               FhirMappingResult(
                 jobId = fhirMappingService.jobId,
@@ -115,7 +127,8 @@ object MappingTaskExecutor {
                 mappingExpr = Some(mappingExpr),
                 timestamp = Timestamp.from(Instant.now()),
                 source = Some(jo.toJson),
-                mappedResource = Some(r.toJson)
+                mappedResource = Some(r.toJson),
+                fhirInteraction = fhirInteraction
               )
             )
         }
