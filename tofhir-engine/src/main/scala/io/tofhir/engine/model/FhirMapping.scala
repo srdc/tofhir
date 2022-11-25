@@ -15,6 +15,7 @@ import java.util.UUID
  * @param description Description of the mapping
  * @param source      Metadata about source for the mapping
  * @param context     Further context to use for mapping evaluation e.g. ConceptMap for terminology mapping, definition of unit conversion functions
+ * @param variable   Common variables calculated from source data to use in the mappings
  * @param mapping     Mapping scripts
  */
 case class FhirMapping(id: String = UUID.randomUUID().toString,
@@ -24,6 +25,7 @@ case class FhirMapping(id: String = UUID.randomUUID().toString,
                        description: Option[String] = None,
                        source: Seq[FhirMappingSource],
                        context: Map[String, FhirMappingContextDefinition],
+                       variable:Seq[FhirExpression] = Nil,
                        mapping: Seq[FhirMappingExpression]
                       ) {
   def withContext(newContext: Map[String, FhirMappingContextDefinition]): FhirMapping = {

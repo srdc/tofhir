@@ -49,8 +49,6 @@ object MappingTaskExecutor {
     }
   }
 
-
-
   /**
    *
    * @param spark              Spark session
@@ -108,7 +106,7 @@ object MappingTaskExecutor {
         val mappedResources = Await.result(fhirMappingService.mapToFhir(jo), ToFhirConfig.mappingTimeout)
         mappedResources.flatMap {
           //If this is a JSON Patch, the resources are patches so return it as single result
-          case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "json-patch") =>
+          case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "patch") && resources.length > 1 =>
             Seq(FhirMappingResult(
               jobId = fhirMappingService.jobId,
               mappingUrl = fhirMappingService.mappingUrl,

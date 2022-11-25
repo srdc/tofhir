@@ -7,11 +7,10 @@ import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.model.{ConfigurationContext, FhirInteraction, FhirMappingContext, FhirMappingException, FhirMappingExpression, IdentityServiceSettings, TerminologyServiceSettings}
 import org.json4s.JsonAST.JArray
-import org.json4s.{JObject, JValue}
+import org.json4s.{JNull, JObject, JValue}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Try
 
 /**
  * Mapping service for a specific FhirMapping together with contextual data and mapping scripts
@@ -28,6 +27,7 @@ class FhirMappingService(
                           val sources: Seq[String],
                           context: Map[String, FhirMappingContext],
                           mappings: Seq[FhirMappingExpression],
+                          variables:Seq[FhirExpression],
                           terminologyServiceSettings: Option[TerminologyServiceSettings],
                           identityServiceSettings: Option[IdentityServiceSettings]
                         ) extends IFhirMappingService {
@@ -58,6 +58,15 @@ class FhirMappingService(
    * @return  List of converted resources for each mapping expression
    */
   override def mapToFhir(source: JObject): Future[Seq[(String, Seq[Resource], Option[FhirInteraction])]] = {
+    //Calculate the variables
+    val contextVariables:Map[String, JValue] =
+      variables
+        .flatMap(vexp =>
+            evaluateFhirPathExpression(vexp, source)
+              .map(r => vexp.name -> r)
+        )
+        .toMap
+
     //Find out eligible mappings on this source JObject based on preconditions
     val eligibleMappings =
       mappings
@@ -76,7 +85,7 @@ class FhirMappingService(
 
     //Execute the eligible mappings sequentially while appending previous mapping results as context parameter
     eligibleMappings
-      .foldLeft[Future[(Map[String, JValue], Seq[(String,JValue,Option[FhirInteraction])])]](Future.apply(Map.empty[String, JValue] -> Seq.empty[(String,JValue,Option[FhirInteraction])])) {
+      .foldLeft[Future[(Map[String, JValue], Seq[(String,JValue,Option[FhirInteraction])])]](Future.apply(contextVariables -> Seq.empty[(String,JValue,Option[FhirInteraction])])) {
         case (fresults, mpp) =>
           // Evaluate the expressions within the FHIR interaction if exists
           val fhirInteractionFuture =
@@ -84,14 +93,14 @@ class FhirMappingService(
               .fhirInteraction match {
                 case None => Future.apply(None)
                 case Some(fhirIntr) if fhirIntr.condition.isDefined =>
-                  evaluateExpressionReturnString(fhirIntr.condition.get, Map.empty[String, JValue], source)
+                  evaluateExpressionReturnString(fhirIntr.condition.get, contextVariables, source)
                     .map(cnd => Some(fhirIntr.copy(condition = Some(cnd))))
                     .recover{
                       case e:Exception =>
                         throw FhirMappingException(mpp.expression.name, e)
                     }
                 case Some(fhirIntr) if fhirIntr.rid.isDefined =>
-                    evaluateExpressionReturnString(fhirIntr.rid.get, Map.empty[String, JValue], source)
+                    evaluateExpressionReturnString(fhirIntr.rid.get, contextVariables, source)
                       .map(rid => Some(fhirIntr.copy(rid = Some(rid))))
                       .recover {
                       case e: Exception =>
@@ -127,6 +136,30 @@ class FhirMappingService(
       )
   }
 
+  /**
+   * Evaluate the FHIR Path expression
+   * @param fhirExpression  FHIR Path expression
+   * @param source          Input content
+   * @return
+   */
+  private def evaluateFhirPathExpression(fhirExpression: FhirExpression, source: JObject):Option[JValue] = {
+    try {
+      templateEngine
+        .fhirPathEvaluator
+        .evaluateAndReturnJson(fhirExpression.expression.get, source)
+    } catch {
+      case e: Exception =>
+        throw FhirMappingException(fhirExpression.name, e)
+    }
+  }
+
+  /**
+   * Evaluate the expression and return string
+   * @param expr    Template expression
+   * @param cntx    FHIR Path context
+   * @param input   Input content
+   * @return
+   */
   private def evaluateExpressionReturnString(expr:String, cntx:Map[String, JValue], input:JValue):Future[String] = {
       templateEngine
         .evaluateExpression(

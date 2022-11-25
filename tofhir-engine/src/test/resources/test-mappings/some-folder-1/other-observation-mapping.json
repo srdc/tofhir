@@ -12,6 +12,18 @@
       "url": "./other-observation-concept-map.csv"
     }
   },
+  "variable": [
+    {
+      "name": "hashedObsId",
+      "language": "text/fhirpath",
+      "expression": "mpp:getHashedId('Observation', pid & code & time.toString())"
+    },
+    {
+      "name": "obsUnit",
+      "language": "text/fhirpath",
+      "expression": "mpp:getConcept(%obsConceptMap, code, 'unit')"
+    }
+  ],
   "mapping": [
     {
       "precondition": {
@@ -24,7 +36,7 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
+          "id": "{{%hashedObsId}}",
           "meta": {
             "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
             "source": "{{%sourceSystem.sourceUri}}"
@@ -44,9 +56,9 @@
           "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
           "valueQuantity": {
             "value": "{{value.toDecimal()}}",
-            "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
+            "unit": "{{%obsUnit}}",
             "system": "http://unitsofmeasure.org",
-            "code": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}"
+            "code": "{{%obsUnit}}"
           }
         }
       }
@@ -62,7 +74,7 @@
         "language": "application/fhir-template+json",
         "value": {
           "resourceType": "Observation",
-          "id": "{{mpp:getHashedId('Observation', pid & code & time.toString())}}",
+          "id": "{{%hashedObsId}}",
           "meta": {
             "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
             "source": "{{%sourceSystem.sourceUri}}"
@@ -82,9 +94,9 @@
           "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
           "valueQuantity": {
             "value": "{{value.split('-')[0].toDecimal()}}",
-            "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",
+            "unit": "{{%obsUnit}}",
             "system": "http://unitsofmeasure.org",
-            "code": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}"
+            "code": "{{%obsUnit}}"
           },
           "component": {
             "{{#comp}}": "{{value.split('-').tail().select($this.toDecimal())}}",

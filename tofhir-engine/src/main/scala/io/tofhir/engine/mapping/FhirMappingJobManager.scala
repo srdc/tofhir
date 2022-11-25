@@ -273,7 +273,7 @@ class FhirMappingJobManager(
       val sourceNames = fhirMapping.source.map(_.alias)
       val configurationContext = sources.head._4.toConfigurationContext
       //Construct the mapping service
-      val fhirMappingService = new FhirMappingService(jobId,fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, terminologyServiceSettings, identityServiceSettings)
+      val fhirMappingService = new FhirMappingService(jobId,fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings)
       MappingTaskExecutor.executeMapping(spark, repartitionedDf, fhirMappingService, mappingErrorHandlingType)
     })
   }
