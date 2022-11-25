@@ -192,7 +192,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
     //Check if there is any error in one of the requests
     if (responseBundle.hasAnyError()) {
       //If errors are non-transient errors, log them
-      if (responseBundle.hasAnyNonTransientError() || retry == 3) {
+      if (responseBundle.hasAnyNonTransientError() || retry == 4) {
         val msg =
           s"!!!There is an error while writing resources to the FHIR Repository.\n" +
             s"\tRepository URL: ${sinkSettings.fhirRepoUrl}\n" +
