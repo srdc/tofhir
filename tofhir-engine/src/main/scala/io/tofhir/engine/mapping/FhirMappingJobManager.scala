@@ -5,7 +5,8 @@ import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.data.write.{FhirWriterFactory, SinkHandler}
-import io.tofhir.engine.model.{DataSourceSettings, FhirMappingException, FhirMappingResult, FhirMappingTask, FhirSinkSettings, IdentityServiceSettings, SchedulingSettings, TerminologyServiceSettings}
+import io.tofhir.engine.model.{DataSourceSettings, FhirMapping, FhirMappingException, FhirMappingResult, FhirMappingSource, FhirMappingTask, FhirSinkSettings, IdentityServiceSettings, SchedulingSettings, TerminologyServiceSettings}
+import org.apache.spark.sql.functions.{collect_list, struct}
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
@@ -242,7 +243,15 @@ class FhirMappingJobManager(
       throw FhirMappingException(s"Invalid mapping task, source context is not given for some mapping source(s) ${sourceNames.diff(namesForSuppliedSourceContexts).mkString(", ")}")
 
     //Get the source schemas
-    val sources = fhirMapping.source.map(s => (s.alias, schemaLoader.getSchema(s.url), task.sourceContext(s.alias), sourceSettings.apply(s.alias), timeRange))
+    val sources =
+      fhirMapping.source.map(s =>
+        (
+          s.alias, //Alias for the source
+          schemaLoader.getSchema(s.url), //URL of the schema for the source
+          task.sourceContext(s.alias), //Get source context
+          sourceSettings.get(s.alias).orElse(sourceSettings.get("*")).getOrElse(sourceSettings.head._2), //Get source settings
+          timeRange
+        ))
     //Read sources into Spark as DataFrame
     val sourceDataFrames =
       sources.map {
@@ -250,8 +259,8 @@ class FhirMappingJobManager(
           alias ->
             SourceHandler.readSource(spark, sourceContext, sourceStt, schema, timeRange)
       }
-    //TODO Implement multiple source mappings, and input data resolution at those cases
-    val df = handleJoin(task, sourceDataFrames)
+
+    val df = handleJoin(fhirMapping.source, sourceDataFrames)
     val repartitionedDf =
       ToFhirConfig.partitionsForMappingJobs match {
         case None => df
@@ -259,7 +268,7 @@ class FhirMappingJobManager(
       }
 
     //repartitionedDf.printSchema()
-    //repartitionedDf.show(10)
+    //repartitionedDf.show(100)
 
     //Load the contextual data for the mapping
     Future
@@ -281,16 +290,42 @@ class FhirMappingJobManager(
   /**
    * Handle the joining of source data frames
    *
-   * @param task             Mapping task definition
+   * @param sources          Defined sources within the mapping
    * @param sourceDataFrames Source data frames loaded
    * @return
    */
-  private def handleJoin(task: FhirMappingTask, sourceDataFrames: Seq[(String, DataFrame)]): DataFrame = {
+  private def handleJoin(sources: Seq[FhirMappingSource], sourceDataFrames: Seq[(String, DataFrame)]): DataFrame = {
     sourceDataFrames match {
       case Seq(_ -> df) => df
+      //If we have multiple sources
       case _ =>
-        //Join of source data is not implemented yet
-        throw new NotImplementedError()
+        val mainSource = sourceDataFrames.head._1
+        val mainJoinOnColumns = sources.find(_.alias == mainSource).get.joinOn
+        var mainDf = sourceDataFrames.head._2.withColumn(s"__$mainSource", struct("*"))
+        mainDf = mainDf.select((mainJoinOnColumns :+ s"__$mainSource").map(mainDf.col):_*)
+        //Group other dataframes on join columns and rename their join columns
+        val otherDfs =
+          sourceDataFrames
+            .tail
+            .map {
+              case (alias, df) =>
+                val colsToJoinOn = sources.find(_.alias == alias).get.joinOn
+                val groupedDf =
+                  df
+                    .groupBy(colsToJoinOn.map(df.col):_*)
+                    .agg(collect_list(struct("*")).as(s"__$alias"))
+                if(mainJoinOnColumns == colsToJoinOn)
+                  groupedDf
+                else
+                  colsToJoinOn.zip(mainJoinOnColumns)
+                    .foldLeft(groupedDf) {
+                      case (gdf, (c1, r1)) => gdf.withColumnRenamed(c1, r1)
+                    }
+            }
+        //Join other data frames to main data frame
+        otherDfs.foldLeft(mainDf) {
+          case (mdf, odf) => mdf.join(odf, mainJoinOnColumns, "left")
+        }
     }
   }
 

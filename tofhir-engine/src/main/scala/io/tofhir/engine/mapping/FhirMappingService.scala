@@ -2,12 +2,12 @@ package io.tofhir.engine.mapping
 
 import io.onfhir.api.Resource
 import io.onfhir.expression.{FhirExpression, FhirExpressionException}
-import io.onfhir.path.{FhirPathException, FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
+import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.model.{ConfigurationContext, FhirInteraction, FhirMappingContext, FhirMappingException, FhirMappingExpression, IdentityServiceSettings, TerminologyServiceSettings}
 import org.json4s.JsonAST.JArray
-import org.json4s.{JNull, JObject, JValue}
+import org.json4s.{JObject, JValue}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -52,20 +52,21 @@ class FhirMappingService(
     )
 
   /**
-   * For single source mappings, map the given source into one or more FHIR resources based on the underlying mapping definition for this service
+   * Map the given source into one or more FHIR resources based on the underlying mapping definition for this service
    *
    * @param source Input object
    * @return  List of converted resources for each mapping expression
    */
-  override def mapToFhir(source: JObject): Future[Seq[(String, Seq[Resource], Option[FhirInteraction])]] = {
+  override def mapToFhir(source: JObject, otherSourceAsContextVariables:Map[String, JValue] = Map.empty): Future[Seq[(String, Seq[Resource], Option[FhirInteraction])]] = {
     //Calculate the variables
     val contextVariables:Map[String, JValue] =
-      variables
-        .flatMap(vexp =>
-            evaluateFhirPathExpression(vexp, source)
-              .map(r => vexp.name -> r)
-        )
-        .toMap
+      otherSourceAsContextVariables ++
+        variables
+          .flatMap(vexp =>
+              evaluateFhirPathExpression(vexp, source)
+                .map(r => vexp.name -> r)
+          )
+          .toMap
 
     //Find out eligible mappings on this source JObject based on preconditions
     val eligibleMappings =
@@ -169,12 +170,4 @@ class FhirMappingService(
         ).map(_.extract[String])
 
   }
-
-  /**
-   * Map given source set into one or more FHIR resources based on the underlying mapping definition for this service
-   *
-   * @param sources Map of source data (alis of the source in mapping definition FhirMapping.source.alias) -> Source object(s) as the input to the mapping
-   * @return
-   */
-  override def mapToFhir(sources: Map[String, Seq[JObject]]): Future[Seq[(String, Seq[Resource], Option[FhirInteraction])]] = ???
 }

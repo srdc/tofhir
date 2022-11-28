@@ -8,12 +8,13 @@ import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
-import org.json4s.{JArray, JObject}
+import org.json4s.{JArray, JObject, JValue}
 
 import java.sql.Timestamp
 import java.time.Instant
 import java.util.concurrent.TimeoutException
 import scala.concurrent.Await
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 object MappingTaskExecutor {
 
@@ -45,7 +46,7 @@ object MappingTaskExecutor {
     fhirMappingService.sources match {
       case Seq(_) => executeMappingOnSingleSource(spark, df, fhirMappingService, errorHandlingType)
       //Executing on multiple sources
-      case _ => throw new NotImplementedError()
+      case oth => executeMappingOnMultipleSources(spark, df, fhirMappingService,oth, errorHandlingType)
     }
   }
 
@@ -71,18 +72,78 @@ object MappingTaskExecutor {
 
           Option(row.getAs[String](SourceHandler.INPUT_VALIDITY_ERROR)) match {
             //If input is valid
-            case None => executeMappingOnInput(jo, fhirMappingService, errorHandlingType)
+            case None => executeMappingOnInput(jo, Map.empty[String, JValue], fhirMappingService, errorHandlingType)
             //If the input is not valid, return the error
             case Some(validationError) =>
               Seq(FhirMappingResult(
                 jobId = fhirMappingService.jobId,
                 mappingUrl = fhirMappingService.mappingUrl,
-                mappingExpr = None, //TODO
+                mappingExpr = None,
                 timestamp = Timestamp.from(Instant.now()),
                 source = Some(jo.toJson),
                 error = Some(FhirMappingError(
                   code = FhirMappingErrorCodes.INVALID_INPUT,
                   description =validationError
+                ))
+              ))
+          }
+        })
+    result
+  }
+
+  private def executeMappingOnMultipleSources(spark: SparkSession,
+                                              df: DataFrame,
+                                              fhirMappingService: FhirMappingService,
+                                              sources:Seq[String],
+                                              errorHandlingType: ErrorHandlingType): Dataset[FhirMappingResult] = {
+    import spark.implicits._
+    val result =
+      df
+        .flatMap(row => {
+          val otherSourceRows =
+            sources
+              .tail
+              .map(s => s -> Option(row.getList[Row](row.schema.fieldIndex( s"__$s"))).map(_.asScala.toList).getOrElse(List.empty))
+
+          val mainSource = row.getStruct(row.schema.fieldIndex(s"__${sources.head}"))
+
+          //Check if there is any validation error
+          val validationErrors =
+            Option(mainSource.getAs[String](SourceHandler.INPUT_VALIDITY_ERROR)).toSeq ++
+            otherSourceRows.flatMap(rows => rows._2.flatMap(r => Option(r.getAs[String](SourceHandler.INPUT_VALIDITY_ERROR))))
+
+          val jo =
+            convertRowToJObject(mainSource) //convert the row to JSON object
+              .removeField(f => f._1.startsWith("__")) //Remove the extra field appended during validation and other source objects
+              .asInstanceOf[JObject]
+          //Parse data coming from other sources as context parameters
+          val otherObjectMap:Map[String, JValue] =
+            otherSourceRows
+              .flatMap {
+                case (alias, rows) =>
+                  rows
+                    .map(r => convertRowToJObject(r).removeField(f => f._1.startsWith("__"))) match {
+                      case Seq(o) => Some(alias -> o)
+                      case oth => Some(alias -> JArray(oth))
+                      case Nil => None
+                  }
+              }
+              .toMap
+
+          validationErrors match {
+            //If input is valid
+            case Nil => executeMappingOnInput(jo,otherObjectMap, fhirMappingService, errorHandlingType)
+            //If the input is not valid, return the error
+            case _ =>
+              Seq(FhirMappingResult(
+                jobId = fhirMappingService.jobId,
+                mappingUrl = fhirMappingService.mappingUrl,
+                mappingExpr = None,
+                timestamp = Timestamp.from(Instant.now()),
+                source = Some(jo.toJson),
+                error = Some(FhirMappingError(
+                  code = FhirMappingErrorCodes.INVALID_INPUT,
+                  description = validationErrors.mkString("\n")
                 ))
               ))
           }
@@ -98,12 +159,13 @@ object MappingTaskExecutor {
    * @return
    */
   private def executeMappingOnInput(jo:JObject,
-                                  fhirMappingService: FhirMappingService,
-                                  errorHandlingType: ErrorHandlingType):Seq[FhirMappingResult] = {
+                                    otherInputs:Map[String, JValue],
+                                    fhirMappingService: FhirMappingService,
+                                    errorHandlingType: ErrorHandlingType):Seq[FhirMappingResult] = {
 
     val results =
       try {
-        val mappedResources = Await.result(fhirMappingService.mapToFhir(jo), ToFhirConfig.mappingTimeout)
+        val mappedResources = Await.result(fhirMappingService.mapToFhir(jo,otherInputs), ToFhirConfig.mappingTimeout)
         mappedResources.flatMap {
           //If this is a JSON Patch, the resources are patches so return it as single result
           case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "patch") && resources.length > 1 =>

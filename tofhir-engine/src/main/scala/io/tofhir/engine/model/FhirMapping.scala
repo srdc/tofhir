@@ -39,8 +39,13 @@ case class FhirMapping(id: String = UUID.randomUUID().toString,
  * @param alias       Name of the source to be used in expressions (First source will always be used as main input for expression evaluations)
  * @param url         URL to the StructureDefinition of the source format for validation and deserialization purposes
  * @param description Description of the source
+ * @param joinOn      Columns to use from this source data while joining the multiple sources
  */
-case class FhirMappingSource(alias: String, url: String, description: Option[String] = None)
+case class FhirMappingSource(alias: String,
+                             url: String,
+                             description: Option[String] = None,
+                             joinOn:Seq[String] = Nil
+                            )
 
 /**
  * Context information for mapping evaluation
