@@ -23,7 +23,7 @@ class ToFhirServerEndpoint(webServerConfig: WebServerConfig) extends ICORSHandle
         extractMethod { httpMethod: HttpMethod =>
           extractUri { requestUri: Uri =>
             optionalHeaderValueByName("X-Correlation-Id") { correlationId =>
-              val restCall = new ToFhirRestCall(httpMethod, requestUri, correlationId.getOrElse(UUID.randomUUID().toString))
+              val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString))
               schemaDefinitionEndpoint.route(restCall)
             }
           }

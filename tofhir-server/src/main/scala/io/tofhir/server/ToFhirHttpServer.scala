@@ -1,7 +1,7 @@
 package io.tofhir.server
 
 import akka.Done
-import akka.actor.typed.ActorSystem
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
@@ -15,8 +15,8 @@ import scala.util.{Failure, Success}
 
 object ToFhirHttpServer extends LazyLogging {
 
-  def start(route: Route, webServerConfig: WebServerConfig)(implicit actorSystem: ActorSystem[_]): Unit = {
-    implicit val executionContext: ExecutionContext = actorSystem.executionContext
+  def start(route: Route, webServerConfig: WebServerConfig)(implicit actorSystem: ActorSystem): Unit = {
+    implicit val executionContext: ExecutionContext = actorSystem.dispatcher
 
     val serverBindingFuture = Http().newServerAt(webServerConfig.serverHost, webServerConfig.serverPort).bind(route)
       .map(serverBinding => {
