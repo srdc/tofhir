@@ -1,10 +1,17 @@
 package io.tofhir.server.fhir
 
-import io.onfhir.api.Resource
+import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, Resource}
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.config.{FSConfigReader, IFhirConfigReader}
 import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings}
 import io.tofhir.engine.util.FhirClientUtil
+import io.tofhir.engine.Execution.actorSystem
+import actorSystem.dispatcher
+
+import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success, Try}
 
 /**
  * FHIR configuration reader from FHIR endpoint
@@ -17,22 +24,21 @@ class FhirEndpointResourceReader(fhirDefinitionsConfig: FhirDefinitionsConfig) e
   val fhirClient: OnFhirNetworkClient = createOnFhirClient
 
   private def createOnFhirClient: OnFhirNetworkClient = {
-    if(fhirDefinitionsConfig.definitionsFHIREndpoint.isEmpty) {
+    if (fhirDefinitionsConfig.definitionsFHIREndpoint.isEmpty) {
       throw new IllegalStateException("FhirEndpointResourceReader can only be instantiated with a valid FHIR endpoint in fhir.definitions-fhir-endpoint")
     }
 
-    import io.tofhir.engine.Execution.actorSystem
     fhirDefinitionsConfig.definitionsFHIRAuthMethod match {
       case None => FhirClientUtil.createOnFhirClient(fhirDefinitionsConfig.definitionsFHIREndpoint.get)
       case Some(method) => FhirAuthMethod.withName(method) match {
         case FhirAuthMethod.BASIC =>
-          if(fhirDefinitionsConfig.authBasicUsername.isEmpty || fhirDefinitionsConfig.authBasicPassword.isEmpty) {
+          if (fhirDefinitionsConfig.authBasicUsername.isEmpty || fhirDefinitionsConfig.authBasicPassword.isEmpty) {
             throw new IllegalArgumentException("For basic authentication, a username and password must be provided!")
           }
           FhirClientUtil.createOnFhirClient(fhirDefinitionsConfig.definitionsFHIREndpoint.get,
             Some(BasicAuthenticationSettings(fhirDefinitionsConfig.authBasicUsername.get, fhirDefinitionsConfig.authBasicPassword.get)))
         case FhirAuthMethod.BEARER_TOKEN =>
-          if(fhirDefinitionsConfig.authTokenClientId.isEmpty || fhirDefinitionsConfig.authTokenClientSecret.isEmpty || fhirDefinitionsConfig.authTokenScopeList.isEmpty || fhirDefinitionsConfig.authTokenEndpoint.isEmpty) {
+          if (fhirDefinitionsConfig.authTokenClientId.isEmpty || fhirDefinitionsConfig.authTokenClientSecret.isEmpty || fhirDefinitionsConfig.authTokenScopeList.isEmpty || fhirDefinitionsConfig.authTokenEndpoint.isEmpty) {
             throw new IllegalArgumentException("For bearer token authentication; client-id, client-secret, token-endpoint and scopes (event if empty) must be provided!")
           }
           FhirClientUtil.createOnFhirClient(fhirDefinitionsConfig.definitionsFHIREndpoint.get,
@@ -45,28 +51,36 @@ class FhirEndpointResourceReader(fhirDefinitionsConfig: FhirDefinitionsConfig) e
   override def readStandardBundleFile(fileName: String, resourceTypeFilter: Set[String]): Seq[Resource] = fsConfigReader.readStandardBundleFile(fileName, resourceTypeFilter)
 
   override def getInfrastructureResources(rtype: String): Seq[Resource] = {
-//    val pathsToSearch =
-//      rtype match {
-//        case FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION =>
-//          profilesPath -> DEFAULT_RESOURCE_PATHS.PROFILES_FOLDER
-//        case FHIR_FOUNDATION_RESOURCES.FHIR_VALUE_SET =>
-//          valueSetsPath -> DEFAULT_RESOURCE_PATHS.VALUESETS_PATH
-//        case FHIR_FOUNDATION_RESOURCES.FHIR_CODE_SYSTEM =>
-//          codeSystemsPath -> DEFAULT_RESOURCE_PATHS.CODESYSTEMS_PATH
-//        case FHIR_FOUNDATION_RESOURCES.FHIR_OPERATION_DEFINITION | FHIR_FOUNDATION_RESOURCES.FHIR_COMPARTMENT_DEFINITION | FHIR_FOUNDATION_RESOURCES.FHIR_SEARCH_PARAMETER =>
-//          Seq.empty[Resource]
-//      }
-
-    val a = fhirDefinitionsConfig.definitionsRootURLs match {
+    val fhirSearchRequest = fhirDefinitionsConfig.definitionsRootURLs match {
       case None => fhirClient.search(rtype)
       case Some(urls) => fhirClient.search(rtype).where("url:below", urls.mkString(","))
     }
-    a.execute()
 
-    null
+    rtype match {
+      case FHIR_FOUNDATION_RESOURCES.FHIR_SEARCH_PARAMETER | FHIR_FOUNDATION_RESOURCES.FHIR_OPERATION_DEFINITION | FHIR_FOUNDATION_RESOURCES.FHIR_COMPARTMENT_DEFINITION =>
+        Seq.empty[Resource] // SearchParameter, OperationDefinition and CompartmentDefinition are not supported!
+      case FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION | FHIR_FOUNDATION_RESOURCES.FHIR_VALUE_SET | FHIR_FOUNDATION_RESOURCES.FHIR_CODE_SYSTEM =>
+        Await.result(
+          fhirSearchRequest.executeAndMergeBundle().map(_.searchResults).transform {
+            case Success(value) => Try(value)
+            case Failure(exception) =>
+              actorSystem.log.error(s"An error occurred while searching infrastructure resources from ${fhirSearchRequest.request.requestUri}", exception)
+              throw exception
+          },
+          FiniteDuration(30, TimeUnit.SECONDS))
+    }
 
   }
 
-  override def readCapabilityStatement(): Resource = ???
+  override def readCapabilityStatement(): Resource = {
+    Await.result(
+      fhirClient.search("metadata").executeAndReturnResource().transform {
+        case Success(value) => Try(value)
+        case Failure(exception) =>
+          actorSystem.log.error(s"An error occurred while reading the CapabilityStatement", exception)
+          throw exception
+      },
+      FiniteDuration(5, TimeUnit.SECONDS))
+  }
 }
 
