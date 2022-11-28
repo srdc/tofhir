@@ -7,7 +7,7 @@ import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.config.ErrorHandlingType
-import io.tofhir.engine.mapping.Execution.actorSystem.dispatcher
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model.{FhirMappingTask, FhirRepositorySinkSettings, KafkaSource, KafkaSourceSettings}
 import io.tofhir.engine.util.FhirMappingUtility

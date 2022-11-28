@@ -53,6 +53,6 @@ class SchemaDefinitionEndpoint extends IToFhirEndpoint with LazyLogging {
 }
 
 object SchemaDefinitionEndpoint {
-  val SEGMENT_SCHEMAS = "schemas"
+  val SEGMENT_SCHEMAS = "schema"
 }
 

@@ -3,6 +3,7 @@ package io.tofhir.engine.model
 import akka.actor.ActorSystem
 import io.onfhir.client.OnFhirNetworkClient
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
+import io.tofhir.engine.util.FhirClientUtil
 
 /**
  * Common interface for sink settings
@@ -41,16 +42,7 @@ case class FhirRepositorySinkSettings(fhirRepoUrl: String,
    * @param actorSystem
    * @return
    */
-  def createOnFhirClient(implicit actorSystem: ActorSystem): OnFhirNetworkClient = {
-    val client = OnFhirNetworkClient.apply(fhirRepoUrl)
-    securitySettings
-      .map {
-        case BearerTokenAuthorizationSettings(clientId, clientSecret, requiredScopes, authzServerTokenEndpoint, clientAuthenticationMethod) =>
-          client.withOpenIdBearerTokenAuthentication(clientId, clientSecret, requiredScopes, authzServerTokenEndpoint, clientAuthenticationMethod)
-        case BasicAuthenticationSettings(username, password) => client.withBasicAuthentication(username, password)
-      }
-      .getOrElse(client)
-  }
+  def createOnFhirClient(implicit actorSystem: ActorSystem): OnFhirNetworkClient = FhirClientUtil.createOnFhirClient(fhirRepoUrl, securitySettings)
 }
 
 /**
