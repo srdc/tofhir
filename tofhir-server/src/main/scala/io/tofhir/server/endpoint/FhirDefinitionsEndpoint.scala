@@ -24,20 +24,33 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
               case Some(v) =>
                 DefinitionsQuery.withName(v) match {
                   case DefinitionsQuery.RESOURCE_TYPES => complete(service.getResourceTypes())
-                  case DefinitionsQuery.PROFILES => complete("profiles queried")
-                  case _ => complete(HttpResponse(StatusCodes.NotFound))
+                  case DefinitionsQuery.PROFILES =>
+                    queryParams.get("rtype") match {
+                      case Some(rtype) => complete(service.getProfilesFor(rtype))
+                      case None => complete(HttpResponse(StatusCodes.BadRequest))
+                    }
+                  case DefinitionsQuery.ELEMENTS =>
+                    queryParams.get("profile") match {
+                      case Some(profileUrl) => complete(service.getElementDefinitionsOfProfile(profileUrl))
+                      case None => complete(HttpResponse(StatusCodes.BadRequest))
+                    }
+                  case _ => complete(HttpResponse(StatusCodes.BadRequest))
                 }
-              case None => complete("What to return?")
+              case None => complete(HttpResponse(StatusCodes.BadRequest))
             }
           }
         }
       }
     }
 }
+
 object FhirDefinitionsEndpoint {
+
   object DefinitionsQuery extends Enumeration {
     type DefinitionsQuery = Value
     final val RESOURCE_TYPES = Value("rtypes")
     final val PROFILES = Value("profiles")
+    final val ELEMENTS = Value("elements")
   }
+
 }

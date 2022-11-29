@@ -2,21 +2,21 @@ package io.tofhir.server.service
 
 import io.onfhir.api.FHIR_ROOT_URL_FOR_DEFINITIONS
 import io.onfhir.api.validation.{ElementRestrictions, ProfileRestrictions}
+import io.onfhir.config.BaseFhirConfig
 import io.onfhir.validation._
 import io.tofhir.server.model._
 
-object StructureDefinitionService {
+class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
   val ignoreSet: Set[String] = Set("DomainResource", "BackboneElement", "Element", "Extension")
 
   def simplifyStructureDefinition(profileUrl: String): Seq[SimpleStructureDefinition] = {
-
     def simplifier(profileUrl: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: Set[String], typeOfElement: Option[DataTypeWithProfiles] = None): Seq[SimpleStructureDefinition] = {
       if (profileUrl.isDefined && accumulatingTypeUrls.contains(profileUrl.get)) {
         // Stop the recursion here because we are entering into a recursive type chain (e.g., Identifier -> Reference -> Identifier)
         Seq.empty[SimpleStructureDefinition]
       } else {
-        val profileRestrictionsSeq: Seq[ProfileRestrictions] = /*if (profileUrl.isDefined) fhirConfig.findProfileChain(profileUrl.get) else*/ Seq.empty[ProfileRestrictions]
+        val profileRestrictionsSeq: Seq[ProfileRestrictions] = if (profileUrl.isDefined) fhirConfig.findProfileChain(profileUrl.get) else Seq.empty[ProfileRestrictions]
         val elementRestrictionsFromProfile = profileRestrictionsSeq.flatMap(_.elementRestrictions) // Make a list of all ElementRestrictions (respect their order)
         val allRestrictionsWithoutSlicesComingFromTheProfile = restrictionsFromParentElement ++ elementRestrictionsFromProfile.filterNot(r => r._1.contains(":"))
         val allRestrictions = restrictionsFromParentElement ++ elementRestrictionsFromProfile
@@ -76,7 +76,7 @@ object StructureDefinitionService {
     newPath -> restriction._2
   }
 
-  def generateSimpleDefinition(fieldName: String, restrictionsOnField: Seq[ElementRestrictions]): SimpleStructureDefinition = {
+  private def generateSimpleDefinition(fieldName: String, restrictionsOnField: Seq[ElementRestrictions]): SimpleStructureDefinition = {
     var dataTypes: Option[Seq[DataTypeWithProfiles]] = None
     var isArray: Boolean = false
     val isChoiceRoot: Boolean = fieldName.endsWith("[x]")
@@ -210,20 +210,6 @@ object StructureDefinitionService {
       definition = definition,
       comment = comment,
       elements = None)
-  }
-
-  def main(args: Array[String]): Unit = {
-
-//    //Initialize onfhir for R4
-//    val onfhir = Onfhir.apply(new FhirR4Configurator())
-//    val fhirConfig = FhirConfigurationManager.fhirConfig
-
-    //        StructureDefinitionService.simplifyStructureDefinition(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/Identifier")
-    val groundedModel = StructureDefinitionService.simplifyStructureDefinition("https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonNonMotorSymptomAssessment")
-
-    import io.onfhir.util.JsonFormatter._
-    import org.json4s.jackson.Serialization
-    println(Serialization.write(groundedModel))
   }
 
 }
