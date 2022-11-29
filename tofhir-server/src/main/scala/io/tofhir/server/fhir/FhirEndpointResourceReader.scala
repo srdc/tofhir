@@ -52,8 +52,10 @@ class FhirEndpointResourceReader(fhirDefinitionsConfig: FhirDefinitionsConfig) e
 
   override def getInfrastructureResources(rtype: String): Seq[Resource] = {
     val fhirSearchRequest = fhirDefinitionsConfig.definitionsRootURLs match {
-      case None => fhirClient.search(rtype)
-      case Some(urls) => fhirClient.search(rtype).where("url:below", urls.mkString(","))
+      case None =>
+        fhirClient.search(rtype)
+      case Some(urls) =>
+        fhirClient.search(rtype).where("url:below", urls.map(url => if (url.endsWith("/")) url.dropRight(1) else url).mkString(","))
     }
 
     rtype match {
