@@ -55,6 +55,49 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
   }
 
   /**
+   * You can also get the whole concept columns as complex Json object if there is more than one columns,
+   * if there is only one target column it just returns the value of it as string
+   * @param conceptMap  This should be reference to the conceptMap context e.g. %obsConceptMap
+   * @param keyExpr     This is any expression that will provide the key value e.g. code
+   * @return
+   */
+  def getConcept(conceptMap: ExpressionContext, keyExpr: ExpressionContext): Seq[FhirPathResult] = {
+    val mapName = conceptMap.getText.substring(1) // skip the leading % character
+    val conceptMapContext = getConceptMap(mapName)
+
+    // Should return the code of the concept whose mapping is requested
+    new FhirPathExpressionEvaluator(context, current).visit(keyExpr) match {
+      case Nil => Nil
+      case Seq(FhirPathString(conceptCode)) =>
+        conceptMapContext
+          .concepts
+          .get(conceptCode)
+          .map {
+            case mws:Map[String, String] if mws.size == 1 => FhirPathString(mws.values.head)
+            case mws =>
+              FhirPathComplex(JObject(mws.toList.map(i => i._1 -> JString(i._2))))
+          }
+          .toSeq
+      case _ =>
+        throw new FhirPathException(s"Invalid function call 'getConcept', given expression for keyExpr:${keyExpr.getText} for the concept code should return a string value!")
+    }
+  }
+
+  /**
+   * Load the concept map
+   *
+   * @param name name of the map
+   * @return
+   */
+  private def getConceptMap(name: String): ConceptMapContext =
+    try {
+      mappingContext(name).asInstanceOf[ConceptMapContext]
+    } catch {
+      case e: Exception =>
+        throw new FhirPathException(s"Invalid function call 'getConcept', given expression for conceptMap:%$name should point to a valid map entry in the provided mapping context!")
+    }
+
+  /**
    * Get corresponding value from the given concept map with the given key and column name
    * If there is no concept with given key, return Nil
    * e.g. getConcept(%obsConceptMap, code, 'source_system')
@@ -66,11 +109,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    */
   def getConcept(conceptMap: ExpressionContext, keyExpr: ExpressionContext, columnName: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conceptMap.getText.substring(1) // skip the leading % character
-    val conceptMapContext = try {
-      mappingContext(mapName).asInstanceOf[ConceptMapContext]
-    } catch {
-      case e: Exception => throw new FhirPathException(s"Invalid function call 'getConcept', given expression for conceptMap:${conceptMap.getText} should point to a valid map entry in the provided mapping context!")
-    }
+    val conceptMapContext = getConceptMap(mapName)
 
     val targetFieldResult = new FhirPathExpressionEvaluator(context, current).visit(columnName)
     if (targetFieldResult.length != 1 || !targetFieldResult.head.isInstanceOf[FhirPathString]) {

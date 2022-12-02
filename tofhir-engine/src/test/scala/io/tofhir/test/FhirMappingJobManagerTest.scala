@@ -71,6 +71,17 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
     sourceContext = Map("source" -> FileSystemSource(path = "patients.csv"))
   )
+
+  val patientMappingTaskWithPreprocess: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+    sourceContext = Map("source" ->
+      FileSystemSource(
+        path = "patients-column-renamed.csv",
+        preprocessSql = Some(
+          "SELECT pid,sex as gender,birth as birthDate,NULL as deceasedDateTime,NULL as homePostalCode FROM source"))
+    )
+  )
+
   val otherObservationMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
     sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv"))
@@ -315,6 +326,24 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
           identityServiceSettings = lMappingJob.getIdentityServiceSettings()
         ), Duration.Inf)
     1 shouldEqual 1
+  }
+
+  it should "execute the FhirMappingJob with preprocess" in {
+
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
+    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTaskWithPreprocess, sourceSettings = dataSourceSettings) map { mappingResults =>
+      val results = mappingResults.map(r => {
+        r.mappedResource shouldBe defined
+        val resource = r.mappedResource.get.parseJson
+        resource shouldBe a[Resource]
+        resource
+      })
+      results.size shouldBe 10
+      val patient1 = results.head
+      FHIRUtil.extractResourceType(patient1) shouldBe "Patient"
+      FHIRUtil.extractIdFromResource(patient1) shouldBe FhirMappingUtility.getHashedId("Patient", "p1")
+      FHIRUtil.extractValue[String](patient1, "gender") shouldBe "male"
+    }
   }
 
 }

@@ -43,7 +43,7 @@
             "reference": "{{idxs:resolveIdentifier('Patient', pid, 'https://aiccelerate.eu/data-integration-suite/test-data')}}"
           },
           "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
+          "effectiveDateTime": "{{time}}",
           "valueQuantity": {
             "value": "{{value.toDecimal()}}",
             "unit": "{{mpp:getConcept(%obsConceptMap, code, 'unit')}}",

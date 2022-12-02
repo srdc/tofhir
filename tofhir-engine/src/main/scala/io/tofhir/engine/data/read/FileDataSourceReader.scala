@@ -27,7 +27,8 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
     mappingSource.sourceType match {
         case SourceFileFormats.CSV =>
           //Options that we infer for csv
-          val inferSchema = schema.isEmpty
+          val inferSchema = schema.isEmpty || mappingSource.preprocessSql.isDefined
+          val csvSchema = if(mappingSource.preprocessSql.isDefined) None else schema
           //val enforceSchema = schema.isDefined
           val includeHeader = mappingSource.options.get("header").forall(_ == "true")
           val fileFilter = mappingSource.options.getOrElse("pathGlobFilter", "*.csv")
@@ -40,7 +41,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               .option("header", includeHeader)
               .option("inferSchema", inferSchema)
               .options(otherOptions)
-              .schema(schema.orNull)
+              .schema(csvSchema.orNull)
               .csv(finalPath)
           else
             spark.read
@@ -49,7 +50,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               .option("header", includeHeader)
               .option("inferSchema", inferSchema)
               .options(otherOptions)
-              .schema(schema.orNull)
+              .schema(csvSchema.orNull)
               .csv(finalPath)
         case SourceFileFormats.JSON =>
           if(sourceSettings.asStream)

@@ -14,6 +14,7 @@ object SourceHandler {
   /**
    * Reading data from an input source
    *
+   * @param alias          Name of the source
    * @param spark          Spark session
    * @param mappingSource  Source definition e.g. See FileSystemSource
    * @param sourceSettings General source settings e.g. See FileSystemSourceSettings
@@ -24,6 +25,7 @@ object SourceHandler {
    * @return
    */
   def readSource[T <: FhirMappingSourceContext, S <: DataSourceSettings](
+                                                                          alias:String,
                                                                           spark: SparkSession,
                                                                           mappingSource: T,
                                                                           sourceSettings: S,
@@ -38,13 +40,23 @@ object SourceHandler {
       reader
         .read(mappingSource, sourceSettings, schema, timeRange)
 
+    val finalSourceData =
+      //If there is some preprocessing SQL defined, apply it
+      mappingSource.preprocessSql match {
+        case Some(sql) =>
+          sourceData.createOrReplaceTempView(alias)
+          spark.sql(sql)
+        case None =>
+          sourceData
+      }
+
     schema match {
       //If there is a schema and also need validation
       case Some(sc) if reader.needTypeValidation || reader.needCardinalityValidation =>
         //TODO handle type validation
         val requiredFields = sc.fields.filterNot(_.nullable).map(_.name)
         if (requiredFields.isEmpty)
-          sourceData.withColumn(INPUT_VALIDITY_ERROR, lit(null).cast(DataTypes.StringType))
+          finalSourceData.withColumn(INPUT_VALIDITY_ERROR, lit(null).cast(DataTypes.StringType))
         else {
           //TODO handle required fields for non-tabular data (deep fields)
           //Check required columns
@@ -53,7 +65,7 @@ object SourceHandler {
             .map(f => col(f).isNull)
             .reduce((c1, c2) => c1 || c2)
 
-          sourceData
+          finalSourceData
             .withColumn(INPUT_VALIDITY_ERROR,
               when(nullCheck, lit(s"One of the required column(s) (${requiredFields.mkString(", ")}) is missing or null"))
                 .otherwise(lit(null).cast(DataTypes.StringType))
@@ -61,7 +73,7 @@ object SourceHandler {
         }
       //If there is no schema or readers don't need validation, we assume all rows are valid
       case None =>
-        sourceData.withColumn(INPUT_VALIDITY_ERROR, lit(null).cast(DataTypes.StringType))
+        finalSourceData.withColumn(INPUT_VALIDITY_ERROR, lit(null).cast(DataTypes.StringType))
     }
   }
 }

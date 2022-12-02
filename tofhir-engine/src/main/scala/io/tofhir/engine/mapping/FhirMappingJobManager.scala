@@ -257,7 +257,7 @@ class FhirMappingJobManager(
       sources.map {
         case (alias, schema, sourceContext, sourceStt, timeRange) =>
           alias ->
-            SourceHandler.readSource(spark, sourceContext, sourceStt, schema, timeRange)
+            SourceHandler.readSource(alias, spark, sourceContext, sourceStt, schema, timeRange)
       }
 
     val df = handleJoin(fhirMapping.source, sourceDataFrames)

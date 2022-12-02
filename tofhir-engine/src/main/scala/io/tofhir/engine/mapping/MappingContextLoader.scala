@@ -24,8 +24,6 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
 
   private val logger: Logger = Logger(this.getClass)
 
-  final val CONCEPT_MAP_FIRST_COLUMN_NAME = "source_code"
-
   def retrieveContext(contextDefinition: FhirMappingContextDefinition): Future[FhirMappingContext] = {
     if (contextDefinition.url.isDefined) {
       //logger.debug("The context definition for the mapping repository is defined at a URL:{}. It will be loaded...", contextDefinition.url.get)
@@ -47,9 +45,9 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
    * @param filePath
    * @return
    */
-  private def readFromCSV(filePath: String): Future[Seq[Map[String, String]]] = {
+  private def readFromCSV(filePath: String): Future[(Seq[String],Seq[Map[String, String]])] = {
     Future {
-      CsvUtil.readFromCSV(filePath)
+      CsvUtil.readFromCSVAndReturnWithColumnNames(filePath)
     }
   }
 
@@ -60,11 +58,12 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
    * @return
    */
   private def readConceptMapContextFromCSV(filePath: String): Future[Map[String, Map[String, String]]] = {
-    readFromCSV(filePath) map { records =>
-      //val (firstColumnName, _) = records.head.head // Get the first element in the records list and then get the first (k,v) pair to get the name of the first column.
-      records.foldLeft(Map[String, Map[String, String]]()) { (conceptMap, columnMap) =>
-        conceptMap + (columnMap(CONCEPT_MAP_FIRST_COLUMN_NAME)-> columnMap)
-      }
+    readFromCSV(filePath) map {
+      case (columns, records) =>
+        //val (firstColumnName, _) = records.head.head // Get the first element in the records list and then get the first (k,v) pair to get the name of the first column.
+        records.foldLeft(Map[String, Map[String, String]]()) { (conceptMap, columnMap) =>
+          conceptMap + (columnMap(columns.head)-> columnMap)
+        }
     }
   }
 
@@ -78,15 +77,15 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
    * @return
    */
   private def readUnitConversionFunctionsFromCSV(filePath: String): Future[Map[(String, String), (String, String)]] = {
-    readFromCSV(filePath) map { records =>
-      val columnNames = records.head.keys.toSeq
-      val sourceCode = columnNames.head
-      val sourceUnit = columnNames(1)
-      val targetUnit = columnNames(2)
-      val conversionFunction = columnNames(3)
-      records.foldLeft(Map[(String, String), (String, String)]()) { (unitConversionMap, columnMap) =>
-        unitConversionMap + ((columnMap(sourceCode) -> columnMap(sourceUnit)) -> (columnMap(targetUnit) -> columnMap(conversionFunction)))
-      }
+    readFromCSV(filePath) map {
+      case (columnNames, records) =>
+        val sourceCode = columnNames.head
+        val sourceUnit = columnNames(1)
+        val targetUnit = columnNames(2)
+        val conversionFunction = columnNames(3)
+        records.foldLeft(Map[(String, String), (String, String)]()) { (unitConversionMap, columnMap) =>
+          unitConversionMap + ((columnMap(sourceCode) -> columnMap(sourceUnit)) -> (columnMap(targetUnit) -> columnMap(conversionFunction)))
+        }
     }
   }
 

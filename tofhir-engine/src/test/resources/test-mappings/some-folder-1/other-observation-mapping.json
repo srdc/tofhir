@@ -53,7 +53,7 @@
           },
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
           "valueQuantity": {
             "value": "{{value.toDecimal()}}",
             "unit": "{{%obsUnit}}",
@@ -91,7 +91,7 @@
           },
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
           "valueQuantity": {
             "value": "{{value.split('-')[0].toDecimal()}}",
             "unit": "{{%obsUnit}}",
@@ -194,7 +194,7 @@
           },
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
           "context": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{time.utl:toFhirDateTime()}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
           "dosage": {
             "dose": {
               "value": "{{value.toDecimal()}}",

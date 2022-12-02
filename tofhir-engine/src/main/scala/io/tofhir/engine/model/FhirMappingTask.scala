@@ -10,7 +10,12 @@ case class FhirMappingTask(mappingRef: String, sourceContext: Map[String, FhirMa
 /**
  * Interface for source contexts
  */
-trait FhirMappingSourceContext extends Serializable
+trait FhirMappingSourceContext extends Serializable {
+  /**
+   * SQL Query to preprocess the source data
+   */
+  val preprocessSql: Option[String] = None
+}
 
 /**
  * Context/configuration for one of the source of the mapping that will read the source data from file system
@@ -19,7 +24,7 @@ trait FhirMappingSourceContext extends Serializable
  * @param fileFormat  Format of the file (csv | json | parquet) if it can not be inferred from path e.g. csv
  * @param options     Further options for the format (Spark Data source options for the format e.g. For csv -> https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option)
  */
-case class FileSystemSource(path: String, fileFormat:Option[String] = None, options:Map[String, String] = Map.empty[String, String]) extends FhirMappingSourceContext {
+case class FileSystemSource(path: String, fileFormat:Option[String] = None, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext {
   def sourceType:String = fileFormat.getOrElse(path.split('.').last)
 }
 /**
