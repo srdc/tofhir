@@ -78,7 +78,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       FileSystemSource(
         path = "patients-column-renamed.csv",
         preprocessSql = Some(
-          "SELECT pid,sex as gender,birth as birthDate,NULL as deceasedDateTime,NULL as homePostalCode FROM source"))
+          "SELECT pid,sex as gender,to_date(birth) as birthDate,NULL as deceasedDateTime,NULL as homePostalCode FROM source"))
     )
   )
 

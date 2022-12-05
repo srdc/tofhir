@@ -123,9 +123,9 @@ object MappingTaskExecutor {
                 case (alias, rows) =>
                   rows
                     .map(r => convertRowToJObject(r).removeField(f => f._1.startsWith("__"))) match {
+                      case Nil => None
                       case Seq(o) => Some(alias -> o)
                       case oth => Some(alias -> JArray(oth))
-                      case Nil => None
                   }
               }
               .toMap
