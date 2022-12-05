@@ -1,7 +1,7 @@
 package io.tofhir.server
 
 import akka.Done
-import akka.actor.typed.ActorSystem
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
@@ -15,8 +15,8 @@ import scala.util.{Failure, Success}
 
 object ToFhirHttpServer extends LazyLogging {
 
-  def start(route: Route, webServerConfig: WebServerConfig)(implicit actorSystem: ActorSystem[_]): Unit = {
-    implicit val executionContext: ExecutionContext = actorSystem.executionContext
+  def start(route: Route, webServerConfig: WebServerConfig)(implicit actorSystem: ActorSystem): Unit = {
+    implicit val executionContext: ExecutionContext = actorSystem.dispatcher
 
     val serverBindingFuture = Http().newServerAt(webServerConfig.serverHost, webServerConfig.serverPort).bind(route)
       .map(serverBinding => {
@@ -35,6 +35,7 @@ object ToFhirHttpServer extends LazyLogging {
     var serverBinding: Option[Http.ServerBinding] = None
     try {
       serverBinding = Some(Await.result(serverBindingFuture, FiniteDuration(10L, TimeUnit.SECONDS)))
+      logger.info(s"tofHIR server ready at ${webServerConfig.serverHost}:${webServerConfig.serverPort}")
     } catch {
       case e: Exception =>
         logger.error("Problem while binding to the given HTTP address and port!", e)

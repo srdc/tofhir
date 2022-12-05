@@ -44,6 +44,17 @@
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
         </dependency>
+
+        <!-- onFHIR Dependencies -->
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-config_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-server-r4_${scala.binary.version}</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

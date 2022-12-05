@@ -1,4 +1,4 @@
-package io.tofhir.engine.mapping
+package io.tofhir.engine
 
 import akka.actor.ActorSystem
 

@@ -20,7 +20,7 @@ object IntegratedServiceFactory {
     terminologyServiceSettings match {
       //If this is a FHIR repository settings, it means it is a terminology service
       case terminologyService: FhirRepositorySinkSettings =>
-        import Execution.actorSystem
+        import io.tofhir.engine.Execution.actorSystem
         implicit val ec: ExecutionContext = actorSystem.dispatcher
         new TerminologyServiceClient(terminologyService.createOnFhirClient(actorSystem))
       //If we are having a local terminology service
@@ -40,7 +40,7 @@ object IntegratedServiceFactory {
     identityServiceSettings match {
       //If identity service will be based on FHIR repo
       case fhirRepositorySinkSettings: FhirRepositorySinkSettings =>
-        import Execution.actorSystem
+        import io.tofhir.engine.Execution.actorSystem
         implicit val ec:ExecutionContext = actorSystem.dispatcher
         new IdentityServiceClient(fhirRepositorySinkSettings.createOnFhirClient(actorSystem))
     }

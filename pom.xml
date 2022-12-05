@@ -65,7 +65,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
 
-        <scala.version>2.13.8</scala.version>
+        <scala.version>2.13.10</scala.version>
         <scala.binary.version>2.13</scala.binary.version>
 
         <!--Dependency versions-->
@@ -74,13 +74,13 @@
         <onfhir-template-engine.version>1.0-SNAPSHOT</onfhir-template-engine.version>
         <json4s.version>3.7.0-M11</json4s.version>
         <scalatest.version>3.2.13</scalatest.version>
-        <spark.version>3.2.1</spark.version>
-        <jackson.version>2.12.7</jackson.version>
+        <spark.version>3.3.1</spark.version>
+        <jackson.version>2.13.4</jackson.version>
         <logback.version>1.2.11</logback.version>
         <logstash-logback-encoder.version>7.2</logstash-logback-encoder.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
-        <postgres.version>42.3.3</postgres.version>
-        <h2db.version>2.1.210</h2db.version>
+        <postgres.version>42.5.0</postgres.version>
+        <h2db.version>2.1.212</h2db.version>
         <cron4j.version>2.2.5</cron4j.version>
         <testcontainers.kafka>1.17.3</testcontainers.kafka>
         <log4j.version>2.16.0</log4j.version>
@@ -174,7 +174,22 @@
             </dependency>
             <dependency>
                 <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-template-engine_${scala.binary.version}</artifactId>
+                <version>${onfhir-template-engine.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-path_${scala.binary.version}</artifactId>
+                <version>${onfhir.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
                 <artifactId>onfhir-client_${scala.binary.version}</artifactId>
+                <version>${onfhir.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-config_${scala.binary.version}</artifactId>
                 <version>${onfhir.version}</version>
             </dependency>
             <dependency>
@@ -184,14 +199,10 @@
             </dependency>
             <dependency>
                 <groupId>io.onfhir</groupId>
-                <artifactId>onfhir-path_${scala.binary.version}</artifactId>
+                <artifactId>onfhir-server-r4_${scala.binary.version}</artifactId>
                 <version>${onfhir.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.onfhir</groupId>
-                <artifactId>onfhir-template-engine_${scala.binary.version}</artifactId>
-                <version>${onfhir-template-engine.version}</version>
-            </dependency>
+
 
             <!-- JSON4S -->
             <dependency>
