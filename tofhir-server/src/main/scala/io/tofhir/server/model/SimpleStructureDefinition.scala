@@ -64,7 +64,6 @@ case class SimpleStructureDefinition(id: String,
       case _ => Option.empty[String]
     }
   }
-
 }
 
 /**
