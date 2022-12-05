@@ -1,5 +1,31 @@
 package io.tofhir.server.model
 
+import io.onfhir.api.FHIR_ROOT_URL_FOR_DEFINITIONS
+
+/**
+ * Simplified (flat) model for FHIR StructureDefinition
+ *
+ * @param id
+ * @param path
+ * @param dataTypes
+ * @param isPrimitive
+ * @param isChoiceRoot
+ * @param isArray
+ * @param minCardinality
+ * @param maxCardinality
+ * @param boundToValueSet
+ * @param isValueSetBindingRequired
+ * @param referencableProfiles
+ * @param constraintDefinitions
+ * @param sliceDefinition
+ * @param sliceName
+ * @param fixedValue
+ * @param patternValue
+ * @param short
+ * @param definition
+ * @param comment
+ * @param elements
+ */
 case class SimpleStructureDefinition(id: String,
                                      path: String,
                                      dataTypes: Option[Seq[DataTypeWithProfiles]],
@@ -25,13 +51,28 @@ case class SimpleStructureDefinition(id: String,
     this.copy(elements = Some(_elements))
   }
 
+  def getProfileUrlForDataType: Option[String] = {
+    // If a single dataType exists for the createdElement, use it -->
+    //    if profiles are associated with this data type, use the 1st profile
+    //    otherwise, use the dataType
+    dataTypes match {
+      case Some(dts) if dts.length == 1 =>
+        dts.head.profiles match {
+          case Some(prfls) => Some(prfls.head) // If there are multiple profiles defined for this dataType, consider the 1st one only.
+          case None => Some(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${dts.head.dataType}")
+        }
+      case _ => Option.empty[String]
+    }
+  }
+
 }
 
 /**
  * A Fhir data type may be associated with a profile (e.g., a code element might be indicated to conform to a CustomCodeableConcept. In this case,
  * the dataType will be CondeableConcept while a single element will exist in profiles list which will be the URL of CustomCodeableConcept.
- * @param dataType
- * @param profiles
+ *
+ * @param dataType Name of the FHIR data type
+ * @param profiles URLs of the profiles to which this dataType conforms to
  */
 case class DataTypeWithProfiles(dataType: String, profiles: Option[Seq[String]])
 

@@ -1,28 +1,73 @@
 package io.tofhir.server.service
 
-import io.onfhir.api.FHIR_ROOT_URL_FOR_DEFINITIONS
-import io.onfhir.api.validation.{ElementRestrictions, ProfileRestrictions}
+import io.onfhir.api.validation.{ConstraintKeys, ElementRestrictions, ProfileRestrictions}
 import io.onfhir.config.BaseFhirConfig
 import io.onfhir.validation._
 import io.tofhir.server.model._
 
 class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
+  /**
+   * Definitions which have the following types will not be further processed to create their child elements.
+   */
   val ignoreSet: Set[String] = Set("DomainResource", "BackboneElement", "Element", "Extension")
 
+  /**
+   * Given a URL for a profile, return a sequence of definitions for all elements of the resource type indicated by this profile.
+   *
+   * @param profileUrl
+   * @return
+   */
   def simplifyStructureDefinition(profileUrl: String): Seq[SimpleStructureDefinition] = {
-    def simplifier(profileUrl: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: Set[String], typeOfElement: Option[DataTypeWithProfiles] = None): Seq[SimpleStructureDefinition] = {
+
+    /**
+     * Recursive helper function to create the SimpleStructureDefinition sequence for a given profile, carrying the ElementRestrictions to inner elements.
+     *
+     * @param profileUrl URL of a FHIR profile which can be empty. If empty, only restrictionsFromParentElement will be considered while creating the element definitions.
+     * @param restrictionsFromParentElement ElementRestrictions from parent profiles.
+     * @param accumulatingTypeUrls Data types throughout the recursive chain so that recursion can stop if a loop over the data types exists.
+     * @return
+     */
+    def simplifier(profileUrl: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: Set[String]): Seq[SimpleStructureDefinition] = {
+
+      /**
+       * Helper function to create a single SimpleStructureDefinition for a slice of a field (e.g., valueQuantity under value[x])
+       * together with inner elements (by calling the simplifier recursively)
+       *
+       * @param fieldName The name of the parent field (e.g., coding)
+       * @param sliceName The name of the slice under the parent field (e.g., aicNongMotorSymptom)
+       * @param profileUrlForDataType For non-choice slices, URL of the profile for the data type (if exists)
+       * @param restrictionsOnSlicesOfField ElementRestrictions on the slice
+       * @param accumulatingTypeUrls Accumulating data types to break the loop in the recursion
+       * @param dataTypeWithProfiles For choice field slices, the data type for this slice
+       * @return
+       */
+      def createDefinitionWithElements(fieldName: String, sliceName: String, profileUrlForDataType: Option[String], restrictionsOnSlicesOfField: Seq[(String, ElementRestrictions)],
+                                       accumulatingTypeUrls: Set[String], dataTypeWithProfiles: Option[DataTypeWithProfiles] = None): SimpleStructureDefinition = {
+        // Partition the restriction into 2: (i) directly on that field (e.g., value[x]:valueQuantity) and (ii) on the children (e.g., value[x]:valueQuantity.system)
+        val (restrictionsOnSliceField, restrictionsOnChildrenOfSlice) = restrictionsOnSlicesOfField.partition(_._1 == s"$fieldName:$sliceName")
+        val typeRestrictionForThisTypeField = dataTypeWithProfiles.map(dt =>
+          ElementRestrictions(path = s"$fieldName:$sliceName", restrictions = Map(ConstraintKeys.DATATYPE -> TypeRestriction(Seq(dt.dataType -> Seq.empty[String]))), sliceName = None, contentReference = None))
+        val createdChoiceTypeElement = generateSimpleDefinition(sliceName, restrictionsOnSliceField.map(_._2) ++ typeRestrictionForThisTypeField)
+        if (createdChoiceTypeElement.isPrimitive) createdChoiceTypeElement
+        else {
+          val navigatedRestrictionsOnChildren = restrictionsOnChildrenOfSlice.map(navigateFhirPathFromField(s"$fieldName:$sliceName", _))
+          val definitionsOfChoiceTypeElementsChildren = simplifier(if(profileUrlForDataType.isDefined) profileUrlForDataType else createdChoiceTypeElement.getProfileUrlForDataType, navigatedRestrictionsOnChildren, accumulatingTypeUrls ++ profileUrl)
+          createdChoiceTypeElement.withElements(definitionsOfChoiceTypeElementsChildren)
+        }
+      }
+
+      // Start of the simplifier method
       if (profileUrl.isDefined && accumulatingTypeUrls.contains(profileUrl.get)) {
         // Stop the recursion here because we are entering into a recursive type chain (e.g., Identifier -> Reference -> Identifier)
         Seq.empty[SimpleStructureDefinition]
       } else {
         val profileRestrictionsSeq: Seq[ProfileRestrictions] = if (profileUrl.isDefined) fhirConfig.findProfileChain(profileUrl.get) else Seq.empty[ProfileRestrictions]
         val elementRestrictionsFromProfile = profileRestrictionsSeq.flatMap(_.elementRestrictions) // Make a list of all ElementRestrictions (respect their order)
-        val allRestrictionsWithoutSlicesComingFromTheProfile = restrictionsFromParentElement ++ elementRestrictionsFromProfile.filterNot(r => r._1.contains(":"))
         val allRestrictions = restrictionsFromParentElement ++ elementRestrictionsFromProfile
 
-        val result = allRestrictionsWithoutSlicesComingFromTheProfile
-          .groupBy(r => r._1.split(Array('.')).head) // Group by immediate field name (e.g., group {code, code.coding.system, code.coding.value} together) (e.g., {value[x]:valueQuantity, value[x]:valueQuantity.code} together)
+        allRestrictions.filterNot(r => r._1.split('.').head.contains(":")) // Eliminate the slice definitions such as coding:aic or value[x]:valueQuantity, but not code.coding:aic
+          .groupBy(r => r._1.split('.').head) // Group by immediate field name (e.g., group {code, code.coding.system, code.coding.value} together)
           .map {
             case (fieldName, restrictionsOnFieldAndItsChildren) =>
               val (restrictionsOnField, restrictionsOnChildren) = restrictionsOnFieldAndItsChildren.partition(_._1 == fieldName)
@@ -34,40 +79,54 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                 (createdElementDefinition.dataTypes.isDefined && ignoreSet.contains(createdElementDefinition.dataTypes.get.head.dataType))) {
                 createdElementDefinition
               } else {
-
-                // If a single dataType exists for the createdElement, use it -->
-                //    if profiles are associated with this data type, use the 1st profile
-                //    otherwise, use the dataType
-                val profileUrlForDataType: Option[String] = createdElementDefinition.dataTypes match {
-                  case Some(dts) if dts.length == 1 =>
-                    dts.head.profiles match {
-                      case Some(prfls) => Some(prfls.head) // If there are multiple profiles defined for this dataType, consider the 1st one only.
-                      case None => Some(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${dts.head.dataType}")
-                    }
-                  case _ => Option.empty[String]
+                val restrictionsOnSlicesOfField = allRestrictions.filter(t => t._1.startsWith(s"$fieldName:"))
+                if (createdElementDefinition.isChoiceRoot) {
+                  // Add the complex types of the choice as restrictions under this field so that they are created as elements
+                  val definitionsOfChoiceTypes: Seq[SimpleStructureDefinition] = createdElementDefinition.dataTypes match {
+                    case Some(typesWithProfiles) =>
+                      typesWithProfiles.map { dt =>
+                        val choiceTypeFieldName = s"${fieldName.replace("[x]", "")}${dt.dataType.capitalize}" // Create the field name such as valueQuantity, valueBoolean etc.
+                        createDefinitionWithElements(fieldName, choiceTypeFieldName, None, restrictionsOnSlicesOfField, accumulatingTypeUrls, Some(dt))
+                      }
+                    case None => throw new IllegalArgumentException("A choice root cannot exist without any data types!!")
+                  }
+                  createdElementDefinition.withElements(definitionsOfChoiceTypes)
+                } else if (createdElementDefinition.sliceDefinition.isDefined) {
+                  val sliceNames = restrictionsOnSlicesOfField.collect {
+                    case t if t._2.sliceName.isDefined => t._2.sliceName.get
+                  }
+                  val definitionsOfSlices: Seq[SimpleStructureDefinition] = sliceNames.map { sliceFieldName =>
+                    createDefinitionWithElements(fieldName, sliceFieldName, createdElementDefinition.getProfileUrlForDataType, restrictionsOnSlicesOfField, accumulatingTypeUrls)
+                  }
+                  val createdSliceElement = generateSimpleDefinition("toFHIRGenericSlice", Seq.empty[ElementRestrictions])
+                  createdSliceElement.withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, Seq.empty, accumulatingTypeUrls ++ profileUrl))
+                  createdElementDefinition.withElements(createdSliceElement +: definitionsOfSlices)
+                } else {
+                  val navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
+                  val definitionsOfChildren = simplifier(createdElementDefinition.getProfileUrlForDataType, navigatedRestrictionsOnChildren, accumulatingTypeUrls ++ profileUrl)
+                  createdElementDefinition.withElements(definitionsOfChildren)
                 }
-
-                var navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
-                if (createdElementDefinition.sliceDefinition.isDefined) {
-                  navigatedRestrictionsOnChildren = navigatedRestrictionsOnChildren ++ allRestrictions.filter(t => t._1.startsWith(s"$fieldName:"))
-                }
-                val definitionsOfChildren = simplifier(profileUrlForDataType, navigatedRestrictionsOnChildren, accumulatingTypeUrls ++ profileUrl)
-                createdElementDefinition.withElements(definitionsOfChildren)
               }
           }.toSeq
-
-        result
       }
     }
 
+    // Start of the simplifyStructureDefinition method
     simplifier(Some(profileUrl), Seq.empty[(String, ElementRestrictions)], Set.empty[String])
   }
 
+  /**
+   * Given the (path, ElementRestrictions) tuple on a field, navigate 1-step on the FHIR path.
+   *
+   * @param fieldName
+   * @param restriction
+   * @return
+   */
   private def navigateFhirPathFromField(fieldName: String, restriction: (String, ElementRestrictions)): (String, ElementRestrictions) = {
     val path = restriction._1
-    val arr = path.split(Array('.'))
+    val arr = path.split('.')
     if (arr.head != fieldName) {
-      throw new IllegalStateException(s"This path:$path does not belong to the element:$fieldName")
+      throw new IllegalStateException(s"This path $path does not belong to the element $fieldName")
     }
     val newPath = arr.takeRight(arr.length - 1).mkString(".")
     if (newPath.isEmpty) {
@@ -76,6 +135,13 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
     newPath -> restriction._2
   }
 
+  /**
+   * Given the field name and ElementRestrictions directly on this field, create a SimpleStructureDefinition representing this field.
+   *
+   * @param fieldName
+   * @param restrictionsOnField
+   * @return
+   */
   private def generateSimpleDefinition(fieldName: String, restrictionsOnField: Seq[ElementRestrictions]): SimpleStructureDefinition = {
     var dataTypes: Option[Seq[DataTypeWithProfiles]] = None
     var isArray: Boolean = false
