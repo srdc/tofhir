@@ -37,6 +37,11 @@ object ToFhirConfig {
    */
   lazy val partitionsForMappingJobs:Option[Int] = Try(toFhirConfig.getInt("mapping-jobs.numOfPartitions")).toOption
 
+  /**
+   * Max batch size to execute for batch executions, if number of records exceed this the source data will be divided into batches
+   */
+  lazy val maxBatchSizeForMappingJobs:Option[Long] = Try(toFhirConfig.getLong("mapping-jobs.maxBatchSize")).toOption
+
   /** The # of FHIR resources in the group while executing (create/update) a batch operation. */
   lazy val fhirWriterBatchGroupSize: Int = Try(toFhirConfig.getInt("fhir-server-writer.batch-group-size")).getOrElse(10)
 

@@ -3,9 +3,11 @@ package io.tofhir.engine.model
 /**
  * FHIR Mapping task instance
  *
- * @param mappingRef Canonical URL of the FhirMapping definition to execute
+ * @param mappingRef        Canonical URL of the FhirMapping definition to execute
+ * @param sourceContext     Provide details how to load each source data for the mapping
  */
 case class FhirMappingTask(mappingRef: String, sourceContext: Map[String, FhirMappingSourceContext])
+
 
 /**
  * Interface for source contexts
