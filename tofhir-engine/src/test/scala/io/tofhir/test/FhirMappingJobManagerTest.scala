@@ -154,6 +154,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "execute the mappings with FHIR Path patch" in {
+    assume(fhirServerIsAvailable)
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingJob(tasks = Seq(patientExtraMappingWithPatch), sourceSettings =  dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
       onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
@@ -169,6 +170,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "execute the mappings with conditional FHIR Path patch" in {
+    assume(fhirServerIsAvailable)
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingJob(tasks = Seq(patientExtraMappingWithConditionalPatch), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
       onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
@@ -329,7 +331,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "execute the FhirMappingJob with preprocess" in {
-
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTaskWithPreprocess, sourceSettings = dataSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
