@@ -155,39 +155,45 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
   it should "execute the mappings with FHIR Path patch" in {
     assume(fhirServerIsAvailable)
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingJob(tasks = Seq(patientExtraMappingWithPatch), sourceSettings =  dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
-      onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
-        onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p2")).executeAndReturnResource() flatMap { p2Resource =>
-          (p1Resource \ "maritalStatus" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("D")
-          (p1Resource \ "gender").extract[String] shouldBe "male"
 
-          (p2Resource \ "maritalStatus" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("M")
-          (p2Resource \ "gender").extract[String] shouldBe "female"
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
+    fhirMappingJobManager.executeMappingJob(tasks = Seq(patientMappingTask), sourceSettings =  dataSourceSettings, sinkSettings = fhirSinkSettings).flatMap( _ =>
+      fhirMappingJobManager.executeMappingJob(tasks = Seq(patientExtraMappingWithPatch), sourceSettings =  dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
+        onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
+          onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p2")).executeAndReturnResource() flatMap { p2Resource =>
+            (p1Resource \ "maritalStatus" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("D")
+            (p1Resource \ "gender").extract[String] shouldBe "male"
+
+            (p2Resource \ "maritalStatus" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("M")
+            (p2Resource \ "gender").extract[String] shouldBe "female"
+          }
         }
       }
-    }
+    )
   }
 
   it should "execute the mappings with conditional FHIR Path patch" in {
     assume(fhirServerIsAvailable)
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-    fhirMappingJobManager.executeMappingJob(tasks = Seq(patientExtraMappingWithConditionalPatch), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
-      onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
-        onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p2")).executeAndReturnResource() flatMap { p2Resource =>
-          (p1Resource \ "communication" \ "language" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("tr")
-          (p2Resource \ "communication" \ "language" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("en")
-          fhirMappingJobManager.executeMappingJob(tasks = Seq(patientExtraMappingWithConditionalPatch), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
-            onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
-              onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p2")).executeAndReturnResource() flatMap { p2Resource =>
-                (p1Resource \ "communication" \ "language" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("tr")
-                (p2Resource \ "communication" \ "language" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("en")
+    fhirMappingJobManager.executeMappingJob(tasks = Seq(patientMappingTask), sourceSettings =  dataSourceSettings, sinkSettings = fhirSinkSettings).flatMap( _ =>
+      fhirMappingJobManager.executeMappingJob(tasks = Seq(patientExtraMappingWithConditionalPatch), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
+        response shouldBe ()
+        onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
+          onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p2")).executeAndReturnResource() flatMap { p2Resource =>
+            (p1Resource \ "communication" \ "language" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("tr")
+            (p2Resource \ "communication" \ "language" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("en")
+            fhirMappingJobManager.executeMappingJob(tasks = Seq(patientExtraMappingWithConditionalPatch), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
+              onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
+                onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p2")).executeAndReturnResource() flatMap { p2Resource =>
+                  (p1Resource \ "communication" \ "language" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("tr")
+                  (p2Resource \ "communication" \ "language" \ "coding" \ "code").extract[Seq[String]] shouldBe Seq("en")
+                }
               }
             }
           }
         }
       }
-    }
+    )
   }
 
   it should "execute the other observation mapping task and return the results" in {

@@ -270,9 +270,13 @@ class FhirMappingJobManager(
         logger.debug(s"Executing the mapping ${task.mappingRef} within job $jobId ...")
         readSourceAndExecuteTask(jobId, task, sourceSettings, terminologyServiceSettings, identityServiceSettings, timeRange) // Retrieve the source data and execute the mapping
           .map(dataset => SinkHandler.writeBatch(spark, jobId, Some(task.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
+      case Some(batchSize) if sizeOfDf < batchSize =>
+        logger.debug(s"Executing the mapping ${task.mappingRef} within job $jobId ...")
+        readSourceAndExecuteTask(jobId, task, sourceSettings, terminologyServiceSettings, identityServiceSettings, timeRange) // Retrieve the source data and execute the mapping
+          .map(dataset => SinkHandler.writeBatch(spark, jobId, Some(task.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
       //Otherwise divide the data into batches
       case Some(batchSize)=>
-        val numOfBatch: Int = Math.ceil(sizeOfDf / batchSize).toInt
+        val numOfBatch: Int = Math.ceil(sizeOfDf * 1.0 / batchSize * 1.0).toInt
         logger.debug(s"Executing the mapping ${task.mappingRef} within job $jobId in $numOfBatch batches ...")
         val splitDf = df.randomSplit((1 to numOfBatch).map(_ => 1.0).toArray[Double])
         splitDf
@@ -383,27 +387,31 @@ class FhirMappingJobManager(
         var mainDf = sourceDataFrames.head._2.withColumn(s"__$mainSource", struct("*"))
         mainDf = mainDf.select((mainJoinOnColumns :+ s"__$mainSource").map(mainDf.col):_*)
         //Group other dataframes on join columns and rename their join columns
-        val otherDfs =
+        val otherDfs:Seq[(DataFrame, Seq[String])] =
           sourceDataFrames
             .tail
             .map {
               case (alias, df) =>
-                val colsToJoinOn = sources.find(_.alias == alias).get.joinOn
+                val joinColumnStmts = sources.find(_.alias == alias).get.joinOn
+                val colsToJoinOn = joinColumnStmts.filter(_ != null)
                 val groupedDf =
                   df
                     .groupBy(colsToJoinOn.map(df.col):_*)
                     .agg(collect_list(struct("*")).as(s"__$alias"))
-                if(mainJoinOnColumns == colsToJoinOn)
-                  groupedDf
-                else
-                  colsToJoinOn.zip(mainJoinOnColumns)
+
+                if(colsToJoinOn.toSet.subsetOf(mainJoinOnColumns.toSet))
+                    groupedDf -> colsToJoinOn
+                else {
+                  val actualJoinColumns = joinColumnStmts.zip(mainJoinOnColumns).filter(_._1 != null)
+                  actualJoinColumns
                     .foldLeft(groupedDf) {
-                      case (gdf, (c1, r1)) => gdf.withColumnRenamed(c1, r1)
-                    }
+                        case (gdf, (c1, r1)) => gdf.withColumnRenamed(c1, r1)
+                  } -> actualJoinColumns.map(_._2)
+                }
             }
         //Join other data frames to main data frame
         otherDfs.foldLeft(mainDf) {
-          case (mdf, odf) => mdf.join(odf, mainJoinOnColumns, "left")
+          case (mdf, odf) => mdf.join(odf._1, odf._2, "left")
         }
     }
   }

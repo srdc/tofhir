@@ -10,6 +10,7 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.model._
+import org.apache.hadoop.shaded.org.apache.http.HttpStatus
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 import org.json4s.jackson.{JsonMethods, Serialization}
@@ -190,10 +191,10 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
                            onFhirClient: OnFhirNetworkClient,
                            retry: Int = 1
                           )(implicit ec: ExecutionContext): Unit = {
-    //Check if there is any error in one of the requests
-    if (responseBundle.hasAnyError()) {
-      //If errors are non-transient errors, log them
-      if (responseBundle.hasAnyNonTransientError() || retry == 4) {
+    //Find real errors
+    val nonTransientErrors = getNonTransientErrorUUIDs(mappingResultMap, responseBundle)
+    val transientErrors = responseBundle.getUUIDsOfTransientErrors()
+    if(nonTransientErrors.nonEmpty || retry == 4){
         val msg =
           s"!!!There is an error while writing resources to the FHIR Repository.\n" +
             s"\tRepository URL: ${sinkSettings.fhirRepoUrl}\n" +
@@ -218,14 +219,32 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
           throw FhirMappingException(msg)
         }
-      }
+    } else if(transientErrors.nonEmpty) {
       //Otherwise (having 409 Conflicts), retry the failed ones
-      else {
-        retryRequestsWithTransientError(mappingResultMap, responseBundle, problemsAccumulator, onFhirClient, retry)
-      }
+      retryRequestsWithTransientError(mappingResultMap, responseBundle, problemsAccumulator, onFhirClient, retry)
     } else {
       logger.debug("{} FHIR resources were written to the FHIR repository successfully.", mappingResultMap.size)
     }
+  }
+
+  /**
+   * Find the UUIDs of requests with non transient error response
+   *
+   * @param mappingResultMap Mapped results
+   * @param responseBundle   FHIR batch response bundle
+   * @return
+   */
+  private def getNonTransientErrorUUIDs(mappingResultMap: Map[String, FhirMappingResult], responseBundle: FHIRTransactionBatchBundle):Seq[String] = {
+      responseBundle
+        .responses
+        .filter(r =>
+          r._2.isNonTransientError && //If this is a non-transient error, except the Conditional patch not found case, which we skip the update
+            !(
+              r._2.httpStatus.intValue() == HttpStatus.SC_NOT_FOUND &&
+              mappingResultMap(r._1.get).fhirInteraction.exists(fint => fint.`type` == FHIR_INTERACTIONS.PATCH && fint.condition.nonEmpty)
+            )
+        )
+        .map(_._1.get)
   }
 
   /**
@@ -233,7 +252,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    *
    * @param mappingResultMap    Mapped results
    * @param responseBundle      FHIR batch response bundle
-   * @param batchRequest        FHIR batch request
    * @param problemsAccumulator Spark accumulator for errors
    * @param onFhirClient        Client for FHIR API
    * @param retry               The number of retry for persistence
