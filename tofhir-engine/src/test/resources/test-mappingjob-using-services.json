@@ -5,7 +5,7 @@
       "jsonClass": "FileSystemSourceSettings",
       "name": "test-source",
       "sourceUri": "https://aiccelerate.eu/data-integration-suite/test-data",
-      "dataFolderPath": "./src/test/resources/test-data"
+      "dataFolderPath": "tofhir-engine/src/test/resources/test-data"
     }
   },
   "sinkSettings": {
@@ -15,7 +15,7 @@
   },
   "terminologyServiceSettings": {
     "jsonClass": "LocalFhirTerminologyServiceSettings",
-    "folderPath": "./src/test/resources/terminology-service",
+    "folderPath": "tofhir-engine/src/test/resources/terminology-service",
     "conceptMapFiles": [
       {
         "fileName": "sample-concept-map.csv",

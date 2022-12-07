@@ -45,7 +45,6 @@ class FhirEndpointResourceReader(fhirDefinitionsConfig: FhirDefinitionsConfig) e
             Some(BearerTokenAuthorizationSettings(fhirDefinitionsConfig.authTokenClientId.get, fhirDefinitionsConfig.authTokenClientSecret.get, fhirDefinitionsConfig.authTokenScopeList.get, fhirDefinitionsConfig.authTokenEndpoint.get)))
       }
     }
-    FhirClientUtil.createOnFhirClient(fhirDefinitionsConfig.definitionsFHIREndpoint.get, None) // FIXME
   }
 
   override def readStandardBundleFile(fileName: String, resourceTypeFilter: Set[String]): Seq[Resource] = fsConfigReader.readStandardBundleFile(fileName, resourceTypeFilter)

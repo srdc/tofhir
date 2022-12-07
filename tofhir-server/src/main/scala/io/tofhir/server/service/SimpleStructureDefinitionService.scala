@@ -98,8 +98,8 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                   val definitionsOfSlices: Seq[SimpleStructureDefinition] = sliceNames.map { sliceFieldName =>
                     createDefinitionWithElements(fieldName, sliceFieldName, createdElementDefinition.getProfileUrlForDataType, restrictionsOnSlicesOfField, accumulatingTypeUrls)
                   }
-                  val createdSliceElement = generateSimpleDefinition("toFHIRGenericSlice", Seq.empty[ElementRestrictions])
-                  createdSliceElement.withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, Seq.empty, accumulatingTypeUrls ++ profileUrl))
+                  val createdSliceElement = generateSimpleDefinition("No Slice", Seq.empty[ElementRestrictions])
+                    .withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, Seq.empty, accumulatingTypeUrls ++ profileUrl))
                   createdElementDefinition.withElements(createdSliceElement +: definitionsOfSlices)
                 } else {
                   val navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
