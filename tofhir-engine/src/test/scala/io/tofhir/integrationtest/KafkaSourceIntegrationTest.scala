@@ -141,14 +141,14 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     val topics = Collections.singletonList(new NewTopic(topicName, 1, 1.toShort))
     adminClient.createTopics(topics).all.get(30, TimeUnit.SECONDS)
     consumer.subscribe(Collections.singletonList(topicName))
-    producer.send(new ProducerRecord[String, String](topicName, "1", "{\"pid\":\"p1\",\"time\":\"2007-10-12T10:00:00+01:00\",\"encounterId\":\"e1\",\"code\":\"9110-8\",\"value\":\"450\"}")).get
+    producer.send(new ProducerRecord[String, String](topicName, "1", "{\"pid\":\"p1\",\"time\":\"2007-10-12 10:00:00\",\"encounterId\":\"e1\",\"code\":\"9110-8\",\"value\":\"450\"}")).get
     Unreliables.retryUntilTrue(10, TimeUnit.SECONDS, () => {
       def foo(): Boolean = {
         val records = consumer.poll(Duration.ofMillis(100))
         if (records.isEmpty) return false
         records.iterator.next.topic shouldBe "observations"
         records.iterator.next.key shouldBe "1"
-        records.iterator.next.value shouldBe "{\"pid\":\"p1\",\"time\":\"2007-10-12T10:00:00+01:00\",\"encounterId\":\"e1\",\"code\":\"9110-8\",\"value\":\"450\"}"
+        records.iterator.next.value shouldBe "{\"pid\":\"p1\",\"time\":\"2007-10-12 10:00:00\",\"encounterId\":\"e1\",\"code\":\"9110-8\",\"value\":\"450\"}"
         true
       }
       foo()

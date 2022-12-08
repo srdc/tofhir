@@ -1,7 +1,6 @@
 package io.tofhir.test
 
 import akka.http.scaladsl.model.StatusCodes
-import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
@@ -28,8 +27,6 @@ import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Try, Using}
 
 class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
-
-  val logger: Logger = Logger(this.getClass)
 
   val DATABASE_URL = "jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE"
 
@@ -100,7 +97,8 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling, Some(mappingJobScheduler))
     fhirMappingJobManager.scheduleMappingJob(tasks = lMappingJob.mappings, sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
     scheduler.start() //job set to run every minute
-    Thread.sleep(60000) //wait for the job to be executed once
+    Thread.sleep(61000) //wait for the job to be executed once
+    scheduler.stop()
 
     val directory = new File(toFhirDb.toUri)
     FileUtils.cleanDirectory(directory)
@@ -112,16 +110,13 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
 
       onFhirClient.search("Observation").where("code", "9269-2").executeAndReturnBundle() flatMap { observationBundle =>
         //the Observation with the code 9269-2 matches our time range, others should not
-        observationBundle.searchResults.length shouldBe 1
+        observationBundle.searchResults.length shouldBe 3
         (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
           FhirMappingUtility.getHashedReference("Patient", "p4")
         //the Observation with the code 445619006, as an example, does not match our time range
         onFhirClient.search("Observation").where("code", "445619006").executeAndReturnBundle() flatMap { emptyObservationBundle =>
           emptyObservationBundle.searchResults shouldBe empty
-          onFhirClient.search("MedicationAdministration").where("code", "313002").executeAndReturnBundle() map { medicationAdministrationBundle =>
-            medicationAdministrationBundle.searchResults shouldBe empty
-            deleteResources()
-          }
+          deleteResources()
         }
       }
     }

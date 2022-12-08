@@ -211,7 +211,7 @@ object MappingTaskExecutor {
               )
             )
           } else {
-            throw FhirMappingException(s"Problem while evaluating the mapping expression $mappingExpr within mapping ${fhirMappingService.mappingUrl}!", t)
+            throw FhirMappingException(s"Problem while evaluating the mapping expression ${t.expression} within mapping ${fhirMappingService.mappingUrl}!", t)
           }
         //Other general exceptions
         case e: FhirMappingException =>

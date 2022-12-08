@@ -17,7 +17,7 @@ import org.scalatest.{Assertion, BeforeAndAfterAll}
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Future}
 import scala.util.Try
 
@@ -270,7 +270,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
   it should "execute the FhirMappingJob with sink settings restored from a file" in {
     assume(fhirServerIsAvailable)
-    var lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobFilePath)
+    val lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobFilePath)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
     fhirMappingJobManager.executeMappingJob(tasks = lMappingJob.mappings, sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings) flatMap { unit =>
@@ -309,35 +309,35 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
   it should "execute the FhirMappingJob using an identity service" in {
     assume(fhirServerIsAvailable)
-    var lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobWithIdentityServiceFilePath)
-    lMappingJob = lMappingJob.copy(sourceSettings = dataSourceSettings)
+    val lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobWithIdentityServiceFilePath)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
-    val res = Await.result(fhirMappingJobManager
+    fhirMappingJobManager
       .executeMappingJob(
         tasks = lMappingJob.mappings,
         sourceSettings = lMappingJob.sourceSettings,
         sinkSettings = lMappingJob.sinkSettings,
         terminologyServiceSettings = lMappingJob.terminologyServiceSettings,
-        identityServiceSettings = lMappingJob.getIdentityServiceSettings()), Duration.Inf)
-    res shouldBe a[Unit]
+        identityServiceSettings = lMappingJob.getIdentityServiceSettings()) map { res =>
+      res shouldBe a[Unit]
+    }
   }
 
-  //  it should "execute the FhirMappingJob with preprocess" in {
-  //    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
-  //    fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTaskWithPreprocess, sourceSettings = dataSourceSettings) map { mappingResults =>
-  //      val results = mappingResults.map(r => {
-  //        r.mappedResource shouldBe defined
-  //        val resource = r.mappedResource.get.parseJson
-  //        resource shouldBe a[Resource]
-  //        resource
-  //      })
-  //      results.size shouldBe 10
-  //      val patient1 = results.head
-  //      FHIRUtil.extractResourceType(patient1) shouldBe "Patient"
-  //      FHIRUtil.extractIdFromResource(patient1) shouldBe FhirMappingUtility.getHashedId("Patient", "p1")
-  //      FHIRUtil.extractValue[String](patient1, "gender") shouldBe "male"
-  //    }
-  //  }
+    it should "execute the FhirMappingJob with preprocess" in {
+      val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, sparkSession, mappingErrorHandling)
+      fhirMappingJobManager.executeMappingTaskAndReturn(task = patientMappingTaskWithPreprocess, sourceSettings = dataSourceSettings) map { mappingResults =>
+        val results = mappingResults.map(r => {
+          r.mappedResource shouldBe defined
+          val resource = r.mappedResource.get.parseJson
+          resource shouldBe a[Resource]
+          resource
+        })
+        results.size shouldBe 10
+        val patient1 = results.head
+        FHIRUtil.extractResourceType(patient1) shouldBe "Patient"
+        FHIRUtil.extractIdFromResource(patient1) shouldBe FhirMappingUtility.getHashedId("Patient", "p1")
+        FHIRUtil.extractValue[String](patient1, "gender") shouldBe "male"
+      }
+    }
 
 }

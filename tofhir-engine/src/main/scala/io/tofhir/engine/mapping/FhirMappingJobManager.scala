@@ -5,8 +5,8 @@ import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.data.write.{BaseFhirWriter, FhirWriterFactory, SinkHandler}
-import io.tofhir.engine.model.{DataSourceSettings, FhirMapping, FhirMappingException, FhirMappingResult, FhirMappingSource, FhirMappingTask, FhirSinkSettings, IdentityServiceSettings, SchedulingSettings, TerminologyServiceSettings}
-import org.apache.spark.sql.functions.{collect_list, log, struct}
+import io.tofhir.engine.model._
+import org.apache.spark.sql.functions.{collect_list, struct}
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
@@ -132,7 +132,7 @@ class FhirMappingJobManager(
       LocalDateTime.parse(schedulingSettings.initialTime.get)
     }
     // Schedule a task
-    val taskId = mappingJobScheduler.get.scheduler.schedule(schedulingSettings.cronExpression, new Runnable() {
+    mappingJobScheduler.get.scheduler.schedule(schedulingSettings.cronExpression, new Runnable() {
       override def run(): Unit = {
         val scheduledJob = runnableMappingJob(id, startTime, tasks, sourceSettings, sinkSettings, terminologyServiceSettings, identityServiceSettings, schedulingSettings)
         Await.result(scheduledJob, Duration.Inf)
