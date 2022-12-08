@@ -162,12 +162,14 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
     if (codeResult.length > 1 || !codeResult.head.isInstanceOf[FhirPathString]) {
       throw new FhirPathException(s"Invalid function call 'convertAndReturnQuantity', given expression for keyExpr:${keyExpr.getText} for the source code should return a string value!")
     }
-
-
-    val valueResult = new FhirPathExpressionEvaluator(context, current).visit(valueExpr)
+    //Handle value expression
+    var valueResult = new FhirPathExpressionEvaluator(context, current).visit(valueExpr)
+    val valueAndComparator = new FhirPathExpressionEvaluator(context, valueResult).visit(FhirPathEvaluator.parse("utl:parseFhirQuantityExpression($this)"))
+    valueResult = valueAndComparator.headOption.toSeq
     if (valueResult.length > 1 || !valueResult.head.isInstanceOf[FhirPathNumber]) {
       throw new FhirPathException(s"Invalid function call 'convertAndReturnQuantity', given expression for valueExpr:${valueExpr.getText} for the value should return a numeric value!")
     }
+    val comparator = valueAndComparator.drop(1).headOption.map(_.asInstanceOf[FhirPathString].s)
 
     val unitResult = new FhirPathExpressionEvaluator(context, current).visit(unitExpr)
     if (unitResult.length != 1 || !unitResult.head.isInstanceOf[FhirPathString]) {
@@ -189,7 +191,14 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
             if (functionResult.length != 1 || !functionResult.head.isInstanceOf[FhirPathNumber]) {
               throw new FhirPathException(s"Invalid FHIR expression in the unit conversion context! The FHIR path expression:${conversionFunction} should evaluate to a single numeric value!")
             }
-            FhirPathComplex(JObject(List("value" -> functionResult.head.toJson, "system" -> JString("http://unitsofmeasure.org"), "unit" -> JString(targetUnit), "code" -> codeResult.head.toJson)))
+            FhirPathComplex(JObject(List(
+              "value" -> functionResult.head.toJson,
+              "system" -> JString("http://unitsofmeasure.org"),
+              "unit" -> JString(targetUnit),
+              "code" -> codeResult.head.toJson
+            ) ++
+              comparator.map(c => "comparator" -> JString(c)).toList,
+            ))
         }.toSeq
     }
   }
