@@ -81,7 +81,9 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   override protected def afterAll(): Unit = {
-    deleteResources()
+    if(fhirServerIsAvailable) {
+      deleteResources()
+    }
     super.afterAll()
   }
 

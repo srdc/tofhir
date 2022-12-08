@@ -38,7 +38,9 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
   }
 
   override protected def afterAll(): Unit = {
-    deleteResources()
+    if(fhirServerIsAvailable) {
+      deleteResources()
+    }
     val sql = readFileContent("/sql/scheduling-drop.sql")
     runSQL(sql)
     super.afterAll()
