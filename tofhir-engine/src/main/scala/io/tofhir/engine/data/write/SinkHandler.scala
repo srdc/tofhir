@@ -58,6 +58,7 @@ object SinkHandler {
       case t: Throwable =>
         val jobResult = FhirMappingJobResult(jobId, mappingUrl)
         logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
+        throw t
     }
   }
 
