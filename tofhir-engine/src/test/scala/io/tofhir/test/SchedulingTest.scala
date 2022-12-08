@@ -20,15 +20,16 @@ import java.net.URI
 import java.nio.file.{Path, Paths}
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.concurrent.{Await, Future}
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Try, Using}
 
 class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
 
   val DATABASE_URL = "jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE"
+
+  implicit val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -37,6 +38,7 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
   }
 
   override protected def afterAll(): Unit = {
+    deleteResources()
     val sql = readFileContent("/sql/scheduling-drop.sql")
     runSQL(sql)
     super.afterAll()
@@ -58,13 +60,13 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
     }
   }
 
-  private def deleteResources(): Future[Assertion] = {
+  private def deleteResources(): Assertion = {
     var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
     // Delete all patients between p1-p10 and related observation
     (1 to 10).foreach(i => {
       batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i)))
     })
-    onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p4")) flatMap { observationBundle =>
+    val f = onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p4")) flatMap { observationBundle =>
       observationBundle.searchResults.foreach(obs => {
         batchRequest = batchRequest.entry(_.delete("Observation", (obs \ "id").extract[String]))
       })
@@ -72,6 +74,7 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
         res.httpStatus shouldBe StatusCodes.OK
       }
     }
+    Await.result(f, Duration.Inf)
   }
 
   val scheduler = new Scheduler()
@@ -110,19 +113,17 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
 
       onFhirClient.search("Observation").where("code", "9269-2").executeAndReturnBundle() flatMap { observationBundle =>
         //the Observation with the code 9269-2 matches our time range, others should not
-        observationBundle.searchResults.length shouldBe 3
+        observationBundle.searchResults.length shouldBe 1
         (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
           FhirMappingUtility.getHashedReference("Patient", "p4")
         //the Observation with the code 445619006, as an example, does not match our time range
-        onFhirClient.search("Observation").where("code", "445619006").executeAndReturnBundle() flatMap { emptyObservationBundle =>
+        onFhirClient.search("Observation").where("code", "445619006").executeAndReturnBundle() map { emptyObservationBundle =>
           emptyObservationBundle.searchResults shouldBe empty
-          deleteResources()
         }
       }
     }
     Await.result(searchTest, Duration.Inf)
   }
-
 
 }
 

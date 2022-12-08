@@ -5,7 +5,7 @@
       "jsonClass": "FileSystemSourceSettings",
       "name": "pilot2-source",
       "sourceUri": "https://aiccelerate.eu/data-integration-suite/pilot2-data",
-      "dataFolderPath": "./data",
+      "dataFolderPath": "/test-data",
       "asStream": true
     }
   },

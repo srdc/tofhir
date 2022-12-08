@@ -7,7 +7,11 @@ import io.tofhir.engine.model.{FhirMapping, FhirMappingContextDefinition}
 import org.json4s.{JNull, JObject}
 import org.scalatest.flatspec.AsyncFlatSpec
 
+import scala.concurrent.ExecutionContext
+
 class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
+
+  implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   val labResultMapping: FhirMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
   val conceptMapContextDefinition: FhirMappingContextDefinition = labResultMapping.context("obsConceptMap")
