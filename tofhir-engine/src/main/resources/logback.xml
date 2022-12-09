@@ -82,4 +82,5 @@
     <logger name="com.typesafe.sslconfig" level="WARN"/>
     <logger name="io.onfhir.path" level="WARN"/>
     <logger name="io.onfhir.validation" level="WARN"/>
+    <logger name="org.apache.kafka" level="WARN"/>
 </configuration>

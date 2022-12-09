@@ -162,11 +162,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   it should "consume patients and observations data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
     val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = Seq(patientMappingTask, otherObservationMappingTask), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
-    streamingQuery.awaitTermination(20000L) //wait for 30 seconds to consume and write to the fhir repo and terminate
-  }
-
-  it should "test whether fhir resources are written successfully" in {
-    assume(fhirServerIsAvailable)
+    streamingQuery.awaitTermination(20000L) //wait for 20 seconds to consume and write to the fhir repo and terminate
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
       FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p1")
       FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "male"
