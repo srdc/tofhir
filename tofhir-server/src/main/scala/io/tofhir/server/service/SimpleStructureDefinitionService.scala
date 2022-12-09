@@ -24,6 +24,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
      * Recursive helper function to create the SimpleStructureDefinition sequence for a given profile, carrying the ElementRestrictions to inner elements.
      *
      * @param profileUrl                    URL of a FHIR profile which can be empty. If empty, only restrictionsFromParentElement will be considered while creating the element definitions.
+     * @param parentPath                    FHIRPath until now. The SimpleStructureDefinitions will be created under the given parentPath.
      * @param restrictionsFromParentElement ElementRestrictions from parent profiles.
      * @param accumulatingTypeUrls          Data types throughout the recursive chain so that recursion can stop if a loop over the data types exists.
      * @return
@@ -36,6 +37,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
        *
        * @param fieldName                   The name of the parent field (e.g., coding)
        * @param sliceName                   The name of the slice under the parent field (e.g., aicNonMotorSymptom)
+       * @param parentPath                  FHIRPath under which the definition will be created.
        * @param profileUrlForDataType       For non-choice slices, URL of the profile for the data type (if exists)
        * @param restrictionsOnSlicesOfField ElementRestrictions on the slice
        * @param accumulatingTypeUrls        Accumulating data types to break the loop in the recursion
@@ -122,7 +124,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
     // Start of the simplifyStructureDefinition method
     simplifier(profileUrl = Some(profileUrl),
-      parentPath = fhirConfig.findResourceType(profileUrl),
+      parentPath = Option.empty[String],
       restrictionsFromParentElement = Seq.empty[(String, ElementRestrictions)],
       accumulatingTypeUrls = Set.empty[String])
   }
@@ -148,9 +150,10 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
   }
 
   /**
-   * Given the field name and ElementRestrictions directly on this field, create a SimpleStructureDefinition representing this field.
+   * Given the field name, FHIRPath until this field (if exists), and ElementRestrictions directly on this field, create a SimpleStructureDefinition representing this field.
    *
    * @param fieldName
+   * @param parentPath
    * @param restrictionsOnField
    * @return
    */
@@ -258,14 +261,14 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
     val isPrimitive = dataTypes.isDefined && dataTypes.get.length == 1 && Character.isLowerCase(dataTypes.get.head.dataType.head)
 
-//    // Integrity check for the FHIR paths of the ElementRestrictions
-//    val integrityPath = restrictionsOnField
-//      .map(r => r.path)
-//      .sortWith((s1, s2) => s1.length < s2.length)
-//      .foldLeft("")((f, p) => if (p.endsWith(f)) p else "-1")
-//    if (!fhirPath.endsWith(integrityPath)) {
-//      throw new IllegalArgumentException(s"Given FHIR paths for field:$fieldName in its ElementRestrictions are not all pointing to this same field.")
-//    }
+    //    // Integrity check for the FHIR paths of the ElementRestrictions
+    //    val integrityPath = restrictionsOnField
+    //      .map(r => r.path)
+    //      .sortWith((s1, s2) => s1.length < s2.length)
+    //      .foldLeft("")((f, p) => if (p.endsWith(f)) p else "-1")
+    //    if (!fhirPath.endsWith(integrityPath)) {
+    //      throw new IllegalArgumentException(s"Given FHIR paths for field:$fieldName in its ElementRestrictions are not all pointing to this same field.")
+    //    }
 
     SimpleStructureDefinition(id = fieldName,
       path = fhirPath,
