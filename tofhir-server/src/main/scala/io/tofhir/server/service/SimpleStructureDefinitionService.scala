@@ -8,11 +8,6 @@ import io.tofhir.server.model._
 class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
   /**
-   * Definitions which have the following types will not be further processed to create their child elements.
-   */
-  val ignoreSet: Set[String] = Set("DomainResource", "BackboneElement", "Element", "Extension")
-
-  /**
    * Given a URL for a profile, return a sequence of definitions for all elements of the resource type indicated by this profile.
    *
    * @param profileUrl
@@ -54,9 +49,10 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
         if (createdChoiceTypeElement.isPrimitive) createdChoiceTypeElement
         else {
           val navigatedRestrictionsOnChildren = restrictionsOnChildrenOfSlice.map(navigateFhirPathFromField(s"$fieldName:$sliceName", _))
+          val dataTypeOfCreatedTypeElement = createdChoiceTypeElement.getProfileUrlForDataType
           val definitionsOfChoiceTypeElementsChildren =
             simplifier(
-              profileUrl = if (profileUrlForDataType.isDefined) profileUrlForDataType else createdChoiceTypeElement.getProfileUrlForDataType,
+              profileUrl = if (dataTypeOfCreatedTypeElement.isDefined) dataTypeOfCreatedTypeElement else profileUrlForDataType,
               parentPath = Some(createdChoiceTypeElement.path),
               restrictionsFromParentElement = navigatedRestrictionsOnChildren,
               accumulatingTypeUrls = accumulatingTypeUrls ++ profileUrl)
@@ -70,26 +66,39 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
         Seq.empty[SimpleStructureDefinition]
       } else {
         val profileRestrictionsSeq: Seq[ProfileRestrictions] = if (profileUrl.isDefined) fhirConfig.findProfileChain(profileUrl.get) else Seq.empty[ProfileRestrictions]
-        val elementRestrictionsFromProfile = profileRestrictionsSeq.flatMap(_.elementRestrictions) // Make a list of all ElementRestrictions (respect their order)
+        val elementRestrictionsFromProfile = profileRestrictionsSeq
+          .flatMap { pr =>
+            // Make a list of all ElementRestrictions (respect their order)
+            // But, filter out extension and modifierExtension fields if they come from Element and BackboneElement profiles. Otherwise the SimpleStructureDefinition becomes huge!
+            if(pr.url.endsWith("Element") || pr.url.endsWith("BackboneElement"))
+              pr.elementRestrictions.filterNot(er => er._1 == "extension" || er._1 == "modifierExtension")
+            else
+              pr.elementRestrictions
+          }
         val allRestrictions = restrictionsFromParentElement ++ elementRestrictionsFromProfile
 
-        allRestrictions.filterNot(r => r._1.split('.').head.contains(":")) // Eliminate the slice definitions such as coding:aic or value[x]:valueQuantity, but not code.coding:aic
+        val groupedFieldRestrictions = allRestrictions
+          .filterNot(r => r._1.split('.').head.contains(":")) // Eliminate the slice definitions such as coding:aic or value[x]:valueQuantity, but not code.coding:aic
           .groupBy(r => r._1.split('.').head) // Group by immediate field name (e.g., group {code, code.coding.system, code.coding.value} together)
-          .map {
+
+        groupedFieldRestrictions.map {
             case (fieldName, restrictionsOnFieldAndItsChildren) =>
               val (restrictionsOnField, restrictionsOnChildren) = restrictionsOnFieldAndItsChildren.partition(_._1 == fieldName)
 
               // Create the SimpleStructureDefinition for this fieldName
               val createdElementDefinition = generateSimpleDefinition(fieldName, parentPath, restrictionsOnField.map(_._2))
 
-              if (createdElementDefinition.isPrimitive ||
-                (createdElementDefinition.dataTypes.isDefined && ignoreSet.contains(createdElementDefinition.dataTypes.get.head.dataType))) {
+              if (createdElementDefinition.isPrimitive && !createdElementDefinition.isChoiceRoot) {
+                // For choice fields (e.g., value[x]), if it has a single simple type (e.g., boolean), then we count is as primitive.
+                // That's why the extra check on whether it is choiceRoot or not.
                 createdElementDefinition
               } else {
                 val restrictionsOnSlicesOfField = allRestrictions.filter(t => t._1.startsWith(s"$fieldName:"))
                 if (createdElementDefinition.isChoiceRoot) {
                   // Add the complex types of the choice as restrictions under this field so that they are created as elements
                   val definitionsOfChoiceTypes: Seq[SimpleStructureDefinition] = createdElementDefinition.dataTypes match {
+                    case Some(typesWithProfiles) if typesWithProfiles.length >= 5 =>
+                      Seq.empty[SimpleStructureDefinition]
                     case Some(typesWithProfiles) =>
                       typesWithProfiles.map { dt =>
                         val choiceTypeFieldName = s"${fieldName.replace("[x]", "")}${dt.dataType.capitalize}" // Create the field name such as valueQuantity, valueBoolean etc.
@@ -103,6 +112,12 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                     case t if t._2.sliceName.isDefined => t._2.sliceName.get
                   }
                   val definitionsOfSlices: Seq[SimpleStructureDefinition] = sliceNames.map { sliceFieldName =>
+                    if(sliceFieldName == "isAbsent") {
+                      println("")
+                    }
+                    if(sliceFieldName == "aicNonMotorSymptomCode") {
+                      println("")
+                    }
                     createDefinitionWithElements(fieldName, sliceFieldName, parentPath, createdElementDefinition.getProfileUrlForDataType, restrictionsOnSlicesOfField, accumulatingTypeUrls)
                   }
                   val createdSliceElement = generateSimpleDefinition("No Slice", parentPath, Seq.empty[ElementRestrictions])
@@ -185,15 +200,13 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       comment = elementRestrictions.metadata.flatMap(md => md.comment)
 
       if (elementRestrictions.slicing.isDefined) {
-        // This is a slice definition for this fieldName
+        // This is a slice definition for this fieldName, process the most upper-level one only.
         if (sliceDefinition.isEmpty) {
           val fhirSlicing = elementRestrictions.slicing.get
           sliceDefinition = Some(SliceDefinition(
             fhirSlicing.discriminators.map(d => SliceDiscriminator(d._1, d._2)),
             fhirSlicing.ordered,
             fhirSlicing.rule))
-        } else {
-          throw new IllegalArgumentException(s"There are multiple slice definitions for this $fieldName. I only expect a single slice definition for a field!")
         }
       }
 
@@ -261,15 +274,6 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
     val isPrimitive = dataTypes.isDefined && dataTypes.get.length == 1 && Character.isLowerCase(dataTypes.get.head.dataType.head)
 
-    //    // Integrity check for the FHIR paths of the ElementRestrictions
-    //    val integrityPath = restrictionsOnField
-    //      .map(r => r.path)
-    //      .sortWith((s1, s2) => s1.length < s2.length)
-    //      .foldLeft("")((f, p) => if (p.endsWith(f)) p else "-1")
-    //    if (!fhirPath.endsWith(integrityPath)) {
-    //      throw new IllegalArgumentException(s"Given FHIR paths for field:$fieldName in its ElementRestrictions are not all pointing to this same field.")
-    //    }
-
     SimpleStructureDefinition(id = fieldName,
       path = fhirPath,
       dataTypes = dataTypes,
@@ -292,4 +296,18 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       elements = None)
   }
 
+}
+
+object SimpleStructureDefinitionService {
+  def main(args: Array[String]): Unit = {
+    import Json4sSupport._
+    import io.tofhir.engine.Execution.actorSystem
+    import io.tofhir.server.fhir.FhirDefinitionsConfig
+    val fhirDefinitionsConfig = new FhirDefinitionsConfig(actorSystem.settings.config.getConfig("fhir"))
+    val service: FhirDefinitionsService = new FhirDefinitionsService(fhirDefinitionsConfig)
+    val res = service.getElementDefinitionsOfProfile("https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonNonMotorSymptomAssessment")
+    println("*****************")
+    println(serialization.writePretty(res))
+    println("*****************")
+  }
 }
