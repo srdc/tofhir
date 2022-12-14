@@ -6,8 +6,8 @@ import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.ToFhirTestSpec
-import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model.{FhirMappingTask, FhirRepositorySinkSettings, KafkaSource, KafkaSourceSettings}
 import io.tofhir.engine.util.FhirMappingUtility
@@ -25,13 +25,16 @@ import org.testcontainers.utility.DockerImageName
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.{Collections, Properties, UUID}
+import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Await, Future, duration}
 import scala.util.Try
 
 class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with BeforeAndAfterAll {
 
   override protected def afterAll(): Unit = {
+    if(fhirServerIsAvailable) {
+      deleteResources()
+    }
     if (adminClient != null) adminClient.close()
     if (producer != null) producer.close()
     if (consumer != null) consumer.close()
@@ -39,10 +42,10 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     super.afterAll()
   }
 
-  private def deleteResources(): Future[Assertion] = {
+  private def deleteResources(): Assertion = {
     var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
     batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p1")))
-    onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p1"))
+    val f = onFhirClient.search("Observation").where("subject", "Patient/" + FhirMappingUtility.getHashedId("Patient", "p1"))
       .executeAndReturnBundle() flatMap { obsBundle =>
       obsBundle.searchResults.foreach(obs =>
         batchRequest = batchRequest.entry(_.delete("Observation", (obs \ "id").extract[String]))
@@ -51,6 +54,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
         res.httpStatus shouldBe StatusCodes.OK
       }
     }
+    Await.result(f, FiniteDuration(60, TimeUnit.SECONDS))
   }
 
   //kafka test-containers related
@@ -76,7 +80,6 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
 
   val streamingSourceSettings: Map[String, KafkaSourceSettings] =
     Map("source" -> KafkaSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort"))
-
 
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", errorHandling = Some(fhirWriteErrorHandling))
 
@@ -159,11 +162,8 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   it should "consume patients and observations data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
     val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = Seq(patientMappingTask, otherObservationMappingTask), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
-    streamingQuery.awaitTermination(20000L) //wait for 30 seconds to consume and write to the fhir repo and terminate
-  }
-
-  it should "test whether fhir resources are written successfully" in {
-    assume(fhirServerIsAvailable)
+    streamingQuery.awaitTermination(20000L) //wait for 20 seconds to consume and write to the fhir repo and terminate
+    streamingQuery.stop()
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
       FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p1")
       FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "male"
@@ -172,10 +172,9 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
       onFhirClient.search("Observation").where("code", "9110-8").executeAndReturnBundle() map { observationBundle =>
         (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
           FhirMappingUtility.getHashedReference("Patient", "p1")
-        deleteResources()
       }
     }
-    Await.result(searchTest, duration.Duration(20, duration.SECONDS))
+    Await.result(searchTest, FiniteDuration(60, TimeUnit.SECONDS))
   }
 
 }

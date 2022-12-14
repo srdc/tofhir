@@ -18,7 +18,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Try, Using}
 
@@ -27,6 +27,8 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   val logger: Logger = Logger(this.getClass)
 
   val DATABASE_URL = "jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE"
+
+  implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()

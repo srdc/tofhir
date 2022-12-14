@@ -7,7 +7,11 @@ import io.tofhir.engine.model.{FhirMapping, FhirMappingContextDefinition}
 import org.json4s.{JNull, JObject}
 import org.scalatest.flatspec.AsyncFlatSpec
 
+import scala.concurrent.ExecutionContext
+
 class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
+
+  implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   val labResultMapping: FhirMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
   val conceptMapContextDefinition: FhirMappingContextDefinition = labResultMapping.context("obsConceptMap")
@@ -38,7 +42,7 @@ class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
     mappingContextLoader.retrieveContext(unitConversionContextDefinition) map { mappingContext =>
       val fhirPathMappingFunctions = new FhirMappingFunctionsFactory(Map("labResultUnitConversion" -> mappingContext))
       // 1552,g/l,g/dL,"""$this * 0.1"""
-      val valueQuantity = FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions)
+      val valueQuantity = FhirPathEvaluator().withDefaultFunctionLibraries().withFunctionLibrary("mpp", fhirPathMappingFunctions)
         .evaluateAndReturnJson("mpp:convertAndReturnQuantity(%labResultUnitConversion, '1552', 100, 'g/l')", JNull)
       valueQuantity.isDefined shouldBe true
       valueQuantity.get shouldBe a[JObject]
@@ -49,7 +53,7 @@ class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
       obj("unit") shouldBe "g/dL"
       obj("code") shouldBe "1552"
 
-      val unknownConversion = FhirPathEvaluator().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:convertAndReturnQuantity(%labResultUnitConversion, 'UNKNOWN_CODE', 100, 'UNKNOWN_UNIT')", JNull)
+      val unknownConversion = FhirPathEvaluator().withDefaultFunctionLibraries().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:convertAndReturnQuantity(%labResultUnitConversion, 'UNKNOWN_CODE', 100, 'UNKNOWN_UNIT')", JNull)
       unknownConversion shouldBe None
     }
   }

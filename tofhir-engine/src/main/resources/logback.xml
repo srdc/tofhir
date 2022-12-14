@@ -76,9 +76,11 @@
     <logger name="org.apache.hadoop" level="WARN"/>
     <logger name="org.apache.htrace" level="WARN"/>
     <logger name="org.sparkproject" level="WARN"/>
+    <logger name="org.apache.kafka" level="WARN"/>
     <logger name="io.netty" level="WARN"/>
     <logger name="ca.uhn.fhir" level="WARN"/>
     <logger name="com.typesafe.sslconfig" level="WARN"/>
     <logger name="io.onfhir.path" level="WARN"/>
     <logger name="io.onfhir.validation" level="WARN"/>
+    <logger name="org.apache.kafka" level="WARN"/>
 </configuration>
