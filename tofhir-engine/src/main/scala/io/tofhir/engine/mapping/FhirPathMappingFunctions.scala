@@ -2,6 +2,7 @@ package io.tofhir.engine.mapping
 
 import io.onfhir.path._
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
+import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.model.{ConceptMapContext, FhirMappingContext, UnitConversionContext}
 import io.tofhir.engine.util.FhirMappingUtility
 import org.json4s.{JObject, JString}
@@ -64,10 +65,11 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
   def getConcept(conceptMap: ExpressionContext, keyExpr: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conceptMap.getText.substring(1) // skip the leading % character
     val conceptMapContext = getConceptMap(mapName)
-
+    val evaluator = new FhirPathExpressionEvaluator(context, current)
     // Should return the code of the concept whose mapping is requested
-    new FhirPathExpressionEvaluator(context, current).visit(keyExpr) match {
-      case Nil => Nil
+    evaluator.visit(keyExpr) match {
+      case Nil =>
+        Nil
       case Seq(FhirPathString(conceptCode)) =>
         conceptMapContext
           .concepts
