@@ -23,8 +23,10 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
   override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
     val finalPath = FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
 
+    val isDistinct = mappingSource.options.get("distinct").contains("true")
+
     //Based on source type
-    mappingSource.sourceType match {
+    val resultDf = mappingSource.sourceType match {
         case SourceFileFormats.CSV =>
           //Options that we infer for csv
           val inferSchema = schema.isEmpty || mappingSource.preprocessSql.isDefined
@@ -64,5 +66,9 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
             spark.read.options(mappingSource.options).schema(schema.orNull).parquet(finalPath)
         case _ => throw new NotImplementedError()
       }
+    if(isDistinct)
+      resultDf.distinct()
+    else
+      resultDf
   }
 }

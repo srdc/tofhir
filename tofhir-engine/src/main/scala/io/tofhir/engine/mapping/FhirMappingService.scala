@@ -2,7 +2,7 @@ package io.tofhir.engine.mapping
 
 import io.onfhir.api.Resource
 import io.onfhir.expression.{FhirExpression, FhirExpressionException}
-import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
+import io.onfhir.path.{FhirPathEvaluator, FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.model.{ConfigurationContext, FhirInteraction, FhirMappingContext, FhirMappingException, FhirMappingExpression, IdentityServiceSettings, TerminologyServiceSettings}
@@ -60,13 +60,16 @@ class FhirMappingService(
   override def mapToFhir(source: JObject, otherSourceAsContextVariables:Map[String, JValue] = Map.empty): Future[Seq[(String, Seq[Resource], Option[FhirInteraction])]] = {
     //Calculate the variables
     val contextVariables:Map[String, JValue] =
-      otherSourceAsContextVariables ++
-        variables
-          .flatMap(vexp =>
-              evaluateFhirPathExpression(vexp, source)
-                .map(r => vexp.name -> r)
-          )
-          .toMap
+        variables.foldLeft(otherSourceAsContextVariables){
+          case (context, vexp) =>
+            evaluateFhirPathExpression(vexp, source, context) match {
+              case Some(vl) =>
+                context + (vexp.name -> vl)
+              case None =>
+                context
+            }
+        }
+
 
     //Find out eligible mappings on this source JObject based on preconditions
     val eligibleMappings =
@@ -76,7 +79,7 @@ class FhirMappingService(
             .precondition
             .forall(prc =>
               try {
-                templateEngine.fhirPathEvaluator.satisfies(prc.expression.get, source)
+                getFhirPathEvaluator(contextVariables).satisfies(prc.expression.get, source)
               } catch {
                   case e: Exception =>
                     throw FhirMappingException(mpp.expression.name, e)
@@ -143,14 +146,24 @@ class FhirMappingService(
    * @param source          Input content
    * @return
    */
-  private def evaluateFhirPathExpression(fhirExpression: FhirExpression, source: JObject):Option[JValue] = {
+  private def evaluateFhirPathExpression(fhirExpression: FhirExpression, source: JObject, context:Map[String, JValue]):Option[JValue] = {
     try {
-      templateEngine
-        .fhirPathEvaluator
+      getFhirPathEvaluator(context)
         .evaluateAndReturnJson(fhirExpression.expression.get, source)
     } catch {
       case e: Exception =>
         throw FhirMappingException(fhirExpression.name, e)
+    }
+  }
+
+  /**
+   * Return the FhirPathEvaluator with the supplied parameters
+   * @param context
+   * @return
+   */
+  private def getFhirPathEvaluator(context:Map[String, JValue]):FhirPathEvaluator = {
+    context.foldLeft(templateEngine.fhirPathEvaluator) {
+      case (evaluator, v) => evaluator.withEnvironmentVariable(v._1, v._2)
     }
   }
 

@@ -40,6 +40,7 @@ object SourceHandler {
       reader
         .read(mappingSource, sourceSettings, schema, timeRange)
 
+
     val finalSourceData =
       //If there is some preprocessing SQL defined, apply it
       mappingSource.preprocessSql match {
