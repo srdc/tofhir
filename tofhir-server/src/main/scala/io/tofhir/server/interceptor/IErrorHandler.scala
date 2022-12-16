@@ -2,8 +2,7 @@ package io.tofhir.server.interceptor
 
 import akka.http.scaladsl.server.{Directives, ExceptionHandler}
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.common.model.ToFhirRestCall
-import io.tofhir.server.model.{InternalError, ToFhirError}
+import io.tofhir.server.model.{InternalError, ToFhirError, ToFhirRestCall}
 
 trait IErrorHandler extends LazyLogging {
 
@@ -16,8 +15,7 @@ trait IErrorHandler extends LazyLogging {
     ExceptionHandler {
       case e: Exception => Directives.complete {
         val response = exceptionToResponse(e)
-        toFhirRestCall.response = Some(response)
-        response
+        response.statusCode -> response.toString
       }
     }
 
@@ -28,7 +26,7 @@ trait IErrorHandler extends LazyLogging {
    */
   private def exceptionToResponse: PartialFunction[Exception, ToFhirError] = {
     case e: ToFhirError =>
-      logger.error(s"toFHIR error encountered.\n$e")
+      logger.error(s"toFHIR error encountered.", e)
       e
     case e: Exception =>
       logger.error("Unexpected internal error", e)

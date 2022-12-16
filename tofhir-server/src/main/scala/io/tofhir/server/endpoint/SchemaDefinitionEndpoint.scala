@@ -4,11 +4,10 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.common.endpoint.IToFhirEndpoint
-import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.SEGMENT_SCHEMAS
+import io.tofhir.server.model.ToFhirRestCall
 
-class SchemaDefinitionEndpoint extends IToFhirEndpoint with LazyLogging {
+class SchemaDefinitionEndpoint extends LazyLogging {
   def route(request: ToFhirRestCall): Route =
     pathPrefix(SEGMENT_SCHEMAS) {
       pathEndOrSingleSlash {

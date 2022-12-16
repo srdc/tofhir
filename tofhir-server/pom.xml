@@ -146,11 +146,17 @@
             <artifactId>akka-stream-typed_${scala.binary.version}</artifactId>
         </dependency>
 
-        <!-- toFHIR dependencies -->
+        <!-- onFHIR Dependencies -->
         <dependency>
             <groupId>io.onfhir</groupId>
-            <artifactId>tofhir-server-common_2.13</artifactId>
+            <artifactId>onfhir-config_${scala.binary.version}</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-server-r4_${scala.binary.version}</artifactId>
+        </dependency>
+
+        <!-- toFHIR dependencies -->
         <dependency>
             <groupId>io.onfhir</groupId>
             <artifactId>tofhir-engine_2.13</artifactId>

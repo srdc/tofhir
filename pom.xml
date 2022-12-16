@@ -57,7 +57,6 @@
     <modules>
         <module>tofhir-engine</module>
         <module>tofhir-server</module>
-        <module>tofhir-server-common</module>
     </modules>
 
     <properties>

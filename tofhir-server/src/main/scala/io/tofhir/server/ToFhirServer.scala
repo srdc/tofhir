@@ -1,6 +1,6 @@
 package io.tofhir.server
 
-import io.tofhir.server.common.config.WebServerConfig
+import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 

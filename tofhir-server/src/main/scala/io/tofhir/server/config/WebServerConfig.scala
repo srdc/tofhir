@@ -1,4 +1,4 @@
-package io.tofhir.server.common.config
+package io.tofhir.server.config
 
 import com.typesafe.config.Config
 

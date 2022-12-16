@@ -112,12 +112,6 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                     case t if t._2.sliceName.isDefined => t._2.sliceName.get
                   }
                   val definitionsOfSlices: Seq[SimpleStructureDefinition] = sliceNames.map { sliceFieldName =>
-                    if(sliceFieldName == "isAbsent") {
-                      println("")
-                    }
-                    if(sliceFieldName == "aicNonMotorSymptomCode") {
-                      println("")
-                    }
                     createDefinitionWithElements(fieldName, sliceFieldName, parentPath, createdElementDefinition.getProfileUrlForDataType, restrictionsOnSlicesOfField, accumulatingTypeUrls)
                   }
                   val createdSliceElement = generateSimpleDefinition("No Slice", parentPath, Seq.empty[ElementRestrictions])
@@ -296,18 +290,4 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       elements = None)
   }
 
-}
-
-object SimpleStructureDefinitionService {
-  def main(args: Array[String]): Unit = {
-    import Json4sSupport._
-    import io.tofhir.engine.Execution.actorSystem
-    import io.tofhir.server.fhir.FhirDefinitionsConfig
-    val fhirDefinitionsConfig = new FhirDefinitionsConfig(actorSystem.settings.config.getConfig("fhir"))
-    val service: FhirDefinitionsService = new FhirDefinitionsService(fhirDefinitionsConfig)
-    val res = service.getElementDefinitionsOfProfile("https://aiccelerate.eu/fhir/StructureDefinition/AIC-ParkinsonNonMotorSymptomAssessment")
-    println("*****************")
-    println(serialization.writePretty(res))
-    println("*****************")
-  }
 }
