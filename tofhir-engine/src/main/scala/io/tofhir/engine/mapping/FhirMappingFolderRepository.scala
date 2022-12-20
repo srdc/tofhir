@@ -1,10 +1,10 @@
 package io.tofhir.engine.mapping
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.util.FileUtils.FileExtensions
+import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.FileUtils.FileExtensions
 
 import java.io.File
 import java.net.URI
@@ -32,7 +32,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
     val folder = new File(folderUri)
     var files = Seq.empty[File]
     try {
-      files = FileUtils.getFilesFromFolder(folder, FileExtensions.JSON)
+      files = IOUtil.getFilesFromFolder(folder, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
     } catch {
       case e: Throwable => throw FhirMappingException(s"Given folder for the mapping repository is not valid.", e)
     }

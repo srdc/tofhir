@@ -6,9 +6,10 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_FHIR_DEFINITIONS}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
-import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{BadRequest, ToFhirRestCall}
 import io.tofhir.server.service.FhirDefinitionsService
+
+import io.tofhir.server.model.Json4sSupport._
 
 class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) extends LazyLogging {
 
@@ -31,7 +32,7 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
                   case DefinitionsQuery.ELEMENTS =>
                     queryParams.get(QUERY_PARAM_PROFILE) match {
                       case Some(profileUrl) => complete(service.getElementDefinitionsOfProfile(profileUrl))
-                      case None => complete(HttpResponse(StatusCodes.BadRequest))
+                      case None => complete(HttpResponse(StatusCodes.BadRequest)) // FIXME
                     }
                   case unk => throw BadRequest("Invalid parameter value.", s"$QUERY_PARAM_Q on $SEGMENT_FHIR_DEFINITIONS cannot take the value:$unk. Possible values are: ${DefinitionsQuery.values.mkString}")
                 }

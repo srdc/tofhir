@@ -2,11 +2,10 @@ package io.tofhir.engine.mapping
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.Resource
-import io.onfhir.api.util.FHIRUtil
-import io.tofhir.engine.util.FileUtils.FileExtensions
+import io.onfhir.api.util.{FHIRUtil, IOUtil}
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.model.FhirMappingException
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.FileUtils.FileExtensions
 
 import java.io.File
 import java.net.URI
@@ -64,7 +63,7 @@ class SchemaFolderRepository(folderUri: URI) extends AbstractFhirSchemaLoader {
   private def getListOfSchemas: Seq[File] = {
     val folder = new File(folderUri)
     try {
-      FileUtils.getFilesFromFolder(folder, FileExtensions.JSON)
+      IOUtil.getFilesFromFolder(folder, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
     } catch {
       case e: Throwable => throw FhirMappingException(s"Given folder for the schema repository is not valid.", e)
     }

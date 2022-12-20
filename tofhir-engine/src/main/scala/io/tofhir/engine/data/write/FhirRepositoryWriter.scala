@@ -43,7 +43,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         implicit val ec: ExecutionContext = actorSystem.dispatcher
         val onFhirClient = sinkSettings.createOnFhirClient // A FhirClient for each partition
         partition
-          .grouped(ToFhirConfig.fhirWriterBatchGroupSize)
+          .grouped(ToFhirConfig.engineConfig.fhirWriterBatchGroupSize)
           .foreach(rowGroup => {
             //Create a UUID for each entry
             val resourcesToCreate = rowGroup.map(r => s"urn:uuid:${UUID.randomUUID()}" -> r)

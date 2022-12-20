@@ -3,6 +3,7 @@ package io.tofhir.server.endpoint
 import akka.http.scaladsl.model.{HttpMethod, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{RejectionHandler, Route}
+import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
@@ -14,10 +15,10 @@ import java.util.UUID
  * Encapsulates all services and directives
  * Main Endpoint for toFHIR server
  */
-class ToFhirServerEndpoint(webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig) extends ICORSHandler with IErrorHandler {
+class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig) extends ICORSHandler with IErrorHandler {
 
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
-  val schemaDefinitionEndpoint = new SchemaDefinitionEndpoint()
+  val schemaDefinitionEndpoint = new SchemaDefinitionEndpoint(toFhirEngineConfig)
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {

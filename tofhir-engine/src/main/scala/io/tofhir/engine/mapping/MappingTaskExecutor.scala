@@ -165,7 +165,7 @@ object MappingTaskExecutor {
 
     val results =
       try {
-        val mappedResources = Await.result(fhirMappingService.mapToFhir(jo,otherInputs), ToFhirConfig.mappingTimeout)
+        val mappedResources = Await.result(fhirMappingService.mapToFhir(jo,otherInputs), ToFhirConfig.engineConfig.mappingTimeout)
         mappedResources.flatMap {
           //If this is a JSON Patch, the resources are patches so return it as single result
           case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "patch") && resources.length > 1 =>
@@ -246,7 +246,7 @@ object MappingTaskExecutor {
                 source = Some(jo.toJson),
                 error = Some(FhirMappingError(
                   code = FhirMappingErrorCodes.MAPPING_TIMEOUT,
-                  description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.mappingTimeout.toString}!"
+                  description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.engineConfig.mappingTimeout.toString}!"
                 ))
               )
             )
