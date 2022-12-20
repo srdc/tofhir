@@ -42,13 +42,15 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       def createDefinitionWithElements(fieldName: String, sliceName: String, parentPath: Option[String], profileUrlForDataType: Option[String], restrictionsOnSlicesOfField: Seq[(String, ElementRestrictions)],
                                        accumulatingTypeUrls: Set[String], dataTypeWithProfiles: Option[DataTypeWithProfiles] = None): SimpleStructureDefinition = {
         // Partition the restriction into 2: (i) directly on that field (e.g., value[x]:valueQuantity) and (ii) on the children (e.g., value[x]:valueQuantity.system)
-        val (restrictionsOnSliceField, restrictionsOnChildrenOfSlice) = restrictionsOnSlicesOfField.partition(_._1 == s"$fieldName:$sliceName")
+        val (restrictionsOnSliceField, restrictionsOnChildrenOfSlices) = restrictionsOnSlicesOfField.partition(_._1 == s"$fieldName:$sliceName")
         val typeRestrictionForThisTypeField = dataTypeWithProfiles.map(dt =>
           ElementRestrictions(path = s"$fieldName:$sliceName", restrictions = Map(ConstraintKeys.DATATYPE -> TypeRestriction(Seq(dt.dataType -> Seq.empty[String]))), sliceName = None, contentReference = None))
         val createdChoiceTypeElement = generateSimpleDefinition(sliceName, parentPath, restrictionsOnSliceField.map(_._2) ++ typeRestrictionForThisTypeField)
         if (createdChoiceTypeElement.isPrimitive) createdChoiceTypeElement
         else {
-          val navigatedRestrictionsOnChildren = restrictionsOnChildrenOfSlice.map(navigateFhirPathFromField(s"$fieldName:$sliceName", _))
+          val navigatedRestrictionsOnChildren = restrictionsOnChildrenOfSlices
+            .filter(_._1.startsWith(s"$fieldName:$sliceName")) // Take the children only for this slice, other slices will also be in restrictionsOnChildrenOfSlices because of our use of partition (above)
+            .map(navigateFhirPathFromField(s"$fieldName:$sliceName", _))
           val dataTypeOfCreatedTypeElement = createdChoiceTypeElement.getProfileUrlForDataType
           val definitionsOfChoiceTypeElementsChildren =
             simplifier(
@@ -108,6 +110,9 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                   }
                   createdElementDefinition.withElements(definitionsOfChoiceTypes)
                 } else if (createdElementDefinition.sliceDefinition.isDefined) {
+                  if (fieldName == "category") {
+                    println("")
+                  }
                   val sliceNames = restrictionsOnSlicesOfField.collect {
                     case t if t._2.sliceName.isDefined => t._2.sliceName.get
                   }

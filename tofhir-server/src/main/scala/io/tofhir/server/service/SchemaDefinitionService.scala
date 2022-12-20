@@ -5,6 +5,10 @@ import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
 import io.onfhir.r4.config.FhirR4Configurator
 import io.tofhir.server.model.SimpleStructureDefinition
 
+import scala.concurrent.Future
+
+import io.tofhir.engine.Execution.actorSystem.dispatcher
+
 class SchemaDefinitionService(schemaRepositoryFolderPath: String) extends LazyLogging {
 
   private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(profilesPath = Some(schemaRepositoryFolderPath))
@@ -16,6 +20,10 @@ class SchemaDefinitionService(schemaRepositoryFolderPath: String) extends LazyLo
     val aicProfiles = baseFhirConfig.profileRestrictions.filter(a=>a._1.startsWith("https://aiccelerate.eu/fhir/StructureDefinition"))
     val a = baseFhirConfig.findProfile("https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt2-condition")
     Seq.empty[SimpleStructureDefinition]
+  }
+
+  def createSchema(simpleStructureDefinition: SimpleStructureDefinition): Future[SimpleStructureDefinition] = {
+    Future.apply(null)
   }
 
 }
