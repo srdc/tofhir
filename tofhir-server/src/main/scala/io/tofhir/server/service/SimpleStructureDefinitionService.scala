@@ -99,20 +99,19 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                 if (createdElementDefinition.isChoiceRoot) {
                   // Add the complex types of the choice as restrictions under this field so that they are created as elements
                   val definitionsOfChoiceTypes: Seq[SimpleStructureDefinition] = createdElementDefinition.dataTypes match {
-                    case Some(typesWithProfiles) if typesWithProfiles.length >= 5 =>
-                      Seq.empty[SimpleStructureDefinition]
                     case Some(typesWithProfiles) =>
-                      typesWithProfiles.map { dt =>
-                        val choiceTypeFieldName = s"${fieldName.replace("[x]", "")}${dt.dataType.capitalize}" // Create the field name such as valueQuantity, valueBoolean etc.
-                        createDefinitionWithElements(fieldName, choiceTypeFieldName, parentPath, None, restrictionsOnSlicesOfField, accumulatingTypeUrls, Some(dt))
+                      if(restrictionsOnSlicesOfField.isEmpty) {
+                        Seq.empty[SimpleStructureDefinition]
+                      } else {
+                        typesWithProfiles.map { dt =>
+                          val choiceTypeFieldName = s"${fieldName.replace("[x]", "")}${dt.dataType.capitalize}" // Create the field name such as valueQuantity, valueBoolean etc.
+                          createDefinitionWithElements(fieldName, choiceTypeFieldName, parentPath, None, restrictionsOnSlicesOfField, accumulatingTypeUrls, Some(dt))
+                        }
                       }
                     case None => throw new IllegalArgumentException("A choice root cannot exist without any data types!!")
                   }
                   createdElementDefinition.withElements(definitionsOfChoiceTypes)
                 } else if (createdElementDefinition.sliceDefinition.isDefined) {
-                  if (fieldName == "category") {
-                    println("")
-                  }
                   val sliceNames = restrictionsOnSlicesOfField.collect {
                     case t if t._2.sliceName.isDefined => t._2.sliceName.get
                   }
