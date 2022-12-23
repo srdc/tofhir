@@ -42,6 +42,7 @@ case class SimpleStructureDefinition(id: String,
                                      sliceName: Option[String],
                                      fixedValue: Option[String],
                                      patternValue: Option[String],
+                                     referringTo: Option[String],
                                      short: Option[String],
                                      definition: Option[String],
                                      comment: Option[String],
@@ -49,6 +50,11 @@ case class SimpleStructureDefinition(id: String,
 
   def withElements(_elements: Seq[SimpleStructureDefinition]): SimpleStructureDefinition = {
     this.copy(elements = Some(_elements))
+  }
+
+  def withReferencedContent(newChildElement: SimpleStructureDefinition): SimpleStructureDefinition = {
+    this.copy(dataTypes = newChildElement.dataTypes, elements = newChildElement.elements, short = newChildElement.short,
+      definition = newChildElement.definition, comment = newChildElement.comment)
   }
 
   def getProfileUrlForDataType: Option[String] = {
