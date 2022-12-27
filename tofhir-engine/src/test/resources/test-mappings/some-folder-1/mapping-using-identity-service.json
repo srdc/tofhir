@@ -33,6 +33,7 @@
           "code": {
             "coding": [
               {
+                "@slice-info": "Some extra information which can be used by client applications. tofhir-engine ignores any fields starting with '@' character!",
                 "system": "{{mpp:getConcept(%obsConceptMap, code, 'source_system')}}",
                 "code": "{{code}}",
                 "display": "{{? trms:lookupDisplay('119323008','http://snomed.info/sct','de')}}"

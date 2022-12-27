@@ -17,8 +17,8 @@ import org.scalatest.{Assertion, BeforeAndAfterAll}
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
 
 class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
@@ -81,7 +81,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   override protected def afterAll(): Unit = {
-    if(fhirServerIsAvailable) {
+    if (fhirServerIsAvailable) {
       deleteResources()
     }
     super.afterAll()

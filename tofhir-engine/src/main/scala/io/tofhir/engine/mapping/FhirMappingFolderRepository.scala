@@ -5,13 +5,13 @@ import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils.FileExtensions
+import org.json4s._
 
 import java.io.File
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import scala.io.Source
-import scala.util.Try
 
 /**
  * Repository that keeps all mappings and other data in folder
@@ -39,7 +39,17 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
     files.map { f =>
       val source = Source.fromFile(f, StandardCharsets.UTF_8.name()) // read the JSON file
       val fileContent = try source.mkString finally source.close()
-      Try(fileContent.parseJson.extract[FhirMapping]).toOption -> f
+      val fhirMapping = try {
+        fileContent.parseJson.removeField { // Remove any fields starting with @ from the JSON.
+          case JField(fieldName, _) if fieldName.startsWith("@") => true
+          case _ => false
+        }.extractOpt[FhirMapping]
+      } catch {
+        case e: Exception =>
+          logger.error(s"Cannot parse the mapping file ${f.getAbsolutePath}.")
+          Option.empty[FhirMapping]
+      }
+      fhirMapping -> f
     }.filter(_._1.nonEmpty) // Remove the elements from the list if they are not valid FhirMapping JSONs
       .map { case (fm, file) => fm.get -> file } // Get rid of the Option
   }
@@ -78,7 +88,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
     //logger.debug("Loading all mappings from folder:{}", folderUri)
     val mappings = normalizeContextURLs(getFhirMappings)
       .foldLeft(Map[String, FhirMapping]()) { (map, fhirMapping) =>
-        if(map.contains(fhirMapping.url)) {
+        if (map.contains(fhirMapping.url)) {
           val msg = s"Multiple mapping definitions with the same URL: ${fhirMapping.url}. URLs must be unique."
           logger.error(msg)
           throw new IllegalStateException(msg)
