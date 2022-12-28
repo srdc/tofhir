@@ -1,4 +1,4 @@
-package io.tofhir.server.common.model
+package io.tofhir.server.model
 
 import akka.http.scaladsl.model.{HttpMethod, Uri}
 
@@ -18,21 +18,8 @@ class ToFhirRestCall(val method: HttpMethod, val uri: Uri, val requestId: String
    */
   val requestTime: Instant = Instant.now()
 
-  //TODO Resolved authentication context
-  //var authzContext: Option[AuthzContext] = None
-
   /**
    * Project context for the call, if exists
    */
   var projectId: Option[String] = None
-
-  /**
-   * Request content
-   */
-  var request: Option[IToFhirRequest] = None
-
-  /**
-   * Response content
-   */
-  var response: Option[IToFhirResponse] = None
 }

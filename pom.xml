@@ -57,7 +57,6 @@
     <modules>
         <module>tofhir-engine</module>
         <module>tofhir-server</module>
-        <module>tofhir-server-common</module>
     </modules>
 
     <properties>
@@ -190,6 +189,11 @@
             <dependency>
                 <groupId>io.onfhir</groupId>
                 <artifactId>onfhir-config_${scala.binary.version}</artifactId>
+                <version>${onfhir.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-common_${scala.binary.version}</artifactId>
                 <version>${onfhir.version}</version>
             </dependency>
             <dependency>

@@ -30,6 +30,7 @@
           "birthDate": "{{birthDate.toDate()}}",
           "deceasedDateTime": "{{? deceasedDateTime.toDate()}}",
           "address": {
+            "@comment": "This is a comment",
             "{{#pc}}": "{{homePostalCode}}",
             "{{?}}": [
               {

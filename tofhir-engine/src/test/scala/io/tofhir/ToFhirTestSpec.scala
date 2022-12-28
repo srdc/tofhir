@@ -16,12 +16,12 @@ trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspect
   val mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.HALT
   val fhirWriteErrorHandling: ErrorHandlingType = ErrorHandlingType.HALT
 
-  val repositoryFolderUri: URI = getClass.getResource(ToFhirConfig.mappingRepositoryFolderPath).toURI
+  val repositoryFolderUri: URI = getClass.getResource(ToFhirConfig.engineConfig.mappingRepositoryFolderPath).toURI
   val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri)
 
   val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)
 
-  val schemaRepositoryURI: URI = getClass.getResource(ToFhirConfig.schemaRepositoryFolderPath).toURI
+  val schemaRepositoryURI: URI = getClass.getResource(ToFhirConfig.engineConfig.schemaRepositoryFolderPath).toURI
   val schemaRepository = new SchemaFolderRepository(schemaRepositoryURI)
 
   val sparkConf: SparkConf = new SparkConf()

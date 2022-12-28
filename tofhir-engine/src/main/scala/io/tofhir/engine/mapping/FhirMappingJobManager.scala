@@ -264,7 +264,7 @@ class FhirMappingJobManager(
     val sizeOfDf:Long = df.count()
     logger.debug(s"$sizeOfDf records read for mapping ${task.mappingRef} within mapping job $jobId ...")
 
-    ToFhirConfig.maxBatchSizeForMappingJobs match {
+    ToFhirConfig.engineConfig.maxBatchSizeForMappingJobs match {
       //If not specify run it as single batch
       case None =>
         logger.debug(s"Executing the mapping ${task.mappingRef} within job $jobId ...")
@@ -327,7 +327,7 @@ class FhirMappingJobManager(
 
     val df = handleJoin(fhirMapping.source, sourceDataFrames)
 
-    val repartitionedDf = ToFhirConfig.partitionsForMappingJobs match {
+    val repartitionedDf = ToFhirConfig.engineConfig.partitionsForMappingJobs match {
         case None => df
         case Some(p) => df.repartition(p)
     }

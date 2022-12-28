@@ -82,7 +82,7 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
   val scheduler = new Scheduler()
 
   val resourcePath: URI = getClass.getResource("/").toURI
-  val toFhirDb: Path = Paths.get(resourcePath.resolve(ToFhirConfig.toFhirDb.get).resolve("scheduler"))
+  val toFhirDb: Path = Paths.get(resourcePath.resolve(ToFhirConfig.engineConfig.toFhirDb.get).resolve("scheduler"))
 
   val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDb.toUri)
 

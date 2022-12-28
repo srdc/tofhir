@@ -1,7 +1,7 @@
 package io.tofhir.engine.mapping
 
 import io.onfhir.api.service.IFhirTerminologyService
-import io.onfhir.api.util.FHIRUtil
+import io.onfhir.api.util.{FHIRUtil, IOUtil}
 import io.tofhir.engine.mapping.LocalTerminologyService.{CodeSystemFileColumns, ConceptMapFileColumns, equivalenceCodes}
 import io.tofhir.engine.model.{ConceptMapFile, FhirMappingException, LocalFhirTerminologyServiceSettings}
 import io.tofhir.engine.util.{CsvUtil, FileUtils}
@@ -21,8 +21,8 @@ import scala.concurrent.duration.Duration
 class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) extends IFhirTerminologyService with Serializable{
   //All csv files given in the configured folder
   val relatedFiles:Map[String, File] =
-    FileUtils
-      .getFilesFromFolder(new File(FileUtils.getPath(settings.folderPath).toUri), FileUtils.FileExtensions.CSV)
+    IOUtil
+      .getFilesFromFolder(new File(FileUtils.getPath(settings.folderPath).toUri), withExtension = Some(FileUtils.FileExtensions.CSV.toString), recursively = Some(true))
       .map(f => f.getName -> f)
       .toMap
 
