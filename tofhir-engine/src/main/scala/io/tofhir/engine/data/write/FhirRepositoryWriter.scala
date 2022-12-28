@@ -131,7 +131,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
                                problemsAccumulator: CollectionAccumulator[FhirMappingResult]
                               )(implicit ec: ExecutionContext): Option[FHIRTransactionBatchBundle] = {
     try {
-      Some(Await.result(batchRequest.executeAndReturnBundle(), FiniteDuration(5, TimeUnit.SECONDS)))
+      Some(Await.result(batchRequest.executeAndReturnBundle(), FiniteDuration(20, TimeUnit.SECONDS)))
     } catch {
       case tout: TimeoutException =>
         val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} timeout for batch interaction while writing the resources!"
