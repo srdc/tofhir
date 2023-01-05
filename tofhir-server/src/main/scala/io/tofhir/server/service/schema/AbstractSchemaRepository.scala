@@ -107,7 +107,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
       `type` = profileRestrictions.resourceType,
       name = profileRestrictions.resourceName,
       rootDefinition = Some(rootElementDefinition),
-      fieldDefinitions = Some(simpleStructureDefinitionService.simplifyStructureDefinition(profileRestrictions.url)))
+      fieldDefinitions = Some(simpleStructureDefinitionService.simplifyStructureDefinition(profileRestrictions.url, withResourceTypeInPaths = true)))
   }
 
   /**

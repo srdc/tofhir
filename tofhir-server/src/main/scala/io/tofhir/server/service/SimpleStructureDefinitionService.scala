@@ -10,10 +10,11 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
   /**
    * Given a URL for a profile, return a sequence of definitions for all elements of the resource type indicated by this profile.
    *
-   * @param profileUrl
+   * @param profileUrl              The URL of the profile to be simplified.
+   * @param withResourceTypeInPaths If true, the resource type of the given profileUrl will be added to the beginning of all FHIR paths of the inner elements.
    * @return
    */
-  def simplifyStructureDefinition(profileUrl: String): Seq[SimpleStructureDefinition] = {
+  def simplifyStructureDefinition(profileUrl: String, withResourceTypeInPaths: Boolean = false): Seq[SimpleStructureDefinition] = {
 
     /**
      * Recursive helper function to create the SimpleStructureDefinition sequence for a given profile, carrying the ElementRestrictions to inner elements.
@@ -140,8 +141,9 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
     }
 
     // Start of the simplifyStructureDefinition method
-    val simplifiedElementsOfProfile = simplifier(profileUrl = Some(profileUrl),
-      parentPath = Option.empty[String],
+    val simplifiedElementsOfProfile = simplifier(
+      profileUrl = Some(profileUrl),
+      parentPath = if (withResourceTypeInPaths) fhirConfig.findResourceType(profileUrl) else Option.empty[String],
       restrictionsFromParentElement = Seq.empty[(String, ElementRestrictions)],
       accumulatingTypeUrls = Set.empty[String])
 
