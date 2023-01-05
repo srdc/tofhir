@@ -79,9 +79,11 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
           }
         val allRestrictions = restrictionsFromParentElement ++ elementRestrictionsFromProfile
 
+        import io.tofhir.server.util.GroupByOrdered._
+
         val groupedFieldRestrictions = allRestrictions
           .filterNot(r => r._1.split('.').head.contains(":")) // Eliminate the slice definitions such as coding:aic or value[x]:valueQuantity, but not code.coding:aic
-          .groupBy(r => r._1.split('.').head) // Group by immediate field name (e.g., group {code, code.coding.system, code.coding.value} together)
+          .groupByASequenceOrdered(r => r._1.split('.').head) // Group by immediate field name (e.g., group {code, code.coding.system, code.coding.value} together)
 
         groupedFieldRestrictions.map {
           case (fieldName, restrictionsOnFieldAndItsChildren) =>

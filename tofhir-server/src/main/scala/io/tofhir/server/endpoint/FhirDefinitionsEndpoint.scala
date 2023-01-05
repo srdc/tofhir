@@ -27,7 +27,7 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
                   case DefinitionsQuery.PROFILES =>
                     queryParams.get(QUERY_PARAM_RTYPE) match {
                       case Some(rtype) => complete(service.getProfilesFor(rtype))
-                      case None => complete(HttpResponse(StatusCodes.BadRequest))
+                      case None => throw BadRequest("Missing query parameter.", s"$SEGMENT_FHIR_DEFINITIONS?$QUERY_PARAM_Q=${DefinitionsQuery.PROFILES} cannot be invoked without the query parameter '$QUERY_PARAM_RTYPE'.")
                     }
                   case DefinitionsQuery.ELEMENTS =>
                     queryParams.get(QUERY_PARAM_PROFILE) match {
@@ -36,7 +36,7 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
                     }
                   case unk => throw BadRequest("Invalid parameter value.", s"$QUERY_PARAM_Q on $SEGMENT_FHIR_DEFINITIONS cannot take the value:$unk. Possible values are: ${DefinitionsQuery.values.mkString}")
                 }
-              case None => throw BadRequest("Missing query parameter.", s"$SEGMENT_FHIR_DEFINITIONS path cannot be invoked without the query parameter 'q'.")
+              case None => throw BadRequest("Missing query parameter.", s"$SEGMENT_FHIR_DEFINITIONS path cannot be invoked without the query parameter '$QUERY_PARAM_Q'.")
             }
           }
         }

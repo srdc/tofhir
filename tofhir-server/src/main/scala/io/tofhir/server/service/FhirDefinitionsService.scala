@@ -1,6 +1,6 @@
 package io.tofhir.server.service
 
-import io.onfhir.api.FHIR_ROOT_URL_FOR_DEFINITIONS
+import io.onfhir.api
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
 import io.onfhir.r4.config.FhirR4Configurator
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
@@ -39,7 +39,7 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
    * @return
    */
   def getProfilesFor(rtype: String): Set[String] = {
-    val resourceUrl = s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/$rtype"
+    val resourceUrl = s"${api.FHIR_ROOT_URL_FOR_DEFINITIONS}/StructureDefinition/$rtype"
     profilesCache.getOrElseUpdate(resourceUrl, getProfilesForUrl(resourceUrl, Set.empty[String]))
   }
 
