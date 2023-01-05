@@ -2,7 +2,6 @@ package io.tofhir.engine.mapping
 
 import io.onfhir.path._
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
-import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.model.{ConceptMapContext, FhirMappingContext, UnitConversionContext}
 import io.tofhir.engine.util.FhirMappingUtility
 import org.json4s.{JObject, JString}
@@ -197,7 +196,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
               "value" -> functionResult.head.toJson,
               "system" -> JString("http://unitsofmeasure.org"),
               "unit" -> JString(targetUnit),
-              "code" -> JString(targetUnit)
+              "code" -> JString(code)
             ) ++
               comparator.map(c => "comparator" -> JString(c)).toList,
             ))
