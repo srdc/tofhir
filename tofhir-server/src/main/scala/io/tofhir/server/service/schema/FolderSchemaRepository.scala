@@ -103,7 +103,7 @@ class FolderSchemaRepository(schemaRepositoryFolderPath: String) extends Abstrac
       }
 
       // Write to the repository as a new file
-      val newFile = FileUtils.getPath(schemaRepositoryFolderPath, s"${schemaDefinition.`type`}.${FileExtensions.CSV}").toFile
+      val newFile = FileUtils.getPath(schemaRepositoryFolderPath, s"${schemaDefinition.`type`}${FileExtensions.JSON}").toFile
       if (newFile.exists()) {
         throw AlreadyExists("Schema already exists.", s"A schema definition with name ${schemaDefinition.`type`} already exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
       }

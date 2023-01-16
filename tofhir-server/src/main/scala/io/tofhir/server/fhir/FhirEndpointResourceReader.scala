@@ -51,10 +51,10 @@ class FhirEndpointResourceReader(fhirDefinitionsConfig: FhirDefinitionsConfig) e
 
   override def getInfrastructureResources(rtype: String): Seq[Resource] = {
     val fhirSearchRequest = fhirDefinitionsConfig.definitionsRootURLs match {
-      case None =>
-        fhirClient.search(rtype)
-      case Some(urls) =>
+      case Some(urls) if urls.nonEmpty =>
         fhirClient.search(rtype).where("url:below", urls.map(url => if (url.endsWith("/")) url.dropRight(1) else url).mkString(","))
+      case _ =>
+        throw new IllegalArgumentException("fhir.definitions-root-urls must be defined so that the system can read resources under those urls!!")
     }
 
     rtype match {
