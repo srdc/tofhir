@@ -39,13 +39,17 @@ object FileUtils {
   def findFileByName(repoPath: String, name: String): Option[File] = {
     val repoFile = FileUtils.getPath(repoPath).toFile
     val allFiles = IOUtil.getFilesFromFolder(repoFile, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
-    val filteredFiles = allFiles.filter(f => f.getName.toLowerCase.contains(name.toLowerCase))
+    val filteredFiles = allFiles.filter(f => {
+      f.getName.replace(FileExtensions.StructureDefinition.toString + FileExtensions.JSON.toString, "")
+        .toLowerCase.equals(name.toLowerCase)
+    })
     if (filteredFiles.size > 1) throw new IllegalStateException(s"There are ${filteredFiles.size} schema definition files with the same name/rootPath!")
     filteredFiles.headOption
   }
 
   object FileExtensions extends Enumeration {
     type FileExtensions = Value
+    final val StructureDefinition = Value(".StructureDefinition")
     final val CSV = Value(".csv")
     final val JSON = Value(".json")
   }

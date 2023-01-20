@@ -75,7 +75,7 @@ class FolderSchemaRepository(schemaRepositoryFolderPath: String) extends Abstrac
   }
 
   /**
-   * Retrieve the schema identified by its type.
+   * Retrieve the schema identified by its name.
    *
    * @param name
    * @param withReload If true, reload all definitions from the repository implementation (from disk)
@@ -111,9 +111,9 @@ class FolderSchemaRepository(schemaRepositoryFolderPath: String) extends Abstrac
       }
 
       // Write to the repository as a new file
-      val newFile = FileUtils.getPath(schemaRepositoryFolderPath, s"${schemaDefinition.`type`}${FileExtensions.JSON}").toFile
+      val newFile = FileUtils.getPath(schemaRepositoryFolderPath, s"${schemaDefinition.name}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile
       if (newFile.exists()) {
-        throw AlreadyExists("Schema already exists.", s"A schema definition with name ${schemaDefinition.`type`} already exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
+        throw AlreadyExists("Schema already exists.", s"A schema definition with name ${schemaDefinition.name} already exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
       }
       val fw = new FileWriter(newFile)
       import io.onfhir.util.JsonFormatter._
