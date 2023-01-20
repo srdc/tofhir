@@ -21,7 +21,7 @@ class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
         get { // Search/(Retrieve all) schema metadata (only url, type and name)
           parameters(Symbol("url").as[String].?, Symbol("reload").as[Boolean] ? false) { (url, withReload) =>
             url match {
-              case Some(schemaUrl) => complete(service.getSchemaDefinition(schemaUrl, withReload))
+              case Some(schemaUrl) => complete(service.getSchemaDefinitionByUrl(schemaUrl, withReload))
               case None => complete(service.getAllMetadata(withReload))
             }
           }
@@ -39,13 +39,32 @@ class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
         pathPrefix(Segment) { rootPath: String => // Operations on a single schema identified by its rootPath/type
           // Assumption: type and rootPath are equal
           get {
-            complete {
-              s"This is the rootPath:$rootPath"
+            parameters(Symbol("reload").as[Boolean] ? false) { (withReload) =>
+              complete {
+                service.getSchemaDefinitionByName(rootPath, withReload) map {
+                  case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
+                  case None => StatusCodes.NotFound -> s"Schema definition with name $rootPath not found"
+                }
+              }
             }
           } ~ post {
             null
           } ~ put {
-            null
+            entity(as[SchemaDefinition]) { schemaDefinition =>
+              complete {
+                service.putSchema(rootPath, schemaDefinition) map { _ =>
+                  StatusCodes.OK -> schemaDefinition
+                }
+              }
+
+            }
+
+          } ~ delete {
+            complete {
+              service.deleteSchema(rootPath) map { _ =>
+                StatusCodes.OK
+              }
+            }
           }
         }
     }

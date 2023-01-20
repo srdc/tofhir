@@ -74,7 +74,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
             // Make a list of all ElementRestrictions (respect their order)
             // But, filter out extension and modifierExtension fields if they come from Element and BackboneElement profiles. Otherwise the SimpleStructureDefinition becomes huge!
             if (pr.url.endsWith("Element") || pr.url.endsWith("BackboneElement"))
-              pr.elementRestrictions.filterNot(er => er._1 == "extension" || er._1 == "modifierExtension")
+              pr.elementRestrictions.filterNot(er => er._1 == "extension" || er._1 == "modifierExtension" || er._1 == "id")
             else
               pr.elementRestrictions
           }

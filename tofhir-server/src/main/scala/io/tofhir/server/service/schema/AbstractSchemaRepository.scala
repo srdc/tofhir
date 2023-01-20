@@ -43,7 +43,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
     val structureDefinitionResource: Resource =
       ("resourceType" -> "StructureDefinition") ~
         ("url" -> schemaDefinition.url) ~
-        ("name" -> schemaDefinition.name.getOrElse(schemaDefinition.`type`)) ~
+        ("name" -> schemaDefinition.name) ~
         ("status" -> "draft") ~
         ("fhirVersion" -> "4.0.1") ~
         ("kind" -> "logical") ~
@@ -80,7 +80,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
         case Some(v) => v.toString
         case None => "*"
       }
-      ("id" -> fd.id) ~
+      ("id" -> fd.path) ~
         ("path" -> fd.path) ~
         ("short" -> fd.short) ~
         ("definition" -> fd.definition) ~
@@ -105,7 +105,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
     val rootElementDefinition = createRootElement(profileRestrictions.resourceType)
     SchemaDefinition(url = profileRestrictions.url,
       `type` = profileRestrictions.resourceType,
-      name = profileRestrictions.resourceName,
+      name = profileRestrictions.resourceName.getOrElse(profileRestrictions.resourceType),
       rootDefinition = Some(rootElementDefinition),
       fieldDefinitions = Some(simpleStructureDefinitionService.simplifyStructureDefinition(profileRestrictions.url, withResourceTypeInPaths = true)))
   }

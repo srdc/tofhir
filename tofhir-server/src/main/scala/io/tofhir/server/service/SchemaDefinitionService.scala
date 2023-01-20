@@ -22,8 +22,24 @@ class SchemaDefinitionService(schemaRepositoryFolderPath: String) extends LazyLo
     schemaRepository.getAllSchemaMetadata(withReload)
   }
 
-  def getSchemaDefinition(url: String, withReload: Boolean): Future[Option[SchemaDefinition]] = {
-    schemaRepository.getSchema(url, withReload)
+  /**
+   * Get a schema definition from the schema repository
+   *
+   * @param url URL of the schema definition
+   * @return
+   */
+  def getSchemaDefinitionByUrl(url: String, withReload: Boolean): Future[Option[SchemaDefinition]] = {
+    schemaRepository.getSchemaByUrl(url, withReload)
+  }
+
+  /**
+   * Get schema by name from the schema repository
+   *
+   * @param name Name of the schema definition
+   * @return
+   */
+  def getSchemaDefinitionByName(name: String, withReload: Boolean): Future[Option[SchemaDefinition]] = {
+    schemaRepository.getSchemaByName(name, withReload)
   }
 
   /**
@@ -34,6 +50,25 @@ class SchemaDefinitionService(schemaRepositoryFolderPath: String) extends LazyLo
    */
   def createSchema(schemaDefinition: SchemaDefinition): Future[SchemaDefinition] = {
     schemaRepository.saveSchema(schemaDefinition)
+  }
+
+  /**
+   * Update the schema definition to the schema repository.
+   * @param name
+   * @param schemaDefinition
+   * @return
+   */
+  def putSchema(name: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
+    schemaRepository.putSchema(name, schemaDefinition)
+  }
+
+  /**
+   * Delete the schema definition from the schema repository.
+   * @param name
+   * @return
+   */
+  def deleteSchema(name: String): Future[Unit] = {
+    schemaRepository.deleteSchema(name)
   }
 
   private def convertToFhirResource(schemaUrl: String, name: String, `type`: String, rootPath: String, fieldDefinitions: Seq[SimpleStructureDefinition]): Resource = {

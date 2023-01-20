@@ -23,15 +23,15 @@ trait ISchemaRepository {
    * @param withReload If true, reload all definitions from the repository implementation (from disk)
    * @return
    */
-  def getSchema(url: String, withReload: Boolean): Future[Option[SchemaDefinition]]
+  def getSchemaByUrl(url: String, withReload: Boolean): Future[Option[SchemaDefinition]]
 
   /**
    * Retrieve the schema identified by its type.
-   * @param `type`
+   * @param name
    * @param withReload If true, reload all definitions from the repository implementation (from disk)
    * @return
    */
-  def getSchemaByType(`type`: String, withReload: Boolean): Future[Option[SchemaDefinition]]
+  def getSchemaByName(name: String, withReload: Boolean): Future[Option[SchemaDefinition]]
 
   /**
    * Save the schema to the repository.
@@ -39,5 +39,19 @@ trait ISchemaRepository {
    * @return
    */
   def saveSchema(schemaDefinition: SchemaDefinition): Future[SchemaDefinition]
+
+  /**
+   * Update the schema to the repository.
+   * @param name
+   * @return
+   */
+  def putSchema(name: String, schemaDefinition: SchemaDefinition): Future[Unit]
+
+  /**
+   * Delete the schema from the repository.
+   * @param name
+   * @return
+   */
+  def deleteSchema(name: String): Future[Unit]
 
 }
