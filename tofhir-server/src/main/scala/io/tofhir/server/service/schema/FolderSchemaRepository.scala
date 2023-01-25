@@ -148,9 +148,10 @@ class FolderSchemaRepository(schemaRepositoryFolderPath: String) extends Abstrac
           throw BadRequest("Schema definition is not valid.", s"Schema definition cannot be validated: ${schemaDefinition.url}", Some(e))
       }
       // Find
-      val file = FileUtils.findFileByName(schemaRepositoryFolderPath, name)
+      val fileName = name + FileExtensions.StructureDefinition.toString + FileExtensions.JSON.toString
+      val file = FileUtils.findFileByName(schemaRepositoryFolderPath, fileName)
       if (file.isEmpty) {
-        throw ResourceNotFound("Schema does not exist.", s"A schema definition with name ${name} does not exist in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
+        throw ResourceNotFound("Schema does not exist.", s"A schema definition with name $name does not exist in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
       }
       // Update
       val fw = new FileWriter(file.get)
@@ -170,9 +171,10 @@ class FolderSchemaRepository(schemaRepositoryFolderPath: String) extends Abstrac
    */
   override def deleteSchema(name: String): Future[Unit] = {
     Future {
-      val file = FileUtils.findFileByName(schemaRepositoryFolderPath, name)
+      val fileName = name + FileExtensions.StructureDefinition.toString + FileExtensions.JSON.toString
+      val file = FileUtils.findFileByName(schemaRepositoryFolderPath, fileName)
       if (file.isEmpty) {
-        throw ResourceNotFound("Schema does not exist.", s"A schema definition with name ${name} does not exist in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
+        throw ResourceNotFound("Schema does not exist.", s"A schema definition with name $name does not exist in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
       }
       file.get.delete()
       // Update cache

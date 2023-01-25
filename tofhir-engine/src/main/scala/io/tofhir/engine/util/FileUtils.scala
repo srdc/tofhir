@@ -40,10 +40,10 @@ object FileUtils {
     val repoFile = FileUtils.getPath(repoPath).toFile
     val allFiles = IOUtil.getFilesFromFolder(repoFile, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
     val filteredFiles = allFiles.filter(f => {
-      f.getName.replace(FileExtensions.StructureDefinition.toString + FileExtensions.JSON.toString, "")
+      f.getName
         .toLowerCase.equals(name.toLowerCase)
     })
-    if (filteredFiles.size > 1) throw new IllegalStateException(s"There are ${filteredFiles.size} schema definition files with the same name/rootPath!")
+    if (filteredFiles.size > 1) throw new IllegalStateException(s"There are ${filteredFiles.size} definition files with the same name/rootPath!")
     filteredFiles.headOption
   }
 
