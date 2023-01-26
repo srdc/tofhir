@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
+import io.tofhir.engine.model.FhirMapping
 import io.tofhir.server.endpoint.MappingEndpoint.SEGMENT_MAPPING
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
@@ -31,7 +32,16 @@ class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLoggin
                 service.getAllMetadata(Some(directoryName))
               }
             }
-          } ~  pathPrefix(Segment) { mappingName: String => // Operations on a single mapping identified by its name
+          } ~
+            post { // Create a new mapping definition
+              entity(as[FhirMapping]) { fhirMapping =>
+                complete {
+                  service.createMapping(directoryName, fhirMapping) map { createdDefinition =>
+                    StatusCodes.Created -> createdDefinition
+                  }
+                }
+              }
+            } ~ pathPrefix(Segment) { mappingName: String => // Operations on a single mapping identified by folder and name
             get { // pilot1/surgery-details-mapping
               complete {
                 service.getMappingByName(directoryName, mappingName) map {
@@ -39,7 +49,23 @@ class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLoggin
                   case None => StatusCodes.NotFound -> s"Mapping definition with name $mappingName not found"
                 }
               }
-            }
+            } ~
+              put {
+                entity(as[FhirMapping]) { fhirMapping =>
+                  complete {
+                    service.updateMapping(directoryName, mappingName, fhirMapping) map { _ =>
+                      StatusCodes.OK -> fhirMapping
+                    }
+                  }
+                }
+              } ~
+              delete {
+                complete {
+                  service.removeMapping(directoryName, mappingName) map { _ =>
+                    StatusCodes.OK
+                  }
+                }
+              }
           }
         }
 

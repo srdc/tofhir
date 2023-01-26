@@ -21,6 +21,16 @@ class MappingService(mappingRepositoryFolderPath: String) extends LazyLogging {
   }
 
   /**
+   * Save the mapping to the repository
+   * @param directory sub-folder of the mapping
+   * @param mapping mapping to save
+   * @return FhirMapping
+   */
+  def createMapping(directory: String, mapping: FhirMapping): Future[FhirMapping] = {
+    mappingRepository.createMapping(directory, mapping)
+  }
+
+  /**
    * Get the mapping definition by its name and sub-folder
    * @param directory sub-folder of the mapping
    * @param name name of the mapping
@@ -28,6 +38,27 @@ class MappingService(mappingRepositoryFolderPath: String) extends LazyLogging {
    */
   def getMappingByName(directory: String, name: String): Future[Option[FhirMapping]] = {
     mappingRepository.getMappingByName(directory, name)
+  }
+
+  /**
+   * Update the mapping in the repository
+   * @param directory sub-folder of the mapping
+   * @param name name of the mapping
+   * @param mapping mapping to update
+   * @return
+   */
+  def updateMapping(directory: String, name: String, mapping: FhirMapping): Future[FhirMapping] = {
+    mappingRepository.updateMapping(directory, name, mapping)
+  }
+
+  /**
+   * Delete the mapping from the repository
+   * @param directory sub-folder of the mapping
+   * @param name name of the mapping
+   * @return
+   */
+  def removeMapping(directory: String, name: String): Future[Unit] = {
+    mappingRepository.removeMapping(directory, name)
   }
 
 }
