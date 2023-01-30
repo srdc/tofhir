@@ -6,4 +6,4 @@ package io.tofhir.server.model
  * POST/CREATE a schema definition --> expect all required fields populated.
  * PUT/UPDATE a schema definition --> expect all required fields populated.
  */
-case class SchemaDefinition(url: String, `type`: String, name: Option[String], rootDefinition: Option[SimpleStructureDefinition], fieldDefinitions: Option[Seq[SimpleStructureDefinition]])
+case class SchemaDefinition(url: String, `type`: String, name: String, rootDefinition: Option[SimpleStructureDefinition], fieldDefinitions: Option[Seq[SimpleStructureDefinition]])
