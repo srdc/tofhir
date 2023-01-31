@@ -1,0 +1,25 @@
+package io.tofhir.server.util
+
+import io.onfhir.util.JsonFormatter._
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
+
+import java.io.File
+import java.nio.charset.StandardCharsets
+import scala.io.Source
+
+object FileOperations {
+  /**
+   * Read the content of a json file and parse it to a sequence of objects
+   * @param f File to be read
+   * @param c class type that can be parsed from JSON
+   * @tparam K class that created from JSON
+   * @return Sequence of objects
+   */
+  def readJsonContent[K](f: File, c: Class[K])(implicit ev: scala.reflect.Manifest[K]): Seq[K] = {
+    val source = Source.fromFile(f, StandardCharsets.UTF_8.name())
+    val fileContent = try source.mkString finally source.close()
+    val parsed = parse(fileContent).extract[Seq[K]]
+    parsed
+  }
+}
