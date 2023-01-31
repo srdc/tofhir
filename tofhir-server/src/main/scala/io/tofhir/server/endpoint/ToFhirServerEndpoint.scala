@@ -30,7 +30,6 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   // initialize database
   new FolderDBInitializer(toFhirEngineConfig, schemaRepository.asInstanceOf[SchemaFolderRepository]).initialize()
 
-
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {
       corsHandler {

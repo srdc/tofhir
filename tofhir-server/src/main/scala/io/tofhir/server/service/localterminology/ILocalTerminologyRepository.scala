@@ -45,4 +45,7 @@ trait ILocalTerminologyRepository {
   def removeTerminology(id: String): Future[Unit]
 }
 
-
+object ILocalTerminologyRepository {
+  val TERMINOLOGY_JSON = "terminology-services.json"
+  val TERMINOLOGY_FOLDER = "terminology-services"
+}
