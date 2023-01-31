@@ -8,6 +8,7 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.Project
 import io.tofhir.server.service.project.ProjectFolderRepository
+import io.tofhir.server.model.InternalError
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
@@ -60,5 +61,19 @@ object FileOperations {
     val source = Source.fromFile(f, StandardCharsets.UTF_8.name())
     val firstLine = try source.getLines().toSeq.head finally source.close()
     firstLine.contains("conversion_function")
+  }
+
+  /**
+   * Get folder if exists
+   * @param path path of the folder
+   * @return File object
+   */
+  def getFileIfExists(path: String): File = {
+    val folder = new File(path)
+    if (folder.exists()) {
+      folder
+    } else {
+      throw InternalError("File not found.", s"$path file should exists.")
+    }
   }
 }
