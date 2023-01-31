@@ -24,13 +24,9 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
    */
   override def getAllLocalTerminologyMetadata: Future[Seq[LocalTerminology]] = {
     Future {
-      val localTerminologyFile = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      if (localTerminologyFile.exists()) {
-        val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
-        localTerminology
-      } else {
-        throw InternalError("Local terminology json file not found.", s"$TERMINOLOGY_JSON file should exists in the root folder.")
-      }
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      localTerminology
     }
   }
 
@@ -40,31 +36,27 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
    */
   override def createTerminologyService(terminology: LocalTerminology): Future[LocalTerminology] = {
     Future {
-      val localTerminologyFile = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      if (localTerminologyFile.exists()) {
-        // check if folder exists
-        val terminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
-        if (terminologyFolder.exists()) {
-          throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.folderPath} already exists.")
-        }
-        // append to json file
-        val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
-        // check if id exists in json file
-        if (localTerminology.exists(_.id == terminology.id)) {
-          throw AlreadyExists("Local terminology id already exists.", s"Id ${terminology.id} already exists.")
-        }
-        val newLocalTerminology = localTerminology :+ terminology
-        val writer = new FileWriter(localTerminologyFile)
-        try {
-          writer.write(writePretty(newLocalTerminology))
-        } finally {
-          writer.close()
-        }
-        terminologyFolder.mkdirs() // create folder
-        terminology
-      } else {
-        throw InternalError("Local terminology json file not found.", s"$TERMINOLOGY_JSON file should exists in the root folder.")
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      val terminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+      if (terminologyFolder.exists()) {
+        throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.folderPath} already exists.")
       }
+      // append to json file
+      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      // check if id exists in json file
+      if (localTerminology.exists(_.id == terminology.id)) {
+        throw AlreadyExists("Local terminology id already exists.", s"Id ${terminology.id} already exists.")
+      }
+      val newLocalTerminology = localTerminology :+ terminology
+      val writer = new FileWriter(localTerminologyFile)
+      try {
+        writer.write(writePretty(newLocalTerminology))
+      } finally {
+        writer.close()
+      }
+      terminologyFolder.mkdirs() // create folder
+      this.updateConceptMapAndCodeSystemFiles(terminology) // create concept maps
+      terminology
     }
   }
 
@@ -75,15 +67,11 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
    */
   override def retrieveTerminology(id: String): Future[LocalTerminology] = {
     Future {
-      val localTerminologyFile = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      if (localTerminologyFile.exists()) {
-        val localTerminologies = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
-        localTerminologies.find(_.id == id) match {
-          case Some(terminology) => terminology
-          case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
-        }
-      } else {
-        throw InternalError("Local terminology json file not found.", s"$TERMINOLOGY_JSON file should exists in the root folder.")
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      val localTerminologies = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      localTerminologies.find(_.id == id) match {
+        case Some(terminology) => terminology
+        case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
       }
     }
   }
@@ -100,41 +88,35 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
       if (id != terminology.id) {
         throw BadRequest("Local terminology id does not match.", s"Id $id does not match with the id in the body ${terminology.id}.")
       }
-      val localTerminologyFile = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      if (localTerminologyFile.exists()) {
-        // find the terminology service
-        val localTerminologies = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
-        localTerminologies.find(_.id == id) match {
-          case Some(foundTerminology) =>
-            // check if folders exists
-            val terminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.folderPath)
-            if (!terminologyFolder.exists()) {
-              throw BadRequest("Local terminology folder does not exist.", s"Folder ${foundTerminology.folderPath} does not exist.")
-            }
-            val newTerminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
-            if (terminology.folderPath != foundTerminology.folderPath && newTerminologyFolder.exists()) {
-              throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.folderPath} already exists.")
-            }
-            // update the terminology service json
-            val newLocalTerminology = localTerminologies.map {
-              case t if t.id == id => terminology
-              case t => t
-            }
-            val writer = new FileWriter(localTerminologyFile)
-            try {
-              writer.write(writePretty(newLocalTerminology))
-            } finally {
-              writer.close()
-            }
-            //update folder name if changed
-            if (terminology.folderPath != foundTerminology.folderPath) {
-              terminologyFolder.renameTo(newTerminologyFolder)
-            }
-            terminology
-          case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
-        }
-      } else {
-        throw InternalError("Local terminology json file not found.", s"$TERMINOLOGY_JSON file should exists in the root folder.")
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      // find the terminology service
+      val localTerminologies = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      localTerminologies.find(_.id == id) match {
+        case Some(foundTerminology) =>
+          // check if folders exists
+          val terminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.folderPath)
+          val newTerminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          if (terminology.folderPath != foundTerminology.folderPath && newTerminologyFolder.exists()) {
+            throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.folderPath} already exists.")
+          }
+          // update the terminology service json
+          val newLocalTerminology = localTerminologies.map {
+            case t if t.id == id => terminology
+            case t => t
+          }
+          val writer = new FileWriter(localTerminologyFile)
+          try {
+            writer.write(writePretty(newLocalTerminology))
+          } finally {
+            writer.close()
+          }
+          //update folder name if changed
+          if (terminology.folderPath != foundTerminology.folderPath) {
+            terminologyFolder.renameTo(newTerminologyFolder)
+          }
+          this.updateConceptMapAndCodeSystemFiles(terminology) // create concept maps
+          terminology
+        case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
       }
     }
   }
@@ -146,31 +128,47 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
    */
   override def removeTerminology(id: String): Future[Unit] = {
     Future {
-      val localTerminologyFile = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      if (localTerminologyFile.exists()) {
-        // find the terminology service
-        val localTerminologies = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
-        localTerminologies.find(_.id == id) match {
-          case Some(foundTerminology) =>
-            // check if folders exists
-            val terminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.folderPath)
-            if (!terminologyFolder.exists()) {
-              throw BadRequest("Local terminology folder does not exist.", s"Folder ${foundTerminology.folderPath} does not exist.")
-            }
-            // delete the terminology from json
-            val newLocalTerminology = localTerminologies.filterNot(_.id == id)
-            val writer = new FileWriter(localTerminologyFile)
-            try {
-              writer.write(writePretty(newLocalTerminology))
-            } finally {
-              writer.close()
-            }
-            //delete folder
-            FileUtils.deleteDirectory(terminologyFolder)
-          case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
-        }
-      } else {
-        throw InternalError("Local terminology json file not found.", s"$TERMINOLOGY_JSON file should exists in the root folder.")
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      // find the terminology service
+      val localTerminologies = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      localTerminologies.find(_.id == id) match {
+        case Some(foundTerminology) =>
+          // check if folders exists
+          val terminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.folderPath)
+          // delete the terminology from json
+          val newLocalTerminology = localTerminologies.filterNot(_.id == id)
+          val writer = new FileWriter(localTerminologyFile)
+          try {
+            writer.write(writePretty(newLocalTerminology))
+          } finally {
+            writer.close()
+          }
+          //delete the terminology folder
+          FileUtils.deleteDirectory(terminologyFolder)
+        case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
+      }
+    }
+  }
+
+  /**
+   * Create/delete concept map and code system files in the terminology folder according to the new terminology
+   * @param terminology LocalTerminologyService
+   * @return
+   */
+  private def updateConceptMapAndCodeSystemFiles(terminology: LocalTerminology): Future[Unit] = {
+    Future {
+      val localTerminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+      val currentFiles = localTerminologyFolder.listFiles().filter(_.isFile).map(_.getName)
+      val newFiles = terminology.conceptMaps.map(_.fileName) ++ terminology.codeSystems.map(_.fileName)
+      val filesToDelete = currentFiles.diff(newFiles)
+      val filesToAdd = newFiles.diff(currentFiles)
+      filesToDelete.foreach { file =>
+        val f = new File(localTerminologyFolder + File.separator + file)
+        f.delete()
+      }
+      filesToAdd.foreach { file =>
+        val f = new File(localTerminologyFolder + File.separator + file)
+        f.createNewFile()
       }
     }
   }
