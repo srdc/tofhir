@@ -21,6 +21,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val schemaDefinitionEndpoint = new SchemaDefinitionEndpoint(toFhirEngineConfig)
   val mappingEndpoint = new MappingEndpoint(toFhirEngineConfig)
   val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig)
+  val localTerminologyEndpoint = new LocalTerminologyEndpoint(toFhirEngineConfig)
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {
@@ -31,7 +32,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
               val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString))
               handleRejections(RejectionHandler.default) { // Default rejection handling
                 handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                  fhirDefinitionsEndpoint.route(restCall) ~ schemaDefinitionEndpoint.route(restCall) ~ mappingEndpoint.route(restCall) ~ projectEndpoint.route(restCall)
+                  fhirDefinitionsEndpoint.route(restCall) ~ schemaDefinitionEndpoint.route(restCall) ~ mappingEndpoint.route(restCall) ~ projectEndpoint.route(restCall) ~ localTerminologyEndpoint.route(restCall)
                 }
               }
             }
