@@ -1,5 +1,7 @@
 package io.tofhir.server.service.localterminology.codesystem
 
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import io.tofhir.server.model.TerminologyCodeSystem
 
 import scala.concurrent.Future
@@ -43,5 +45,22 @@ trait ICodeSystemRepository {
    * @return
    */
   def removeCodeSystem(terminologyId: String, codeSystemId: String): Future[Unit]
+
+  /**
+   * Retrieve and save the content of a code system csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param codeSystemId id of the code system
+   * @param content Source of the csv file
+   * @return
+   */
+  def saveCodeSystemContent(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any]): Future[Unit]
+
+  /**
+   * Retrieve the content of a code system csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param codeSystemId id of the code system
+   * @return Source of the csv file
+   */
+  def getCodeSystemContent(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]]
 
 }
