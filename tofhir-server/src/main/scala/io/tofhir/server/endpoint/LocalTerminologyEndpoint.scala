@@ -21,172 +21,342 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_TERMINOLOGY) {
-      pathEndOrSingleSlash { // Operations on all terminology
-        get { // Search/(Retrieve all) local terminology metadata (id, name, description, folderPath)
-          complete {
-            localTerminologyService.getAllMetadata map { metadata =>
-              StatusCodes.OK -> metadata
+      // operations on all terminologies
+      pathEndOrSingleSlash {
+        createLocalTerminologyRoute() ~ getAllLocalTerminologiesRoute
+      } ~ // operations on individual terminologies
+        pathPrefix(Segment) { terminologyId: String =>
+          pathEndOrSingleSlash {
+            getLocalTerminologyRoute(terminologyId) ~ putLocalTerminologyRoute(terminologyId) ~ deleteLocalTerminologyRoute(terminologyId)
+          } ~ pathPrefix(SEGMENT_CONCEPTMAP) {
+            pathEndOrSingleSlash {
+              getAllConceptMapsRoute(terminologyId) ~ createConceptMapRoute(terminologyId)
+            } ~ pathPrefix(Segment) { conceptMapId =>
+              pathEndOrSingleSlash {
+                getConceptMapRoute(terminologyId, conceptMapId) ~ putConceptMapRoute(terminologyId, conceptMapId) ~ deleteConceptMapRoute(terminologyId, conceptMapId)
+              } ~ pathPrefix(SEGMENT_FILE) {
+                pathEndOrSingleSlash {
+                  uploadDownloadConceptMapFileRoute(terminologyId, conceptMapId)
+                }
+              }
             }
-          }
-        } ~ post { // Create a new local terminology service
-          entity(as[LocalTerminology]) { terminology =>
-            complete {
-              localTerminologyService.createTerminologyService(terminology) map { created =>
-                StatusCodes.Created -> created
+          } ~ pathPrefix(SEGMENT_CODESYSTEM) {
+            pathEndOrSingleSlash {
+              getAllCodeSystemsRoute(terminologyId) ~ createCodeSystemRoute(terminologyId)
+            } ~ pathPrefix(Segment) { codeSystemId =>
+              pathEndOrSingleSlash {
+                getCodeSystemRoute(terminologyId, codeSystemId) ~ putCodeSystemRoute(terminologyId, codeSystemId) ~ deleteCodeSystemRoute(terminologyId, codeSystemId)
+              } ~ pathPrefix(SEGMENT_FILE) {
+                pathEndOrSingleSlash {
+                  uploadDownloadCodeSystemFileRoute(terminologyId, codeSystemId)
+                }
               }
             }
           }
         }
-      } ~ pathPrefix(Segment) { terminologyId: String =>
-        pathEndOrSingleSlash {
-          get { // Retrieve a local terminology service by id
-            complete {
-              localTerminologyService.getTerminologyServiceById(terminologyId) map {
-                terminology => StatusCodes.OK -> terminology
-              }
-            }
-          } ~ put { // Update a local terminology service by id
-            entity(as[LocalTerminology]) { terminology =>
-              complete {
-                localTerminologyService.updateTerminologyServiceById(terminologyId, terminology) map {
-                  terminology => StatusCodes.OK -> terminology
-                }
-              }
-            }
-          } ~ delete { // Remove a local terminology service by id
-            complete {
-              localTerminologyService.removeTerminologyServiceById(terminologyId) map {
-                _ => StatusCodes.OK
-              }
-            }
-          }
-        } ~ pathPrefix(SEGMENT_CONCEPTMAP) { // Operations on concept maps
-          pathEndOrSingleSlash {
-            get { // List local concept maps metadata within a terminology
-              complete {
-                conceptMapService.getConceptMaps(terminologyId) map { metadata =>
-                  StatusCodes.OK -> metadata
-                }
-              }
-            } ~ post { // Create a new concept map within a terminology
-              entity(as[TerminologyConceptMap]) { conceptMap =>
-                complete {
-                  conceptMapService.createConceptMap(terminologyId, conceptMap) map { created =>
-                    StatusCodes.Created -> created
-                  }
-                }
-              }
-            }
-          } ~ pathPrefix(Segment) { conceptMapId: String =>
-            pathEndOrSingleSlash {
-              get { // Retrieve a concept map within a terminology
-                complete {
-                  conceptMapService.getConceptMap(terminologyId, conceptMapId) map {
-                    terminology => StatusCodes.OK -> terminology
-                  }
-                }
-              } ~ put { // Update a concept map within a terminology
-                entity(as[TerminologyConceptMap]) { conceptMap =>
-                  complete {
-                    conceptMapService.updateConceptMap(terminologyId, conceptMapId, conceptMap) map {
-                      terminologyConceptMap => StatusCodes.OK -> terminologyConceptMap
-                    }
-                  }
-                }
-              } ~ delete { // Delete a concept map within a terminology
-                complete {
-                  conceptMapService.removeConceptMap(terminologyId, conceptMapId) map {
-                    _ => StatusCodes.OK
-                  }
-                }
-              }
-            } ~ pathPrefix(SEGMENT_FILE) {
-              pathEndOrSingleSlash {
-                post {
-                  fileUpload(ATTACHMENT) {
-                    case (fileInfo, byteSource) =>
-                      complete {
-                        conceptMapService.uploadConceptMapFile(terminologyId, conceptMapId, byteSource) map {
-                          _ => StatusCodes.OK
-                        }
-                      }
-                  }
-                } ~ get {
-                  complete {
-                    conceptMapService.downloadConceptMapFile(terminologyId, conceptMapId) map { byteSource =>
-                      HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } ~ pathPrefix(SEGMENT_CODESYSTEM) { // Operations on code system
-          pathEndOrSingleSlash {
-            get { // List local code systems metadata within a terminology
-              complete {
-                codeSystemService.getCodeSystems(terminologyId) map { metadata =>
-                  StatusCodes.OK -> metadata
-                }
-              }
-            } ~ post { // Create a new code system within a terminology
-              entity(as[TerminologyCodeSystem]) { codeSystem =>
-                complete {
-                  codeSystemService.createCodeSystem(terminologyId, codeSystem) map { created =>
-                    StatusCodes.Created -> created
-                  }
-                }
-              }
-            }
-          } ~ pathPrefix(Segment) { codeSystemId: String =>
-            pathEndOrSingleSlash {
-              get { // Retrieve a code system within a terminology
-                complete {
-                  codeSystemService.getCodeSystem(terminologyId, codeSystemId) map {
-                    terminology => StatusCodes.OK -> terminology
-                  }
-                }
-              } ~ put { // Update a code system within a terminology
-                entity(as[TerminologyCodeSystem]) { codeSystem =>
-                  complete {
-                    codeSystemService.updateCodeSystem(terminologyId, codeSystemId, codeSystem) map {
-                      terminologyCodeSystem => StatusCodes.OK -> terminologyCodeSystem
-                    }
-                  }
-                }
-              } ~ delete { // Delete a code system within a terminology
-                complete {
-                  codeSystemService.removeCodeSystem(terminologyId, codeSystemId) map {
-                    _ => StatusCodes.OK
-                  }
-                }
-              }
-            } ~ pathPrefix(SEGMENT_FILE) {
-              pathEndOrSingleSlash {
-                post {
-                  fileUpload(ATTACHMENT) {
-                    case (fileInfo, byteSource) =>
-                      complete {
-                        codeSystemService.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource) map {
-                          _ => StatusCodes.OK
-                        }
-                      }
-                  }
-                } ~ get {
-                  complete {
-                    codeSystemService.downloadCodeSystemFile(terminologyId, codeSystemId) map { byteSource =>
-                      HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
-                    }
-                  }
-                }
-              }
-            }
+    }
+  }
+
+  /**
+   * Route to get all local terminology
+   *
+   * @return
+   */
+  private def getAllLocalTerminologiesRoute: Route = {
+    get {
+      complete {
+        localTerminologyService.getAllMetadata
+      }
+    }
+  }
+
+  /**
+   * Route to create a local terminology server
+   *
+   * @return
+   */
+  private def createLocalTerminologyRoute(): Route = {
+    post {
+      entity(as[LocalTerminology]) { localTerminology =>
+        complete {
+          localTerminologyService.createTerminologyService(localTerminology) map { createdTerminology =>
+            StatusCodes.Created -> createdTerminology
           }
         }
       }
     }
   }
 
+  /**
+   * Route to get a local terminology
+   *
+   * @param terminologyId id of local terminology
+   * @return
+   */
+  private def getLocalTerminologyRoute(terminologyId: String): Route = {
+    get {
+      complete {
+        localTerminologyService.getTerminologyServiceById(terminologyId) map {
+          terminology => StatusCodes.OK -> terminology
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to put a local terminology
+   *
+   * @param terminologyId id of local terminology
+   * @return
+   */
+  private def putLocalTerminologyRoute(terminologyId: String): Route = {
+    put {
+      entity(as[LocalTerminology]) { terminology =>
+        complete {
+          localTerminologyService.updateTerminologyServiceById(terminologyId, terminology) map {
+            terminology => StatusCodes.OK -> terminology
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to delete a local terminology
+   *
+   * @param terminologyId id of local terminology
+   * @return
+   */
+  private def deleteLocalTerminologyRoute(terminologyId: String): Route = {
+    delete {
+      complete {
+        localTerminologyService.removeTerminologyServiceById(terminologyId) map {
+          _ => StatusCodes.OK
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to get all concept maps within a terminology
+   *
+   * @return
+   */
+  private def getAllConceptMapsRoute(terminologyId: String): Route = {
+    get {
+      complete {
+        conceptMapService.getConceptMaps(terminologyId) map { metadata =>
+          StatusCodes.OK -> metadata
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to create a concept map within a terminology
+   *
+   * @return
+   */
+  private def createConceptMapRoute(terminologyId: String): Route = {
+    post {
+      entity(as[TerminologyConceptMap]) { conceptMap =>
+        complete {
+          conceptMapService.createConceptMap(terminologyId, conceptMap) map { created =>
+            StatusCodes.Created -> created
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to get a concept map terminology
+   *
+   * @param terminologyId id of concept map terminology
+   * @param conceptMapId id of concept map
+   * @return
+   */
+  private def getConceptMapRoute(terminologyId: String, conceptMapId: String): Route = {
+    get {
+      complete {
+        conceptMapService.getConceptMap(terminologyId, conceptMapId) map {
+          terminology => StatusCodes.OK -> terminology
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to put a concept map terminology
+   *
+   * @param terminologyId id of concept map terminology
+   * @param conceptMapId id of concept map
+   * @return
+   */
+  private def putConceptMapRoute(terminologyId: String, conceptMapId: String): Route = {
+    put {
+      entity(as[TerminologyConceptMap]) { conceptMap =>
+        complete {
+          conceptMapService.updateConceptMap(terminologyId, conceptMapId, conceptMap) map {
+            terminologyConceptMap => StatusCodes.OK -> terminologyConceptMap
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to delete a concept map terminology
+   *
+   * @param terminologyId id of concept map terminology
+   * @param conceptMapId id of concept map
+   * @return
+   */
+  private def deleteConceptMapRoute(terminologyId: String, conceptMapId: String): Route = {
+    delete {
+      complete {
+        conceptMapService.removeConceptMap(terminologyId, conceptMapId) map {
+          _ => StatusCodes.OK
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to upload/download a concept map file
+   *
+   * @param terminologyId id of concept map terminology
+   * @param conceptMapId id of concept map
+   * @return
+   */
+  private def uploadDownloadConceptMapFileRoute(terminologyId: String, conceptMapId: String): Route = {
+    post {
+      fileUpload(ATTACHMENT) {
+        case (fileInfo, byteSource) =>
+          complete {
+            conceptMapService.uploadConceptMapFile(terminologyId, conceptMapId, byteSource) map {
+              _ => StatusCodes.OK
+            }
+          }
+      }
+    } ~ get {
+      complete {
+        conceptMapService.downloadConceptMapFile(terminologyId, conceptMapId) map { byteSource =>
+          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to get all code systems within a terminology
+   *
+   * @return
+   */
+  private def getAllCodeSystemsRoute(terminologyId: String): Route = {
+    get {
+      complete {
+        codeSystemService.getCodeSystems(terminologyId) map { metadata =>
+          StatusCodes.OK -> metadata
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to create a code system within a terminology
+   *
+   * @return
+   */
+  private def createCodeSystemRoute(terminologyId: String): Route = {
+    post {
+      entity(as[TerminologyCodeSystem]) { codeSystem =>
+        complete {
+          codeSystemService.createCodeSystem(terminologyId, codeSystem) map { created =>
+            StatusCodes.Created -> created
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to get a code system terminology
+   *
+   * @param terminologyId id of code system terminology
+   * @param codeSystemId id of code system
+   * @return
+   */
+  private def getCodeSystemRoute(terminologyId: String, codeSystemId: String): Route = {
+    get {
+      complete {
+        codeSystemService.getCodeSystem(terminologyId, codeSystemId) map {
+          terminology => StatusCodes.OK -> terminology
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to put a code system terminology
+   *
+   * @param terminologyId id of code system terminology
+   * @param codeSystemId id of code system
+   * @return
+   */
+  private def putCodeSystemRoute(terminologyId: String, codeSystemId: String): Route = {
+    put {
+      entity(as[TerminologyCodeSystem]) { codeSystem =>
+        complete {
+          codeSystemService.updateCodeSystem(terminologyId, codeSystemId, codeSystem) map {
+            terminologyCodeSystem => StatusCodes.OK -> terminologyCodeSystem
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to delete a code system terminology
+   *
+   * @param terminologyId id of code system terminology
+   * @param codeSystemId id of code system
+   * @return
+   */
+  private def deleteCodeSystemRoute(terminologyId: String, codeSystemId: String): Route = {
+    delete {
+      complete {
+        codeSystemService.removeCodeSystem(terminologyId, codeSystemId) map {
+          _ => StatusCodes.OK
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to upload/download a code system file
+   * @param terminologyId id of code system terminology
+   * @param codeSystemId id of code system
+   *@return
+   */
+  private def uploadDownloadCodeSystemFileRoute(terminologyId: String, codeSystemId: String): Route = {
+    post {
+      fileUpload(ATTACHMENT) {
+        case (fileInfo, byteSource) =>
+          complete {
+            codeSystemService.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource) map {
+              _ => StatusCodes.OK
+            }
+          }
+      }
+    } ~ get {
+      complete {
+        codeSystemService.downloadCodeSystemFile(terminologyId, codeSystemId) map { byteSource =>
+          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+        }
+      }
+    }
+  }
 }
 
 object LocalTerminologyEndpoint {
