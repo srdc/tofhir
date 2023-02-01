@@ -1,7 +1,6 @@
 package io.tofhir.server.service.project
 
 import java.io.{File, FileWriter}
-import java.nio.charset.StandardCharsets
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter._
@@ -9,12 +8,11 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{Project, ProjectEditableFields}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.{AlreadyExists, ResourceNotFound}
+import io.tofhir.server.util.FileOperations
 import org.json4s._
-import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 
 import scala.concurrent.Future
-import scala.io.Source
 
 /**
  * Folder/Directory based project repository implementation.
@@ -129,11 +127,7 @@ class ProjectRepository(repositoryFolderPath: String) extends IProjectRepository
     val file = FileUtils.findFileByName(repositoryFolderPath + File.separatorChar, IProjectRepository.PROJECTS_JSON)
     file match {
       case Some(f) =>
-        // read the JSON file
-        val source = Source.fromFile(f, StandardCharsets.UTF_8.name())
-        val fileContent = try source.mkString finally source.close()
-        val projects = JsonMethods.parse(fileContent).extract[Seq[Project]]
-        projects
+        FileOperations.readJsonContent(f, classOf[Project])
       case None => {
         // when projects metadata file does not exist, create it
         logger.debug("There does not exist a metadata file for projects. Creating it...")
