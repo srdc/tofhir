@@ -1,5 +1,7 @@
 package io.tofhir.server.service.localterminology.conceptmap
 
+import akka.stream.scaladsl.{FileIO, Source}
+import akka.util.ByteString
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.model.{AlreadyExists, BadRequest, LocalTerminology, ResourceNotFound, TerminologyConceptMap}
@@ -194,6 +196,61 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
           // remove concept map file
           val conceptMapFile = new File(terminologyIdFolder, terminology.conceptMaps.find(_.id == conceptMapId).get.fileName)
           conceptMapFile.delete()
+        case None =>
+          throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
+      }
+    }
+  }
+
+  /**
+   * Retrieve and save the content of a concept map csv file within a terminology
+   *
+   * @param terminologyId id of the terminology
+   * @param conceptMapId  id of the concept map
+   * @param content       content of the csv file
+   * @return
+   */
+  override def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any]): Future[Unit] = {
+    Future {
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      localTerminology.find(_.id == terminologyId) match {
+        case Some(terminology) =>
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          // check if concept map id exists in json file
+          if (!terminology.conceptMaps.exists(_.id == conceptMapId)) {
+            throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
+          }
+          // save concept map file
+          val conceptMapFile = FileOperations.getFileIfExists(terminologyIdFolder + File.separator + terminology.conceptMaps.find(_.id == conceptMapId).get.fileName)
+          FileOperations.saveFileContent(conceptMapFile, content)
+        case None =>
+          throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
+      }
+    }
+  }
+
+  /**
+   * Retrieve the content of a concept map csv file within a terminology
+   *
+   * @param terminologyId id of the terminology
+   * @param conceptMapId  id of the concept map
+   * @return content of the csv file
+   */
+  override def getConceptMapContent(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]] = {
+    Future {
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      localTerminology.find(_.id == terminologyId) match {
+        case Some(terminology) =>
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          // check if concept map id exists in json file
+          if (!terminology.conceptMaps.exists(_.id == conceptMapId)) {
+            throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
+          }
+          // get concept map file
+          val conceptMapFile = FileOperations.getFileIfExists(terminologyIdFolder + File.separator + terminology.conceptMaps.find(_.id == conceptMapId).get.fileName)
+          FileIO.fromPath(conceptMapFile.toPath)
         case None =>
           throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
       }

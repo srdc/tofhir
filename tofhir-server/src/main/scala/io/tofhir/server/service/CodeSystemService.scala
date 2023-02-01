@@ -1,5 +1,7 @@
 package io.tofhir.server.service
 
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.TerminologyCodeSystem
 import io.tofhir.server.service.localterminology.codesystem.{CodeSystemRepository, ICodeSystemRepository}
@@ -58,6 +60,27 @@ class CodeSystemService(localTerminologyRepositoryRoot: String) extends LazyLogg
    */
   def removeCodeSystem(terminologyId: String, codeSystemId: String): Future[Unit] = {
     codeSystemRepository.removeCodeSystem(terminologyId, codeSystemId)
+  }
+
+  /**
+   * Upload a CodeSystem csv file for a terminology
+   * @param terminologyId id of the terminology
+   * @param codeSystemId id of the code system
+   * @param byteSource Source of the csv file
+   * @return
+   */
+  def uploadCodeSystemFile(terminologyId: String, codeSystemId: String, byteSource: Source[ByteString, Any]): Future[Unit] = {
+    codeSystemRepository.saveCodeSystemContent(terminologyId, codeSystemId, byteSource)
+  }
+
+  /**
+   * Download a CodeSystem csv file for a terminology
+   * @param terminologyId id of the terminology
+   * @param codeSystemId id of the code system
+   * @return Source of the csv file
+   */
+  def downloadCodeSystemFile(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]] = {
+    codeSystemRepository.getCodeSystemContent(terminologyId, codeSystemId)
   }
 
 }
