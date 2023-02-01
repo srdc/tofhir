@@ -1,15 +1,15 @@
 package io.tofhir.server.endpoint
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
+import akka.http.scaladsl.server.Directives.{complete, _}
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.server.endpoint.LocalTerminologyEndpoint.{SEGMENT_CODESYSTEM, SEGMENT_CONCEPTMAP, SEGMENT_TERMINOLOGY}
+import io.tofhir.server.endpoint.LocalTerminologyEndpoint._
+import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{LocalTerminology, TerminologyCodeSystem, TerminologyConceptMap, ToFhirRestCall}
 import io.tofhir.server.service.{CodeSystemService, ConceptMapService, LocalTerminologyService}
-import io.tofhir.server.model.Json4sSupport._
 
 class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
 
@@ -60,7 +60,7 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
               }
             }
           }
-        } ~ pathPrefix (SEGMENT_CONCEPTMAP) { // Operations on concept maps
+        } ~ pathPrefix(SEGMENT_CONCEPTMAP) { // Operations on concept maps
           pathEndOrSingleSlash {
             get { // List local concept maps metadata within a terminology
               complete {
@@ -97,6 +97,25 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
                 complete {
                   conceptMapService.removeConceptMap(terminologyId, conceptMapId) map {
                     _ => StatusCodes.OK
+                  }
+                }
+              }
+            } ~ pathPrefix(SEGMENT_FILE) {
+              pathEndOrSingleSlash {
+                post {
+                  fileUpload(ATTACHMENT) {
+                    case (fileInfo, byteSource) =>
+                      complete {
+                        conceptMapService.uploadConceptMapFile(terminologyId, conceptMapId, byteSource) map {
+                          _ => StatusCodes.OK
+                        }
+                      }
+                  }
+                } ~ get {
+                  complete {
+                    conceptMapService.downloadConceptMapFile(terminologyId, conceptMapId) map { byteSource =>
+                      HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+                    }
                   }
                 }
               }
@@ -142,6 +161,25 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
                   }
                 }
               }
+            } ~ pathPrefix(SEGMENT_FILE) {
+              pathEndOrSingleSlash {
+                post {
+                  fileUpload(ATTACHMENT) {
+                    case (fileInfo, byteSource) =>
+                      complete {
+                        codeSystemService.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource) map {
+                          _ => StatusCodes.OK
+                        }
+                      }
+                  }
+                } ~ get {
+                  complete {
+                    codeSystemService.downloadCodeSystemFile(terminologyId, codeSystemId) map { byteSource =>
+                      HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -155,5 +193,7 @@ object LocalTerminologyEndpoint {
   val SEGMENT_TERMINOLOGY = "terminology"
   val SEGMENT_CONCEPTMAP = "conceptmap"
   val SEGMENT_CODESYSTEM = "codesystem"
+  val SEGMENT_FILE = "file"
+  val ATTACHMENT = "attachment"
 }
 

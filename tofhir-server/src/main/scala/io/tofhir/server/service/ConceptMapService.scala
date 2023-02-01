@@ -1,5 +1,7 @@
 package io.tofhir.server.service
 
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.TerminologyConceptMap
 import io.tofhir.server.service.localterminology.conceptmap.{ConceptMapRepository, IConceptMapRepository}
@@ -58,6 +60,27 @@ class ConceptMapService(localTerminologyRepositoryRoot: String) extends LazyLogg
    */
   def removeConceptMap(terminologyId: String, conceptMapId: String): Future[Unit] = {
     conceptMapRepository.removeConceptMap(terminologyId, conceptMapId)
+  }
+
+  /**
+   * Retrieve and save the content of a concept map csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param conceptMapId id of the concept map
+   * @param byteSource content of the csv file
+   * @return
+   */
+  def uploadConceptMapFile(terminologyId: String, conceptMapId: String, byteSource: Source[ByteString, Any]): Future[Unit] = {
+    conceptMapRepository.saveConceptMapContent(terminologyId, conceptMapId, byteSource)
+  }
+
+  /**
+   * Retrieve the content of a concept map csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param conceptMapId id of the concept map
+   * @return content of the csv file
+   */
+  def downloadConceptMapFile(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]] = {
+    conceptMapRepository.getConceptMapContent(terminologyId, conceptMapId)
   }
 
 }
