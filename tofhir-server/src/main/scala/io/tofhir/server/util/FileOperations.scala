@@ -1,12 +1,18 @@
 package io.tofhir.server.util
 
+import akka.stream.scaladsl.FileIO
+import akka.util.ByteString
 import io.onfhir.util.JsonFormatter._
+import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.server.model.InternalError
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
 import java.io.File
 import java.nio.charset.StandardCharsets
+import scala.util.{Failure, Success}
+import io.tofhir.engine.Execution.actorSystem.dispatcher
+
 import scala.io.Source
 
 object FileOperations {
@@ -36,5 +42,18 @@ object FileOperations {
     } else {
       throw InternalError("File not found.", s"$path file should exists.")
     }
+  }
+
+  /**
+   * Write content to a file by using akka streams
+   * @param file File to be saved
+   * @param content Content of the file
+   */
+  def saveFileContent(file: File, content: akka.stream.scaladsl.Source[ByteString, Any]): Unit = {
+    content.runWith(FileIO.toPath(file.toPath)).onComplete({
+      case Success(_) =>
+      case Failure(e) =>
+        throw InternalError("Error while writing file.", e.getMessage)
+    })
   }
 }

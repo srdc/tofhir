@@ -1,5 +1,7 @@
 package io.tofhir.server.service.localterminology.codesystem
 
+import akka.stream.scaladsl.{FileIO, Source}
+import akka.util.ByteString
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.model._
@@ -14,6 +16,7 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
 
   /**
    * Retrieve the code system within a terminology
+   *
    * @return Seq[TerminologyCodeSystem]
    */
   override def getCodeSystems(terminologyId: String): Future[Seq[TerminologyCodeSystem]] = {
@@ -194,6 +197,60 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
           // remove code system file
           val codeSystemFile = new File(terminologyIdFolder, terminology.codeSystems.find(_.id == codeSystemId).get.fileName)
           codeSystemFile.delete()
+        case None =>
+          throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
+      }
+    }
+  }
+  /**
+   * Retrieve and save the content of a code system csv file within a terminology
+   *
+   * @param terminologyId id of the terminology
+   * @param codeSystemId  id of the code system
+   * @param content       Source of the csv file
+   * @return
+   */
+  override def saveCodeSystemContent(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any]): Future[Unit] = {
+    Future {
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      localTerminology.find(_.id == terminologyId) match {
+        case Some(terminology) =>
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          // check if code system id exists in json file
+          if (!terminology.codeSystems.exists(_.id == codeSystemId)) {
+            throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
+          }
+          // save code system file
+          val codeSystemFile = FileOperations.getFileIfExists(terminologyIdFolder + File.separator + terminology.codeSystems.find(_.id == codeSystemId).get.fileName)
+          FileOperations.saveFileContent(codeSystemFile, content)
+        case None =>
+          throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
+      }
+    }
+  }
+
+  /**
+   * Retrieve the content of a code system csv file within a terminology
+   *
+   * @param terminologyId id of the terminology
+   * @param codeSystemId  id of the code system
+   * @return Source of the csv file
+   */
+  override def getCodeSystemContent(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]] = {
+    Future {
+      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      localTerminology.find(_.id == terminologyId) match {
+        case Some(terminology) =>
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          // check if code system id exists in json file
+          if (!terminology.codeSystems.exists(_.id == codeSystemId)) {
+            throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
+          }
+          // get code system file
+          val codeSystemFile = FileOperations.getFileIfExists(terminologyIdFolder + File.separator + terminology.codeSystems.find(_.id == codeSystemId).get.fileName)
+          FileIO.fromPath(codeSystemFile.toPath)
         case None =>
           throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
       }

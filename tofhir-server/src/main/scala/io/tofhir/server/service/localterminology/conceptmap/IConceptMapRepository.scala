@@ -1,6 +1,8 @@
 package io.tofhir.server.service.localterminology.conceptmap
 
-import io.tofhir.server.model.{LocalTerminology, TerminologyConceptMap}
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import io.tofhir.server.model.TerminologyConceptMap
 
 import scala.concurrent.Future
 
@@ -43,5 +45,22 @@ trait IConceptMapRepository {
    * @return
    */
   def removeConceptMap(terminologyId: String, conceptMapId: String): Future[Unit]
+
+  /**
+   * Retrieve and save the content of a concept map csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param conceptMapId  id of the concept map
+   * @param content       content of the csv file
+   * @return
+   */
+  def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any]): Future[Unit]
+
+  /**
+   * Retrieve the content of a concept map csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param conceptMapId id of the concept map
+   * @return content of the csv file
+   */
+  def getConceptMapContent(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]]
 
 }
