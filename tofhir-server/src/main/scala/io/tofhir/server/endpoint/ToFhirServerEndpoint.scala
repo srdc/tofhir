@@ -20,6 +20,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val schemaDefinitionEndpoint = new SchemaDefinitionEndpoint(toFhirEngineConfig)
   val mappingEndpoint = new MappingEndpoint(toFhirEngineConfig)
+  val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig)
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {
@@ -31,7 +32,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
               handleRejections(RejectionHandler.default) { // Default rejection handling
                 rejectEmptyResponse { // Reject the empty responses
                   handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                    fhirDefinitionsEndpoint.route(restCall) ~ schemaDefinitionEndpoint.route(restCall) ~ mappingEndpoint.route(restCall)
+                    fhirDefinitionsEndpoint.route(restCall) ~ schemaDefinitionEndpoint.route(restCall) ~ mappingEndpoint.route(restCall) ~ projectEndpoint.route(restCall)
                   }
                 }
               }
