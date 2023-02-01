@@ -6,9 +6,9 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.server.endpoint.LocalTerminologyEndpoint.{SEGMENT_CONCEPTMAP, SEGMENT_TERMINOLOGY}
-import io.tofhir.server.model.{LocalTerminology, TerminologyConceptMap, ToFhirRestCall}
-import io.tofhir.server.service.{ConceptMapService, LocalTerminologyService}
+import io.tofhir.server.endpoint.LocalTerminologyEndpoint.{SEGMENT_CODESYSTEM, SEGMENT_CONCEPTMAP, SEGMENT_TERMINOLOGY}
+import io.tofhir.server.model.{LocalTerminology, TerminologyCodeSystem, TerminologyConceptMap, ToFhirRestCall}
+import io.tofhir.server.service.{CodeSystemService, ConceptMapService, LocalTerminologyService}
 import io.tofhir.server.model.Json4sSupport._
 
 class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
@@ -17,9 +17,11 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
 
   val conceptMapService: ConceptMapService = new ConceptMapService(toFhirEngineConfig.repositoryRootPath)
 
+  val codeSystemService: CodeSystemService = new CodeSystemService(toFhirEngineConfig.repositoryRootPath)
+
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_TERMINOLOGY) {
-      pathEndOrSingleSlash { // Operations on all schemas
+      pathEndOrSingleSlash { // Operations on all terminology
         get { // Search/(Retrieve all) local terminology metadata (id, name, description, folderPath)
           complete {
             localTerminologyService.getAllMetadata map { metadata =>
@@ -58,8 +60,8 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
               }
             }
           }
-        } ~ pathPrefix (SEGMENT_CONCEPTMAP) {
-          pathEndOrSingleSlash { // Operations on concept maps
+        } ~ pathPrefix (SEGMENT_CONCEPTMAP) { // Operations on concept maps
+          pathEndOrSingleSlash {
             get { // List local concept maps metadata within a terminology
               complete {
                 conceptMapService.getConceptMaps(terminologyId) map { metadata =>
@@ -87,13 +89,55 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
                 entity(as[TerminologyConceptMap]) { conceptMap =>
                   complete {
                     conceptMapService.updateConceptMap(terminologyId, conceptMapId, conceptMap) map {
-                      terminology => StatusCodes.OK -> conceptMap
+                      terminologyConceptMap => StatusCodes.OK -> terminologyConceptMap
                     }
                   }
                 }
               } ~ delete { // Delete a concept map within a terminology
                 complete {
                   conceptMapService.removeConceptMap(terminologyId, conceptMapId) map {
+                    _ => StatusCodes.OK
+                  }
+                }
+              }
+            }
+          }
+        } ~ pathPrefix(SEGMENT_CODESYSTEM) { // Operations on code system
+          pathEndOrSingleSlash {
+            get { // List local code systems metadata within a terminology
+              complete {
+                codeSystemService.getCodeSystems(terminologyId) map { metadata =>
+                  StatusCodes.OK -> metadata
+                }
+              }
+            } ~ post { // Create a new code system within a terminology
+              entity(as[TerminologyCodeSystem]) { codeSystem =>
+                complete {
+                  codeSystemService.createCodeSystem(terminologyId, codeSystem) map { created =>
+                    StatusCodes.Created -> created
+                  }
+                }
+              }
+            }
+          } ~ pathPrefix(Segment) { codeSystemId: String =>
+            pathEndOrSingleSlash {
+              get { // Retrieve a code system within a terminology
+                complete {
+                  codeSystemService.getCodeSystem(terminologyId, codeSystemId) map {
+                    terminology => StatusCodes.OK -> terminology
+                  }
+                }
+              } ~ put { // Update a code system within a terminology
+                entity(as[TerminologyCodeSystem]) { codeSystem =>
+                  complete {
+                    codeSystemService.updateCodeSystem(terminologyId, codeSystemId, codeSystem) map {
+                      terminologyCodeSystem => StatusCodes.OK -> terminologyCodeSystem
+                    }
+                  }
+                }
+              } ~ delete { // Delete a code system within a terminology
+                complete {
+                  codeSystemService.removeCodeSystem(terminologyId, codeSystemId) map {
                     _ => StatusCodes.OK
                   }
                 }
@@ -110,5 +154,6 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
 object LocalTerminologyEndpoint {
   val SEGMENT_TERMINOLOGY = "terminology"
   val SEGMENT_CONCEPTMAP = "conceptmap"
+  val SEGMENT_CODESYSTEM = "codesystem"
 }
 
