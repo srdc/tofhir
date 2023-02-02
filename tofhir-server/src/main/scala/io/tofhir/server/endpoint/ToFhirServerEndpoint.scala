@@ -22,24 +22,27 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
 
   val projectRepository: IProjectRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
   val schemaRepository: ISchemaRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
-  val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val mappingEndpoint = new MappingEndpoint(toFhirEngineConfig)
+  val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
   val localTerminologyEndpoint = new LocalTerminologyEndpoint(toFhirEngineConfig)
 
   // initialize database
   new FolderDBInitializer(toFhirEngineConfig, schemaRepository.asInstanceOf[SchemaFolderRepository]).initialize()
+
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {
       corsHandler {
         extractMethod { httpMethod: HttpMethod =>
           extractUri { requestUri: Uri =>
-            optionalHeaderValueByName("X-Correlation-Id") { correlationId =>
-              val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString))
-              handleRejections(RejectionHandler.default) { // Default rejection handling
-                handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                  projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall) ~ mappingEndpoint.route(restCall) ~ localTerminologyEndpoint.route(restCall)
+            extractRequestEntity { requestEntity =>
+              optionalHeaderValueByName("X-Correlation-Id") { correlationId =>
+                val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
+                handleRejections(RejectionHandler.default) { // Default rejection handling
+                  handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
+                    projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall) ~ mappingEndpoint.route(restCall) ~ localTerminologyEndpoint.route(restCall)
+                  }
                 }
               }
             }
