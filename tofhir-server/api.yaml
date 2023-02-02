@@ -1,0 +1,144 @@
+openapi: 3.0.2
+info:
+  description: "Lists the REST APIs provided by a toFHIR server"
+  version: "1.0.0"
+  title: "toFHIR REST API"
+
+servers:
+  - url: http://localhost:8085/tofhir
+    description: Local deployment of the toFHIR server
+
+tags:
+  - name: "Project"
+    description: "Represents a logical grouping for mapping entities"
+
+paths:
+  #Paths on projects
+  /projects:
+    post:
+      tags:
+        - "Project"
+      summary: "Creates a new project"
+      operationId: "createProject"
+      requestBody:
+        description: "Project details"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Project"
+            example:
+              id: "e456fdfe-d039-432c-9077-74308286f763"
+              name: "Project name"
+              description: "Project description"
+      responses:
+        '201':
+          description: "Successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    get:
+      tags:
+        - "Project"
+      summary: "Gets all projects"
+      operationId: "getProjects"
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+  /projects/{projectId}:
+    get:
+      tags:
+        - "Project"
+      summary: "Gets the specified project"
+      operationId: "getProject"
+      parameters:
+        - in: path
+          name: "projectId"
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Identifier of the project"
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref:
+    patch:
+      tags:
+        - "Project"
+      summary: "Updates the project with the given patch"
+      operationId: "patchProject"
+      parameters:
+        - in: path
+          name: "projectId"
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Identifier of the project"
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    delete:
+      tags:
+        - "Project"
+      summary: "Deletes the specified project"
+      operationId: "deleteProject"
+      parameters:
+        - in: path
+          name: "projectId"
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: "Identifier of the project"
+      responses:
+        '204':
+          description: "Successful operation"
+
+components:
+  schemas:
+    Project:
+      type: "object"
+      required:
+        - "id"
+        - "name"
+      properties:
+        id:
+          type: "string"
+          description: "Identifier of the project"
+          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+        name:
+          type: "string"
+          description: "Name of the project"
+          example: "Project name"
+        description:
+          type: "string"
+          description: "Description of the project"
+
+  responses:
+    400BadRequest:
+      description: "Bad or Invalid request"
+    409AlreadyExists:
+      description: "Given object already exists"
+    404NotFound:
+      description: "Given resource does not exist"
