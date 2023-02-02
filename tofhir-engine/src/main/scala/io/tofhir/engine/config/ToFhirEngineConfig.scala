@@ -38,4 +38,7 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
 
   /** Path to the folder where the execution times of scheduled mapping jobs are kept. */
   lazy val toFhirDb: Option[String] = Try(toFhirEngineConfig.getString("db")).toOption
+
+  /** Path to the folder where repository data are kept */
+  lazy val repositoryRootPath: String = Try(toFhirEngineConfig.getString("repository-path")).getOrElse("tofhir-db")
 }
