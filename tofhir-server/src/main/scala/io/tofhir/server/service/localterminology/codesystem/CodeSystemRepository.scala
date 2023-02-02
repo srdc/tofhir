@@ -5,7 +5,7 @@ import akka.util.ByteString
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.model._
-import io.tofhir.server.service.localterminology.ILocalTerminologyRepository.{TERMINOLOGY_FOLDER, TERMINOLOGY_JSON}
+import io.tofhir.server.service.localterminology.LocalTerminologyFolderRepository.{TERMINOLOGY_FOLDER, TERMINOLOGY_JSON}
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.Serialization.writePretty
 
@@ -44,18 +44,18 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
       // check if id exists in json file
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
-          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
           // check if code system id and file name exists in json file
           if (terminology.codeSystems.exists(_.id == codeSystem.id)) {
             throw AlreadyExists("Local terminology code system id already exists.", s"Id ${codeSystem.id} already exists.")
           }
-          if (terminology.codeSystems.exists(_.fileName == codeSystem.fileName)) {
-            throw AlreadyExists("Local terminology code system file name already exists.", s"File ${codeSystem.fileName} already exists.")
+          if (terminology.codeSystems.exists(_.name == codeSystem.name)) {
+            throw AlreadyExists("Local terminology code system file name already exists.", s"File ${codeSystem.name} already exists.")
           }
           // check if code system file exists
-          val codeSystemFile = new File(terminologyIdFolder, codeSystem.fileName)
+          val codeSystemFile = new File(terminologyIdFolder, codeSystem.name)
           if (codeSystemFile.exists()) {
-            throw AlreadyExists("Local terminology code system file already exists.", s"File ${codeSystem.fileName} already exists.")
+            throw AlreadyExists("Local terminology code system file already exists.", s"File ${codeSystem.name} already exists.")
           }
           // update json file
           val newCodeSystems = terminology.codeSystems :+ codeSystem
@@ -121,7 +121,7 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
       val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
-          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
           // check if code system id exists in json file
           if (!terminology.codeSystems.exists(_.id == codeSystemId)) {
             throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
@@ -129,9 +129,9 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
           terminology.codeSystems.find(_.id == codeSystemId) match {
             case Some(foundCodeSystem) =>
               // check if code system file changed and already exists
-              val newCodeSystemFile = new File(terminologyIdFolder, codeSystem.fileName)
-              if (foundCodeSystem.fileName != codeSystem.fileName && newCodeSystemFile.exists()) {
-                throw AlreadyExists("Local terminology code system file already exists.", s"File ${codeSystem.fileName} already exists.")
+              val newCodeSystemFile = new File(terminologyIdFolder, codeSystem.name)
+              if (foundCodeSystem.name != codeSystem.name && newCodeSystemFile.exists()) {
+                throw AlreadyExists("Local terminology code system file already exists.", s"File ${codeSystem.name} already exists.")
               }
               // update code system file
               val newCodeSystems = terminology.codeSystems.map(cm =>
@@ -149,8 +149,8 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
                 writer.close()
               }
               // rename code system file
-              if (foundCodeSystem.fileName != codeSystem.fileName) {
-                val oldCodeSystemFile = new File(terminologyIdFolder, foundCodeSystem.fileName)
+              if (foundCodeSystem.name != codeSystem.name) {
+                val oldCodeSystemFile = new File(terminologyIdFolder, foundCodeSystem.name)
                 oldCodeSystemFile.renameTo(newCodeSystemFile)
               }
               codeSystem
@@ -177,7 +177,7 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
       val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
-          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
           // check if code system id exists in json file
           if (!terminology.codeSystems.exists(_.id == codeSystemId)) {
             throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
@@ -195,7 +195,7 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
             writer.close()
           }
           // remove code system file
-          val codeSystemFile = new File(terminologyIdFolder, terminology.codeSystems.find(_.id == codeSystemId).get.fileName)
+          val codeSystemFile = new File(terminologyIdFolder, terminology.codeSystems.find(_.id == codeSystemId).get.name)
           codeSystemFile.delete()
         case None =>
           throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
@@ -216,13 +216,13 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
       val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
-          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
           // check if code system id exists in json file
           if (!terminology.codeSystems.exists(_.id == codeSystemId)) {
             throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
           }
           // save code system file
-          val codeSystemFile = FileOperations.getFileIfExists(terminologyIdFolder + File.separator + terminology.codeSystems.find(_.id == codeSystemId).get.fileName)
+          val codeSystemFile = FileOperations.getFileIfExists(terminologyIdFolder + File.separator + terminology.codeSystems.find(_.id == codeSystemId).get.name)
           FileOperations.saveFileContent(codeSystemFile, content)
         case None =>
           throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
@@ -243,13 +243,13 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
       val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
-          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+          val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
           // check if code system id exists in json file
           if (!terminology.codeSystems.exists(_.id == codeSystemId)) {
             throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
           }
           // get code system file
-          val codeSystemFile = FileOperations.getFileIfExists(terminologyIdFolder + File.separator + terminology.codeSystems.find(_.id == codeSystemId).get.fileName)
+          val codeSystemFile = FileOperations.getFileIfExists(terminologyIdFolder + File.separator + terminology.codeSystems.find(_.id == codeSystemId).get.name)
           FileIO.fromPath(codeSystemFile.toPath)
         case None =>
           throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $terminologyId not found.")
