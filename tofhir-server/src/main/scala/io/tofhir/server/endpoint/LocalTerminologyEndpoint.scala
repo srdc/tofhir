@@ -23,33 +23,36 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
     pathPrefix(SEGMENT_TERMINOLOGY) {
       // operations on all terminologies
       pathEndOrSingleSlash {
-        createLocalTerminologyRoute() ~ getAllLocalTerminologiesRoute
+        createLocalTerminologyRoute() ~
+        getAllLocalTerminologiesRoute
       } ~ // operations on individual terminologies
         pathPrefix(Segment) { terminologyId: String =>
           pathEndOrSingleSlash {
-            getLocalTerminologyRoute(terminologyId) ~ putLocalTerminologyRoute(terminologyId) ~ deleteLocalTerminologyRoute(terminologyId)
-          } ~ pathPrefix(SEGMENT_CONCEPTMAP) {
+            getLocalTerminologyRoute(terminologyId) ~
+            putLocalTerminologyRoute(terminologyId) ~
+            deleteLocalTerminologyRoute(terminologyId)
+          } ~ pathPrefix(SEGMENT_CONCEPTMAP) { // operations on concept maps
             pathEndOrSingleSlash {
-              getAllConceptMapsRoute(terminologyId) ~ createConceptMapRoute(terminologyId)
+              getAllConceptMapsRoute(terminologyId) ~
+              createConceptMapRoute(terminologyId)
             } ~ pathPrefix(Segment) { conceptMapId =>
               pathEndOrSingleSlash {
-                getConceptMapRoute(terminologyId, conceptMapId) ~ putConceptMapRoute(terminologyId, conceptMapId) ~ deleteConceptMapRoute(terminologyId, conceptMapId)
-              } ~ pathPrefix(SEGMENT_FILE) {
-                pathEndOrSingleSlash {
-                  uploadDownloadConceptMapFileRoute(terminologyId, conceptMapId)
-                }
+                getOrDownloadConceptMapRoute(request, terminologyId, conceptMapId) ~
+                putConceptMapRoute(terminologyId, conceptMapId) ~
+                deleteConceptMapRoute(terminologyId, conceptMapId) ~
+                uploadConceptMapFileRoute(terminologyId, conceptMapId)
               }
             }
-          } ~ pathPrefix(SEGMENT_CODESYSTEM) {
+          } ~ pathPrefix(SEGMENT_CODESYSTEM) { // operations on code systems
             pathEndOrSingleSlash {
-              getAllCodeSystemsRoute(terminologyId) ~ createCodeSystemRoute(terminologyId)
+              getAllCodeSystemsRoute(terminologyId) ~
+              createCodeSystemRoute(terminologyId)
             } ~ pathPrefix(Segment) { codeSystemId =>
               pathEndOrSingleSlash {
-                getCodeSystemRoute(terminologyId, codeSystemId) ~ putCodeSystemRoute(terminologyId, codeSystemId) ~ deleteCodeSystemRoute(terminologyId, codeSystemId)
-              } ~ pathPrefix(SEGMENT_FILE) {
-                pathEndOrSingleSlash {
-                  uploadDownloadCodeSystemFileRoute(terminologyId, codeSystemId)
-                }
+                getOrDownloadCodeSystemRoute(request, terminologyId, codeSystemId) ~
+                putCodeSystemRoute(terminologyId, codeSystemId) ~
+                deleteCodeSystemRoute(terminologyId, codeSystemId) ~
+                uploadCodeSystemFileRoute(terminologyId, codeSystemId)
               }
             }
           }
@@ -171,17 +174,45 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
 
   /**
    * Route to get a concept map terminology
+   * If the request is a multipart request, the concept map content is returned as a csv file download
+   * Otherwise, the concept map metadata is returned as a json object
    *
+   * @param request request
    * @param terminologyId id of concept map terminology
    * @param conceptMapId id of concept map
    * @return
    */
-  private def getConceptMapRoute(terminologyId: String, conceptMapId: String): Route = {
+  private def getOrDownloadConceptMapRoute(request: ToFhirRestCall, terminologyId: String, conceptMapId: String): Route = {
     get {
       complete {
-        conceptMapService.getConceptMap(terminologyId, conceptMapId) map {
-          terminology => StatusCodes.OK -> terminology
+        if (request.requestEntity.contentType.mediaType.isMultipart) {
+          conceptMapService.downloadConceptMapFile(terminologyId, conceptMapId) map { byteSource =>
+            HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+          }
+        } else {
+          conceptMapService.getConceptMap(terminologyId, conceptMapId) map { conceptMap =>
+            StatusCodes.OK -> conceptMap
+          }
         }
+      }
+    }
+  }
+
+  /**
+   * Route to upload a concept map content as a csv file
+   * @param terminologyId id of terminology
+   * @param conceptMapId id of terminology concept map
+   * @return
+   */
+  private def uploadConceptMapFileRoute(terminologyId: String, conceptMapId: String): Route = {
+    post {
+      fileUpload(ATTACHMENT) {
+        case (fileInfo, byteSource) =>
+          complete {
+            conceptMapService.uploadConceptMapFile(terminologyId, conceptMapId, byteSource) map {
+              _ => StatusCodes.OK
+            }
+          }
       }
     }
   }
@@ -223,32 +254,6 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
   }
 
   /**
-   * Route to upload/download a concept map file
-   *
-   * @param terminologyId id of concept map terminology
-   * @param conceptMapId id of concept map
-   * @return
-   */
-  private def uploadDownloadConceptMapFileRoute(terminologyId: String, conceptMapId: String): Route = {
-    post {
-      fileUpload(ATTACHMENT) {
-        case (fileInfo, byteSource) =>
-          complete {
-            conceptMapService.uploadConceptMapFile(terminologyId, conceptMapId, byteSource) map {
-              _ => StatusCodes.OK
-            }
-          }
-      }
-    } ~ get {
-      complete {
-        conceptMapService.downloadConceptMapFile(terminologyId, conceptMapId) map { byteSource =>
-          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
-        }
-      }
-    }
-  }
-
-  /**
    * Route to get all code systems within a terminology
    *
    * @return
@@ -282,17 +287,45 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
 
   /**
    * Route to get a code system terminology
+   * If the request is a multipart request, the code system content is returned as a csv file download
+   * Otherwise, the code system metadata is returned as a json object
    *
+   * @param request request
    * @param terminologyId id of code system terminology
    * @param codeSystemId id of code system
    * @return
    */
-  private def getCodeSystemRoute(terminologyId: String, codeSystemId: String): Route = {
+  private def getOrDownloadCodeSystemRoute(request: ToFhirRestCall, terminologyId: String, codeSystemId: String): Route = {
     get {
       complete {
-        codeSystemService.getCodeSystem(terminologyId, codeSystemId) map {
-          terminology => StatusCodes.OK -> terminology
+        if (request.requestEntity.contentType.mediaType.isMultipart) {
+          codeSystemService.downloadCodeSystemFile(terminologyId, codeSystemId) map { byteSource =>
+            HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+          }
+        } else {
+          codeSystemService.getCodeSystem(terminologyId, codeSystemId) map {
+            terminology => StatusCodes.OK -> terminology
+          }
         }
+      }
+    }
+  }
+
+  /**
+   * Route to upload code system file content to a code system
+   * @param terminologyId id of terminology
+   * @param codeSystemId id of code system
+   * @return
+   */
+  private def uploadCodeSystemFileRoute(terminologyId: String, codeSystemId: String): Route = {
+    post {
+      fileUpload(ATTACHMENT) {
+        case (fileInfo, byteSource) =>
+          complete {
+            codeSystemService.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource) map {
+              _ => StatusCodes.OK
+            }
+          }
       }
     }
   }
@@ -332,38 +365,12 @@ class LocalTerminologyEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
       }
     }
   }
-
-  /**
-   * Route to upload/download a code system file
-   * @param terminologyId id of code system terminology
-   * @param codeSystemId id of code system
-   *@return
-   */
-  private def uploadDownloadCodeSystemFileRoute(terminologyId: String, codeSystemId: String): Route = {
-    post {
-      fileUpload(ATTACHMENT) {
-        case (fileInfo, byteSource) =>
-          complete {
-            codeSystemService.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource) map {
-              _ => StatusCodes.OK
-            }
-          }
-      }
-    } ~ get {
-      complete {
-        codeSystemService.downloadCodeSystemFile(terminologyId, codeSystemId) map { byteSource =>
-          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
-        }
-      }
-    }
-  }
 }
 
 object LocalTerminologyEndpoint {
   val SEGMENT_TERMINOLOGY = "terminology"
   val SEGMENT_CONCEPTMAP = "conceptmap"
   val SEGMENT_CODESYSTEM = "codesystem"
-  val SEGMENT_FILE = "file"
   val ATTACHMENT = "attachment"
 }
 

@@ -3,7 +3,7 @@ package io.tofhir.server.service.localterminology
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.model.{AlreadyExists, BadRequest, InternalError, LocalTerminology, ResourceNotFound}
-import io.tofhir.server.service.localterminology.ILocalTerminologyRepository.{TERMINOLOGY_FOLDER, TERMINOLOGY_JSON}
+import io.tofhir.server.service.localterminology.LocalTerminologyFolderRepository.{TERMINOLOGY_FOLDER, TERMINOLOGY_JSON}
 import io.tofhir.server.util.FileOperations
 import org.apache.commons.io.FileUtils
 import org.json4s.jackson.Serialization.writePretty
@@ -16,7 +16,7 @@ import scala.concurrent.Future
  *
  * @param localTerminologyRepositoryRoot root folder path to the local terminology repository
  */
-class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends ILocalTerminologyRepository {
+class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) extends ILocalTerminologyRepository {
 
   /**
    * Retrieve the metadata of all LocalTerminology
@@ -37,9 +37,9 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
   override def createTerminologyService(terminology: LocalTerminology): Future[LocalTerminology] = {
     Future {
       val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val terminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+      val terminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
       if (terminologyFolder.exists()) {
-        throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.folderPath} already exists.")
+        throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.name} already exists.")
       }
       // append to json file
       val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
@@ -94,10 +94,10 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
       localTerminologies.find(_.id == id) match {
         case Some(foundTerminology) =>
           // check if folders exists
-          val terminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.folderPath)
-          val newTerminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
-          if (terminology.folderPath != foundTerminology.folderPath && newTerminologyFolder.exists()) {
-            throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.folderPath} already exists.")
+          val terminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.name)
+          val newTerminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
+          if (terminology.name != foundTerminology.name && newTerminologyFolder.exists()) {
+            throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.name} already exists.")
           }
           // update the terminology service json
           val newLocalTerminology = localTerminologies.map {
@@ -111,7 +111,7 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
             writer.close()
           }
           //update folder name if changed
-          if (terminology.folderPath != foundTerminology.folderPath) {
+          if (terminology.name != foundTerminology.name) {
             terminologyFolder.renameTo(newTerminologyFolder)
           }
           this.updateConceptMapAndCodeSystemFiles(terminology) // create concept maps
@@ -134,7 +134,7 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
       localTerminologies.find(_.id == id) match {
         case Some(foundTerminology) =>
           // check if folders exists
-          val terminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.folderPath)
+          val terminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.name)
           // delete the terminology from json
           val newLocalTerminology = localTerminologies.filterNot(_.id == id)
           val writer = new FileWriter(localTerminologyFile)
@@ -157,9 +157,9 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
    */
   private def updateConceptMapAndCodeSystemFiles(terminology: LocalTerminology): Future[Unit] = {
     Future {
-      val localTerminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.folderPath)
+      val localTerminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
       val currentFiles = localTerminologyFolder.listFiles().filter(_.isFile).map(_.getName)
-      val newFiles = terminology.conceptMaps.map(_.fileName) ++ terminology.codeSystems.map(_.fileName)
+      val newFiles = terminology.conceptMaps.map(_.name) ++ terminology.codeSystems.map(_.name)
       val filesToDelete = currentFiles.diff(newFiles)
       val filesToAdd = newFiles.diff(currentFiles)
       filesToDelete.foreach { file =>
@@ -174,4 +174,7 @@ class LocalTerminologyRepository(localTerminologyRepositoryRoot: String) extends
   }
 }
 
-
+object LocalTerminologyFolderRepository {
+  val TERMINOLOGY_JSON = "terminology-services.json"
+  val TERMINOLOGY_FOLDER = "terminology-services"
+}

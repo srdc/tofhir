@@ -2,13 +2,13 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.LocalTerminology
-import io.tofhir.server.service.localterminology.{ILocalTerminologyRepository, LocalTerminologyRepository}
+import io.tofhir.server.service.localterminology.LocalTerminologyFolderRepository
 
 import scala.concurrent.Future
 
 class LocalTerminologyService(localTerminologyRepositoryRoot: String) extends LazyLogging {
 
-  private val localTerminologyRepository: ILocalTerminologyRepository = new LocalTerminologyRepository(localTerminologyRepositoryRoot)
+  private val localTerminologyRepository: LocalTerminologyFolderRepository = new LocalTerminologyFolderRepository(localTerminologyRepositoryRoot)
 
   /**
    * Get all LocalTerminology metadata as list
