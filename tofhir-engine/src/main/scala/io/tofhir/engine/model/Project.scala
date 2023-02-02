@@ -8,12 +8,10 @@ import java.util.UUID
  * @param id          Unique identifier for the project
  * @param name        Project name
  * @param description Description of the project
- * @param folderPath  Path to the project folders which keep relevant schemas, mapping, mapping-jobs, concept maps etc.
  */
 case class Project(id: String = UUID.randomUUID().toString,
                    name: String,
-                   description: Option[String] = None,
-                   var folderPath: String = ""
+                   description: Option[String] = None
                   ) {
   /**
    * Validates the fields of a project.
@@ -23,8 +21,6 @@ case class Project(id: String = UUID.randomUUID().toString,
   def validate(): Unit = {
     // throws IllegalArgumentException if the id is not a valid UUID
     UUID.fromString(id)
-    // override folderPath to have a proper folder name with respect to the project name
-    folderPath = name.replaceAll(" ", "_")
   }
 }
 

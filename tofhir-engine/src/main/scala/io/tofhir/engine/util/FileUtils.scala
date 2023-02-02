@@ -47,6 +47,17 @@ object FileUtils {
     filteredFiles.headOption
   }
 
+  /**
+   * Creates a file name to be used in folder/file based entity management
+   *
+   * @param id   Identifier of the entity
+   * @param name Name of the entity
+   * @return
+   */
+  def getFileName(id: String, name: String): String = {
+    s"${name.replaceAll(" ", "_") + "-" + id}"
+  }
+
   object FileExtensions extends Enumeration {
     type FileExtensions = Value
     final val StructureDefinition = Value(".StructureDefinition")

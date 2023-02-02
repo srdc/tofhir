@@ -53,7 +53,7 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
       // update projects metadata file by adding the new project
       updateProjectsMetadata(projects :+ project)
       // create a folder for the project
-      new File(repositoryFolderPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + project.folderPath).mkdirs()
+      new File(repositoryFolderPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.id, project.name)).mkdirs()
       project
     }
   }
@@ -114,7 +114,7 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
       // update projects metadata with the remaining ones
       updateProjectsMetadata(remainingProjects)
       // remove the project folder
-      org.apache.commons.io.FileUtils.deleteDirectory(new File(repositoryFolderPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + project.head.folderPath))
+      org.apache.commons.io.FileUtils.deleteDirectory(new File(repositoryFolderPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.head.id, project.head.name)))
     }
   }
 

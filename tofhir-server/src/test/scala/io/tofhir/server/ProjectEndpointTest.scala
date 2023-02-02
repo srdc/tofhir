@@ -1,11 +1,11 @@
 import java.io.File
-
 import akka.http.scaladsl.model.{ContentTypes, HttpMethod, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.model.{Project, ProjectEditableFields}
+import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.endpoint.ProjectEndpoint
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.project.IProjectRepository
@@ -46,7 +46,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         // set the created project
         createdProject1 = project
         // validate that a folder is created for the project
-        new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + project.folderPath).exists() shouldEqual true
+        new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.id, project.name)).exists() shouldEqual true
         // validate that projects metadata file is updated
         val projects = FileOperations.readJsonContent(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + IProjectRepository.PROJECTS_JSON), classOf[Project])
         projects.length shouldEqual 1
@@ -99,7 +99,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       Delete(s"/projects/${createdProject1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that project folder is deleted
-        new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + createdProject1.folderPath).exists() shouldEqual false
+        new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(createdProject1.id, createdProject1.name)).exists() shouldEqual false
         // validate that projects metadata file is updated
         val projects = FileOperations.readJsonContent(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + IProjectRepository.PROJECTS_JSON), classOf[Project])
         projects.length shouldEqual 1
