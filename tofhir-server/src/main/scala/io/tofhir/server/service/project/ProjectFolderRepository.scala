@@ -19,7 +19,7 @@ import scala.concurrent.Future
  *
  * @param repositoryFolderPath root folder path to the repository
  */
-class ProjectRepository(repositoryFolderPath: String) extends IProjectRepository {
+class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepository {
 
   private val logger: Logger = Logger(this.getClass)
 

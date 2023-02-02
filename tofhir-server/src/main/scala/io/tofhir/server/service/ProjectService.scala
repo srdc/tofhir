@@ -3,7 +3,7 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.{Project, ProjectEditableFields}
 import io.tofhir.server.model.BadRequest
-import io.tofhir.server.service.project.{IProjectRepository, ProjectRepository}
+import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
 import org.json4s.JObject
 import org.json4s.JsonAST.JString
 
@@ -11,7 +11,7 @@ import scala.concurrent.Future
 
 class ProjectService(projectRepositoryFolderPath: String) extends LazyLogging {
 
-  private val projectRepository: IProjectRepository = new ProjectRepository(projectRepositoryFolderPath)
+  private val projectRepository: IProjectRepository = new ProjectFolderRepository(projectRepositoryFolderPath)
 
   /**
    * Retrieve all Projects
