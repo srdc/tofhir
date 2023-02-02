@@ -1,6 +1,6 @@
 package io.tofhir.server.model
 
-import akka.http.scaladsl.model.{HttpMethod, Uri}
+import akka.http.scaladsl.model.{HttpMethod, RequestEntity, Uri}
 
 import java.time.Instant
 
@@ -10,8 +10,9 @@ import java.time.Instant
  * @param method    Http method
  * @param uri       Uri for the call
  * @param requestId Unique request identifier
+ * @param requestEntity Request entity
  */
-class ToFhirRestCall(val method: HttpMethod, val uri: Uri, val requestId: String) {
+class ToFhirRestCall(val method: HttpMethod, val uri: Uri, val requestId: String, val requestEntity: RequestEntity) {
 
   /**
    * Time of the request

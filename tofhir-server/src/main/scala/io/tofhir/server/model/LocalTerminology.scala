@@ -8,12 +8,10 @@ import java.util.UUID
  * @param id unique id
  * @param name name of the terminology
  * @param description description of the terminology
- * @param folderPath folder path of the terminology
  */
 case class LocalTerminology(id: String = UUID.randomUUID().toString,
                             name: String,
                             description: String,
-                            folderPath: String,
                             conceptMaps: Seq[TerminologyConceptMap] = Seq.empty,
                             codeSystems: Seq[TerminologyCodeSystem] = Seq.empty) {
   def withId(id: String): LocalTerminology = {
@@ -24,17 +22,17 @@ case class LocalTerminology(id: String = UUID.randomUUID().toString,
 /**
  * Local Terminology ConceptMap
  * @param id unique id
- * @param fileName name of the terminology
- * @param conceptMapUrl concept map url of the terminology
- * @param sourceValueSetUrl source value set url of the terminology
- * @param targetValueSetUrl target value set url of the terminology
+ * @param name name of the terminology concept map
+ * @param conceptMapUrl url of the terminology concept map
+ * @param sourceValueSetUrl source value set url of the terminology concept map
+ * @param targetValueSetUrl target value set url of the terminology concept map
  */
-case class TerminologyConceptMap(id: String = UUID.randomUUID().toString, fileName: String, conceptMapUrl: String, sourceValueSetUrl: String, targetValueSetUrl: String)
+case class TerminologyConceptMap(id: String = UUID.randomUUID().toString, name: String, conceptMapUrl: String, sourceValueSetUrl: String, targetValueSetUrl: String)
 
 /**
  * Local Terminology CodeSystem
  * @param id unique id
- * @param fileName file name of the terminology
- * @param codeSystem code system of the terminology
+ * @param name name of the terminology code system
+ * @param codeSystem code system of the terminology code system
  */
-case class TerminologyCodeSystem(id: String = UUID.randomUUID().toString, fileName: String, codeSystem: String)
+case class TerminologyCodeSystem(id: String = UUID.randomUUID().toString, name: String, codeSystem: String)
