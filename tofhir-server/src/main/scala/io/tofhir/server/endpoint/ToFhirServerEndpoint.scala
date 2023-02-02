@@ -30,10 +30,8 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
             optionalHeaderValueByName("X-Correlation-Id") { correlationId =>
               val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString))
               handleRejections(RejectionHandler.default) { // Default rejection handling
-                rejectEmptyResponse { // Reject the empty responses
-                  handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                    fhirDefinitionsEndpoint.route(restCall) ~ schemaDefinitionEndpoint.route(restCall) ~ mappingEndpoint.route(restCall) ~ projectEndpoint.route(restCall)
-                  }
+                handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
+                  fhirDefinitionsEndpoint.route(restCall) ~ schemaDefinitionEndpoint.route(restCall) ~ mappingEndpoint.route(restCall) ~ projectEndpoint.route(restCall)
                 }
               }
             }

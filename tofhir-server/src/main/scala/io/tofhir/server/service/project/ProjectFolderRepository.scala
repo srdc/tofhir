@@ -67,11 +67,7 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
   override def getProject(id: String): Future[Option[Project]] = {
     Future {
       val projects = getProjectsMetadata()
-      // validate that the project exists
-      val project = projects.find(p => p.id.contentEquals(id))
-      if (project.isEmpty)
-        throw ResourceNotFound("Project does not exist.", s"Project $id not found ")
-      project
+      projects.find(p => p.id.contentEquals(id))
     }
   }
 
