@@ -23,6 +23,9 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
 
   private val logger: Logger = Logger(this.getClass)
 
+  // Create the folder as soon as the repository is initiated
+  new File(repositoryFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER).mkdirs()
+
   /**
    * Retrieve all Projects
    *
