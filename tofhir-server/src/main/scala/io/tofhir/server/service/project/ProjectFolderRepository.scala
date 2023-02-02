@@ -53,7 +53,7 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
       // update projects metadata file by adding the new project
       updateProjectsMetadata(projects :+ project)
       // create a folder for the project
-      new File(repositoryFolderPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.id, project.name)).mkdirs()
+      new File(repositoryFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.id, project.name)).mkdirs()
       project
     }
   }
@@ -110,7 +110,7 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
       // update projects metadata with the remaining ones
       updateProjectsMetadata(remainingProjects)
       // remove the project folder
-      org.apache.commons.io.FileUtils.deleteDirectory(new File(repositoryFolderPath + File.separatorChar + IProjectRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.head.id, project.head.name)))
+      org.apache.commons.io.FileUtils.deleteDirectory(new File(repositoryFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.head.id, project.head.name)))
     }
   }
 
@@ -120,14 +120,14 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
    * @return projects in the repository
    * */
   private def getProjectsMetadata(): Seq[Project] = {
-    val file = FileUtils.findFileByName(repositoryFolderPath + File.separatorChar, IProjectRepository.PROJECTS_JSON)
+    val file = FileUtils.findFileByName(repositoryFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
     file match {
       case Some(f) =>
         FileOperations.readJsonContent(f, classOf[Project])
       case None => {
         // when projects metadata file does not exist, create it
         logger.debug("There does not exist a metadata file for projects. Creating it...")
-        new File(repositoryFolderPath + File.separatorChar, IProjectRepository.PROJECTS_JSON).createNewFile()
+        new File(repositoryFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON).createNewFile()
         Seq.empty
       }
     }
@@ -139,7 +139,7 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
    * @param projects projects
    * */
   private def updateProjectsMetadata(projects: Seq[Project]) = {
-    val file = new File(repositoryFolderPath + File.separatorChar, IProjectRepository.PROJECTS_JSON)
+    val file = new File(repositoryFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
     // when projects metadata file does not exist, create it
     if (!file.exists()) {
       logger.debug("There does not exist a metadata file for projects to update. Creating it...")
@@ -149,4 +149,12 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
     val fw = new FileWriter(file)
     try fw.write(writePretty(projects)) finally fw.close()
   }
+}
+
+/**
+ * Keeps file/folder names related to the project repository
+ * */
+object ProjectFolderRepository {
+  val PROJECTS_FOLDER = "projects" // folder keeping the projects
+  val PROJECTS_JSON = "projects.json" // file keeping the metadata of all projects
 }

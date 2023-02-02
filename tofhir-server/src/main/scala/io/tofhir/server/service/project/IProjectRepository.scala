@@ -54,11 +54,3 @@ trait IProjectRepository {
    */
   def removeProject(id: String): Future[Unit]
 }
-
-/**
- * Keeps file/folder names related to the project repository
- * */
-object IProjectRepository {
-  val PROJECTS_FOLDER = "projects" // folder keeping the projects
-  val PROJECTS_JSON = "projects.json" // file keeping the metadata of all projects
-}
