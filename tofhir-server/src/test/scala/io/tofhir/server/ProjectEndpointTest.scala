@@ -4,10 +4,9 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.engine.model.{Project, ProjectEditableFields}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.endpoint.ProjectEndpoint
-import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.model.{Project, ProjectEditableFields, ToFhirRestCall}
 import io.tofhir.server.service.project.ProjectFolderRepository
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.JsonMethods

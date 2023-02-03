@@ -5,9 +5,8 @@ import java.io.{File, FileWriter}
 import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.model.{Project, ProjectEditableFields}
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.model.{AlreadyExists, ResourceNotFound}
+import io.tofhir.server.model.{AlreadyExists, Project, ProjectEditableFields, ResourceNotFound}
 import io.tofhir.server.util.FileOperations
 import org.json4s._
 import org.json4s.jackson.Serialization.writePretty
