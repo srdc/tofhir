@@ -44,8 +44,6 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
         // set the created project
         createdProject1 = project
-        // validate that a folder is created for the project
-        new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.id, project.name)).exists() shouldEqual true
         // validate that projects metadata file is updated
         val projects = FileOperations.readJsonContent(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON), classOf[Project])
         projects.length shouldEqual 1
@@ -97,8 +95,6 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       // delete a project
       Delete(s"/projects/${createdProject1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
-        // validate that project folder is deleted
-        new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(createdProject1.id, createdProject1.name)).exists() shouldEqual false
         // validate that projects metadata file is updated
         val projects = FileOperations.readJsonContent(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON), classOf[Project])
         projects.length shouldEqual 1

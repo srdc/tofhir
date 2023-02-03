@@ -22,9 +22,6 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
 
   private val logger: Logger = Logger(this.getClass)
 
-  // Create the folder as soon as the repository is initiated
-  new File(repositoryFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER).mkdirs()
-
   /**
    * Retrieve all Projects
    *
@@ -54,8 +51,6 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
       }
       // update projects metadata file by adding the new project
       updateProjectsMetadata(projects :+ project)
-      // create a folder for the project
-      new File(repositoryFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.id, project.name)).mkdirs()
       project
     }
   }
@@ -111,8 +106,6 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
         throw ResourceNotFound("Project does not exist.", s"Project $id not found")
       // update projects metadata with the remaining ones
       updateProjectsMetadata(remainingProjects)
-      // remove the project folder
-      org.apache.commons.io.FileUtils.deleteDirectory(new File(repositoryFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.head.id, project.head.name)))
     }
   }
 
@@ -157,6 +150,5 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
  * Keeps file/folder names related to the project repository
  * */
 object ProjectFolderRepository {
-  val PROJECTS_FOLDER = "projects" // folder keeping the projects
   val PROJECTS_JSON = "projects.json" // file keeping the metadata of all projects
 }
