@@ -1,5 +1,6 @@
-import java.io.File
-import akka.http.scaladsl.model.{ContentTypes, HttpMethod, StatusCodes}
+package io.tofhir.server
+
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethod, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.util.JsonFormatter.formats
@@ -16,6 +17,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.io.{File, FileWriter}
+
 class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
 
   // toFHIR engine config
@@ -24,7 +27,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
   val projectEndpoint: ProjectEndpoint = new ProjectEndpoint(toFhirEngineConfig)
   // route of project endpoint
   // it is initialized with dummy rest call
-  val route: Route = projectEndpoint.route(new ToFhirRestCall(HttpMethod.custom("GET"), "", ""))
+  val route: Route = projectEndpoint.route(new ToFhirRestCall(HttpMethod.custom("GET"), "", "", HttpEntity(ContentTypes.`application/json`, "")))
 
   // first project to be created
   val project1: Project = Project(name = "example", description = Some("example project"))
@@ -116,12 +119,19 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
    * */
   override def beforeAll(): Unit = {
     new File(toFhirEngineConfig.repositoryRootPath).mkdir()
+    new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER).mkdir()
+    val terminologyServicesJson = new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON)
+    terminologyServicesJson.createNewFile()
+    val writer = new FileWriter(terminologyServicesJson)
+    try writer.write(writePretty(Seq.empty)) finally writer.close() // write empty array to the file
   }
 
   /**
    * Deletes the repository folder after all test cases are completed.
    * */
   override def afterAll(): Unit = {
-    org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.repositoryRootPath))
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER))
+    val terminologyServicesJson = new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON)
+    terminologyServicesJson.delete()
   }
 }
