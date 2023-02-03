@@ -9,7 +9,7 @@ import scala.jdk.DurationConverters._
 
 class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   /** A path to a context file/directory from where any kind of file system reading should start. */
-  lazy val repositoryRootPath: String = Try(toFhirEngineConfig.getString("context-path")).getOrElse(".")
+  lazy val contextPath: String = Try(toFhirEngineConfig.getString("context-path")).getOrElse(".")
 
   /** Path to the folder where the mappings are kept. */
   lazy val mappingRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mappings.repository.folder-path")).getOrElse("mappings")
