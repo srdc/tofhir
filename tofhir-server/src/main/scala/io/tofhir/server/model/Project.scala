@@ -14,10 +14,10 @@ import java.util.UUID
 case class Project(id: String = UUID.randomUUID().toString,
                    name: String,
                    description: Option[String] = None,
-                   schemas: Seq[SchemaDefinition],
-                   mappings: Seq[FhirMapping],
-                   contextConceptMaps: Seq[FhirMappingContext],
-                   mappingJobs: Seq[FhirMappingJob]
+                   schemas: Seq[SchemaDefinition] = Seq.empty,
+                   mappings: Seq[FhirMapping] = Seq.empty,
+                   contextConceptMaps: Seq[FhirMappingContext] = Seq.empty,
+                   mappingJobs: Seq[FhirMappingJob] = Seq.empty
                   ) {
   /**
    * Validates the fields of a project.
