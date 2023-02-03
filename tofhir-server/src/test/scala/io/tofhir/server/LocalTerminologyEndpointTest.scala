@@ -235,10 +235,11 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]
-        csvContent shouldEqual "source_system,source_code,target_system,target_code,target_display,equivalence\n" +
-          "http://terminology.hl7.org/CodeSystem/v2-0487,ACNE,http://snomed.info/sct,309068002,Specimen from skin,equivalent\n" +
-          "http://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323008,Pus specimen,equivalent\n" +
-          "http://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323009,Pus specimen 2,equivalent\n" +
+        // remove new lines to compare without system specific line endings
+        csvContent.replaceAll("\\r", "").replaceAll("\\n", "") shouldEqual "source_system,source_code,target_system,target_code,target_display,equivalence" +
+          "http://terminology.hl7.org/CodeSystem/v2-0487,ACNE,http://snomed.info/sct,309068002,Specimen from skin,equivalent" +
+          "http://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323008,Pus specimen,equivalent" +
+          "http://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323009,Pus specimen 2,equivalent" +
           "http://terminology.hl7.org/CodeSystem/v2-0487,BULLA,http://snomed.info/sct,258482009,Pus specimen 2,narrower"
       }
     }
@@ -343,8 +344,9 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]
-        csvContent shouldEqual "code,display,fr,de\n" +
-          "309068002,Specimen from skin,Spécimen de peau,Probe von der Haut\n" +
+        // remove new lines to compare without system specific line endings
+        csvContent.replaceAll("\\r", "").replaceAll("\\n", "") shouldEqual "code,display,fr,de" +
+          "309068002,Specimen from skin,Spécimen de peau,Probe von der Haut" +
           "119323008,Pus specimen,Spécimen de pus,Eiterprobe"
       }
     }
