@@ -122,7 +122,11 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
       case None => {
         // when projects metadata file does not exist, create it
         logger.debug("There does not exist a metadata file for projects. Creating it...")
-        new File(repositoryFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON).createNewFile()
+        val file = new File(repositoryFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
+        file.createNewFile()
+        // initialize projects metadata file with empty array
+        val fw = new FileWriter(file)
+        try fw.write("[]") finally fw.close()
         Seq.empty
       }
     }
