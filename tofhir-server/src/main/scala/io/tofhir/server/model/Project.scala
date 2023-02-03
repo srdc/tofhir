@@ -1,4 +1,6 @@
-package io.tofhir.engine.model
+package io.tofhir.server.model
+
+import io.tofhir.engine.model.{FhirMapping, FhirMappingContext, FhirMappingJob}
 
 import java.util.UUID
 
@@ -11,7 +13,11 @@ import java.util.UUID
  */
 case class Project(id: String = UUID.randomUUID().toString,
                    name: String,
-                   description: Option[String] = None
+                   description: Option[String] = None,
+                   schemas: Seq[SchemaDefinition],
+                   mappings: Seq[FhirMapping],
+                   contextConceptMaps: Seq[FhirMappingContext],
+                   mappingJobs: Seq[FhirMappingJob]
                   ) {
   /**
    * Validates the fields of a project.

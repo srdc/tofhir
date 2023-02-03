@@ -2,7 +2,7 @@ package io.tofhir.server.service.project
 
 import io.onfhir.config.IFhirVersionConfigurator
 import io.onfhir.r4.config.FhirR4Configurator
-import io.tofhir.engine.model.Project
+import io.tofhir.server.model.Project
 import org.json4s.JObject
 
 import scala.concurrent.Future

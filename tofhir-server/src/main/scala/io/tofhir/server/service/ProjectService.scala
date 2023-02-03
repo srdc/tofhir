@@ -1,8 +1,7 @@
 package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.engine.model.{Project, ProjectEditableFields}
-import io.tofhir.server.model.BadRequest
+import io.tofhir.server.model.{BadRequest, Project, ProjectEditableFields}
 import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
 import org.json4s.JObject
 import org.json4s.JsonAST.JString
