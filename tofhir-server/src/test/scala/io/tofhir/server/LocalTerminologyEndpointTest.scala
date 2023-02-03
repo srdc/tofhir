@@ -225,6 +225,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
       Post(s"/terminology/${localTerminology1.id}/conceptmap/${conceptMap1.id}/content", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
+        Thread.sleep(5000)
       }
     }
 
@@ -335,6 +336,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
       Post(s"/terminology/${localTerminology1.id}/codesystem/${codeSystem1.id}/content", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
+        Thread.sleep(5000)
       }
     }
 
