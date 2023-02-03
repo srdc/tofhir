@@ -175,6 +175,6 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
 }
 
 object LocalTerminologyFolderRepository {
-  val TERMINOLOGY_JSON = "terminology-services.json"
   val TERMINOLOGY_FOLDER = "terminology-services"
+  val TERMINOLOGY_JSON = TERMINOLOGY_FOLDER + File.separator + "terminology-services.json"
 }
