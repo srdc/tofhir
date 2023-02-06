@@ -1,10 +1,10 @@
 package io.tofhir.server.util
 
+import java.io.{File, FileWriter}
 import com.typesafe.scalalogging.Logger
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
-
 import akka.stream.scaladsl.FileIO
 import akka.util.ByteString
 import io.onfhir.util.JsonFormatter._
@@ -20,6 +20,8 @@ import org.json4s.jackson.Serialization
 
 import scala.util.{Failure, Success}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import org.json4s.jackson.Serialization.writePretty
+
 import scala.io.Source
 
 object FileOperations {
@@ -39,6 +41,21 @@ object FileOperations {
     val fileContent = try source.mkString finally source.close()
     val parsed = parse(fileContent).extract[Seq[K]]
     parsed
+  }
+
+  /**
+   * Write seq content to a json file
+   * @param f File to be written
+   * @param content array of objects to be saved
+   * @tparam K class that can be parsed to JSON and saved
+   */
+  def writeJsonContent[K](f: File, content: Seq[K]): Unit = {
+    val writer = new FileWriter(f)
+    try {
+      writer.write(writePretty(content))
+    } finally {
+      writer.close()
+    }
   }
 
   /**
