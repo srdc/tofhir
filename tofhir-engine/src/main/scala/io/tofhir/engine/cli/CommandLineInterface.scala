@@ -98,7 +98,7 @@ object CommandLineInterface {
         new FhirMappingJobManager(
           toFhirEngine.mappingRepository,
           toFhirEngine.contextLoader,
-          toFhirEngine.schemaRepository,
+          toFhirEngine.schemaLoader,
           toFhirEngine.sparkSession,
           mappingJob.mappingErrorHandling
         )
@@ -137,7 +137,7 @@ object CommandLineInterface {
       val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDbURI)
 
       val fhirMappingJobManager =
-        new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader, toFhirEngine.schemaRepository, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
+        new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader, toFhirEngine.schemaLoader, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
       fhirMappingJobManager
         .scheduleMappingJob(
           id = mappingJob.id,

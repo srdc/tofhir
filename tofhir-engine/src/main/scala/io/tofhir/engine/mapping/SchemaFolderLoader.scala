@@ -17,7 +17,7 @@ import scala.io.Source
  *
  * @param folderUri URI of the folder
  */
-class SchemaFolderRepository(folderUri: URI) extends AbstractFhirSchemaLoader {
+class SchemaFolderLoader(folderUri: URI) extends AbstractFhirSchemaLoader {
   private val logger: Logger = Logger(this.getClass)
 
   private val schemas: Map[String, Resource] = loadSchemas()

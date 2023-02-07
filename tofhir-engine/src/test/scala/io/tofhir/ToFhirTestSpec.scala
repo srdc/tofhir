@@ -3,7 +3,7 @@ package io.tofhir
 import akka.actor.ActorSystem
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
-import io.tofhir.engine.mapping.{FhirMappingFolderRepository, IFhirMappingRepository, IMappingContextLoader, MappingContextLoader, SchemaFolderRepository}
+import io.tofhir.engine.mapping.{FhirMappingFolderRepository, IFhirMappingRepository, IMappingContextLoader, MappingContextLoader, SchemaFolderLoader}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.scalatest.matchers.should.Matchers
@@ -22,7 +22,7 @@ trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspect
   val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)
 
   val schemaRepositoryURI: URI = getClass.getResource(ToFhirConfig.engineConfig.schemaRepositoryFolderPath).toURI
-  val schemaRepository = new SchemaFolderRepository(schemaRepositoryURI)
+  val schemaRepository = new SchemaFolderLoader(schemaRepositoryURI)
 
   val sparkConf: SparkConf = new SparkConf()
     .setAppName(ToFhirConfig.sparkAppName)

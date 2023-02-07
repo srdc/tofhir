@@ -26,5 +26,5 @@ class ToFhirEngine(appName: String, sparkMaster: String, repositoryFolderPath: S
   val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)
 
   //Repository for source data schemas
-  val schemaRepository = new SchemaFolderRepository(FileUtils.getPath(schemaRepositoryPath).toUri)
+  val schemaLoader = new SchemaFolderLoader(FileUtils.getPath(schemaRepositoryPath).toUri)
 }

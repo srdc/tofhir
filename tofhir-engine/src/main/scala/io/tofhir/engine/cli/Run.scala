@@ -21,7 +21,7 @@ class Run extends Command {
           new FhirMappingJobManager(
             context.toFhirEngine.mappingRepository,
             context.toFhirEngine.contextLoader,
-            context.toFhirEngine.schemaRepository,
+            context.toFhirEngine.schemaLoader,
             context.toFhirEngine.sparkSession,
             mappingJob.mappingErrorHandling
           )
