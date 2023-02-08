@@ -47,14 +47,14 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         // validate that a folder is created for the project
         new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(project.id, project.name)).exists() shouldEqual true
         // validate that projects metadata file is updated
-        val projects = FileOperations.readJsonContent(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON), classOf[Project])
+        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
         projects.length shouldEqual 1
       }
       // create the second project
       Post("/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
-        val projects = FileOperations.readJsonContent(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON), classOf[Project])
+        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
         projects.length shouldEqual 2
       }
     }
@@ -88,7 +88,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
         project.description.get should not equal project1.description.get
         // validate that projects metadata is updated
-        val projects = FileOperations.readJsonContent(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON), classOf[Project])
+        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
         projects.find(p => p.id.contentEquals(createdProject1.id)).get.description.get shouldEqual "updated description"
       }
     }
@@ -100,7 +100,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         // validate that project folder is deleted
         new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER + File.separatorChar + FileUtils.getFileName(createdProject1.id, createdProject1.name)).exists() shouldEqual false
         // validate that projects metadata file is updated
-        val projects = FileOperations.readJsonContent(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON), classOf[Project])
+        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
         projects.length shouldEqual 1
       }
       // delete a non-existent project

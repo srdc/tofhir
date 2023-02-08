@@ -125,7 +125,7 @@ class ProjectFolderRepository(repositoryFolderPath: String) extends IProjectRepo
     val file = FileUtils.findFileByName(repositoryFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
     file match {
       case Some(f) =>
-        FileOperations.readJsonContent(f, classOf[Project])
+        FileOperations.readJsonContent[Project](f)
       case None => {
         // when projects metadata file does not exist, create it
         logger.debug("There does not exist a metadata file for projects. Creating it...")

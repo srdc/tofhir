@@ -18,64 +18,70 @@ class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_SCHEMAS) {
       pathEndOrSingleSlash { // Operations on all schemas
-        get { // Search/(Retrieve all) schema metadata (only url, type and name)
-          parameters(Symbol("url").as[String].?, Symbol("reload").as[Boolean] ? false) { (url, withReload) =>
-            url match {
-              case Some(schemaUrl) => complete(service.getSchemaDefinitionByUrl(schemaUrl, withReload))
-              case None => complete(service.getAllMetadata(withReload))
-            }
-          }
-        } ~
-          post { // Create a new schema definition
-            entity(as[SchemaDefinition]) { schemaDefinition =>
-              complete {
-                service.createSchema(schemaDefinition) map { createdDefinition =>
-                  StatusCodes.Created -> createdDefinition
-                }
-              }
-            }
-          }
-      } ~
-        pathPrefix(Segment) { rootPath: String => // Operations on a single schema identified by its rootPath/type
-          // Assumption: type and rootPath are equal
-          get {
-            parameters(Symbol("reload").as[Boolean] ? false) { (withReload) =>
-              complete {
-                service.getSchemaDefinitionByName(rootPath, withReload) map {
-                  case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
-                  case None => StatusCodes.NotFound -> s"Schema definition with name $rootPath not found"
-                }
-              }
-            }
-          } ~ post {
-            null
-          } ~ put {
-            entity(as[SchemaDefinition]) { schemaDefinition =>
-              complete {
-                service.putSchema(rootPath, schemaDefinition) map { _ =>
-                  StatusCodes.OK -> schemaDefinition
-                }
-              }
+        getAllSchemas(request) ~ createSchema()
+      } ~ // Operations on a single schema identified by its id
+        pathPrefix(Segment) { id: String =>
+          getSchema(id) ~ updateSchema(id) ~ deleteSchema(id)
+        }
+    }
+  }
 
-            }
+  private def getAllSchemas(request: ToFhirRestCall): Route = {
+    get {
+      parameter("projectId") { projectId =>
+        complete(service.getAllSchemas(projectId))
+      }
+    }
+  }
 
-          } ~ delete {
-            complete {
-              service.deleteSchema(rootPath) map { _ =>
-                StatusCodes.OK
-              }
-            }
+  private def createSchema(): Route = {
+    post { // Create a new schema definition
+      entity(as[SchemaDefinition]) { schemaDefinition =>
+        complete {
+          service.createSchema(schemaDefinition) map { createdDefinition =>
+            StatusCodes.Created -> createdDefinition
           }
         }
+      }
+    }
+  }
+
+  private def getSchema(id: String): Route = {
+    get {
+      complete {
+        service.getSchema(id) map {
+          case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
+          case None => StatusCodes.NotFound -> s"Schema definition with name $id not found"
+        }
+      }
+    }
+  }
+
+  private def updateSchema(id: String): Route = {
+    put {
+      entity(as[SchemaDefinition]) { schemaDefinition =>
+        complete {
+          service.putSchema(id, schemaDefinition) map { _ =>
+            StatusCodes.OK -> schemaDefinition
+          }
+        }
+      }
+    }
+  }
+
+  private def deleteSchema(id: String): Route = {
+    delete {
+      complete {
+        service.deleteSchema(id) map { _ =>
+          StatusCodes.OK
+        }
+      }
     }
   }
 
 }
 
 object SchemaDefinitionEndpoint {
-  val SEGMENT_SCHEMAS = "schema"
-
-  val QUERY_PARAM_URL = "url"
-  val QUERY_PARAM_RELOAD = "reload" // Should be called as reload=true
+  val SEGMENT_SCHEMAS = "schemas"
 }
 

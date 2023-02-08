@@ -11,27 +11,17 @@ import scala.concurrent.Future
 trait ISchemaRepository {
 
   /**
-   * Retrieve the metadata of all SchemaDefinitions (only url, type and name fields are populated)
-   * @param withReload If true, reload all definitions from the repository implementation (from disk)
+   * Retrieve the metadata of all SchemaDefinitions (only id, url, type and name fields are populated)
    * @return
    */
-  def getAllSchemaMetadata(withReload: Boolean): Future[Seq[SchemaDefinition]]
+  def getAllSchemaMetadata(projectId: String): Future[Seq[SchemaDefinition]]
 
   /**
-   * Retrieve the schema identified by its URL.
-   * @param url
-   * @param withReload If true, reload all definitions from the repository implementation (from disk)
+   * Retrieve the schema identified by its id.
+   * @param id
    * @return
    */
-  def getSchemaByUrl(url: String, withReload: Boolean): Future[Option[SchemaDefinition]]
-
-  /**
-   * Retrieve the schema identified by its type.
-   * @param name
-   * @param withReload If true, reload all definitions from the repository implementation (from disk)
-   * @return
-   */
-  def getSchemaByName(name: String, withReload: Boolean): Future[Option[SchemaDefinition]]
+  def getSchema(id: String): Future[Option[SchemaDefinition]]
 
   /**
    * Save the schema to the repository.
@@ -42,16 +32,16 @@ trait ISchemaRepository {
 
   /**
    * Update the schema to the repository.
-   * @param name
+   * @param id
    * @return
    */
-  def putSchema(name: String, schemaDefinition: SchemaDefinition): Future[Unit]
+  def putSchema(id: String, schemaDefinition: SchemaDefinition): Future[Unit]
 
   /**
    * Delete the schema from the repository.
-   * @param name
+   * @param id
    * @return
    */
-  def deleteSchema(name: String): Future[Unit]
+  def deleteSchema(id: String): Future[Unit]
 
 }
