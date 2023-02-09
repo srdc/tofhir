@@ -17,7 +17,7 @@ import org.json4s.JObject
  * */
 class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
 
-  val service: ProjectService = new ProjectService(toFhirEngineConfig.repositoryRootPath)
+  val service: ProjectService = new ProjectService(toFhirEngineConfig)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_PROJECTS) {
