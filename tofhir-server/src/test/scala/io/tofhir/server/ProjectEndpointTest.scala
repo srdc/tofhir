@@ -6,8 +6,8 @@ import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.endpoint.ProjectEndpoint
-import io.tofhir.server.model.{Project, ProjectEditableFields, ToFhirRestCall}
-import io.tofhir.server.service.project.ProjectFolderRepository
+import io.tofhir.server.model.{Project, ProjectEditableFields, SchemaDefinition, ToFhirRestCall}
+import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
@@ -20,7 +20,8 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
   // toFHIR engine config
   val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
   // project endpoint to be tested
-  val projectEndpoint: ProjectEndpoint = new ProjectEndpoint(toFhirEngineConfig)
+  val projectRepository: IProjectRepository = new ProjectFolderRepository(toFhirEngineConfig)
+  val projectEndpoint: ProjectEndpoint = new ProjectEndpoint(toFhirEngineConfig, projectRepository)
   // route of project endpoint
   // it is initialized with dummy rest call
   val route: Route = projectEndpoint.route(new ToFhirRestCall(HttpMethod.custom("GET"), "", ""))
@@ -31,7 +32,8 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
   val project2: Project = Project(name = "second example", description = Some("second example project"))
   // patch to be applied to the existing project
   val projectPatch = ProjectEditableFields.DESCRIPTION -> "updated description"
-
+  // schema definition
+  val schemaDefinition: SchemaDefinition = SchemaDefinition("id", "https://example.com/fhir/StructureDefinition/schema", "ty", "name", None, None)
   // first project created
   var createdProject1: Project = _
 
@@ -92,12 +94,28 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
     }
 
     "delete a project" in {
+      // first create a schema to trigger creation of the project folder under the schemas folder
+      Post(s"/projects/${createdProject1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+        // validate that projects metadata file is updated
+        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
+        val project: Project = projects.head
+        project.schemas.length === 1
+        // validate the project folder has been created within the schemas
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, FileUtils.getFileName(createdProject1.id, createdProject1.name)).toFile.exists() === true
+      }
+
       // delete a project
       Delete(s"/projects/${createdProject1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that projects metadata file is updated
         val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
         projects.length shouldEqual 1
+
+        // validate the project file has been deleted under the schemas folder
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, FileUtils.getFileName(createdProject1.id, createdProject1.name)).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.mappingJobFileContextPath, FileUtils.getFileName(createdProject1.id, createdProject1.name)).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, FileUtils.getFileName(createdProject1.id, createdProject1.name)).toFile.exists() === false
       }
       // delete a non-existent project
       Delete(s"/projects/${createdProject1.id}") ~> route ~> check {

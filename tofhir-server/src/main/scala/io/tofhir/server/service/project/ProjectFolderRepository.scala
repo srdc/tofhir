@@ -6,7 +6,7 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.model.{AlreadyExists, Project, ProjectEditableFields, ResourceNotFound}
+import io.tofhir.server.model.{AlreadyExists, Project, ProjectEditableFields, ResourceNotFound, SchemaDefinition}
 import io.tofhir.server.util.FileOperations
 import org.json4s._
 import org.json4s.jackson.Serialization.writePretty
@@ -108,10 +108,52 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
       updateProjectsMetadata(remainingProjects)
 
       // Delete the schema, mappings and job folders the project
-      new File(config.schemaRepositoryFolderPath).delete()
-      new File(config.mappingJobFileContextPath).delete()
-      new File(config.mappingRepositoryFolderPath).delete()
+      val projectFolderName: String = FileUtils.getFileName(project.head.id, project.head.name)
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.schemaRepositoryFolderPath, projectFolderName).toFile)
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingJobFileContextPath, projectFolderName).toFile)
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingRepositoryFolderPath, projectFolderName).toFile)
     }
+  }
+
+  /**
+   * Adds the schema definition metadata to the project
+   *
+   * @param projectId
+   * @param schemaMetadata
+   */
+  def addSchemaMetadata(projectId: String, schemaMetadata: SchemaDefinition): Unit = {
+    val projects: Seq[Project] = getProjectsMetadata()
+    val projectIndex: Int = projects.indexWhere(p => p.id.equals(projectId))
+    val project: Project = projects(projectIndex)
+
+    val updatedProjects: Seq[Project] = projects.updated(projectIndex, project.copy(schemas = project.schemas :+ schemaMetadata))
+    updateProjectsMetadata(updatedProjects)
+  }
+
+  /**
+   * Replaces the schema definition metadata of the project
+   *
+   * @param projectId
+   * @param schemaMetadata
+   */
+  def updateSchemaMetadata(projectId: String, schemaMetadata: SchemaDefinition): Unit = {
+    deleteSchemaMetadata(projectId, schemaMetadata.id)
+    addSchemaMetadata(projectId, schemaMetadata)
+  }
+
+  /**
+   * Deletes the schema definition metadata of the project
+   *
+   * @param projectId
+   * @param schemaId
+   */
+  def deleteSchemaMetadata(projectId: String, schemaId: String): Unit = {
+    val projects: Seq[Project] = getProjectsMetadata()
+    val projectIndex: Int = projects.indexWhere(p => p.id.equals(projectId))
+    val project: Project = projects(projectIndex)
+
+    val updatedProjects: Seq[Project] = projects.updated(projectIndex, project.copy(schemas = project.schemas.filterNot(s => s.id.equals(schemaId))))
+    updateProjectsMetadata(updatedProjects)
   }
 
   /**

@@ -12,36 +12,46 @@ trait ISchemaRepository {
 
   /**
    * Retrieve the metadata of all SchemaDefinitions (only id, url, type and name fields are populated)
+   *
    * @return
    */
   def getAllSchemaMetadata(projectId: String): Future[Seq[SchemaDefinition]]
 
   /**
    * Retrieve the schema identified by its id.
-   * @param id
+   *
+   * @param projectId Project containing the schema definition
+   * @param id        Identifier of the schema definition
    * @return
    */
-  def getSchema(id: String): Future[Option[SchemaDefinition]]
+  def getSchema(projectId: String, id: String): Future[Option[SchemaDefinition]]
 
   /**
    * Save the schema to the repository.
-   * @param schemaDefinition
+   *
+   * @param projectId        Project containing the schema definition
+   * @param schemaDefinition Content of the schema definition
    * @return
    */
-  def saveSchema(schemaDefinition: SchemaDefinition): Future[SchemaDefinition]
+  def saveSchema(projectId: String, schemaDefinition: SchemaDefinition): Future[SchemaDefinition]
 
   /**
    * Update the schema to the repository.
-   * @param id
+   *
+   * @param projectId Project containing the schema definition
+   * @param id               Identifier of the schema
+   * @param schemaDefinition Content of the schema definition
    * @return
    */
-  def putSchema(id: String, schemaDefinition: SchemaDefinition): Future[Unit]
+  def putSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit]
 
   /**
    * Delete the schema from the repository.
-   * @param id
+   *
+   * @param projectId Project containing the schema definition
+   * @param id Identifier of the schema definition
    * @return
    */
-  def deleteSchema(id: String): Future[Unit]
+  def deleteSchema(projectId: String, id: String): Future[Unit]
 
 }

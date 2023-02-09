@@ -103,13 +103,12 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
    * @param simpleStructureDefinitionService
    * @return
    */
-  protected def convertToSchemaDefinition(profileRestrictions: ProfileRestrictions, id: String, project: String, simpleStructureDefinitionService: SimpleStructureDefinitionService): SchemaDefinition = {
+  protected def convertToSchemaDefinition(profileRestrictions: ProfileRestrictions, simpleStructureDefinitionService: SimpleStructureDefinitionService): SchemaDefinition = {
     val rootElementDefinition = createRootElement(profileRestrictions.resourceType)
-    SchemaDefinition(id = id,
+    SchemaDefinition(id = "TODO-id-from-profile-restriction",
       url = profileRestrictions.url,
       `type` = profileRestrictions.resourceType,
       name = profileRestrictions.resourceName.getOrElse(profileRestrictions.resourceType),
-      project = project,
       rootDefinition = Some(rootElementDefinition),
       fieldDefinitions = Some(simpleStructureDefinitionService.simplifyStructureDefinition(profileRestrictions.url, withResourceTypeInPaths = true)))
   }

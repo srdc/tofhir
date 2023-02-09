@@ -10,14 +10,18 @@ import io.tofhir.server.endpoint.ProjectEndpoint.SEGMENT_PROJECTS
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{Project, ToFhirRestCall}
 import io.tofhir.server.service.ProjectService
+import io.tofhir.server.service.project.IProjectRepository
 import org.json4s.JObject
+
+import scala.concurrent.Future
 
 /**
  * Endpoints to manage projects.
  * */
-class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
+class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository: IProjectRepository) extends LazyLogging {
 
-  val service: ProjectService = new ProjectService(toFhirEngineConfig)
+  val service: ProjectService = new ProjectService(projectRepository)
+  val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(toFhirEngineConfig, projectRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_PROJECTS) {
@@ -26,7 +30,18 @@ class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLoggin
         createProjectRoute() ~ getProjectsRoute
       } ~ // operations on individual projects
         pathPrefix(Segment) { projectId: String =>
-          getProjectRoute(projectId) ~ patchProjectRoute(projectId) ~ deleteProjectRoute(projectId)
+          getProjectRoute(projectId) ~ patchProjectRoute(projectId) ~ deleteProjectRoute(projectId) ~ {
+            val projectExists: Future[Option[Project]] = service.getProject(projectId)
+            onSuccess(projectExists) {
+              case None => complete {
+                StatusCodes.NotFound -> s"Project with id $projectId not found"
+              }
+              case Some(_) => {
+                request.projectId = Some(projectId)
+                schemaDefinitionEndpoint.route(request)
+              }
+            }
+          }
         }
     }
   }
@@ -68,11 +83,13 @@ class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLoggin
    * @return
    */
   private def getProjectRoute(projectId: String): Route = {
-    get {
-      complete {
-        service.getProject(projectId) map {
-          case Some(project) => StatusCodes.OK -> project
-          case None => StatusCodes.NotFound -> s"Project with id $projectId not found"
+    pathEndOrSingleSlash {
+      get {
+        complete {
+          service.getProject(projectId) map {
+            case Some(project) => StatusCodes.OK -> project
+            case None => StatusCodes.NotFound -> s"Project with id $projectId not found"
+          }
         }
       }
     }
@@ -103,10 +120,12 @@ class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLoggin
    * @return
    */
   private def deleteProjectRoute(projectId: String): Route = {
-    delete {
-      complete {
-        service.removeProject(projectId) map { _ =>
-          StatusCodes.NoContent
+    pathEndOrSingleSlash {
+      delete {
+        complete {
+          service.removeProject(projectId) map { _ =>
+            StatusCodes.NoContent
+          }
         }
       }
     }

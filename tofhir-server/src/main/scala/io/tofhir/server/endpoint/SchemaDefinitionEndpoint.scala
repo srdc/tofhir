@@ -10,35 +10,35 @@ import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.SEGMENT_SCHEMAS
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{SchemaDefinition, ToFhirRestCall}
 import io.tofhir.server.service.SchemaDefinitionService
+import io.tofhir.server.service.project.IProjectRepository
 
-class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
+class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository: IProjectRepository) extends LazyLogging {
 
-  val service: SchemaDefinitionService = new SchemaDefinitionService(toFhirEngineConfig.schemaRepositoryFolderPath)
+  val service: SchemaDefinitionService = new SchemaDefinitionService(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_SCHEMAS) {
+      val projectId: String = request.projectId.get
       pathEndOrSingleSlash { // Operations on all schemas
-        getAllSchemas(request) ~ createSchema()
+        getAllSchemas(request) ~ createSchema(projectId)
       } ~ // Operations on a single schema identified by its id
         pathPrefix(Segment) { id: String =>
-          getSchema(id) ~ updateSchema(id) ~ deleteSchema(id)
+          getSchema(projectId, id) ~ updateSchema(projectId, id) ~ deleteSchema(projectId, id)
         }
     }
   }
 
   private def getAllSchemas(request: ToFhirRestCall): Route = {
     get {
-      parameter("projectId") { projectId =>
-        complete(service.getAllSchemas(projectId))
-      }
+      complete(service.getAllSchemas(request.projectId.get))
     }
   }
 
-  private def createSchema(): Route = {
+  private def createSchema(projectId: String): Route = {
     post { // Create a new schema definition
       entity(as[SchemaDefinition]) { schemaDefinition =>
         complete {
-          service.createSchema(schemaDefinition) map { createdDefinition =>
+          service.createSchema(projectId, schemaDefinition) map { createdDefinition =>
             StatusCodes.Created -> createdDefinition
           }
         }
@@ -46,10 +46,10 @@ class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
     }
   }
 
-  private def getSchema(id: String): Route = {
+  private def getSchema(projectId: String, id: String): Route = {
     get {
       complete {
-        service.getSchema(id) map {
+        service.getSchema(projectId, id) map {
           case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
           case None => StatusCodes.NotFound -> s"Schema definition with name $id not found"
         }
@@ -57,11 +57,11 @@ class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
     }
   }
 
-  private def updateSchema(id: String): Route = {
+  private def updateSchema(projectId: String, id: String): Route = {
     put {
       entity(as[SchemaDefinition]) { schemaDefinition =>
         complete {
-          service.putSchema(id, schemaDefinition) map { _ =>
+          service.putSchema(projectId, id, schemaDefinition) map { _ =>
             StatusCodes.OK -> schemaDefinition
           }
         }
@@ -69,10 +69,10 @@ class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends L
     }
   }
 
-  private def deleteSchema(id: String): Route = {
+  private def deleteSchema(projectId: String, id: String): Route = {
     delete {
       complete {
-        service.deleteSchema(id) map { _ =>
+        service.deleteSchema(projectId, id) map { _ =>
           StatusCodes.OK
         }
       }

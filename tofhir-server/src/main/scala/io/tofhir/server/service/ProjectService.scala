@@ -1,17 +1,14 @@
 package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.model.{BadRequest, Project, ProjectEditableFields}
-import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
+import io.tofhir.server.service.project.IProjectRepository
 import org.json4s.JObject
 import org.json4s.JsonAST.JString
 
 import scala.concurrent.Future
 
-class ProjectService(config: ToFhirEngineConfig) extends LazyLogging {
-
-  private val projectRepository: IProjectRepository = new ProjectFolderRepository(config)
+class ProjectService(projectRepository: IProjectRepository) extends LazyLogging {
 
   /**
    * Retrieve all Projects
