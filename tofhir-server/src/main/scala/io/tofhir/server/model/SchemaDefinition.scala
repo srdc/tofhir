@@ -1,9 +1,18 @@
 package io.tofhir.server.model
 
 /**
- * GET all available schemas --> return a list of SchemaDefinitions where only url, type and name are populated.
- * GET a specific schema definition --> return a SchemaDefinition with all fields populated.
- * POST/CREATE a schema definition --> expect all required fields populated.
- * PUT/UPDATE a schema definition --> expect all required fields populated.
+ * Entity representing a FHIR StructureDefinition in the context of toFHIR
+ *
+ * @param id               Identifier of the schema
+ * @param url              URL of the schema
+ * @param `type`           Type of entities that this schema represents
+ * @param name             Name of the schema
+ * @param rootDefinition   Root element definition for the schema i.e. the first element in the definition
+ * @param fieldDefinitions Rest of the element definitions
  */
-case class SchemaDefinition(url: String, `type`: String, name: String, rootDefinition: Option[SimpleStructureDefinition], fieldDefinitions: Option[Seq[SimpleStructureDefinition]])
+case class SchemaDefinition(id: String,
+                            url: String,
+                            `type`: String,
+                            name: String,
+                            rootDefinition: Option[SimpleStructureDefinition],
+                            fieldDefinitions: Option[Seq[SimpleStructureDefinition]])

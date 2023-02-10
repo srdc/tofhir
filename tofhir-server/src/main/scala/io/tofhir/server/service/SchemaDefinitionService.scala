@@ -3,72 +3,70 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
 import io.tofhir.server.model.{BadRequest, SchemaDefinition, SimpleStructureDefinition}
-import io.tofhir.server.service.schema.{FolderSchemaRepository, ISchemaRepository}
+import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
+import io.tofhir.server.service.schema.{ISchemaRepository, SchemaFolderRepository}
 import org.json4s.JArray
 import org.json4s.JsonDSL._
 
 import scala.concurrent.Future
 
-class SchemaDefinitionService(schemaRepositoryFolderPath: String) extends LazyLogging {
+class SchemaDefinitionService(schemaRepositoryFolderPath: String, projectRepository: IProjectRepository) extends LazyLogging {
 
-  private val schemaRepository: ISchemaRepository = new FolderSchemaRepository(schemaRepositoryFolderPath)
+  private val schemaRepository: ISchemaRepository = new SchemaFolderRepository(schemaRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
 
   /**
    * Get all schema definition metadata (not populated with field definitions) from the schema repository
    *
    * @return A map of URL -> Seq[SimpleStructureDefinition]
    */
-  def getAllMetadata(withReload: Boolean): Future[Seq[SchemaDefinition]] = {
-    schemaRepository.getAllSchemaMetadata(withReload)
+  def getAllSchemas(projectId: String): Future[Seq[SchemaDefinition]] = {
+    schemaRepository.getAllSchemaMetadata(projectId)
   }
 
   /**
    * Get a schema definition from the schema repository
    *
-   * @param url URL of the schema definition
-   * @return
-   */
-  def getSchemaDefinitionByUrl(url: String, withReload: Boolean): Future[Option[SchemaDefinition]] = {
-    schemaRepository.getSchemaByUrl(url, withReload)
-  }
-
-  /**
-   * Get schema by name from the schema repository
+   * @param projectId
+   * @param id
    *
-   * @param name Name of the schema definition
    * @return
    */
-  def getSchemaDefinitionByName(name: String, withReload: Boolean): Future[Option[SchemaDefinition]] = {
-    schemaRepository.getSchemaByName(name, withReload)
+  def getSchema(projectId: String, id: String): Future[Option[SchemaDefinition]] = {
+    schemaRepository.getSchema(projectId, id)
   }
 
   /**
    * Create and save the schema definition to the schema repository.
    *
+   * @param projectId
    * @param simpleStructureDefinition
    * @return
    */
-  def createSchema(schemaDefinition: SchemaDefinition): Future[SchemaDefinition] = {
-    schemaRepository.saveSchema(schemaDefinition)
+  def createSchema(projectId: String, schemaDefinition: SchemaDefinition): Future[SchemaDefinition] = {
+    schemaRepository.saveSchema(projectId, schemaDefinition)
   }
 
   /**
    * Update the schema definition to the schema repository.
-   * @param name
+   *
+   * @param projectId
+   * @param id
    * @param schemaDefinition
    * @return
    */
-  def putSchema(name: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
-    schemaRepository.putSchema(name, schemaDefinition)
+  def putSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
+    schemaRepository.putSchema(projectId, id, schemaDefinition)
   }
 
   /**
    * Delete the schema definition from the schema repository.
-   * @param name
+   *
+   * @param projectId
+   * @param id
    * @return
    */
-  def deleteSchema(name: String): Future[Unit] = {
-    schemaRepository.deleteSchema(name)
+  def deleteSchema(projectId: String, id: String): Future[Unit] = {
+    schemaRepository.deleteSchema(projectId, id)
   }
 
   private def convertToFhirResource(schemaUrl: String, name: String, `type`: String, rootPath: String, fieldDefinitions: Seq[SimpleStructureDefinition]): Resource = {
