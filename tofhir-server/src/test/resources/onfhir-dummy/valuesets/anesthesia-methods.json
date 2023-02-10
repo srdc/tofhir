@@ -1,0 +1,61 @@
+{
+  "resourceType": "ValueSet",
+  "id": "anesthesia-methods",
+  "url": "https://aiccelerate.eu/fhir/ValueSet/anesthesia-methods",  
+  "version": "0.1",
+  "name": "AICCELERATE Anesthesia Method Classification",
+  "status": "draft",
+  "experimental": false,
+  "date": "2021-11-03",
+  "publisher": "AICCELERATE",
+  "contact": [
+    {
+      "name": "AICCELERATE WP1 Team",
+      "telecom": [
+        {
+          "system": "url",
+          "value": "https://aiccelerate.eu/"
+        }
+      ]
+    }
+  ],
+  "description": "SNOMED-CT codes for anesthesia methods",
+  "compose": {    
+    "inactive": false,
+    "include": [
+      {
+        "system": "http://snomed.info/sct",        
+        "concept": [
+          {
+            "code": "50697003",
+            "display": "General anesthesia"
+          },
+          {
+            "code": "386761002",
+            "display": "Local anesthesia"
+          },
+          {
+            "code": "27372005",
+            "display": "Regional anesthesia"
+          },
+          {
+            "code": "231249005",
+            "display": "Spinal anesthesia"
+          },
+		  {
+            "code": "88815003",
+            "display": "Peripheral block anesthesia"
+          },
+		  {
+            "code": "26402001",
+            "display": "Nerve block anesthesia"
+          },		  
+		  {
+            "code": "72641008",
+            "display": "Sedation"
+          }
+        ]
+      }
+    ]
+  }
+}

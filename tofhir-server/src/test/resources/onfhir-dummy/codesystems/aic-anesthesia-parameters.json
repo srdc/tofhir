@@ -1,0 +1,52 @@
+{
+  "resourceType": "CodeSystem",
+  "id": "anesthesia-parameters", 
+  "url": "https://aiccelerate.eu/fhir/CodeSystem/anesthesia-parameters",
+  "version": "0.1",
+  "name": "AICCELERATE Anesthesia Parameters",
+  "title": "AICCELERATE Anesthesia Parameters",
+  "status": "draft",  
+  "date": "2021-11-03",
+  "publisher": "AICCELERATE",
+  "contact": [
+    {
+      "name": "AICCELERATE WP1 Team",
+      "telecom": [
+        {
+          "system": "url",
+          "value": "https://aiccelerate.eu/"
+        }
+      ]
+    }
+  ],
+  "description": "List of custom codes defined within AICCELERATE project for important anesthesia parameters",
+  "caseSensitive": true,
+  "content": "complete",  
+  "concept": [
+    {
+      "code": "rso2-l",
+      "display": "Regional oxygen saturation index (RSO2) L",
+      "definition": "Regional oxygen saturation index (RSO2) L"      
+    },
+    {
+      "code": "rso2-r",
+      "display": "Regional oxygen saturation index (RSO2) R",
+      "definition": "Regional oxygen saturation index (RSO2) R"
+    },
+    {
+      "code": "rso2-s1",
+      "display": "Regional oxygen saturation index (RSO2) S1",
+      "definition": "Regional oxygen saturation index (RSO2) S1"
+    },
+	{
+      "code": "rso2-s2",
+      "display": "Regional oxygen saturation index (RSO2) S2",
+      "definition": "Regional oxygen saturation index (RSO2) S2"
+    },
+	{
+	  "code": "spi",
+	  "display": "Surgical Pleth Index",
+	  "definition": "Surgical Pleth Index"
+	}
+  ]
+}
