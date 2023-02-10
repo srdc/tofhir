@@ -1,5 +1,7 @@
 package io.tofhir.server.model
 
+import java.util.UUID
+
 /**
  * Entity representing a FHIR StructureDefinition in the context of toFHIR
  *
@@ -10,7 +12,7 @@ package io.tofhir.server.model
  * @param rootDefinition   Root element definition for the schema i.e. the first element in the definition
  * @param fieldDefinitions Rest of the element definitions
  */
-case class SchemaDefinition(id: String,
+case class SchemaDefinition(id: String = UUID.randomUUID().toString,
                             url: String,
                             `type`: String,
                             name: String,

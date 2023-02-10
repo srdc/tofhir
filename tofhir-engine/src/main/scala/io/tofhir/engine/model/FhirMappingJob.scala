@@ -2,6 +2,8 @@ package io.tofhir.engine.model
 
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 
+import java.util.UUID
+
 /**
  * A mapping job including one or more mapping tasks from a configured data source to a configured sink
  *
@@ -16,7 +18,7 @@ import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
  * @param useFhirSinkAsIdentityService  If true it means the FHIR repository to write the mapped resources where the configuration
  *                                      is given in sink settings will be used as identity service (Override identityServiceSettings if given)
  */
-case class FhirMappingJob(id: String,
+case class FhirMappingJob(id: String = UUID.randomUUID().toString,
                           sourceSettings: Map[String,DataSourceSettings],
                           sinkSettings: FhirSinkSettings,
                           terminologyServiceSettings:Option[TerminologyServiceSettings] = None,
