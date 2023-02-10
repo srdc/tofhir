@@ -3,16 +3,14 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
 import io.tofhir.server.model.{BadRequest, SchemaDefinition, SimpleStructureDefinition}
-import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
-import io.tofhir.server.service.schema.{ISchemaRepository, SchemaFolderRepository}
+import io.tofhir.server.service.project.IProjectRepository
+import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JArray
 import org.json4s.JsonDSL._
 
 import scala.concurrent.Future
 
-class SchemaDefinitionService(schemaRepositoryFolderPath: String, projectRepository: IProjectRepository) extends LazyLogging {
-
-  private val schemaRepository: ISchemaRepository = new SchemaFolderRepository(schemaRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
+class SchemaDefinitionService(schemaRepositoryFolderPath: String, schemaRepository: ISchemaRepository, projectRepository: IProjectRepository) extends LazyLogging {
 
   /**
    * Get all schema definition metadata (not populated with field definitions) from the schema repository

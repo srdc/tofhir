@@ -35,6 +35,15 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
 
   /**
+   * Returns the schema cached schema definitions by this repository
+   *
+   * @return
+   */
+  def getCachedSchemas(): mutable.Map[String, mutable.Map[String, SchemaDefinition]] = {
+    schemaDefinitions
+  }
+
+  /**
    * Retrieve the metadata of all SchemaDefinitions (only url, type and name fields are populated)
    *
    * @return
@@ -42,7 +51,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   override def getAllSchemaMetadata(projectId: String): Future[Seq[SchemaDefinition]] = {
     Future {
       if (schemaDefinitions.contains(projectId)) {
-        schemaDefinitions(projectId).values.map(getSchemaMetadata).toSeq.sortWith(schemaComparisonFunc)
+        schemaDefinitions(projectId).values.map(_.copyAsMetadata).toSeq.sortWith(schemaComparisonFunc)
       } else {
         Seq.empty
       }
@@ -88,7 +97,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         fw.close()
 
         // Update the project with the schema metadata
-        projectFolderRepository.addSchemaMetadata(projectId, getSchemaMetadata(schemaDefinition))
+        projectFolderRepository.addSchemaMetadata(projectId, schemaDefinition.copyAsMetadata())
 
         // Update the caches with the new schema
         baseFhirConfig.profileRestrictions += schemaDefinition.url -> fhirFoundationResourceParser.parseStructureDefinition(structureDefinitionResource, includeElementMetadata = true)
@@ -149,7 +158,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         schemaDefinitions(projectId).put(id, schemaDefinition)
 
         // Update the project metadata
-        projectFolderRepository.updateSchemaMetadata(projectId, getSchemaMetadata(schemaDefinition))
+        projectFolderRepository.updateSchemaMetadata(projectId, schemaDefinition.copyAsMetadata())
       })
     })
   }
@@ -209,16 +218,6 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   }
 
   /**
-   * Copies the given SchemaDefinition with only the metadata attributes
-   *
-   * @param schema
-   * @return
-   */
-  private def getSchemaMetadata(schema: SchemaDefinition): SchemaDefinition = {
-    schema.copy(id = schema.id, url = schema.url, name = schema.name)
-  }
-
-  /**
    * Parses the given schema folder and creates a SchemaDefinition map
    *
    * @param schemaRepositoryFolderPath
@@ -253,6 +252,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
 
   /**
    * Comparison function for two SchemaDefinitions. The definitions are compared according to their names
+   *
    * @param s1
    * @param s2
    * @return

@@ -34,42 +34,31 @@ object FileOperations {
   }
 
   /**
-   * Returns the entities in the repository by reading them from the projects metadata file.
+   * Read the content of a json file and parse it to a sequence of objects
    *
-   * @return projects in the repository
-   * */
-  def getMetadata[T](repositoryFolderPath: String, metadataFile: String)(implicit ev: scala.reflect.Manifest[T]): Seq[T] = {
-    val file = FileUtils.findFileByName(repositoryFolderPath + File.separatorChar, metadataFile)
-    file match {
-      case Some(f) =>
-        FileOperations.readJsonContent[T](f)
-      case None => {
-        // when projects metadata file does not exist, create it
-        logger.debug(s"There does not exist a metadata file: $metadataFile. Creating it...")
-        val file: File = new File(ProjectFolderRepository.PROJECTS_JSON)
-        file.createNewFile()
-        // initialize projects metadata file with empty array
-        val fw = new FileWriter(file)
-        try fw.write("[]") finally fw.close()
-        Seq.empty
-      }
-    }
+   * @param f File to be read
+   * @param c class type that can be parsed from JSON
+   * @tparam K class that created from JSON
+   * @return Sequence of objects
+   */
+  def readJsonContentAsObject(f: File): JObject = {
+    val source = Source.fromFile(f, StandardCharsets.UTF_8.name())
+    val fileContent = try source.mkString finally source.close()
+    val parsed = parse(fileContent).extract[JObject]
+    parsed
   }
 
+
   /**
-   * Updates the projects metadata file with the given projects.
+   * Checks whether the given CSV file is a unit conversion file. A CSV file is a unit conversion file
+   * if it includes a column called "conversion_function" in its first line.
    *
-   * @param projects projects
+   * @param f CSV file
+   * @return true if the file is a unit conversion file, false otherwise
    * */
-  def updateMetadata[T](repositoryFolderPath: String, metadataFile: String, entities: Seq[T]) = {
-    val file = new File(repositoryFolderPath + File.separatorChar, metadataFile)
-    // if entity metadata file does not exist, create it
-    if (!file.exists()) {
-      logger.debug(s"There does not exist a metadata file: $metadataFile to update. Creating it...")
-      file.createNewFile()
-    }
-    // write entities metadata to the file
-    val fw = new FileWriter(file)
-    try fw.write(Serialization.writePretty(entities)) finally fw.close()
+  def isUnitConversionFile(f: File): Boolean = {
+    val source = Source.fromFile(f, StandardCharsets.UTF_8.name())
+    val firstLine = try source.getLines().toSeq.head finally source.close()
+    firstLine.contains("conversion_function")
   }
 }

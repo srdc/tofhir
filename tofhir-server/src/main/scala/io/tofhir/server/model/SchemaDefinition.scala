@@ -17,4 +17,13 @@ case class SchemaDefinition(id: String = UUID.randomUUID().toString,
                             `type`: String,
                             name: String,
                             rootDefinition: Option[SimpleStructureDefinition],
-                            fieldDefinitions: Option[Seq[SimpleStructureDefinition]])
+                            fieldDefinitions: Option[Seq[SimpleStructureDefinition]]) {
+  /**
+   * Copies this schema with only the metadata attributes
+   *
+   * @return
+   */
+  def copyAsMetadata(): SchemaDefinition = {
+    copy(this.id, this.url, this.`type`, this.name, None, None)
+  }
+}

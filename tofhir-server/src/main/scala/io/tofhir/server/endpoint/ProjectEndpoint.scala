@@ -11,6 +11,7 @@ import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{Project, ToFhirRestCall}
 import io.tofhir.server.service.ProjectService
 import io.tofhir.server.service.project.IProjectRepository
+import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JObject
 
 import scala.concurrent.Future
@@ -18,10 +19,10 @@ import scala.concurrent.Future
 /**
  * Endpoints to manage projects.
  * */
-class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository: IProjectRepository) extends LazyLogging {
+class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig, schemaRepository: ISchemaRepository, projectRepository: IProjectRepository) extends LazyLogging {
 
   val service: ProjectService = new ProjectService(projectRepository)
-  val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(toFhirEngineConfig, projectRepository)
+  val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_PROJECTS) {

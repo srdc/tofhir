@@ -8,7 +8,9 @@ import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.service.db.FolderDBInitializer
 import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
+import io.tofhir.server.service.schema.{ISchemaRepository, SchemaFolderRepository}
 
 import java.util.UUID
 
@@ -19,9 +21,13 @@ import java.util.UUID
 class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig) extends ICORSHandler with IErrorHandler {
 
   val projectRepository: IProjectRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
+  val schemaRepository: ISchemaRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val mappingEndpoint = new MappingEndpoint(toFhirEngineConfig)
-  val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig, projectRepository)
+  val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
+
+  // initialize database
+  new FolderDBInitializer(toFhirEngineConfig, schemaRepository.asInstanceOf[SchemaFolderRepository]).initialize()
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {

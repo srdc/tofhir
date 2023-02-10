@@ -11,10 +11,11 @@ import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{SchemaDefinition, ToFhirRestCall}
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.project.IProjectRepository
+import io.tofhir.server.service.schema.ISchemaRepository
 
-class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository: IProjectRepository) extends LazyLogging {
+class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig, schemaRepository: ISchemaRepository, projectRepository: IProjectRepository) extends LazyLogging {
 
-  val service: SchemaDefinitionService = new SchemaDefinitionService(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository)
+  val service: SchemaDefinitionService = new SchemaDefinitionService(toFhirEngineConfig.schemaRepositoryFolderPath, schemaRepository, projectRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_SCHEMAS) {
