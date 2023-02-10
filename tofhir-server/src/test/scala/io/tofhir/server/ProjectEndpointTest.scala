@@ -5,7 +5,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.endpoint.ProjectEndpoint
+import io.tofhir.server.endpoint.{ProjectEndpoint, ToFhirServerEndpoint}
 import io.tofhir.server.model.{Project, ProjectEditableFields, SchemaDefinition, ToFhirRestCall}
 import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
 import io.tofhir.server.util.FileOperations
@@ -102,7 +102,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         val project: Project = projects.head
         project.schemas.length === 1
         // validate the project folder has been created within the schemas
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, FileUtils.getFileName(createdProject1.id, createdProject1.name)).toFile.exists() === true
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === true
       }
 
       // delete a project
@@ -113,9 +113,9 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         projects.length shouldEqual 1
 
         // validate the project file has been deleted under the schemas folder
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, FileUtils.getFileName(createdProject1.id, createdProject1.name)).toFile.exists() === false
-        FileUtils.getPath(toFhirEngineConfig.mappingJobFileContextPath, FileUtils.getFileName(createdProject1.id, createdProject1.name)).toFile.exists() === false
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, FileUtils.getFileName(createdProject1.id, createdProject1.name)).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.mappingJobFileContextPath, createdProject1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id).toFile.exists() === false
       }
       // delete a non-existent project
       Delete(s"/projects/${createdProject1.id}") ~> route ~> check {

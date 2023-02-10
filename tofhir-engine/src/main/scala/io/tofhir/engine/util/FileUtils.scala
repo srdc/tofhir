@@ -47,37 +47,6 @@ object FileUtils {
     filteredFiles.headOption
   }
 
-  /**
-   * Creates a file name to be used in folder/file based entity management.
-   * Removes all non-alphanumeric characters from the given name followed by a dash and given identifier
-   *
-   * @param id   Identifier of the entity
-   * @param name Name of the entity
-   * @return
-   */
-  def getFileName(id: String, name: String): String = {
-    s"${name.replaceAll("[\\W_]+", "") + "-" + id}"
-  }
-
-  /**
-   * Extracts the identifier of an entity from the file name.
-   *
-   * @param fileName File name like "name-id.StructureDefinition.json"
-   * @return
-   */
-  def getId(fileName: String): String = {
-    fileName.substring(fileName.indexOf("-") + 1).split("\\.")(0)
-  }
-
-  /**
-   * Returns the path of the parent file of the specified file
-   * @param path File of which parent's path to be returned
-   * @return
-   */
-  def getParentFilePath(path: String): String = {
-    new File(path).getAbsoluteFile.getParent
-  }
-
   object FileExtensions extends Enumeration {
     type FileExtensions = Value
     final val StructureDefinition = Value(".StructureDefinition")

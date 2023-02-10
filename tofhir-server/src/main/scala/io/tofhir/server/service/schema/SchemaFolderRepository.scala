@@ -188,7 +188,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private def getFileForSchema(projectId: String, schemaDefinition: SchemaDefinition): Future[File] = {
     val projectFuture: Future[Option[Project]] = projectFolderRepository.getProject(projectId)
     projectFuture.map(project => {
-      val file: File = FileUtils.getPath(schemaRepositoryFolderPath, FileUtils.getFileName(project.get.id, project.get.name), getFileName(schemaDefinition.id, schemaDefinition.name)).toFile
+      val file: File = FileUtils.getPath(schemaRepositoryFolderPath, project.get.id, getFileName(schemaDefinition.id, schemaDefinition.name)).toFile
       // If the project folder does not exist, create it
       if (!file.getParentFile.exists()) {
         file.getParentFile.mkdir()
@@ -205,7 +205,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    * @return
    */
   private def getFileName(schemaId: String, schemaName: String): String = {
-    s"${FileUtils.getFileName(schemaId, schemaName)}${FileExtensions.StructureDefinition}${FileExtensions.JSON}"
+    s"$schemaId${FileExtensions.StructureDefinition}${FileExtensions.JSON}"
   }
 
   /**

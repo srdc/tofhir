@@ -108,10 +108,9 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
       updateProjectsMetadata(remainingProjects)
 
       // Delete the schema, mappings and job folders the project
-      val projectFolderName: String = FileUtils.getFileName(project.head.id, project.head.name)
-      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.schemaRepositoryFolderPath, projectFolderName).toFile)
-      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingJobFileContextPath, projectFolderName).toFile)
-      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingRepositoryFolderPath, projectFolderName).toFile)
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.schemaRepositoryFolderPath, project.head.id).toFile)
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingJobFileContextPath, project.head.id).toFile)
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingRepositoryFolderPath, project.head.id).toFile)
     }
   }
 
