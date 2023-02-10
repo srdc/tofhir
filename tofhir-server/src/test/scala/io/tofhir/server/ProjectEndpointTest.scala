@@ -8,6 +8,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.endpoint.{ProjectEndpoint, ToFhirServerEndpoint}
 import io.tofhir.server.model.{Project, ProjectEditableFields, SchemaDefinition, ToFhirRestCall}
 import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
+import io.tofhir.server.service.schema.{ISchemaRepository, SchemaFolderRepository}
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
@@ -21,7 +22,8 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
   val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
   // project endpoint to be tested
   val projectRepository: IProjectRepository = new ProjectFolderRepository(toFhirEngineConfig)
-  val projectEndpoint: ProjectEndpoint = new ProjectEndpoint(toFhirEngineConfig, projectRepository)
+  val schemaRepository: ISchemaRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
+  val projectEndpoint: ProjectEndpoint = new ProjectEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
   // route of project endpoint
   // it is initialized with dummy rest call
   val route: Route = projectEndpoint.route(new ToFhirRestCall(HttpMethod.custom("GET"), "", ""))
