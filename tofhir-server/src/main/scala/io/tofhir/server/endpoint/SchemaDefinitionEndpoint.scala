@@ -73,7 +73,7 @@ class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRe
     delete {
       complete {
         service.deleteSchema(projectId, id) map { _ =>
-          StatusCodes.OK
+          StatusCodes.NoContent
         }
       }
     }
