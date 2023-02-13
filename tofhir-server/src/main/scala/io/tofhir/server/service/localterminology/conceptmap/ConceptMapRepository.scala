@@ -21,7 +21,7 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
   override def getConceptMaps(terminologyId: String): Future[Seq[TerminologyConceptMap]] = {
     Future {
       val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      val localTerminology = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
           terminology.conceptMaps
@@ -39,7 +39,7 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
   override def createConceptMap(terminologyId: String, conceptMap: TerminologyConceptMap): Future[TerminologyConceptMap] = {
     Future {
       val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      val localTerminology = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
       // check if id exists in json file
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
@@ -87,7 +87,7 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
   override def getConceptMap(terminologyId: String, conceptMapId: String): Future[TerminologyConceptMap] = {
     Future {
       val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val localTerminologies = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      val localTerminologies = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
       localTerminologies.find(_.id == terminologyId) match {
         case Some(terminology) =>
           terminology.conceptMaps.find(_.id == conceptMapId) match {
@@ -117,7 +117,7 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
         throw BadRequest("Concept map id does not match.", s"Concept map id ${conceptMap.id} does not match $conceptMapId.")
       }
       val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      val localTerminology = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
           val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
@@ -173,7 +173,7 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
   override def removeConceptMap(terminologyId: String, conceptMapId: String): Future[Unit] = {
     Future {
       val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      val localTerminology = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
           val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
@@ -213,7 +213,7 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
   override def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any]): Future[Unit] = {
     Future {
       val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      val localTerminology = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
           val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
@@ -240,7 +240,7 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
   override def getConceptMapContent(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]] = {
     Future {
       val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val localTerminology = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+      val localTerminology = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
       localTerminology.find(_.id == terminologyId) match {
         case Some(terminology) =>
           val terminologyIdFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)

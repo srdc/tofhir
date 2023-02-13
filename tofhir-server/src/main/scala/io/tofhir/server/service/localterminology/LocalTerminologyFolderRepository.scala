@@ -228,7 +228,7 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
       localTerminologyFile.createNewFile()
       FileOperations.writeJsonContent(localTerminologyFile, Seq.empty[LocalTerminology])
     }
-    val localTerminologies = FileOperations.readJsonContent(localTerminologyFile, classOf[LocalTerminology])
+    val localTerminologies = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
     localTerminologies
   }
 
