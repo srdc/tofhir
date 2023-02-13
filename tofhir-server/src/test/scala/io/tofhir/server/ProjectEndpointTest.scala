@@ -119,7 +119,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
         // validate the project file has been deleted under the schemas folder
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === false
-        FileUtils.getPath(toFhirEngineConfig.mappingJobFileContextPath, createdProject1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.contextPath, createdProject1.id).toFile.exists() === false
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id).toFile.exists() === false
       }
       // delete a non-existent project
@@ -134,7 +134,6 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
    * */
   override def beforeAll(): Unit = {
     new File(toFhirEngineConfig.repositoryRootPath).mkdir()
-    new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER).mkdir()
     val terminologyServicesJson = new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON)
     terminologyServicesJson.createNewFile()
     val writer = new FileWriter(terminologyServicesJson)
@@ -145,7 +144,6 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
    * Deletes the repository folder after all test cases are completed.
    * */
   override def afterAll(): Unit = {
-    org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_FOLDER))
     val terminologyServicesJson = new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON)
     terminologyServicesJson.delete()
   }

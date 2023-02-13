@@ -69,14 +69,14 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that a folder is created for the terminology
         new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar + localTerminology.name).exists() shouldEqual true
         // validate that terminologies metadata file is updated
-        val localTerminologies = FileOperations.readJsonContent(new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON), classOf[LocalTerminology])
+        val localTerminologies = FileOperations.readJsonContent[LocalTerminology](new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON))
         localTerminologies.length shouldEqual 1
       }
       // create the second terminology
       Post("/terminology", HttpEntity(ContentTypes.`application/json`, writePretty(localTerminology2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that terminologies metadata file is updated
-        val localTerminologies = FileOperations.readJsonContent(new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON), classOf[LocalTerminology])
+        val localTerminologies = FileOperations.readJsonContent[LocalTerminology](new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON))
         localTerminologies.length shouldEqual 2
       }
     }
@@ -110,7 +110,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         val localTerminology: LocalTerminology = JsonMethods.parse(responseAs[String]).extract[LocalTerminology]
         localTerminology.name shouldEqual "nameUpdated1"
         // validate that local terminologies is updated
-        val localTerminologies = FileOperations.readJsonContent(new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON), classOf[LocalTerminology])
+        val localTerminologies = FileOperations.readJsonContent[LocalTerminology](new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON))
         localTerminologies.find(_.id == localTerminology.id).get.name shouldEqual "nameUpdated1"
         // validate that folder name is updated for the terminology
         new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar + localTerminology.name).exists() shouldEqual true
@@ -125,7 +125,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that terminology folder is deleted
         new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar + localTerminology2.name).exists() shouldEqual false
         // validate that terminology metadata file is updated
-        val localTerminologies = FileOperations.readJsonContent(new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON), classOf[LocalTerminology])
+        val localTerminologies = FileOperations.readJsonContent[LocalTerminology](new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON))
         localTerminologies.length shouldEqual 1
       }
       // delete a non-existent local terminology
