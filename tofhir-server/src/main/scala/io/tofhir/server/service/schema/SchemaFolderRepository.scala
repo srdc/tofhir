@@ -116,7 +116,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    * @return
    */
   override def updateSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
-    if (!schemaDefinitions.contains(projectId) || !schemaDefinitions(projectId).contains(schemaDefinition.id)) {
+    if (!schemaDefinitions.contains(projectId) || !schemaDefinitions(projectId).contains(schemaDefinition.id) || !schemaDefinitions(projectId).contains(id)) {
       throw ResourceNotFound("Schema does not exists.", s"A schema definition with id ${schemaDefinition.id} does not exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
