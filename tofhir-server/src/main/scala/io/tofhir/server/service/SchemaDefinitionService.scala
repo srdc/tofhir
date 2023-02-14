@@ -53,7 +53,7 @@ class SchemaDefinitionService(schemaRepositoryFolderPath: String, schemaReposito
    * @return
    */
   def putSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
-    schemaRepository.putSchema(projectId, id, schemaDefinition)
+    schemaRepository.updateSchema(projectId, id, schemaDefinition)
   }
 
   /**

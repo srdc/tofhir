@@ -36,6 +36,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
 
   /**
    * Convert our internal SchemaDefinition instance to FHIR StructureDefinition resource
+   *
    * @param schemaDefinition
    * @return
    */
@@ -57,6 +58,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
 
   /**
    * Helper function to convertToStructureDefinitionResource to convert each field definition.
+   *
    * @param `type`
    * @param fieldDefinitions
    * @return
@@ -97,6 +99,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
 
   /**
    * Convert ProfileRestrictions into a SchemaDefinition instance.
+   *
    * @param profileRestrictions
    * @param id
    * @param project
@@ -105,7 +108,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
    */
   protected def convertToSchemaDefinition(profileRestrictions: ProfileRestrictions, simpleStructureDefinitionService: SimpleStructureDefinitionService): SchemaDefinition = {
     val rootElementDefinition = createRootElement(profileRestrictions.resourceType)
-    SchemaDefinition(id = "TODO-id-from-profile-restriction",
+    SchemaDefinition(id = profileRestrictions.id.getOrElse(profileRestrictions.resourceType),
       url = profileRestrictions.url,
       `type` = profileRestrictions.resourceType,
       name = profileRestrictions.resourceName.getOrElse(profileRestrictions.resourceType),
@@ -115,6 +118,7 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
 
   /**
    * Helper function to create the root element (1st element of the Element definitions which is dropped by IFhirFoundationParser.
+   *
    * @param resourceType
    * @return
    */
