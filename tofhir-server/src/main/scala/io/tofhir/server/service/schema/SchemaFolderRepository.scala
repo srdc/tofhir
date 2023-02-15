@@ -30,7 +30,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
 
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
   private val baseFhirConfig: BaseFhirConfig = fhirConfigurator.initializePlatform(fhirConfigReader)
-  private var simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
+  private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
 
   private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
 
@@ -115,8 +115,8 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    * @param schemaDefinition Schema definition
    * @return
    */
-  override def putSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
-    if (!schemaDefinitions.contains(projectId) || !schemaDefinitions(projectId).contains(schemaDefinition.id)) {
+  override def updateSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
+    if (!schemaDefinitions.contains(projectId) || !schemaDefinitions(projectId).contains(schemaDefinition.id) || !schemaDefinitions(projectId).contains(id)) {
       throw ResourceNotFound("Schema does not exists.", s"A schema definition with id ${schemaDefinition.id} does not exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
@@ -179,7 +179,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       schemaDefinitions(projectId).remove(id)
       baseFhirConfig.profileRestrictions -= schema.url
 
-      val fileName = getFileName(id, schema.name)
+      val fileName = getFileName(id)
       val file = FileUtils.findFileByName(schemaRepositoryFolderPath, fileName)
       file.get.delete()
 
@@ -197,7 +197,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private def getFileForSchema(projectId: String, schemaDefinition: SchemaDefinition): Future[File] = {
     val projectFuture: Future[Option[Project]] = projectFolderRepository.getProject(projectId)
     projectFuture.map(project => {
-      val file: File = FileUtils.getPath(schemaRepositoryFolderPath, project.get.id, getFileName(schemaDefinition.id, schemaDefinition.name)).toFile
+      val file: File = FileUtils.getPath(schemaRepositoryFolderPath, project.get.id, getFileName(schemaDefinition.id)).toFile
       // If the project folder does not exist, create it
       if (!file.getParentFile.exists()) {
         file.getParentFile.mkdir()
@@ -207,13 +207,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   }
 
   /**
-   * Constructs the file name for the schema file given the id and name
+   * Constructs the file name for the schema file given the id
    *
    * @param schemaId
-   * @param schemaName
    * @return
    */
-  private def getFileName(schemaId: String, schemaName: String): String = {
+  private def getFileName(schemaId: String): String = {
     s"$schemaId${FileExtensions.StructureDefinition}${FileExtensions.JSON}"
   }
 

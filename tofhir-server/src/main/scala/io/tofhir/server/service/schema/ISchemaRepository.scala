@@ -43,7 +43,7 @@ trait ISchemaRepository {
    * @param schemaDefinition Content of the schema definition
    * @return
    */
-  def putSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit]
+  def updateSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit]
 
   /**
    * Delete the schema from the repository.

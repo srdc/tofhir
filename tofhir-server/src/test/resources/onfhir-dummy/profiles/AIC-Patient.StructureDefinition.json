@@ -1,0 +1,148 @@
+{
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient",
+  "version": "1",
+  "name": "AIC-Patient",
+  "title": "Patient",
+  "status": "draft",
+  "description": "Represents basic demographics and other administrative information about an individual required in AICCELERATE",
+  "purpose": "This profile is a part of the common data model designed in AICCELERATE project (https://aiccelerate.eu/) and one of the base profiles that is commonly used in all three pilots; i) Pilot 1- Patient flow management for Emergency Room and Surgical units., ii) Pilot 2 - Chronic adult care – Parkinson’s disease, iii)  Palliative and chronic pediatric service delivery and patient workflow",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Patient",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Patient",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Patient.identifier",
+        "path": "Patient.identifier",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "use"
+            }
+          ],
+          "description": "Slicing over the use of identifier",
+          "rules": "open"
+        },
+        "min": 1
+      },
+      {
+        "id": "Patient.identifier:official",
+        "path": "Patient.identifier",
+        "sliceName": "official",
+        "min": 1
+      },
+      {
+        "id": "Patient.identifier:official.use",
+        "path": "Patient.identifier.use",
+        "short": "official",
+        "definition": "Indicates that this identifier is official",
+        "min": 1,
+        "fixedCode": "official"
+      },
+      {
+        "id": "Patient.identifier:official.system",
+        "path": "Patient.identifier.system",
+        "min": 1
+      },
+      {
+        "id": "Patient.identifier:official.value",
+        "path": "Patient.identifier.value",
+        "min": 1
+      },
+      {
+        "id": "Patient.name",
+        "path": "Patient.name",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "use"
+            }
+          ],
+          "description": "Slicing over name use.",
+          "rules": "open"
+        }
+      },
+      {
+        "id": "Patient.name:official",
+        "path": "Patient.name",
+        "sliceName": "official",
+        "short": "Official name associated with the patient",
+        "definition": "Official name associated with the individual.",
+        "max": "1"
+      },
+      {
+        "id": "Patient.name:official.use",
+        "path": "Patient.name.use",
+        "short": "official",
+        "min": 1,
+        "fixedCode": "official"
+      },
+      {
+        "id": "Patient.name:official.family",
+        "path": "Patient.name.family",
+        "min": 1
+      },
+      {
+        "id": "Patient.name:official.given",
+        "path": "Patient.name.given",
+        "min": 1
+      },
+      {
+        "id": "Patient.gender",
+        "path": "Patient.gender",
+        "definition": "Administrative Gender - the gender that the patient is considered to have.",
+        "min": 1
+      },
+      {
+        "id": "Patient.birthDate",
+        "path": "Patient.birthDate",
+        "min": 1
+      },
+      {
+        "id": "Patient.deceased[x]",
+        "path": "Patient.deceased[x]",
+        "definition": "Indicates if the individual is deceased or not and date of death.",
+        "type": [
+          {
+            "code": "dateTime"
+          }
+        ]
+      },
+      {
+        "id": "Patient.address",
+        "path": "Patient.address",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "use"
+            }
+          ],
+          "rules": "open"
+        }
+      },
+      {
+        "id": "Patient.address:homeAddress",
+        "path": "Patient.address",
+        "sliceName": "homeAddress"
+      },
+      {
+        "id": "Patient.address:homeAddress.use",
+        "path": "Patient.address.use",
+        "min": 1,
+        "fixedCode": "home"
+      },
+      {
+        "id": "Patient.address:homeAddress.postalCode",
+        "path": "Patient.address.postalCode",
+        "min": 1
+      }
+    ]
+  }
+}
