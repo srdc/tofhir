@@ -1,9 +1,7 @@
 package io.tofhir.server.service.mapping
 
-import io.onfhir.config.IFhirVersionConfigurator
-import io.onfhir.r4.config.FhirR4Configurator
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.model.MappingFile
+import io.tofhir.server.model.MappingMetadata
 
 import scala.concurrent.Future
 
@@ -13,46 +11,43 @@ import scala.concurrent.Future
  */
 trait IMappingRepository {
 
-  protected val fhirConfigurator: IFhirVersionConfigurator = new FhirR4Configurator()
-
   /**
    * Retrieve the metadata of all MappingFile, filter by subfolder if given
    * @return
    */
-  def getAllMappingMetadata(withSubFolder: Option[String]): Future[Seq[MappingFile]]
+  def getAllMappingMetadata(projectId: String): Future[Seq[MappingMetadata]]
 
   /**
    * Save the mapping to the repository.
    *
-   * @param directory  subfolder to save the mapping in
+   * @param projectId  subfolder to save the mapping in
    * @param mapping mapping to save
    * @return
    */
-  def createMapping(directory: String, mapping: FhirMapping): Future[FhirMapping]
+  def createMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping]
 
   /**
-   * Retrieve the mapping identified by its directory and name.
-   * @param directory subfolder the mapping is in
-   * @param name name of the mapping
+   * Get the mapping by its id
+   * @param projectId project id the mapping belongs to
+   * @param id mapping id
    * @return
    */
-  def getMappingByName(directory: String, name: String): Future[Option[FhirMapping]]
+  def getMapping(projectId: String, id: String): Future[Option[FhirMapping]]
 
   /**
-   * Update the mapping in the repository.
-   * @param directory subfolder the mapping is in
-   * @param name name of the mapping
-   * @param mapping mapping to update
+   * Update the mapping in the repository
+   * @param projectId project id the mapping belongs to
+   * @param id mapping id
+   * @param mapping mapping to save
    * @return
    */
-  def updateMapping(directory: String, name: String, mapping: FhirMapping): Future[FhirMapping]
+  def putMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping]
 
   /**
-   * Delete the mapping from the repository.
-   * @param directory subfolder the mapping is in
-   * @param name name of the mapping
+   * Delete the mapping from the repository
+   * @param projectId project id the mapping belongs to
+   * @param id mapping id
    * @return
    */
-  def removeMapping(directory: String, name: String): Future[Unit]
-
+  def deleteMapping(projectId: String, id: String): Future[Unit]
 }

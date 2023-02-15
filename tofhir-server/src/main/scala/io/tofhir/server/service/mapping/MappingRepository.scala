@@ -6,13 +6,15 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, MappingFile, ResourceNotFound}
+import io.tofhir.server.model.{AlreadyExists, BadRequest, MappingMetadata, Project, ResourceNotFound, SchemaDefinition}
+import io.tofhir.server.service.project.ProjectFolderRepository
 import org.apache.commons.io.FilenameUtils
 import org.json4s._
 import org.json4s.jackson.Serialization.writePretty
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
+import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
 
@@ -21,32 +23,21 @@ import scala.io.Source
  *
  * @param mappingRepositoryFolderPath root folder path to the mapping repository
  */
-class MappingRepository(mappingRepositoryFolderPath: String) extends IMappingRepository {
+class MappingRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
+  // project id -> mapping id -> mapping
+  private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
 
   /**
    * Retrieve the metadata of all MappingFile (only url, type and name fields are populated)
    *
    * @return
    */
-  override def getAllMappingMetadata(withSubFolder: Option[String]): Future[Seq[MappingFile]] = {
+  override def getAllMappingMetadata(projectId: String): Future[Seq[MappingMetadata]] = {
     Future {
-      val repoDirectory = FileUtils.getPath(mappingRepositoryFolderPath).toFile
-      var directories = Seq.empty[File]
-      try {
-        directories = repoDirectory.listFiles.filter(_.isDirectory).toSeq
-        if (withSubFolder.isDefined) {
-          directories = directories.filter(_.getName == withSubFolder.get)
-        }
-      } catch {
-        case e: Throwable => throw FhirMappingException(s"Given folder for the mapping repository is not valid.", e)
-      }
-
-      directories.flatMap { directory =>
-        val files = IOUtil.getFilesFromFolder(directory, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
-        files
-          .map { file =>
-            MappingFile(FilenameUtils.removeExtension(file.getName), directory.getName)
-          }
+      if (mappingDefinitions.contains(projectId)) {
+        mappingDefinitions(projectId).values.map(getMappingMetadata).toSeq
+      } else {
+        Seq.empty
       }
     }
   }
@@ -54,87 +45,159 @@ class MappingRepository(mappingRepositoryFolderPath: String) extends IMappingRep
   /**
    * Save the mapping to the repository.
    *
-   * @param directory  subfolder to save the mapping in
+   * @param projectId  subfolder to save the mapping in
    * @param mapping mapping to save
    * @return
    */
-  override def createMapping(directory: String, mapping: FhirMapping): Future[FhirMapping] = {
+  override def createMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping] = {
     Future {
-      val fileName = mapping.name + FileExtensions.JSON.toString
-      val file = new File(mappingRepositoryFolderPath + File.separatorChar + directory + File.separatorChar + fileName)
-      if (file.exists()) {
-        throw AlreadyExists("Mapping already exists.", s"Mapping with name ${mapping.name} already exists in the repository.")
+      if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).contains(mapping.id)) {
+        throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with id ${mapping.id} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
       }
-      file.createNewFile()
-      val fw = new FileWriter(file)
-      fw.write(writePretty(mapping))
-      fw.close()
+      // Write to the repository as a new file
+      getFileForMapping(projectId, mapping).map(newFile => {
+        val fw = new FileWriter(newFile)
+        fw.write(writePretty(mapping))
+        fw.close()
+      })
+      projectFolderRepository.addMappingMetadata(projectId, getMappingMetadata(mapping))
+      mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
       mapping
     }
   }
 
   /**
-   * Retrieve the mapping identified by its directory and name.
+   * Get the mapping by its id
    *
-   * @param directory subfolder the mapping is in
-   * @param name name of the mapping
+   * @param projectId project id the mapping belongs to
+   * @param id mapping id
    * @return
    */
-  override def getMappingByName(directory: String, name: String): Future[Option[FhirMapping]] = {
+  override def getMapping(projectId: String, id: String): Future[Option[FhirMapping]] = {
     Future {
-      val fileName = name + FileExtensions.JSON.toString
-      val file = FileUtils.findFileByName(mappingRepositoryFolderPath + File.separatorChar +  directory, fileName)
-      file match {
-        case Some(f) =>
-          val source = Source.fromFile(f, StandardCharsets.UTF_8.name()) // read the JSON file
-          val fileContent = try source.mkString finally source.close()
-          val fhirMapping = fileContent.parseJson.extractOpt[FhirMapping]
-          fhirMapping
-        case None => None
-      }
+      mappingDefinitions(projectId).get(id)
     }
   }
 
   /**
-   * Update the mapping in the repository.
-   * @param directory subfolder the mapping is in
-   * @param name name of the mapping
-   * @param fhirMapping mapping to update
+   * Update the mapping in the repository
+   *
+   * @param projectId project id the mapping belongs to
+   * @param id        mapping id
+   * @param mapping   mapping to save
    * @return
    */
-  override def updateMapping(directory: String, name: String, fhirMapping: FhirMapping): Future[FhirMapping] = {
+  override def putMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping] = {
     Future {
-      if (fhirMapping.name != name) throw BadRequest("Mapping name mismatch", "Name of the mapping in the request body does not match the name in the URL.")
-      val fileName = name + FileExtensions.JSON.toString
-      val file = FileUtils.findFileByName(mappingRepositoryFolderPath + File.separatorChar +  directory, fileName)
-      file match {
-        case Some(f) =>
-          val fw = new FileWriter(f)
-          fw.write(writePretty(fhirMapping))
-          fw.close()
-          fhirMapping
-        case None => throw ResourceNotFound("Mapping does not exist." ,s"Mapping file $fileName not found in directory $directory")
+      if (!id.equals(mapping.id)) {
+        throw BadRequest("Mapping definition is not valid.", s"Identifier of the mapping definition: ${mapping.id} does not match with explicit id: $id")
       }
+      if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
+        throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+      }
+      // update the mapping in the repository
+      getFileForMapping(projectId, mapping).map(file => {
+        val fw = new FileWriter(file)
+        fw.write(writePretty(mapping))
+        fw.close()
+      })
+      // update the mapping in the map
+      mappingDefinitions(projectId).put(id, mapping)
+      // update the metadata
+      projectFolderRepository.updateMappingMetadata(projectId, getMappingMetadata(mapping))
+      mapping
+    }
+
+  }
+
+  /**
+   * Delete the mapping from the repository
+   *
+   * @param projectId project id the mapping belongs to
+   * @param id        mapping id
+   * @return
+   */
+  override def deleteMapping(projectId: String, id: String): Future[Unit] = {
+    Future {
+      if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
+        throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+      }
+      // delete the mapping from the repository
+      getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
+        file.delete()
+      })
+      // delete the mapping from the map
+      mappingDefinitions(projectId).remove(id)
+      // delete the metadata
+      projectFolderRepository.deleteMappingMetadata(projectId, id)
     }
   }
 
   /**
-   * Delete the mapping from the repository.
+   * Gets the file for the given mapping definition.
    *
-   * @param directory subfolder the mapping is in
-   * @param name      name of the mapping
+   * @param fhirMapping
    * @return
    */
-  override def removeMapping(directory: String, name: String): Future[Unit] = {
-    Future {
-      val fileName = name + FileExtensions.JSON.toString
-      val file = FileUtils.findFileByName(mappingRepositoryFolderPath + File.separatorChar +  directory, fileName)
-      file match {
-        case Some(f) =>
-          f.delete()
-        case None => throw ResourceNotFound("Mapping does not exist." ,s"Mapping file $fileName not found in directory $directory")
+  private def getFileForMapping(projectId: String, fhirMapping: FhirMapping): Future[File] = {
+    val projectFuture: Future[Option[Project]] = projectFolderRepository.getProject(projectId)
+    projectFuture.map(project => {
+      val file: File = FileUtils.getPath(mappingRepositoryFolderPath, project.get.id, getFileName(fhirMapping.id)).toFile
+      // If the project folder does not exist, create it
+      if (!file.getParentFile.exists()) {
+        file.getParentFile.mkdir()
       }
+      file
+    })
+  }
+
+  /**
+   * Constructs the file name for the mapping file given the id and name
+   *
+   * @param mappingId
+   * @return
+   */
+  private def getFileName(mappingId: String): String = {
+    s"$mappingId${FileExtensions.JSON}"
+  }
+
+  /**
+   * Copies the given FhirMapping with only the metadata attributes
+   *
+   * @param mapping
+   * @return
+   */
+  private def getMappingMetadata(mapping: FhirMapping): MappingMetadata = {
+    MappingMetadata(mapping.id, mapping.url, mapping.name)
+  }
+
+  /**
+   * Initializes the mapping definitions from the repository
+   * @param mappingRepositoryFolderPath path to the mapping repository
+   * @return
+   */
+  private def initMap(mappingRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, FhirMapping]] = {
+    val map = mutable.Map.empty[String, mutable.Map[String, FhirMapping]]
+    val folder = FileUtils.getPath(mappingRepositoryFolderPath).toFile
+    var directories = Seq.empty[File]
+    try {
+      directories = folder.listFiles.filter(_.isDirectory).toSeq
+    } catch {
+      case e: Throwable => throw FhirMappingException(s"Given folder for the mapping repository is not valid.", e)
     }
+    directories.foreach { projectDirectory =>
+      // mapping-id -> FhirMapping
+      val fhirMappingMap: mutable.Map[String, FhirMapping] = mutable.Map.empty
+      val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
+      files.foreach { file =>
+        val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
+        val fileContent = try source.mkString finally source.close()
+        val fhirMapping = fileContent.parseJson.extract[FhirMapping]
+        fhirMappingMap.put(fhirMapping.id, fhirMapping)
+      }
+      map.put(projectDirectory.getName, fhirMappingMap)
+    }
+    map
   }
 
 }

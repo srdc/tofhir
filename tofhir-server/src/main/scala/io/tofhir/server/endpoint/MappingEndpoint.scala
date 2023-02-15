@@ -11,64 +11,74 @@ import io.tofhir.server.endpoint.MappingEndpoint.SEGMENT_MAPPING
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.MappingService
+import io.tofhir.server.service.project.IProjectRepository
 
-class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
+class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository: IProjectRepository) extends LazyLogging {
 
-  val service: MappingService = new MappingService(toFhirEngineConfig.mappingRepositoryFolderPath)
+  val service: MappingService = new MappingService(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_MAPPING) {
+      val projectId: String = request.projectId.get
       pathEndOrSingleSlash { // Operations on all mappings
-        get {
-          complete {
-            service.getAllMetadata(None)
-          }
+        getAllMappings(projectId) ~ createMapping(projectId)
+      } ~ // Operations on a single mapping identified by its id
+        pathPrefix(Segment) { id: String =>
+          getMapping(projectId, id) ~ updateMapping(projectId, id) ~ deleteMapping(projectId, id)
         }
-      } ~
-        pathPrefix(Segment) { directoryName: String =>
-          pathEndOrSingleSlash { // Assumption: mappingName and file name are equal
-            get { // return mappings only in that directory. eg. pilot1
-              complete {
-                service.getAllMetadata(Some(directoryName))
-              }
-            }
-          } ~
-            post { // Create a new mapping definition
-              entity(as[FhirMapping]) { fhirMapping =>
-                complete {
-                  service.createMapping(directoryName, fhirMapping) map { createdDefinition =>
-                    StatusCodes.Created -> createdDefinition
-                  }
-                }
-              }
-            } ~ pathPrefix(Segment) { mappingName: String => // Operations on a single mapping identified by folder and name
-            get { // pilot1/surgery-details-mapping
-              complete {
-                service.getMappingByName(directoryName, mappingName) map {
-                  case Some(fhirMapping) => StatusCodes.OK -> fhirMapping
-                  case None => StatusCodes.NotFound -> s"Mapping definition with name $mappingName not found"
-                }
-              }
-            } ~
-              put {
-                entity(as[FhirMapping]) { fhirMapping =>
-                  complete {
-                    service.updateMapping(directoryName, mappingName, fhirMapping) map { _ =>
-                      StatusCodes.OK -> fhirMapping
-                    }
-                  }
-                }
-              } ~
-              delete {
-                complete {
-                  service.removeMapping(directoryName, mappingName) map { _ =>
-                    StatusCodes.OK
-                  }
-                }
-              }
-          }
-        }
+    }
+  }
 
+  private def getAllMappings(projectId: String): Route = {
+    get {
+      complete {
+        service.getAllMetadata(projectId)
+      }
+    }
+  }
+
+  private def createMapping(projectId: String): Route = {
+    post { // Create a new mapping definition
+      entity(as[FhirMapping]) { fhirMapping =>
+        complete {
+          service.createMapping(projectId, fhirMapping) map { created =>
+            StatusCodes.Created -> created
+          }
+        }
+      }
+    }
+  }
+
+  private def getMapping(projectId: String, id: String): Route = {
+    get {
+      complete {
+        service.getMapping(projectId, id) map {
+          case Some(fhirMapping) => StatusCodes.OK -> fhirMapping
+          case None => StatusCodes.NotFound -> s"Mapping with name $id not found"
+        }
+      }
+    }
+  }
+
+  private def updateMapping(projectId: String, id: String): Route = {
+    put {
+      entity(as[FhirMapping]) { fhirMapping =>
+        complete {
+          service.putMapping(projectId, id, fhirMapping) map { _ =>
+            StatusCodes.OK -> fhirMapping
+          }
+        }
+      }
+    }
+  }
+
+  private def deleteMapping(projectId: String, id: String): Route = {
+    delete {
+      complete {
+        service.deleteMapping(projectId, id) map { _ =>
+          StatusCodes.NoContent
+        }
+      }
     }
   }
 
