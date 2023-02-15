@@ -26,9 +26,9 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
   val webServerConfig = new WebServerConfig(system.settings.config.getConfig("webserver"))
   val fhirDefinitionsConfig = new FhirDefinitionsConfig(system.settings.config.getConfig("fhir"))
-  val endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig)
+  var endpoint:ToFhirServerEndpoint = _
   // route endpoint
-  val route: Route = endpoint.toFHIRRoute
+  var route: Route = _
 
   // first project to be created
   val project1: Project = Project(name = "example", description = Some("example project"))
@@ -138,10 +138,13 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
   }
 
   /**
-   * Creates a repository folder before tests are run.
+   * Creates a repository folder before tests are run and initializes endpoint and route.
    * */
   override def beforeAll(): Unit = {
     new File(toFhirEngineConfig.repositoryRootPath).mkdir()
+    // initialize endpoint and route
+    endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig)
+    route = endpoint.toFHIRRoute
   }
 
   /**
