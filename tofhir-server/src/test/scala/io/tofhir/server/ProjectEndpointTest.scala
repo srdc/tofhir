@@ -46,7 +46,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
     "create a project" in {
       // create the first project
       // note that in the initialization of database, a dummy project is already created due to the schemas defined in test resources
-      Post("/tofhir/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
         // set the created project
@@ -56,7 +56,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         projects.length shouldEqual 2
       }
       // create the second project
-      Post("/tofhir/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
         val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
@@ -66,7 +66,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "get all projects" in {
       // retrieve all projects
-      Get("/tofhir/projects") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns two projects
         val projects: Seq[Project] = JsonMethods.parse(responseAs[String]).extract[Seq[Project]]
@@ -76,7 +76,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "get a project" in {
       // get a project
-      Get(s"/tofhir/projects/${createdProject1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved project
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
@@ -84,14 +84,14 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         project.name shouldEqual createdProject1.name
       }
       // get a project with invalid id
-      Get(s"/tofhir/projects/123123") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "patch a project" in {
       // patch a project
-      Patch(s"/tofhir/projects/${createdProject1.id}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
+      Patch(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned project includes the update
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
@@ -101,14 +101,14 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         projects.find(p => p.id.contentEquals(createdProject1.id)).get.description.get shouldEqual "updated description"
       }
       // patch a project with invalid id
-      Patch(s"/tofhir/projects/123123", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
+      Patch(s"/${webServerConfig.baseUri}/projects/123123", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "delete a project" in {
       // first create a schema to trigger creation of the project folder under the schemas folder
-      Post(s"/tofhir/projects/${createdProject1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
         val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
@@ -119,7 +119,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       }
 
       // delete a project
-      Delete(s"/tofhir/projects/${createdProject1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that projects metadata file is updated
         val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
@@ -131,7 +131,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id).toFile.exists() === false
       }
       // delete a non-existent project
-      Delete(s"/tofhir/projects/${createdProject1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
