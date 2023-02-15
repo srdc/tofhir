@@ -25,9 +25,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val projectRepository: IProjectRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
   val schemaRepository: ISchemaRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
   val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
-
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
-  val mappingEndpoint = new MappingEndpoint(toFhirEngineConfig)
 
   // initialize database
   new FolderDBInitializer(toFhirEngineConfig, schemaRepository.asInstanceOf[SchemaFolderRepository]).initialize()
@@ -42,7 +40,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
                 val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
                 handleRejections(RejectionHandler.default) { // Default rejection handling
                   handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                    terminologyServiceManagerEndpoint.route(restCall) ~ projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall) ~ mappingEndpoint.route(restCall)
+                    terminologyServiceManagerEndpoint.route(restCall) ~ projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall)
                   }
                 }
               }

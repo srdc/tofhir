@@ -15,7 +15,7 @@ case class Project(id: String = UUID.randomUUID().toString,
                    name: String,
                    description: Option[String] = None,
                    schemas: Seq[SchemaDefinition] = Seq.empty,
-                   mappings: Seq[FhirMapping] = Seq.empty,
+                   mappings: Seq[MappingMetadata] = Seq.empty,
                    contextConceptMaps: Seq[FhirMappingContext] = Seq.empty,
                    mappingJobs: Seq[FhirMappingJob] = Seq.empty
                   ) {
