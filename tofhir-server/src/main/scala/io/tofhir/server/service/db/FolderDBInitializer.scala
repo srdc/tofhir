@@ -1,18 +1,13 @@
 package io.tofhir.server.service.db
 
 import java.io.{File, FileWriter}
-import java.util.UUID
+
 import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.engine.model.FhirMappingContextCategories
-import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.{Project, SchemaDefinition}
 import io.tofhir.server.service.project.ProjectFolderRepository
 import io.tofhir.server.service.schema.SchemaFolderRepository
-import io.tofhir.server.util.FileOperations
-import org.json4s.JsonAST.{JArray, JObject, JString}
-import org.json4s.JsonDSL._
 import org.json4s.jackson.Serialization.writePretty
 
 import scala.collection.mutable
@@ -25,11 +20,18 @@ class FolderDBInitializer(toFhirEngineConfig: ToFhirEngineConfig, schemeFolderRe
   private val logger: Logger = Logger(this.getClass)
 
   /**
-   * Creates [[ProjectFolderRepository.PROJECTS_JSON]] file if it does not exist but mapping, jobs and schema folders do.
+   * Creates repository directory [[ToFhirEngineConfig.repositoryRootPath]] if it does not exist.
+   * Further, it creates [[ProjectFolderRepository.PROJECTS_JSON]] file if it does not exist but mapping, jobs and schema folders do.
    * It simply populates the json file using the content of other data folders. It utilizes respective folder-based repositories
    * and assumes that those repositories are already initialized with those existing resources.
    */
   def initialize(): Unit = {
+    // create repository directory if it does not exist
+    val repositoryDirectory = new File(toFhirEngineConfig.repositoryRootPath)
+    if(!repositoryDirectory.exists()){
+      repositoryDirectory.mkdirs()
+    }
+
     // check whether projects metadata file exists
     val file = new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
     if (file.exists()) {
