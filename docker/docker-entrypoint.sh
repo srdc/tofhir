@@ -26,7 +26,7 @@ if [ ! -z "$SCHEMAS_FOLDER" ]; then
   JAVA_CMD+="-Dtofhir.mappings.schemas.repository.folder-path=$SCHEMAS_FOLDER "
 fi
 if [ ! -z "$MAPPING_JOB" ]; then
-  JAVA_CMD+="-Dtofhir.mapping-job.file-path=$MAPPING_JOB "
+  JAVA_CMD+="-Dtofhir.mapping-jobs.initial-job-file-path=$MAPPING_JOB "
 fi
 if [ ! -z "$FHIR_BATCH_SIZE" ]; then
   JAVA_CMD+="-Dtofhir.fhir-writer.batch-group-size=$FHIR_BATCH_SIZE "

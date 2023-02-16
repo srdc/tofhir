@@ -109,7 +109,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
 
       // Delete the schema, mappings and job folders the project
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.schemaRepositoryFolderPath, project.head.id).toFile)
-      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingJobFileContextPath, project.head.id).toFile)
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.contextPath, project.head.id).toFile)
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingRepositoryFolderPath, project.head.id).toFile)
     }
   }

@@ -25,7 +25,7 @@ object FileUtils {
       )
     val resultingPath = if (givenPath.isAbsolute) givenPath
     else Paths.get(
-      ToFhirConfig.engineConfig.mappingJobFileContextPath,
+      ToFhirConfig.engineConfig.contextPath,
       givenPath.toString)
     resultingPath.normalize()
   }
