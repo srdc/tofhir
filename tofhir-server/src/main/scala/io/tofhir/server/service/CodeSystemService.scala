@@ -37,7 +37,7 @@ class CodeSystemService(localTerminologyRepositoryRoot: String) extends LazyLogg
    * @param codeSystemId id of the code system
    * @return TerminologyCodeSystem if found
    */
-  def getCodeSystem(terminologyId: String, codeSystemId: String): Future[TerminologyCodeSystem] = {
+  def getCodeSystem(terminologyId: String, codeSystemId: String): Future[Option[TerminologyCodeSystem]] = {
     codeSystemRepository.getCodeSystem(terminologyId, codeSystemId)
   }
 

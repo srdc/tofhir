@@ -23,4 +23,9 @@ class ToFhirRestCall(val method: HttpMethod, val uri: Uri, val requestId: String
    * Project context for the call, if exists
    */
   var projectId: Option[String] = None
+
+  /**
+   * Terminology id for the call, if exists
+   */
+  var terminologyId: Option[String] = None
 }

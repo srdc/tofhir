@@ -1,12 +1,13 @@
 package io.tofhir.server.service.localterminology
 
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.{AlreadyExists, BadRequest, LocalTerminology, ResourceNotFound}
 import io.tofhir.server.service.localterminology.LocalTerminologyFolderRepository.{TERMINOLOGY_FOLDER, TERMINOLOGY_JSON}
 import io.tofhir.server.util.FileOperations
-import org.apache.commons.io.FileUtils
 
 import java.io.File
+import scala.collection.mutable
 import scala.concurrent.Future
 
 /**
@@ -15,9 +16,8 @@ import scala.concurrent.Future
  * @param localTerminologyRepositoryRoot root folder path to the local terminology repository
  */
 class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) extends ILocalTerminologyRepository {
-
-  // load local terminology services from json file on startup
-  var localTerminologies: Seq[LocalTerminology] = readLocalTerminologyFile()
+  // local terminology id -> local terminology
+  private val localTerminologies: mutable.Map[String, LocalTerminology] = initMap(localTerminologyRepositoryRoot)
 
   /**
    * Retrieve the metadata of all LocalTerminology
@@ -25,7 +25,7 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
    */
   override def getAllLocalTerminologyMetadata: Future[Seq[LocalTerminology]] = {
     Future {
-      this.localTerminologies
+      this.localTerminologies.values.map(_.copy(conceptMaps = Seq.empty, codeSystems = Seq.empty)).toSeq
     }
   }
 
@@ -36,19 +36,19 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
   override def createTerminologyService(terminology: LocalTerminology): Future[LocalTerminology] = {
     Future {
       this.validate(terminology)
-      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
-      val terminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
-      if (terminologyFolder.exists()) {
-        throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.name} already exists.")
-      }
       // check if id exists
-      if (this.localTerminologies.exists(_.id == terminology.id)) {
+      if (this.localTerminologies.contains(terminology.id)) {
         throw AlreadyExists("Local terminology id already exists.", s"Id ${terminology.id} already exists.")
       }
-      this.localTerminologies = this.localTerminologies :+ terminology
-      FileOperations.writeJsonContent(localTerminologyFile, this.localTerminologies)
-      terminologyFolder.mkdirs() // create folder
+      val terminologyFolder = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER, terminology.id).toFile
+      // add new terminology to the list and write to file
+      val updatedLocalTerminologies = this.localTerminologies.values.toSeq :+ terminology
+      this.updateTerminologiesMetadata(updatedLocalTerminologies)
+      // create folder
+      terminologyFolder.mkdirs()
       this.createConceptMapAndCodeSystemFiles(terminology) // create concept maps/code systems files
+      // add to map
+      this.localTerminologies.put(terminology.id, terminology)
       terminology
     }
   }
@@ -58,12 +58,9 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
    * @param id id of the LocalTerminologyService
    * @return LocalTerminologyService
    */
-  override def retrieveTerminology(id: String): Future[LocalTerminology] = {
+  override def retrieveTerminology(id: String): Future[Option[LocalTerminology]] = {
     Future {
-      this.localTerminologies.find(_.id == id) match {
-        case Some(terminology) => terminology
-        case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
-      }
+      this.localTerminologies.get(id)
     }
   }
 
@@ -80,27 +77,19 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
         throw BadRequest("Local terminology id does not match.", s"Id $id does not match with the id in the body ${terminology.id}.")
       }
       this.validate(terminology)
-      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
       // find the terminology service
-      this.localTerminologies.find(_.id == id) match {
+      this.localTerminologies.get(id) match {
         case Some(foundTerminology) =>
-          // check if folders exists
-          val terminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.name)
-          val newTerminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name)
-          if (terminology.name != foundTerminology.name && newTerminologyFolder.exists()) {
-            throw AlreadyExists("Local terminology folder already exists.", s"Folder ${terminology.name} already exists.")
-          }
-          // update the terminology service json
-          this.localTerminologies = this.localTerminologies.map {
+          // update the terminology service metadata
+          val updatedLocalTerminologies = this.localTerminologies.values.map {
             case t if t.id == id => terminology
             case t => t
-          }
-          FileOperations.writeJsonContent(localTerminologyFile, this.localTerminologies)
-          //update folder name if changed
-          if (terminology.name != foundTerminology.name) {
-            terminologyFolder.renameTo(newTerminologyFolder)
-          }
-          this.updateConceptMapAndCodeSystemFiles(foundTerminology, terminology) // update concept maps/code systems files
+          }.toSeq
+          this.updateTerminologiesMetadata(updatedLocalTerminologies)
+          // update concept maps/code systems files
+          this.updateConceptMapAndCodeSystemFiles(foundTerminology, terminology)
+          // update the terminology service in the map
+          this.localTerminologies.put(id, terminology)
           terminology
         case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
       }
@@ -114,17 +103,17 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
    */
   override def removeTerminology(id: String): Future[Unit] = {
     Future {
-      val localTerminologyFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
       // find the terminology service
-      this.localTerminologies.find(_.id == id) match {
+      this.localTerminologies.get(id) match {
         case Some(foundTerminology) =>
-          // check if folders exists
-          val terminologyFolder = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + foundTerminology.name)
-          // delete the terminology
-          this.localTerminologies = this.localTerminologies.filterNot(_.id == id)
-          FileOperations.writeJsonContent(localTerminologyFile, this.localTerminologies)
+          // delete the terminology metadata
+          val updatedTerminologies = this.localTerminologies.values.toSeq.filterNot(_.id == id)
+          this.updateTerminologiesMetadata(updatedTerminologies)
           //delete the terminology folder
-          FileUtils.deleteDirectory(terminologyFolder)
+          val terminologyFolder = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER, foundTerminology.id).toFile
+          org.apache.commons.io.FileUtils.deleteDirectory(terminologyFolder)
+          // delete the terminology from the map
+          this.localTerminologies.remove(id)
         case None => throw ResourceNotFound("Local terminology not found.", s"Local terminology with id $id not found.")
       }
     }
@@ -138,11 +127,11 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
   private def createConceptMapAndCodeSystemFiles(terminology: LocalTerminology): Future[Unit] = {
     Future {
       terminology.conceptMaps.foreach(conceptMap => {
-        val file = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name + File.separator + conceptMap.name)
+        val file = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER, terminology.id, conceptMap.id).toFile
         file.createNewFile()
       })
       terminology.codeSystems.foreach(codeSystem => {
-        val file = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name + File.separator + codeSystem.name)
+        val file = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER, terminology.id, codeSystem.id).toFile
         file.createNewFile()
       })
     }
@@ -160,29 +149,7 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
       val currentCodeSystemIds = currentTerminology.codeSystems.map(_.id)
       val newConceptMapIds = terminology.conceptMaps.map(_.id)
       val newCodeSystemIds = terminology.codeSystems.map(_.id)
-      // find intersections
-      val conceptMapIdsIntersection = currentConceptMapIds.intersect(newConceptMapIds)
-      val codeSystemIdsIntersection = currentCodeSystemIds.intersect(newCodeSystemIds)
-      // update file names if changed
-      conceptMapIdsIntersection.foreach { id =>
-        val currentConceptMap = currentTerminology.conceptMaps.find(_.id == id).get
-        val newConceptMap = terminology.conceptMaps.find(_.id == id).get
-        if (currentConceptMap.name != newConceptMap.name) {
-          val currentFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + currentTerminology.name + File.separator + currentConceptMap.name)
-          val newFile = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name + File.separator + newConceptMap.name)
-          currentFile.renameTo(newFile)
-        }
-      }
-      codeSystemIdsIntersection.foreach { id =>
-        val currentCodeSystem = currentTerminology.codeSystems.find(_.id == id).get
-        val newCodeSystem = terminology.codeSystems.find(_.id == id).get
-        if (currentCodeSystem.name != newCodeSystem.name) {
-          val currentFile = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + currentTerminology.name + File.separator + currentCodeSystem.name)
-          val newFile = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name + File.separator + newCodeSystem.name)
-          currentFile.renameTo(newFile)
-        }
-      }
-
+      // find ids to delete and add
       val conceptMapIdsToDelete = currentConceptMapIds.diff(newConceptMapIds)
       val conceptMapIdsToAdd = newConceptMapIds.diff(currentConceptMapIds)
       val codeSystemIdsToDelete = currentCodeSystemIds.diff(newCodeSystemIds)
@@ -190,25 +157,25 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
       // delete concept maps
       conceptMapIdsToDelete.foreach { id =>
         val conceptMap = currentTerminology.conceptMaps.find(_.id == id).get
-        val file = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + currentTerminology.name + File.separator + conceptMap.name)
+        val file = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER, currentTerminology.id, conceptMap.id).toFile
         file.delete()
       }
       // delete code systems
       codeSystemIdsToDelete.foreach { id =>
         val codeSystem = currentTerminology.codeSystems.find(_.id == id).get
-        val file = FileOperations.getFileIfExists(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + currentTerminology.name + File.separator + codeSystem.name)
+        val file = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER, currentTerminology.id, codeSystem.id).toFile
         file.delete()
       }
       // add concept maps
       conceptMapIdsToAdd.foreach { id =>
         val conceptMap = terminology.conceptMaps.find(_.id == id).get
-        val file = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name + File.separator + conceptMap.name)
+        val file = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER, currentTerminology.id, conceptMap.id).toFile
         file.createNewFile()
       }
       // add code systems
       codeSystemIdsToAdd.foreach { id =>
         val codeSystem = terminology.codeSystems.find(_.id == id).get
-        val file = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER + File.separator + terminology.name + File.separator + codeSystem.name)
+        val file = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER, currentTerminology.id, codeSystem.id).toFile
         file.createNewFile()
       }
     }
@@ -219,17 +186,31 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
    * @return
    */
   private def readLocalTerminologyFile(): Seq[LocalTerminology] = {
-    val localTerminologyFolder = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_FOLDER)
+    val localTerminologyFolder = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_FOLDER).toFile
     if (!localTerminologyFolder.exists()) {
       localTerminologyFolder.mkdirs()
     }
-    val localTerminologyFile = new File(localTerminologyRepositoryRoot + File.separator + TERMINOLOGY_JSON)
+    val localTerminologyFile = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_JSON).toFile
     if (!localTerminologyFile.exists()) {
       localTerminologyFile.createNewFile()
       FileOperations.writeJsonContent(localTerminologyFile, Seq.empty[LocalTerminology])
     }
     val localTerminologies = FileOperations.readJsonContent[LocalTerminology](localTerminologyFile)
     localTerminologies
+  }
+
+  /**
+   * Update local terminology file
+   * @param localTerminologyRepositoryRoot
+   * @return
+   */
+  private def initMap(localTerminologyRepositoryRoot: String): mutable.Map[String, LocalTerminology] = {
+    val localTerminologies = readLocalTerminologyFile()
+    val map = mutable.Map[String, LocalTerminology]()
+    localTerminologies.foreach(terminology => {
+      map.put(terminology.id, terminology)
+    })
+    map
   }
 
   /**
@@ -256,6 +237,12 @@ class LocalTerminologyFolderRepository(localTerminologyRepositoryRoot: String) e
       throw BadRequest("The same name occurs more than once in the data", "")
     }
   }
+
+  private def updateTerminologiesMetadata(terminologies: Seq[LocalTerminology]): Unit = {
+    val localTerminologyFile = FileUtils.getPath(localTerminologyRepositoryRoot, TERMINOLOGY_JSON).toFile
+    FileOperations.writeJsonContent(localTerminologyFile, terminologies)
+  }
+
 }
 
 object LocalTerminologyFolderRepository {

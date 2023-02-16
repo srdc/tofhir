@@ -32,7 +32,7 @@ class LocalTerminologyService(localTerminologyRepositoryRoot: String) extends La
    * @param id id of the LocalTerminologyService to retrieve
    * @return LocalTerminologyService
    */
-  def getTerminologyServiceById(id: String): Future[LocalTerminology] = {
+  def getTerminologyServiceById(id: String): Future[Option[LocalTerminology]] = {
     localTerminologyRepository.retrieveTerminology(id)
   }
 

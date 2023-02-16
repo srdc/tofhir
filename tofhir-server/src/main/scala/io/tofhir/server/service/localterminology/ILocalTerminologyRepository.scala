@@ -27,7 +27,7 @@ trait ILocalTerminologyRepository {
    * @param id id of the LocalTerminologyService
    * @return LocalTerminologyService if found
    */
-  def retrieveTerminology(id: String): Future[LocalTerminology]
+  def retrieveTerminology(id: String): Future[Option[LocalTerminology]]
 
   /**
    * Update a LocalTerminologyService

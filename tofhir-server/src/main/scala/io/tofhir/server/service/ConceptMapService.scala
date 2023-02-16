@@ -37,7 +37,7 @@ class ConceptMapService(localTerminologyRepositoryRoot: String) extends LazyLogg
    * @param conceptMapId id of the concept map
    * @return TerminologyConceptMap if found
    */
-  def getConceptMap(terminologyId: String, conceptMapId: String): Future[TerminologyConceptMap] = {
+  def getConceptMap(terminologyId: String, conceptMapId: String): Future[Option[TerminologyConceptMap]] = {
     conceptMapRepository.getConceptMap(terminologyId, conceptMapId)
   }
 

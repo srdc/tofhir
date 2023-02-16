@@ -67,7 +67,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // set the created terminology
         localTerminology1 = localTerminology
         // validate that a folder is created for the terminology
-        new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar + localTerminology.name).exists() shouldEqual true
+        new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar + localTerminology.id).exists() shouldEqual true
         // validate that terminologies metadata file is updated
         val localTerminologies = FileOperations.readJsonContent[LocalTerminology](new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON))
         localTerminologies.length shouldEqual 1
@@ -112,8 +112,6 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that local terminologies is updated
         val localTerminologies = FileOperations.readJsonContent[LocalTerminology](new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON))
         localTerminologies.find(_.id == localTerminology.id).get.name shouldEqual "nameUpdated1"
-        // validate that folder name is updated for the terminology
-        new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar + localTerminology.name).exists() shouldEqual true
         localTerminology1 = localTerminology
       }
     }
@@ -121,9 +119,9 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
     "delete a local terminology" in {
       // delete a local terminology
       Delete(s"/terminology/${localTerminology2.id}") ~> route ~> check {
-        status shouldEqual StatusCodes.OK
+        status shouldEqual StatusCodes.NoContent
         // validate that terminology folder is deleted
-        new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar + localTerminology2.name).exists() shouldEqual false
+        new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar + localTerminology2.id).exists() shouldEqual false
         // validate that terminology metadata file is updated
         val localTerminologies = FileOperations.readJsonContent[LocalTerminology](new File(toFhirEngineConfig.contextPath + File.separatorChar + LocalTerminologyFolderRepository.TERMINOLOGY_JSON))
         localTerminologies.length shouldEqual 1
@@ -146,7 +144,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that concept map file is created
         new File(toFhirEngineConfig.contextPath + File.separatorChar +
           LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + conceptMap.name).exists() shouldEqual true
+          localTerminology1.id + File.separatorChar + conceptMap.id).exists() shouldEqual true
       }
       // create a second concept map within same terminology
       Post(s"/terminology/${localTerminology1.id}/conceptmap", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap2))) ~> route ~> check {
@@ -157,7 +155,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that concept map file is created
         new File(toFhirEngineConfig.contextPath + File.separatorChar +
           LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + conceptMap.name).exists() shouldEqual true
+          localTerminology1.id + File.separatorChar + conceptMap.id).exists() shouldEqual true
       }
     }
 
@@ -188,15 +186,6 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that the returned concept map includes the update
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
         conceptMap.name shouldEqual "testCMUpdated"
-        // validate that concept map file is updated
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + conceptMap.name).exists() shouldEqual true
-
-        // validate that old concept map file is deleted
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + conceptMap1.name).exists() shouldEqual false
         conceptMap1 = conceptMap
       }
     }
@@ -204,11 +193,11 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
     "delete a concept map within a local terminology" in {
       // delete a concept map within a local terminology
       Delete(s"/terminology/${localTerminology1.id}/conceptmap/${conceptMap2.id}") ~> route ~> check {
-        status shouldEqual StatusCodes.OK
+        status shouldEqual StatusCodes.NoContent
         // validate that concept map file is deleted
         new File(toFhirEngineConfig.contextPath + File.separatorChar +
           LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + conceptMap2.name).exists() shouldEqual false
+          localTerminology1.name + File.separatorChar + conceptMap2.id).exists() shouldEqual false
       }
       // delete a non-existent concept map within a local terminology
       Delete(s"/terminology/${localTerminology1.id}/conceptmap/${conceptMap2.id}") ~> route ~> check {
@@ -257,7 +246,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that code system file is created
         new File(toFhirEngineConfig.contextPath + File.separatorChar +
           LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + codeSystem.name).exists() shouldEqual true
+          localTerminology1.id + File.separatorChar + codeSystem.id).exists() shouldEqual true
       }
       // create a second code system within same terminology
       Post(s"/terminology/${localTerminology1.id}/codesystem", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem2))) ~> route ~> check {
@@ -268,7 +257,7 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that code system file is created
         new File(toFhirEngineConfig.contextPath + File.separatorChar +
           LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + codeSystem.name).exists() shouldEqual true
+          localTerminology1.id + File.separatorChar + codeSystem.id).exists() shouldEqual true
       }
     }
 
@@ -299,27 +288,17 @@ class LocalTerminologyEndpointTest extends AnyWordSpec with Matchers with Scalat
         // validate that the returned code system includes the update
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
         codeSystem.name shouldEqual "testCSUpdated"
-        // validate that code system file is updated
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + codeSystem.name).exists() shouldEqual true
-
-        // validate that old code system file is deleted
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + codeSystem1.name).exists() shouldEqual false
-        codeSystem1 = codeSystem
       }
     }
 
     "delete a code system within a local terminology" in {
       // delete a code system within a local terminology
       Delete(s"/terminology/${localTerminology1.id}/codesystem/${codeSystem2.id}") ~> route ~> check {
-        status shouldEqual StatusCodes.OK
+        status shouldEqual StatusCodes.NoContent
         // validate that code system file is deleted
         new File(toFhirEngineConfig.contextPath + File.separatorChar +
           LocalTerminologyFolderRepository.TERMINOLOGY_FOLDER + File.separatorChar +
-          localTerminology1.name + File.separatorChar + codeSystem2.name).exists() shouldEqual false
+          localTerminology1.id + File.separatorChar + codeSystem2.id).exists() shouldEqual false
       }
       // delete a non-existent code system within a local terminology
       Delete(s"/terminology/${localTerminology1.id}/codesystem/${codeSystem2.id}") ~> route ~> check {
