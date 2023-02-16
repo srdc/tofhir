@@ -42,7 +42,8 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
    */
   protected def convertToStructureDefinitionResource(schemaDefinition: SchemaDefinition): Resource = {
     val structureDefinitionResource: Resource =
-      ("resourceType" -> "StructureDefinition") ~
+        ("id" -> schemaDefinition.id) ~
+        ("resourceType" -> "StructureDefinition") ~
         ("url" -> schemaDefinition.url) ~
         ("name" -> schemaDefinition.name) ~
         ("status" -> "draft") ~
