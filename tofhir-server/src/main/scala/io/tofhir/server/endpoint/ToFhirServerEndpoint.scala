@@ -23,7 +23,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val projectRepository: IProjectRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
   val schemaRepository: ISchemaRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
-  val mappingEndpoint = new MappingEndpoint(toFhirEngineConfig)
+  val mappingEndpoint = new MappingEndpoint(toFhirEngineConfig, projectRepository)
   val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
   val localTerminologyEndpoint = new LocalTerminologyEndpoint(toFhirEngineConfig)
 
