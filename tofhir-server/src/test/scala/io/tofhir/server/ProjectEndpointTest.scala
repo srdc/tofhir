@@ -127,7 +127,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
         // validate the project file has been deleted under the schemas folder
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === false
-        FileUtils.getPath(toFhirEngineConfig.mappingJobFileContextPath, createdProject1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.contextPath, createdProject1.id).toFile.exists() === false
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id).toFile.exists() === false
       }
       // delete a non-existent project
