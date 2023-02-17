@@ -1,4 +1,4 @@
-package io.tofhir.server.service.localterminology.codesystem
+package io.tofhir.server.service.terminology.codesystem
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString

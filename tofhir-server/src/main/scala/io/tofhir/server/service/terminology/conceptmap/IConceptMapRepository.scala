@@ -1,4 +1,4 @@
-package io.tofhir.server.service.localterminology.conceptmap
+package io.tofhir.server.service.terminology.conceptmap
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
