@@ -27,8 +27,8 @@ object Boot extends App {
         ToFhirConfig.engineConfig.initialMappingJobFilePath
 
     val toFhirDbFolderPath =
-      if (options.contains("db")) options.get("db").map(_.asInstanceOf[String])
-      else ToFhirConfig.engineConfig.toFhirDb
+      if (options.contains("db-path")) options("db-path").asInstanceOf[String]
+      else ToFhirConfig.engineConfig.toFhirDbFolderPath
 
     CommandLineInterface.runJob(toFhirEngine, mappingJobFilePath, toFhirDbFolderPath)
   }

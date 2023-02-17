@@ -20,20 +20,20 @@ class FolderDBInitializer(toFhirEngineConfig: ToFhirEngineConfig, schemeFolderRe
   private val logger: Logger = Logger(this.getClass)
 
   /**
-   * Creates repository directory [[ToFhirEngineConfig.repositoryRootPath]] if it does not exist.
+   * Creates repository directory [[ToFhirEngineConfig.toFhirDbFolderPath]] if it does not exist.
    * Further, it creates [[ProjectFolderRepository.PROJECTS_JSON]] file if it does not exist but mapping, jobs and schema folders do.
    * It simply populates the json file using the content of other data folders. It utilizes respective folder-based repositories
    * and assumes that those repositories are already initialized with those existing resources.
    */
   def initialize(): Unit = {
     // create repository directory if it does not exist
-    val repositoryDirectory = new File(toFhirEngineConfig.repositoryRootPath)
+    val repositoryDirectory = new File(toFhirEngineConfig.toFhirDbFolderPath)
     if(!repositoryDirectory.exists()){
       repositoryDirectory.mkdirs()
     }
 
     // check whether projects metadata file exists
-    val file = new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
+    val file = new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
     if (file.exists()) {
       logger.debug("Metadata file for projects exists. Skipping database initialization.")
     }
@@ -97,7 +97,7 @@ class FolderDBInitializer(toFhirEngineConfig: ToFhirEngineConfig, schemeFolderRe
       val projectsMetadata = projects.values
       if (projectsMetadata.nonEmpty) {
         // create projects metadata file
-        val file = new File(toFhirEngineConfig.repositoryRootPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
+        val file = new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
         file.createNewFile()
         // write projects to the file
         val fw = new FileWriter(file)

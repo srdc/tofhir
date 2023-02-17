@@ -202,14 +202,14 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @return projects in the repository
    * */
   private def getProjectsMetadata(): Seq[Project] = {
-    val file = FileUtils.findFileByName(config.repositoryRootPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
+    val file = FileUtils.findFileByName(config.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
     file match {
       case Some(f) =>
         FileOperations.readJsonContent[Project](f)
       case None => {
         // when projects metadata file does not exist, create it
         logger.debug("There does not exist a metadata file for projects. Creating it...")
-        val file = new File(config.repositoryRootPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
+        val file = new File(config.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
         file.createNewFile()
         // initialize projects metadata file with empty array
         val fw = new FileWriter(file)
@@ -225,7 +225,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param projects projects
    * */
   private def updateProjectsMetadata(projects: Seq[Project]) = {
-    val file = new File(config.repositoryRootPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
+    val file = new File(config.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
     // when projects metadata file does not exist, create it
     if (!file.exists()) {
       logger.debug("There does not exist a metadata file for projects to update. Creating it...")
