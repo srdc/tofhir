@@ -4,7 +4,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.TerminologyConceptMap
-import io.tofhir.server.service.localterminology.conceptmap.{ConceptMapRepository, IConceptMapRepository}
+import io.tofhir.server.service.terminology.conceptmap.{ConceptMapRepository, IConceptMapRepository}
 
 import scala.concurrent.Future
 

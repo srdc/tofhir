@@ -1,7 +1,5 @@
 package io.tofhir.server.service.project
 
-import io.onfhir.config.IFhirVersionConfigurator
-import io.onfhir.r4.config.FhirR4Configurator
 import io.tofhir.server.model.Project
 import org.json4s.JObject
 
@@ -12,7 +10,7 @@ import scala.concurrent.Future
  */
 trait IProjectRepository {
 
-  protected val fhirConfigurator: IFhirVersionConfigurator = new FhirR4Configurator()
+//  protected val fhirConfigurator: IFhirVersionConfigurator = new FhirR4Configurator()
 
   /**
    * Retrieve all Projects
