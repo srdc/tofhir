@@ -87,7 +87,7 @@ object CommandLineInterface {
    * @param toFhirEngine
    * @param mappingJobFilePath
    */
-  def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String], toFhirDbFolderPath: Option[String]): Unit = {
+  def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String], toFhirDbFolderPath: String): Unit = {
     if(mappingJobFilePath.isEmpty) {
       println("There are no jobs to run. Exiting...")
       System.exit(1)
@@ -133,7 +133,7 @@ object CommandLineInterface {
       }
 
       val scheduler = new Scheduler()
-      val toFhirDbURI: URI = Paths.get(toFhirDbFolderPath.get, "scheduler").toUri
+      val toFhirDbURI: URI = Paths.get(toFhirDbFolderPath, "scheduler").toUri
       val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDbURI)
 
       val fhirMappingJobManager =

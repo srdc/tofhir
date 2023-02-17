@@ -36,9 +36,6 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   /** The # of FHIR resources in the group while executing (create/update) a batch operation. */
   lazy val fhirWriterBatchGroupSize: Int = Try(toFhirEngineConfig.getInt("fhir-server-writer.batch-group-size")).getOrElse(10)
 
-  /** Path to the folder where the execution times of scheduled mapping jobs are kept. */
-  lazy val toFhirDb: Option[String] = Try(toFhirEngineConfig.getString("db")).toOption
-
-  /** Path to the folder where repository data are kept */
-  lazy val repositoryRootPath: String = Try(toFhirEngineConfig.getString("repository-path")).getOrElse("tofhir-db")
+  /** Path to the folder which acts as the folder database of toFHIR*/
+  lazy val toFhirDbFolderPath: String = Try(toFhirEngineConfig.getString("db-path")).getOrElse("tofhir-db")
 }
