@@ -156,7 +156,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   }
 
   /**
-   * Adds the mapping definition metadata to the project
+   * Adds the mapping definition metadata to the project json file
    *
    * @param projectId Project id the mapping will be added to
    * @param mappingMetadata Mapping metadata to be added
@@ -171,7 +171,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   }
 
   /**
-   * Replaces the mapping definition metadata of the project
+   * Replaces the mapping definition metadata in the project json file
    *
    * @param projectId Project id the mapping will be updated to
    * @param mappingMetadata Mapping metadata to be updated
@@ -182,7 +182,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   }
 
   /**
-   * Deletes the mapping definition metadata of the project
+   * Deletes the mapping definition metadata from the project json file
    *
    * @param projectId Project id the mapping will be deleted from
    * @param mappingId Mapping id to be deleted
