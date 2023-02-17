@@ -6,9 +6,8 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, MappingMetadata, Project, ResourceNotFound, SchemaDefinition}
+import io.tofhir.server.model.{AlreadyExists, BadRequest, MappingMetadata, Project, ResourceNotFound}
 import io.tofhir.server.service.project.ProjectFolderRepository
-import org.apache.commons.io.FilenameUtils
 import org.json4s._
 import org.json4s.jackson.Serialization.writePretty
 
@@ -60,7 +59,9 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
         fw.write(writePretty(mapping))
         fw.close()
       })
+      // Add to the project metadata json file
       projectFolderRepository.addMappingMetadata(projectId, getMappingMetadata(mapping))
+      // Add to the in-memory map
       mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
       mapping
     }
@@ -89,6 +90,7 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
    */
   override def putMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping] = {
     Future {
+      // cross check ids
       if (!id.equals(mapping.id)) {
         throw BadRequest("Mapping definition is not valid.", s"Identifier of the mapping definition: ${mapping.id} does not match with explicit id: $id")
       }
@@ -101,9 +103,9 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
         fw.write(writePretty(mapping))
         fw.close()
       })
-      // update the mapping in the map
+      // update the mapping in the in-memory map
       mappingDefinitions(projectId).put(id, mapping)
-      // update the metadata
+      // update the projects metadata json file
       projectFolderRepository.updateMappingMetadata(projectId, getMappingMetadata(mapping))
       mapping
     }
@@ -128,7 +130,7 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
       })
       // delete the mapping from the map
       mappingDefinitions(projectId).remove(id)
-      // delete the metadata
+      // delete the mapping from projects json file
       projectFolderRepository.deleteMappingMetadata(projectId, id)
     }
   }

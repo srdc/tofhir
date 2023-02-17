@@ -1,7 +1,7 @@
 package io.tofhir.server.model
 
 /**
- * Represents a mapping file
+ * Mapping model in the projects.json file
  * @param id Identifier of the mapping
  * @param url URL of the mapping
  * @param name Name of the mapping file
