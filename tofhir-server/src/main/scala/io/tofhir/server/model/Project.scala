@@ -17,7 +17,7 @@ case class Project(id: String = UUID.randomUUID().toString,
                    schemas: Seq[SchemaDefinition] = Seq.empty,
                    mappings: Seq[FhirMappingMetadata] = Seq.empty,
                    contextConceptMaps: Seq[FhirMappingContext] = Seq.empty,
-                   mappingJobs: Seq[FhirMappingJob] = Seq.empty
+                   mappingJobs: Seq[JobMetadata] = Seq.empty
                   ) {
   /**
    * Validates the fields of a project.
