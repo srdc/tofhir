@@ -24,7 +24,7 @@ case class FhirMapping(id: String = UUID.randomUUID().toString,
                        title: Option[String] = None,
                        description: Option[String] = None,
                        source: Seq[FhirMappingSource],
-                       context: Map[String, FhirMappingContextDefinition],
+                       context: Map[String, FhirMappingContextDefinition] = Map.empty,
                        variable:Seq[FhirExpression] = Nil,
                        mapping: Seq[FhirMappingExpression]
                       ) {
