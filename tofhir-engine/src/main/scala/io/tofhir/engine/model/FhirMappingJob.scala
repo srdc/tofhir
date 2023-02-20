@@ -19,6 +19,7 @@ import java.util.UUID
  *                                      is given in sink settings will be used as identity service (Override identityServiceSettings if given)
  */
 case class FhirMappingJob(id: String = UUID.randomUUID().toString,
+                          name: Option[String] = None,
                           sourceSettings: Map[String,DataSourceSettings],
                           sinkSettings: FhirSinkSettings,
                           terminologyServiceSettings:Option[TerminologyServiceSettings] = None,

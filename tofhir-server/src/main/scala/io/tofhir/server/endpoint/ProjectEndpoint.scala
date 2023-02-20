@@ -24,6 +24,7 @@ class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig, schemaRepository: 
   val service: ProjectService = new ProjectService(projectRepository)
   val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
   val mappingEndpoint: MappingEndpoint = new MappingEndpoint(toFhirEngineConfig, projectRepository)
+  val jobEndpoint: JobEndpoint = new JobEndpoint(toFhirEngineConfig, projectRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_PROJECTS) {
@@ -40,7 +41,7 @@ class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig, schemaRepository: 
               }
               case Some(_) => {
                 request.projectId = Some(projectId)
-                schemaDefinitionEndpoint.route(request) ~ mappingEndpoint.route(request)
+                schemaDefinitionEndpoint.route(request) ~ mappingEndpoint.route(request) ~ jobEndpoint.route(request)
               }
             }
           }

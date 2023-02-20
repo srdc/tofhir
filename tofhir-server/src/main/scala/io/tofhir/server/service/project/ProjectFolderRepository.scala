@@ -6,6 +6,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model._
+import io.tofhir.server.model.{AlreadyExists, JobMetadata, Project, ProjectEditableFields, ResourceNotFound, SchemaDefinition}
 import io.tofhir.server.util.FileOperations
 import org.json4s._
 import org.json4s.jackson.Serialization.writePretty
@@ -193,6 +194,47 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
     val project: Project = projects(projectIndex)
 
     val updatedProjects: Seq[Project] = projects.updated(projectIndex, project.copy(mappings = project.mappings.filterNot(m => m.id.equals(mappingId))))
+    updateProjectsMetadata(updatedProjects)
+  }
+
+  /**
+   * Adds the job definition metadata to the project json file
+   *
+   * @param projectId
+   * @param jobMetadata
+   */
+  def addJobMetadata(projectId: String, jobMetadata: JobMetadata): Unit = {
+    val projects: Seq[Project] = getProjectsMetadata()
+    val projectIndex: Int = projects.indexWhere(p => p.id.equals(projectId))
+    val project: Project = projects(projectIndex)
+
+    val updatedProjects: Seq[Project] = projects.updated(projectIndex, project.copy(mappingJobs = project.mappingJobs :+ jobMetadata))
+    updateProjectsMetadata(updatedProjects)
+  }
+
+  /**
+   * Replaces the job definition metadata of the project json file
+   *
+   * @param projectId
+   * @param jobMetadata
+   */
+  def updateJobMetadata(projectId: String, jobMetadata: JobMetadata): Unit = {
+    deleteJobMetadata(projectId, jobMetadata.id)
+    addJobMetadata(projectId, jobMetadata)
+  }
+
+  /**
+   * Deletes the job definition metadata of the project json file
+   *
+   * @param projectId
+   * @param jobId
+   */
+  def deleteJobMetadata(projectId: String, jobId: String): Unit = {
+    val projects: Seq[Project] = getProjectsMetadata()
+    val projectIndex: Int = projects.indexWhere(p => p.id.equals(projectId))
+    val project: Project = projects(projectIndex)
+
+    val updatedProjects: Seq[Project] = projects.updated(projectIndex, project.copy(mappingJobs = project.mappingJobs.filterNot(j => j.id.equals(jobId))))
     updateProjectsMetadata(updatedProjects)
   }
 
