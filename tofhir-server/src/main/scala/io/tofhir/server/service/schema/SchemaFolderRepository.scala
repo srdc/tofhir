@@ -71,6 +71,19 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   }
 
   /**
+   * Retrieve the schema identified by its url.
+   *
+   * @param projectId Project containing the schema definition
+   * @param url       URL of the schema definition
+   * @return
+   */
+  override def getSchemaByUrl(projectId: String, url: String): Future[Option[SchemaDefinition]] = {
+    Future {
+      schemaDefinitions(projectId).values.find(_.url.equals(url))
+    }
+  }
+
+  /**
    * Save the schema to the repository.
    *
    * @param schemaDefinition

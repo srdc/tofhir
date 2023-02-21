@@ -86,6 +86,16 @@ class SchemaEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTe
       }
     }
 
+    "get a schema by url in a project" in {
+      Get(s"/tofhir/projects/${createdProject1.id}/schemas?url=${schema1.url}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual schema1.url
+        schema.name shouldEqual schema1.name
+      }
+    }
+
     "update a schema in a project" in {
       // update a schema
       Put(s"/tofhir/projects/${createdProject1.id}/schemas/${schema1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(schema1.copy(url = "https://example.com/fhir/StructureDefinition/schema3")))) ~> route ~> check {

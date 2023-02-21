@@ -1,16 +1,16 @@
 package io.tofhir.server.service.project
 
-import java.io.{File, FileWriter}
 import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.model.{AlreadyExists, Project, ProjectEditableFields, ResourceNotFound, SchemaDefinition}
+import io.tofhir.server.model._
 import io.tofhir.server.util.FileOperations
 import org.json4s._
 import org.json4s.jackson.Serialization.writePretty
 
+import java.io.{File, FileWriter}
 import scala.concurrent.Future
 
 /**
@@ -152,6 +152,47 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
     val project: Project = projects(projectIndex)
 
     val updatedProjects: Seq[Project] = projects.updated(projectIndex, project.copy(schemas = project.schemas.filterNot(s => s.id.equals(schemaId))))
+    updateProjectsMetadata(updatedProjects)
+  }
+
+  /**
+   * Adds the mapping definition metadata to the project json file
+   *
+   * @param projectId Project id the mapping will be added to
+   * @param mappingMetadata Mapping metadata to be added
+   */
+  def addMappingMetadata(projectId: String, mappingMetadata: FhirMappingMetadata): Unit = {
+    val projects: Seq[Project] = getProjectsMetadata()
+    val projectIndex: Int = projects.indexWhere(p => p.id.equals(projectId))
+    val project: Project = projects(projectIndex)
+
+    val updatedProjects: Seq[Project] = projects.updated(projectIndex, project.copy(mappings = project.mappings :+ mappingMetadata))
+    updateProjectsMetadata(updatedProjects)
+  }
+
+  /**
+   * Replaces the mapping definition metadata in the project json file
+   *
+   * @param projectId Project id the mapping will be updated to
+   * @param mappingMetadata Mapping metadata to be updated
+   */
+  def updateMappingMetadata(projectId: String, mappingMetadata: FhirMappingMetadata): Unit = {
+    deleteMappingMetadata(projectId, mappingMetadata.id)
+    addMappingMetadata(projectId, mappingMetadata)
+  }
+
+  /**
+   * Deletes the mapping definition metadata from the project json file
+   *
+   * @param projectId Project id the mapping will be deleted from
+   * @param mappingId Mapping id to be deleted
+   */
+  def deleteMappingMetadata(projectId: String, mappingId: String): Unit = {
+    val projects: Seq[Project] = getProjectsMetadata()
+    val projectIndex: Int = projects.indexWhere(p => p.id.equals(projectId))
+    val project: Project = projects(projectIndex)
+
+    val updatedProjects: Seq[Project] = projects.updated(projectIndex, project.copy(mappings = project.mappings.filterNot(m => m.id.equals(mappingId))))
     updateProjectsMetadata(updatedProjects)
   }
 

@@ -2,63 +2,64 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.model.MappingFile
+import io.tofhir.server.model.FhirMappingMetadata
 import io.tofhir.server.service.mapping.{IMappingRepository, MappingRepository}
+import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
 
 import scala.concurrent.Future
 
-class MappingService(mappingRepositoryFolderPath: String) extends LazyLogging {
+class MappingService(mappingRepositoryFolderPath: String, projectRepository: IProjectRepository) extends LazyLogging {
 
-  private val mappingRepository: IMappingRepository = new MappingRepository(mappingRepositoryFolderPath)
+  private val mappingRepository: IMappingRepository = new MappingRepository(mappingRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
 
   /**
    * Get all mapping metadata from the mapping repository
-   * @param withSubFolder if given, only return the mappings in the given sub-folder
+   * @param projectId if given, only return the mappings in the given sub-folder
    * @return Seq[MappingFile]
    */
-  def getAllMetadata(withSubFolder: Option[String]): Future[Seq[MappingFile]] = {
-    mappingRepository.getAllMappingMetadata(withSubFolder)
+  def getAllMetadata(projectId: String): Future[Seq[FhirMappingMetadata]] = {
+    mappingRepository.getAllMappingMetadata(projectId)
   }
 
   /**
    * Save the mapping to the repository
-   * @param directory sub-folder of the mapping
+   * @param projectId sub-folder of the mapping
    * @param mapping mapping to save
    * @return FhirMapping
    */
-  def createMapping(directory: String, mapping: FhirMapping): Future[FhirMapping] = {
-    mappingRepository.createMapping(directory, mapping)
+  def createMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping] = {
+    mappingRepository.createMapping(projectId, mapping)
   }
 
   /**
-   * Get the mapping definition by its name and sub-folder
-   * @param directory sub-folder of the mapping
-   * @param name name of the mapping
-   * @return FhirMapping if available
-   */
-  def getMappingByName(directory: String, name: String): Future[Option[FhirMapping]] = {
-    mappingRepository.getMappingByName(directory, name)
-  }
-
-  /**
-   * Update the mapping in the repository
-   * @param directory sub-folder of the mapping
-   * @param name name of the mapping
-   * @param mapping mapping to update
+   * Get the mapping by its id
+   * @param projectId project id the mapping belongs to
+   * @param id mapping id
    * @return
    */
-  def updateMapping(directory: String, name: String, mapping: FhirMapping): Future[FhirMapping] = {
-    mappingRepository.updateMapping(directory, name, mapping)
+  def getMapping(projectId: String, id: String): Future[Option[FhirMapping]] = {
+    mappingRepository.getMapping(projectId, id)
   }
 
   /**
    * Delete the mapping from the repository
-   * @param directory sub-folder of the mapping
-   * @param name name of the mapping
+   * @param projectId project id the mapping belongs to
+   * @param id mapping id
+   * @param mapping mapping to update
    * @return
    */
-  def removeMapping(directory: String, name: String): Future[Unit] = {
-    mappingRepository.removeMapping(directory, name)
+  def updateMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping] = {
+    mappingRepository.putMapping(projectId, id, mapping)
+  }
+
+  /**
+   * Delete the mapping from the repository
+   * @param projectId project id the mapping belongs to
+   * @param id mapping id
+   * @return
+   */
+  def deleteMapping(projectId: String, id: String): Future[Unit] = {
+    mappingRepository.deleteMapping(projectId, id)
   }
 
 }
