@@ -161,7 +161,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param projectId Project id the mapping will be added to
    * @param mappingMetadata Mapping metadata to be added
    */
-  def addMappingMetadata(projectId: String, mappingMetadata: MappingMetadata): Unit = {
+  def addMappingMetadata(projectId: String, mappingMetadata: FhirMappingMetadata): Unit = {
     val projects: Seq[Project] = getProjectsMetadata()
     val projectIndex: Int = projects.indexWhere(p => p.id.equals(projectId))
     val project: Project = projects(projectIndex)
@@ -176,7 +176,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param projectId Project id the mapping will be updated to
    * @param mappingMetadata Mapping metadata to be updated
    */
-  def updateMappingMetadata(projectId: String, mappingMetadata: MappingMetadata): Unit = {
+  def updateMappingMetadata(projectId: String, mappingMetadata: FhirMappingMetadata): Unit = {
     deleteMappingMetadata(projectId, mappingMetadata.id)
     addMappingMetadata(projectId, mappingMetadata)
   }

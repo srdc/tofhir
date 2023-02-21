@@ -1,7 +1,7 @@
 package io.tofhir.server.service.mapping
 
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.model.MappingMetadata
+import io.tofhir.server.model.FhirMappingMetadata
 
 import scala.concurrent.Future
 
@@ -15,7 +15,7 @@ trait IMappingRepository {
    * Retrieve the metadata of all MappingFile, filter by subfolder if given
    * @return
    */
-  def getAllMappingMetadata(projectId: String): Future[Seq[MappingMetadata]]
+  def getAllMappingMetadata(projectId: String): Future[Seq[FhirMappingMetadata]]
 
   /**
    * Save the mapping to the repository.

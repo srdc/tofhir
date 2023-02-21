@@ -24,7 +24,7 @@ class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository:
         getAllMappings(projectId) ~ createMapping(projectId)
       } ~ // Operations on a single mapping identified by its id
         pathPrefix(Segment) { id: String =>
-          getMapping(projectId, id) ~ updateMapping(projectId, id) ~ deleteMapping(projectId, id)
+          getMapping(projectId, id) ~ putMapping(projectId, id) ~ deleteMapping(projectId, id)
         }
     }
   }
@@ -60,11 +60,11 @@ class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository:
     }
   }
 
-  private def updateMapping(projectId: String, id: String): Route = {
+  private def putMapping(projectId: String, id: String): Route = {
     put {
       entity(as[FhirMapping]) { fhirMapping =>
         complete {
-          service.putMapping(projectId, id, fhirMapping) map { _ =>
+          service.updateMapping(projectId, id, fhirMapping) map { _ =>
             StatusCodes.OK -> fhirMapping
           }
         }

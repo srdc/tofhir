@@ -2,7 +2,7 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.model.MappingMetadata
+import io.tofhir.server.model.FhirMappingMetadata
 import io.tofhir.server.service.mapping.{IMappingRepository, MappingRepository}
 import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
 
@@ -17,7 +17,7 @@ class MappingService(mappingRepositoryFolderPath: String, projectRepository: IPr
    * @param projectId if given, only return the mappings in the given sub-folder
    * @return Seq[MappingFile]
    */
-  def getAllMetadata(projectId: String): Future[Seq[MappingMetadata]] = {
+  def getAllMetadata(projectId: String): Future[Seq[FhirMappingMetadata]] = {
     mappingRepository.getAllMappingMetadata(projectId)
   }
 
@@ -48,7 +48,7 @@ class MappingService(mappingRepositoryFolderPath: String, projectRepository: IPr
    * @param mapping mapping to update
    * @return
    */
-  def putMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping] = {
+  def updateMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping] = {
     mappingRepository.putMapping(projectId, id, mapping)
   }
 

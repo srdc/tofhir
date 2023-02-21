@@ -6,7 +6,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, MappingMetadata, Project, ResourceNotFound}
+import io.tofhir.server.model.{AlreadyExists, BadRequest, FhirMappingMetadata, Project, ResourceNotFound}
 import io.tofhir.server.service.project.ProjectFolderRepository
 import org.json4s._
 import org.json4s.jackson.Serialization.writePretty
@@ -31,7 +31,7 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
    *
    * @return
    */
-  override def getAllMappingMetadata(projectId: String): Future[Seq[MappingMetadata]] = {
+  override def getAllMappingMetadata(projectId: String): Future[Seq[FhirMappingMetadata]] = {
     Future {
       if (mappingDefinitions.contains(projectId)) {
         mappingDefinitions(projectId).values.map(getMappingMetadata).toSeq
@@ -169,8 +169,8 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
    * @param mapping
    * @return
    */
-  private def getMappingMetadata(mapping: FhirMapping): MappingMetadata = {
-    MappingMetadata(mapping.id, mapping.url, mapping.name)
+  private def getMappingMetadata(mapping: FhirMapping): FhirMappingMetadata = {
+    FhirMappingMetadata(mapping.id, mapping.url, mapping.name)
   }
 
   /**

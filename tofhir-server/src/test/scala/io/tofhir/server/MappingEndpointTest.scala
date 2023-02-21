@@ -10,7 +10,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
-import io.tofhir.server.model.{MappingMetadata, Project}
+import io.tofhir.server.model.{FhirMappingMetadata, Project}
 import io.tofhir.server.service.project.ProjectFolderRepository
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.JsonMethods
@@ -66,7 +66,7 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns two mappings
-        val mappings: Seq[MappingMetadata] = JsonMethods.parse(responseAs[String]).extract[Seq[MappingMetadata]]
+        val mappings: Seq[FhirMappingMetadata] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingMetadata]]
         mappings.length shouldEqual 2
       }
     }
