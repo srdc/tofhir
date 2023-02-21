@@ -2,6 +2,7 @@ package io.tofhir.server.service.project
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter._
+import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.model.{FhirMapping, FhirMappingJob}

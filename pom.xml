@@ -57,6 +57,7 @@
     <modules>
         <module>tofhir-engine</module>
         <module>tofhir-server</module>
+        <module>tofhir-common</module>
     </modules>
 
     <properties>
@@ -357,6 +358,11 @@
             <dependency>
                 <groupId>io.onfhir</groupId>
                 <artifactId>tofhir-engine_2.13</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>tofhir-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

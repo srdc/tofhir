@@ -4,10 +4,11 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.{parameterMap, _}
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
+import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.SEGMENT_SCHEMAS
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{SchemaDefinition, ToFhirRestCall}
+import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.schema.ISchemaRepository
 

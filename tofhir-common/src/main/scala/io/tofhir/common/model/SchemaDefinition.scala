@@ -1,4 +1,4 @@
-package io.tofhir.server.model
+package io.tofhir.common.model
 
 import org.json4s.JsonAST.{JObject, JString}
 

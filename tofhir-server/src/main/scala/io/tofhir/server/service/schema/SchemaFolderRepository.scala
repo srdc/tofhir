@@ -9,12 +9,12 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMappingException
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFound, SchemaDefinition}
+import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFound}
 import io.tofhir.server.service.SimpleStructureDefinitionService
 import io.tofhir.server.service.project.ProjectFolderRepository
-
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
+import io.tofhir.common.model.SchemaDefinition
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source

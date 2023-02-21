@@ -2,7 +2,8 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
-import io.tofhir.server.model.{BadRequest, SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.server.model.BadRequest
 import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JArray
 import org.json4s.JsonDSL._

@@ -161,6 +161,10 @@
             <groupId>io.onfhir</groupId>
             <artifactId>tofhir-engine_2.13</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>tofhir-common</artifactId>
+        </dependency>
 
         <!-- For Unit testing -->
         <dependency>

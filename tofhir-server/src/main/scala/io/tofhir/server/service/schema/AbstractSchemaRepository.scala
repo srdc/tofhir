@@ -6,7 +6,8 @@ import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.config.IFhirVersionConfigurator
 import io.onfhir.r4.config.FhirR4Configurator
 import io.onfhir.r4.parsers.R4Parser
-import io.tofhir.server.model.{BadRequest, DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.server.model.BadRequest
 import io.tofhir.server.service.SimpleStructureDefinitionService
 import org.json4s.JArray
 import org.json4s.JsonDSL._
