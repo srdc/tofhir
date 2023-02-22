@@ -17,7 +17,7 @@ import scala.concurrent.Future
 import scala.io.Source
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 
-class JobRepository(jobRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IJobRepository {
+class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IJobRepository {
   // project id -> mapping job id -> mapping job
   private val jobDefinitions: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = initMap(jobRepositoryFolderPath)
 
