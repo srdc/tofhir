@@ -1,12 +1,12 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.Directives.{complete, entity, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.server.endpoint.CodeSystemEndpoint.SEGMENT_CODESYSTEM
+import io.tofhir.server.endpoint.CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{TerminologyCodeSystem, ToFhirRestCall}
@@ -17,7 +17,7 @@ class CodeSystemEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLog
   val service: CodeSystemService = new CodeSystemService(toFhirEngineConfig.contextPath)
 
   def route(request: ToFhirRestCall): Route = {
-    pathPrefix(SEGMENT_CODESYSTEM) {
+    pathPrefix(SEGMENT_CODE_SYSTEMS) {
       val terminologyId: String = request.terminologyId.get
       pathEndOrSingleSlash {
         getAllCodeSystemsRoute(terminologyId) ~ createCodeSystemRoute(terminologyId)
@@ -148,5 +148,5 @@ class CodeSystemEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLog
 }
 
 object CodeSystemEndpoint {
-  val SEGMENT_CODESYSTEM = "codesystem"
+  val SEGMENT_CODE_SYSTEMS = "code-systems"
 }

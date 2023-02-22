@@ -129,7 +129,7 @@ class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) 
 }
 
 object TerminologyServiceManagerEndpoint {
-  val SEGMENT_TERMINOLOGY = "terminology"
+  val SEGMENT_TERMINOLOGY = "terminologies"
   val SEGMENT_CONTENT = "content"
   val ATTACHMENT = "attachment"
 }
