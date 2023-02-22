@@ -85,7 +85,7 @@ class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository:
 }
 
 object MappingEndpoint {
-  val SEGMENT_MAPPING = "mapping"
+  val SEGMENT_MAPPING = "mappings"
 }
 
 

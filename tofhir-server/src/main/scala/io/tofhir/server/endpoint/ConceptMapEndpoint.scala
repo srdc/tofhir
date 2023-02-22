@@ -1,12 +1,12 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.Directives.{complete, entity, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.server.endpoint.ConceptMapEndpoint.SEGMENT_CONCEPTMAP
+import io.tofhir.server.endpoint.ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{TerminologyConceptMap, ToFhirRestCall}
@@ -17,7 +17,7 @@ class ConceptMapEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLog
   val service: ConceptMapService = new ConceptMapService(toFhirEngineConfig.contextPath)
 
   def route(request: ToFhirRestCall): Route = {
-    pathPrefix(SEGMENT_CONCEPTMAP) {
+    pathPrefix(SEGMENT_CONCEPT_MAPS) {
       val terminologyId: String = request.terminologyId.get
       pathEndOrSingleSlash {
         getAllConceptMapsRoute(terminologyId) ~ createConceptMapRoute(terminologyId)
@@ -148,5 +148,5 @@ class ConceptMapEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLog
 }
 
 object ConceptMapEndpoint {
-  val SEGMENT_CONCEPTMAP = "conceptmap"
+  val SEGMENT_CONCEPT_MAPS = "concept-maps"
 }

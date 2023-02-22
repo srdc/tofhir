@@ -85,5 +85,5 @@ class JobEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository: IPr
 }
 
 object JobEndpoint {
-  val SEGMENT_JOB = "job"
+  val SEGMENT_JOB = "jobs"
 }

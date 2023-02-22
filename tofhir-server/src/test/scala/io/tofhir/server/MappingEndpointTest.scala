@@ -43,7 +43,7 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "create a mapping within project" in {
       // create the first mapping
-      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping metadata file is updated
         val projects = FileOperations.readJsonContent[Project](FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile)
@@ -52,7 +52,7 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id, mapping1.id).toFile.exists()
       }
       // create the second mapping
-      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping metadata file is updated
         val projects = FileOperations.readJsonContent[Project](FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile)
@@ -63,7 +63,7 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "get all mappings in a project" in {
       // get all mappings within a project
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns two mappings
         val mappings: Seq[FhirMappingMetadata] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingMetadata]]
@@ -73,7 +73,7 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "get a mapping in a project" in {
       // get a mapping
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping/${mapping1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/${mapping1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved mapping
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
@@ -81,14 +81,14 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         mapping.name shouldEqual mapping1.name
       }
       // get a mapping with invalid id
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping/123123") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "update a mapping in a project" in {
       // update a mapping
-      Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = "http://example.com/mapping3")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = "http://example.com/mapping3")))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned mapping includes the update
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
@@ -98,14 +98,14 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         projects.find(_.id == createdProject1.id).get.mappings.find(_.id == mapping1.id).get.url shouldEqual "http://example.com/mapping3"
       }
       // update a mapping with invalid id
-      Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping/123123", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(id = "123123")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/123123", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(id = "123123")))) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "delete a mapping from a project" in {
       // delete a mapping
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping/${mapping1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/${mapping1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that mapping metadata file is updated
         val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
@@ -114,7 +114,7 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id, mapping1.id).toFile.exists() shouldEqual false
       }
       // delete a mapping with invalid id
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mapping/123123") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
