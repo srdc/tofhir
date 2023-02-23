@@ -7,18 +7,13 @@ import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.model.{FhirMapping, FhirMappingJob}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model._
-import io.tofhir.server.service.job.JobFolderRepository
-import io.tofhir.server.service.mapping.MappingFolderRepository
-import io.tofhir.server.service.schema.SchemaFolderRepository
-import io.tofhir.server.util.FileOperations
 import org.json4s._
 import org.json4s.jackson.Serialization
 
 import java.io.{File, FileWriter}
 import scala.collection.mutable
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
-import scala.language.postfixOps
+import scala.concurrent.Future
+
 
 /**
  * Folder/Directory based project repository implementation.
@@ -32,10 +27,14 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   // Project cache keeping the up-to-date list of projects
   private var projects: mutable.Map[String, Project] = mutable.Map.empty
 
-  // The repository instances are used during the initialization process to resolve resources referred by projects.
-  private var schemaFolderRepository: SchemaFolderRepository = _
-  private var mappingFolderRepository: MappingFolderRepository = _
-  private var mappingJobFolderRepository: JobFolderRepository = _
+  /**
+   * Initializes the projects cache
+   *
+   * @param projects
+   */
+  def setProjects(projects: mutable.Map[String, Project]): Unit = {
+    this.projects = projects
+  }
 
   /**
    * Retrieve all Projects
@@ -249,7 +248,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   /**
    * Updates the projects metadata with project included in the cache.
    */
-  private def updateProjectsMetadata() = {
+  def updateProjectsMetadata() = {
     val file = new File(config.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
     // when projects metadata file does not exist, create it
     if (!file.exists()) {
@@ -259,131 +258,6 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
     // write projects to the file. Only the metadata of the internal resources are written to the file
     val fw = new FileWriter(file)
     try fw.write(Serialization.writePretty(projects.values.map(_.getMetadata()).toList)) finally fw.close()
-  }
-
-  /**
-   * Initializes the projects managed by this repository and populates the cache.
-   *
-   * @param schemaFolderRepository
-   * @param mappingFolderRepository
-   * @param mappingJobFolderRepository
-   */
-  def initProjects(schemaFolderRepository: SchemaFolderRepository, mappingFolderRepository: MappingFolderRepository, mappingJobFolderRepository: JobFolderRepository): Unit = {
-    this.schemaFolderRepository = schemaFolderRepository
-    this.mappingFolderRepository = mappingFolderRepository
-    this.mappingJobFolderRepository = mappingJobFolderRepository
-
-    val file = FileUtils.findFileByName(config.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
-    file match {
-      // A project json file exists. Initialize each project by resolving each resources referred by the project.
-      case Some(f) =>
-        val projects: JArray = FileOperations.readFileIntoJson(f).asInstanceOf[JArray]
-          val projectMap: Map[String, Project] = projects.arr.map(p => {
-            val project: Project = initProjectFromMetadata(p.asInstanceOf[JObject])
-            project.id -> project
-          })
-            .toMap
-          collection.mutable.Map(projectMap.toSeq: _*)
-
-        // There is no project json metadata, create it
-      case None => {
-        logger.debug("There does not exist a metadata file for projects. Creating it...")
-        val file = new File(config.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
-        file.createNewFile()
-
-        // Parse the folder structure of the respective resource and to initialize projects with the resources found.
-        val projects = initProjectsWithResources()
-        if (projects.nonEmpty) {
-          updateProjectsMetadata()
-
-        } else {
-          // Initialize projects metadata file with empty array
-          val fw = new FileWriter(file)
-          try fw.write("[]") finally fw.close()
-        }
-
-        this.projects = projects
-      }
-    }
-  }
-
-  /**
-   * Constructs a project based on project metadata stored in the project json file. Resources are resolved via respective repositories.
-   *
-   * @param projectMetadata
-   * @return
-   */
-  private def initProjectFromMetadata(projectMetadata: JObject): Project = {
-    val id: String = (projectMetadata \ "id").extract[String]
-    val name: String = (projectMetadata \ "name").extract[String]
-    val description: Option[String] = (projectMetadata \ "description").extractOpt[String]
-    val contextConceptMaps: Seq[String] = (projectMetadata \ "contextConceptMaps").extract[Seq[String]]
-    // resolve schemas via the schema repository
-    val schemaFutures: Future[Seq[Option[SchemaDefinition]]] = Future.sequence(
-      (projectMetadata \ "schemas").asInstanceOf[JArray].arr.map(schemaMetadata => {
-        schemaFolderRepository.getSchema(id, (schemaMetadata \ "id").extract[String])
-      })
-    )
-    val schemas: Seq[SchemaDefinition] = Await.result[Seq[Option[SchemaDefinition]]](schemaFutures, 2 seconds).map(_.get)
-
-    // resolve mappings via the mapping repository
-    val mappingFutures: Future[Seq[Option[FhirMapping]]] = Future.sequence(
-      (projectMetadata \ "mappings").asInstanceOf[JArray].arr.map(mappingMetadata => {
-        mappingFolderRepository.getMapping(id, (mappingMetadata \ "id").extract[String])
-      })
-    )
-    val mappings: Seq[FhirMapping] = Await.result[Seq[Option[FhirMapping]]](mappingFutures, 2 seconds).map(_.get)
-
-    // resolve mapping jobs via the mapping repository
-    val mappingJobFutures: Future[Seq[Option[FhirMappingJob]]] = Future.sequence(
-      (projectMetadata \ "schemas").asInstanceOf[JArray].arr.map(jobMetadata => {
-        mappingJobFolderRepository.getJob(id, (jobMetadata \ "id").extract[String])
-      })
-    )
-    val jobs: Seq[FhirMappingJob] = Await.result[Seq[Option[FhirMappingJob]]](mappingJobFutures, 2 seconds).map(_.get)
-
-    Project(id, name, description, schemas, mappings, contextConceptMaps, jobs)
-  }
-
-  /**
-   * Parses the folder structure of project resources and initializes projects with the resources discovered.
-   * @return
-   */
-  private def initProjectsWithResources(): mutable.Map[String, Project] = {
-    // Map keeping the projects. It uses the project name as a key.
-    val projects: mutable.Map[String, Project] = mutable.Map.empty
-
-    // Parse schemas
-    val schemas: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = schemaFolderRepository.getCachedSchemas()
-    schemas.foreach(projectIdAndSchemas => {
-      val projectId: String = projectIdAndSchemas._1
-      // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, None))
-      projects.put(projectId, project.copy(schemas = projectIdAndSchemas._2.values.toSeq))
-    })
-
-    // Parse mappings
-    val mappings: mutable.Map[String, mutable.Map[String, FhirMapping]] = mappingFolderRepository.getCachedMappings()
-    mappings.foreach(projectIdAndMappings => {
-      val projectId: String = projectIdAndMappings._1
-      // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, None))
-      projects.put(projectId, project.copy(mappings = projectIdAndMappings._2.values.toSeq))
-    })
-
-    // Parse mapping jobs
-    val jobs: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = mappingJobFolderRepository.getCachedMappingsJobs()
-    jobs.foreach(projectIdAndMappingsJobs => {
-      val projectId: String = projectIdAndMappingsJobs._1
-      // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, None))
-      projects.put(projectId, project.copy(mappingJobs = projectIdAndMappingsJobs._2.values.toSeq))
-    })
-
-    // Parse concept maps
-    // TODO parse concept maps
-
-    projects
   }
 
   /**

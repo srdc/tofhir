@@ -10,7 +10,7 @@ import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.job.JobFolderRepository
 import io.tofhir.server.service.mapping.MappingFolderRepository
-import io.tofhir.server.service.project.ProjectFolderRepository
+import io.tofhir.server.service.project.{FolderDBInitializer, ProjectFolderRepository}
 import io.tofhir.server.service.schema.SchemaFolderRepository
 
 import java.util.UUID
@@ -29,7 +29,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val mappingJobRepository: JobFolderRepository = new JobFolderRepository(toFhirEngineConfig.jobRepositoryFolderPath, projectRepository)
 
   // Initialize the projects by reading the resources available in the file system
-  projectRepository.initProjects(schemaRepository, mappingRepository, mappingJobRepository)
+  new FolderDBInitializer(toFhirEngineConfig, schemaRepository, mappingRepository, mappingJobRepository, projectRepository).init()
 
   val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, projectRepository)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
