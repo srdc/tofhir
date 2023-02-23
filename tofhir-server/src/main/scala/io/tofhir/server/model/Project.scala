@@ -1,6 +1,7 @@
 package io.tofhir.server.model
 
 import io.tofhir.engine.model.{FhirMapping, FhirMappingJob}
+import org.json4s.{JArray, JObject, JString}
 
 import java.util.UUID
 
@@ -30,6 +31,41 @@ case class Project(id: String = UUID.randomUUID().toString,
   def validate(): Unit = {
     // throws IllegalArgumentException if the id is not a valid UUID
     UUID.fromString(id)
+  }
+
+  /**
+   * Extracts the project metadata to be written to the metadata file.
+   *
+   * @return
+   */
+  def getMetadata(): JObject = {
+    JObject(
+      List(
+        "id" -> JString(this.id),
+        "name" -> JString(this.name),
+        "description" -> JString(this.description.getOrElse("")),
+        "schemas" -> JArray(
+          List(
+            this.schemas.map(_.getMetadata()): _*
+          )
+        ),
+        "mappings" -> JArray(
+          List(
+            this.mappings.map(_.getMetadata()): _*
+          )
+        ),
+        "contextConceptMaps" -> JArray(
+          List(
+            this.contextConceptMaps.map(cid => JString(cid)): _*
+          )
+        ),
+        "mappingJobs" -> JArray(
+          List(
+            this.mappingJobs.map(_.getMetadata()): _*
+          )
+        )
+      )
+    )
   }
 }
 

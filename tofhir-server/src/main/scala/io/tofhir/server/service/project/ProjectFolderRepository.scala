@@ -258,43 +258,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
     }
     // write projects to the file. Only the metadata of the internal resources are written to the file
     val fw = new FileWriter(file)
-    try fw.write(Serialization.writePretty(projects.values.map(getProjectMetadata).toList)) finally fw.close()
-  }
-
-  /**
-   * Extracts the project metadata to be written to the metadata file.
-   *
-   * @param project
-   * @return
-   */
-  private def getProjectMetadata(project: Project): JObject = {
-    JObject(
-      List(
-      "id" -> JString(project.id),
-        "name" -> JString(project.name),
-        "description" -> JString(project.description.getOrElse("")),
-        "schemas" -> JArray(
-          List(
-            project.schemas.map(_.getMetadata()): _*
-          )
-        ),
-        "mappings" -> JArray(
-          List(
-            project.mappings.map(_.getMetadata()): _*
-          )
-        ),
-        "contextConceptMaps" -> JArray(
-          List(
-           project.contextConceptMaps.map(cid => JString(cid)): _*
-          )
-        ),
-        "mappingJobs" -> JArray(
-          List(
-            project.mappingJobs.map(_.getMetadata()): _*
-          )
-        )
-      )
-    )
+    try fw.write(Serialization.writePretty(projects.values.map(_.getMetadata()).toList)) finally fw.close()
   }
 
   /**
