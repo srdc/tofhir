@@ -11,7 +11,8 @@ import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.{Project, SchemaDefinition}
 import io.tofhir.server.service.project.ProjectFolderRepository
-import io.tofhir.server.util.FileOperations
+import io.tofhir.server.util.{FileOperations, TestUtil}
+import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
@@ -45,18 +46,17 @@ class SchemaEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTe
       Post(s"/tofhir/projects/${createdProject1.id}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(schema1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that schema metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.find(_.id == createdProject1.id).get.schemas.length shouldEqual 1
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
         // check schema folder is created
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id, schema1.id).toFile.exists()
-//        FileUtils.exists(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + createdProject1.id + File.separatorChar + "schemas" + File.separatorChar + schema1.id) shouldEqual true
       }
       // create the second schema
       Post(s"/tofhir/projects/${createdProject1.id}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(schema2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that schema metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.find(_.id == createdProject1.id).get.schemas.length shouldEqual 2
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 2
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id, schema2.id).toFile.exists()
       }
     }
@@ -104,8 +104,13 @@ class SchemaEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTe
         val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
         schema.url shouldEqual "https://example.com/fhir/StructureDefinition/schema3"
         // validate that schema metadata is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.find(_.id == createdProject1.id).get.schemas.find(_.id == schema1.id).get.url shouldEqual "https://example.com/fhir/StructureDefinition/schema3"
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (
+          (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id)
+            .get \ "schemas").asInstanceOf[JArray].arr
+            .find(m => (m \ "id").extract[String].contentEquals(schema1.id)).get \ "url"
+          )
+          .extract[String] shouldEqual "https://example.com/fhir/StructureDefinition/schema3"
       }
       // update a schema with invalid id
       Put(s"/tofhir/projects/${createdProject1.id}/schemas/123123", HttpEntity(ContentTypes.`application/json`, writePretty(schema2))) ~> route ~> check {
@@ -118,8 +123,8 @@ class SchemaEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTe
       Delete(s"/tofhir/projects/${createdProject1.id}/schemas/${schema1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that schema metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.find(_.id == createdProject1.id).get.schemas.length shouldEqual 1
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
         // check schema folder is deleted
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id, schema1.id).toFile.exists() shouldEqual false
       }

@@ -4,9 +4,10 @@ import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{FhirMappingException, FhirMappingJob}
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, JobMetadata, Project, ResourceNotFound}
+import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFound}
 import io.tofhir.server.service.project.ProjectFolderRepository
 import org.json4s.jackson.Serialization.writePretty
 
@@ -15,22 +16,31 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
-import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 
 class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IJobRepository {
   // project id -> mapping job id -> mapping job
   private val jobDefinitions: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = initMap(jobRepositoryFolderPath)
 
   /**
-   * Retrieve the metadata of all jobs
+   * Returns the mappings managed by this repository
+   *
+   * @return
+   */
+  def getCachedMappingsJobs(): mutable.Map[String, mutable.Map[String, FhirMappingJob]] = {
+    jobDefinitions
+  }
+
+
+  /**
+   * Retrieve all jobs
    *
    * @param projectId project id the jobs belong to
    * @return
    */
-  override def getAllJobMetadata(projectId: String): Future[Seq[JobMetadata]] = {
+  override def getAllJobs(projectId: String): Future[Seq[FhirMappingJob]] = {
     Future {
       if (jobDefinitions.contains(projectId)) {
-        jobDefinitions(projectId).values.map(getJobMetadata).toSeq
+        jobDefinitions(projectId).values.toSeq
       } else {
         Seq.empty
       }
@@ -55,7 +65,7 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
         fw.write(writePretty(job))
         fw.close()
       })
-      projectFolderRepository.addJobMetadata(projectId, getJobMetadata(job))
+      projectFolderRepository.addJob(projectId, job)
       jobDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(job.id, job)
       job
     }
@@ -98,8 +108,8 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
       })
       // update the mapping job in the map
       jobDefinitions(projectId).put(id, job)
-      // update the metadata
-      projectFolderRepository.updateJobMetadata(projectId, getJobMetadata(job))
+      // update the job in the project
+      projectFolderRepository.updateJob(projectId, job)
       job
     }
 
@@ -123,8 +133,8 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
       })
       // delete the mapping job from the map
       jobDefinitions(projectId).remove(id)
-      // delete the metadata
-      projectFolderRepository.deleteJobMetadata(projectId, id)
+      // delete the job from the project
+      projectFolderRepository.deleteJob(projectId, id)
     }
   }
 
@@ -156,15 +166,6 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
   }
 
   /**
-   * Get the metadata of the given job
-   * @param job job to get the metadata
-   * @return
-   */
-  private def getJobMetadata(job: FhirMappingJob): JobMetadata = {
-    JobMetadata(job.id, job.name.getOrElse(job.id))
-  }
-
-  /**
    * Initialize the job definitions from the given folder
    * @param jobRepositoryFolderPath folder path to the job repository
    * @return
@@ -172,6 +173,9 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
   private def initMap(jobRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, FhirMappingJob]] = {
     val map = mutable.Map.empty[String, mutable.Map[String, FhirMappingJob]]
     val folder = FileUtils.getPath(jobRepositoryFolderPath).toFile
+    if (!folder.exists()) {
+      folder.mkdirs()
+    }
     var directories = Seq.empty[File]
     try {
       directories = folder.listFiles.filter(_.isDirectory).toSeq

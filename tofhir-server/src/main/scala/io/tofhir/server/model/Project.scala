@@ -1,23 +1,26 @@
 package io.tofhir.server.model
 
-import io.tofhir.engine.model.{FhirMapping, FhirMappingContext, FhirMappingJob}
+import io.tofhir.engine.model.{FhirMapping, FhirMappingJob}
 
 import java.util.UUID
 
 /**
  * Definition of a project which holds relevant schemas, mapping, mapping-jobs, concept maps etc.
  *
- * @param id          Unique identifier for the project
- * @param name        Project name
- * @param description Description of the project
+ * @param id                 Unique identifier for the project
+ * @param name               Project name
+ * @param description        Description of the project
+ * @param schemas            Schemas defined in this project
+ * @param contextConceptMaps Identifiers of the concept maps defined in this project
+ * @param mappingJobs        Mapping jobs defined in this project
  */
 case class Project(id: String = UUID.randomUUID().toString,
                    name: String,
                    description: Option[String] = None,
                    schemas: Seq[SchemaDefinition] = Seq.empty,
-                   mappings: Seq[FhirMappingMetadata] = Seq.empty,
-                   contextConceptMaps: Seq[FhirMappingContext] = Seq.empty,
-                   mappingJobs: Seq[JobMetadata] = Seq.empty
+                   mappings: Seq[FhirMapping] = Seq.empty,
+                   contextConceptMaps: Seq[String] = Seq.empty,
+                   mappingJobs: Seq[FhirMappingJob] = Seq.empty
                   ) {
   /**
    * Validates the fields of a project.

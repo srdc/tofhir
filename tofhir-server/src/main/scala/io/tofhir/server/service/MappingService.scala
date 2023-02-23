@@ -2,23 +2,20 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.model.FhirMappingMetadata
-import io.tofhir.server.service.mapping.{IMappingRepository, MappingRepository}
+import io.tofhir.server.service.mapping.{IMappingRepository, MappingFolderRepository}
 import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
 
 import scala.concurrent.Future
 
-class MappingService(mappingRepositoryFolderPath: String, projectRepository: IProjectRepository) extends LazyLogging {
-
-  private val mappingRepository: IMappingRepository = new MappingRepository(mappingRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
+class MappingService(mappingRepositoryFolderPath: String, mappingRepository: IMappingRepository, projectRepository: IProjectRepository) extends LazyLogging {
 
   /**
    * Get all mapping metadata from the mapping repository
    * @param projectId if given, only return the mappings in the given sub-folder
    * @return Seq[MappingFile]
    */
-  def getAllMetadata(projectId: String): Future[Seq[FhirMappingMetadata]] = {
-    mappingRepository.getAllMappingMetadata(projectId)
+  def getAllMappings(projectId: String): Future[Seq[FhirMapping]] = {
+    mappingRepository.getAllMappings(projectId)
   }
 
   /**

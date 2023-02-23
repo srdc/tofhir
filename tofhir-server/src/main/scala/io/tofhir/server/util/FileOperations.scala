@@ -1,28 +1,20 @@
 package io.tofhir.server.util
 
-import java.io.{File, FileWriter}
-import com.typesafe.scalalogging.Logger
-
-import java.io.{File, FileWriter}
-import java.nio.charset.StandardCharsets
 import akka.stream.scaladsl.FileIO
 import akka.util.ByteString
+import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter._
-import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.model.Project
-import io.tofhir.server.service.project.ProjectFolderRepository
 import io.tofhir.engine.Execution.actorSystem
-import io.tofhir.server.model.InternalError
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.model.InternalError
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.json4s.jackson.Serialization
-
-import scala.util.{Failure, Success}
-import io.tofhir.engine.Execution.actorSystem.dispatcher
 import org.json4s.jackson.Serialization.writePretty
 
+import java.io.{File, FileWriter}
+import java.nio.charset.StandardCharsets
 import scala.io.Source
+import scala.util.{Failure, Success}
 
 object FileOperations {
 
@@ -41,6 +33,17 @@ object FileOperations {
     val fileContent = try source.mkString finally source.close()
     val parsed = parse(fileContent).extract[Seq[K]]
     parsed
+  }
+
+  /**
+   * Reads the given file into a JSON object
+   * @param f
+   * @return
+   */
+  def readFileIntoJson(f: File): JValue = {
+    val source = Source.fromFile(f, StandardCharsets.UTF_8.name())
+    val fileContent = try source.mkString finally source.close()
+    parse(fileContent)
   }
 
   /**

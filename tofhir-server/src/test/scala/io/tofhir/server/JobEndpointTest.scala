@@ -10,9 +10,10 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
-import io.tofhir.server.model.{JobMetadata, Project}
+import io.tofhir.server.model.Project
 import io.tofhir.server.service.project.ProjectFolderRepository
-import io.tofhir.server.util.FileOperations
+import io.tofhir.server.util.{FileOperations, TestUtil}
+import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
@@ -47,8 +48,8 @@ class JobEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
       Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile)
-        projects.find(_.id == createdProject1.id).get.mappingJobs.length shouldEqual 1
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is created
         FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, createdProject1.id, job1.id).toFile.exists()
       }
@@ -56,8 +57,8 @@ class JobEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
       Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile)
-        projects.find(_.id == createdProject1.id).get.mappingJobs.length shouldEqual 2
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 2
         FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, createdProject1.id, job2.id).toFile.exists()
       }
     }
@@ -67,7 +68,7 @@ class JobEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
       Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved jobs
-        val jobs: Seq[JobMetadata] = JsonMethods.parse(responseAs[String]).extract[Seq[JobMetadata]]
+        val jobs: Seq[FhirMappingJob] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingJob]]
         jobs.length shouldEqual 2
       }
     }
@@ -105,8 +106,8 @@ class JobEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
       Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs/${job1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that job metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile)
-        projects.find(_.id == createdProject1.id).get.mappingJobs.length shouldEqual 1
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is deleted
         FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, createdProject1.id, job1.id).toFile.exists() shouldEqual false
       }

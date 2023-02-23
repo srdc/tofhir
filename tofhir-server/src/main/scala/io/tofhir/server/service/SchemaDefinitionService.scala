@@ -18,7 +18,7 @@ class SchemaDefinitionService(schemaRepositoryFolderPath: String, schemaReposito
    * @return A map of URL -> Seq[SimpleStructureDefinition]
    */
   def getAllSchemas(projectId: String): Future[Seq[SchemaDefinition]] = {
-    schemaRepository.getAllSchemaMetadata(projectId)
+    schemaRepository.getAllSchemas(projectId)
   }
 
   /**

@@ -6,7 +6,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, FhirMappingMetadata, Project, ResourceNotFound}
+import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFound}
 import io.tofhir.server.service.project.ProjectFolderRepository
 import org.json4s._
 import org.json4s.jackson.Serialization.writePretty
@@ -22,19 +22,27 @@ import scala.io.Source
  *
  * @param mappingRepositoryFolderPath root folder path to the mapping repository
  */
-class MappingRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
+class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
   // project id -> mapping id -> mapping
   private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
+
+  /**
+   * Returns the mappings managed by this repository
+   * @return
+   */
+  def getCachedMappings(): mutable.Map[String, mutable.Map[String, FhirMapping]] = {
+    mappingDefinitions
+  }
 
   /**
    * Retrieve the metadata of all MappingFile (only url, type and name fields are populated)
    *
    * @return
    */
-  override def getAllMappingMetadata(projectId: String): Future[Seq[FhirMappingMetadata]] = {
+  override def getAllMappings(projectId: String): Future[Seq[FhirMapping]] = {
     Future {
       if (mappingDefinitions.contains(projectId)) {
-        mappingDefinitions(projectId).values.map(getMappingMetadata).toSeq
+        mappingDefinitions(projectId).values.toSeq
       } else {
         Seq.empty
       }
@@ -60,7 +68,7 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
         fw.close()
       })
       // Add to the project metadata json file
-      projectFolderRepository.addMappingMetadata(projectId, getMappingMetadata(mapping))
+      projectFolderRepository.addMapping(projectId, mapping)
       // Add to the in-memory map
       mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
       mapping
@@ -106,7 +114,7 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
       // update the mapping in the in-memory map
       mappingDefinitions(projectId).put(id, mapping)
       // update the projects metadata json file
-      projectFolderRepository.updateMappingMetadata(projectId, getMappingMetadata(mapping))
+      projectFolderRepository.updateMapping(projectId, mapping)
       mapping
     }
 
@@ -131,7 +139,7 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
       // delete the mapping from the map
       mappingDefinitions(projectId).remove(id)
       // delete the mapping from projects json file
-      projectFolderRepository.deleteMappingMetadata(projectId, id)
+      projectFolderRepository.deleteMapping(projectId, id)
     }
   }
 
@@ -164,16 +172,6 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
   }
 
   /**
-   * Copies the given FhirMapping with only the metadata attributes
-   *
-   * @param mapping
-   * @return
-   */
-  private def getMappingMetadata(mapping: FhirMapping): FhirMappingMetadata = {
-    FhirMappingMetadata(mapping.id, mapping.url, mapping.name)
-  }
-
-  /**
    * Initializes the mapping definitions from the repository
    * @param mappingRepositoryFolderPath path to the mapping repository
    * @return
@@ -181,6 +179,9 @@ class MappingRepository(mappingRepositoryFolderPath: String, projectFolderReposi
   private def initMap(mappingRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, FhirMapping]] = {
     val map = mutable.Map.empty[String, mutable.Map[String, FhirMapping]]
     val folder = FileUtils.getPath(mappingRepositoryFolderPath).toFile
+    if (!folder.exists()) {
+      folder.mkdirs()
+    }
     var directories = Seq.empty[File]
     try {
       directories = folder.listFiles.filter(_.isDirectory).toSeq

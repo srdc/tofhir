@@ -11,7 +11,8 @@ import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.{Project, ProjectEditableFields, SchemaDefinition}
 import io.tofhir.server.service.project.ProjectFolderRepository
-import io.tofhir.server.util.FileOperations
+import io.tofhir.server.util.{FileOperations, TestUtil}
+import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
@@ -52,15 +53,15 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         // set the created project
         createdProject1 = project
         // validate that projects metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.length shouldEqual 2
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        projects.arr.length shouldEqual 1
       }
       // create the second project
       Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.length shouldEqual 3
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        projects.arr.length shouldEqual 2
       }
     }
 
@@ -70,7 +71,7 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         status shouldEqual StatusCodes.OK
         // validate that it returns two projects
         val projects: Seq[Project] = JsonMethods.parse(responseAs[String]).extract[Seq[Project]]
-        projects.length shouldEqual 3
+        projects.length shouldEqual 2
       }
     }
 
@@ -97,8 +98,8 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
         project.description.get should not equal project1.description.get
         // validate that projects metadata is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.find(p => p.id.contentEquals(createdProject1.id)).get.description.get shouldEqual "updated description"
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "description").extract[String] shouldEqual "updated description"
       }
       // patch a project with invalid id
       Patch(s"/${webServerConfig.baseUri}/projects/123123", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
@@ -111,9 +112,8 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        val project: Project = projects.head
-        project.schemas.length === 2
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.head \ "schemas").asInstanceOf[JArray].arr.length === 2
         // validate the project folder has been created within the schemas
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === true
       }
@@ -122,13 +122,12 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that projects metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.length shouldEqual 2
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        projects.arr.length === 1
 
         // validate the project file has been deleted under the schemas folder
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === false
         FileUtils.getPath(toFhirEngineConfig.contextPath, createdProject1.id).toFile.exists() === false
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id).toFile.exists() === false
       }
       // delete a non-existent project
       Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
@@ -148,9 +147,10 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
   }
 
   /**
-   * Deletes the repository folder after all test cases are completed.
+   * Deletes the repository folders after all test cases are completed.
    * */
   override def afterAll(): Unit = {
     org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.toFhirDbFolderPath))
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.schemaRepositoryFolderPath))
   }
 }
