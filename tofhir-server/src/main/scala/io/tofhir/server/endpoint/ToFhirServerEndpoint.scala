@@ -31,7 +31,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   // Initialize the projects by reading the resources available in the file system
   projectRepository.initProjects(schemaRepository, mappingRepository, mappingJobRepository)
 
-  val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig, schemaRepository, mappingRepository, mappingJobRepository, projectRepository)
+  val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, projectRepository)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
 
   lazy val toFHIRRoute: Route =

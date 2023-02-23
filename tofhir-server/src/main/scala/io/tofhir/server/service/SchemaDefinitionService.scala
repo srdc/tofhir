@@ -10,7 +10,7 @@ import org.json4s.JsonDSL._
 
 import scala.concurrent.Future
 
-class SchemaDefinitionService(schemaRepositoryFolderPath: String, schemaRepository: ISchemaRepository, projectRepository: IProjectRepository) extends LazyLogging {
+class SchemaDefinitionService(schemaRepository: ISchemaRepository, projectRepository: IProjectRepository) extends LazyLogging {
 
   /**
    * Get all schema definition metadata (not populated with field definitions) from the schema repository

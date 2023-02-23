@@ -7,7 +7,7 @@ import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderReposi
 
 import scala.concurrent.Future
 
-class MappingService(mappingRepositoryFolderPath: String, mappingRepository: IMappingRepository, projectRepository: IProjectRepository) extends LazyLogging {
+class MappingService(mappingRepository: IMappingRepository, projectRepository: IProjectRepository) extends LazyLogging {
 
   /**
    * Get all mapping metadata from the mapping repository
