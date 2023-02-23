@@ -246,6 +246,30 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   }
 
   /**
+   * Adds the mapping context id to the project json file
+   * @param projectId Project id the mapping context will be added to
+   * @param mappingContext Mapping context id to be added
+   */
+  def addMappingContext(projectId: String, mappingContext: String): Unit = {
+    val project: Project = projects(projectId)
+    projects.put(projectId, project.copy(mappingContexts = project.mappingContexts :+ mappingContext))
+
+    updateProjectsMetadata()
+  }
+
+  /**
+   * Deletes the mapping context in the project json file
+   * @param projectId Project id the mapping context will be deleted
+   * @param mappingContextId Mapping context id to be deleted
+   */
+  def deleteMappingContext(projectId: String, mappingContextId: String): Unit = {
+    val project: Project = projects(projectId)
+    projects.put(projectId, project.copy(mappingContexts = project.mappingContexts.filterNot(m => m.equals(mappingContextId))))
+
+    updateProjectsMetadata()
+  }
+
+  /**
    * Updates the projects metadata with project included in the cache.
    */
   def updateProjectsMetadata() = {

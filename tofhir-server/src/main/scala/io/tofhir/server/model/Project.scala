@@ -20,7 +20,7 @@ case class Project(id: String = UUID.randomUUID().toString,
                    description: Option[String] = None,
                    schemas: Seq[SchemaDefinition] = Seq.empty,
                    mappings: Seq[FhirMapping] = Seq.empty,
-                   contextConceptMaps: Seq[String] = Seq.empty,
+                   mappingContexts: Seq[String] = Seq.empty,
                    mappingJobs: Seq[FhirMappingJob] = Seq.empty
                   ) {
   /**
@@ -54,9 +54,9 @@ case class Project(id: String = UUID.randomUUID().toString,
             this.mappings.map(_.getMetadata()): _*
           )
         ),
-        "contextConceptMaps" -> JArray(
+        "mappingContexts" -> JArray(
           List(
-            this.contextConceptMaps.map(cid => JString(cid)): _*
+            this.mappingContexts.map(cid => JString(cid)): _*
           )
         ),
         "mappingJobs" -> JArray(
