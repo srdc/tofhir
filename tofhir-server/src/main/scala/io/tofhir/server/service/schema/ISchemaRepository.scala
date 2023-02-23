@@ -15,7 +15,7 @@ trait ISchemaRepository {
    *
    * @return
    */
-  def getAllSchemaMetadata(projectId: String): Future[Seq[SchemaDefinition]]
+  def getAllSchemas(projectId: String): Future[Seq[SchemaDefinition]]
 
   /**
    * Retrieve the schema identified by its id.

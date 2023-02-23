@@ -1,7 +1,7 @@
 package io.tofhir.engine.model
 
 import io.onfhir.expression.FhirExpression
-import org.json4s.JsonAST.JObject
+import org.json4s.JsonAST.{JObject, JString}
 
 import java.util.UUID
 
@@ -30,6 +30,21 @@ case class FhirMapping(id: String = UUID.randomUUID().toString,
                       ) {
   def withContext(newContext: Map[String, FhirMappingContextDefinition]): FhirMapping = {
     this.copy(context = newContext)
+  }
+
+  /**
+   * Retrieves metadata for this mapping. The metadata is being used in the folder-based implementation for the time being.
+   *
+   * @return
+   */
+  def getMetadata(): JObject = {
+    JObject(
+      List(
+        "id" -> JString(this.id),
+        "name" -> JString(this.name),
+        "url" -> JString(this.url)
+      )
+    )
   }
 }
 

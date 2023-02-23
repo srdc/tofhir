@@ -5,20 +5,19 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.endpoint.MappingEndpoint.SEGMENT_MAPPING
+import io.tofhir.server.endpoint.MappingEndpoint.SEGMENT_MAPPINGS
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.MappingService
-import io.tofhir.server.service.project.IProjectRepository
+import io.tofhir.server.service.mapping.IMappingRepository
 
-class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository: IProjectRepository) extends LazyLogging {
+class MappingEndpoint(mappingRepository: IMappingRepository) extends LazyLogging {
 
-  val service: MappingService = new MappingService(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
+  val service: MappingService = new MappingService(mappingRepository)
 
   def route(request: ToFhirRestCall): Route = {
-    pathPrefix(SEGMENT_MAPPING) {
+    pathPrefix(SEGMENT_MAPPINGS) {
       val projectId: String = request.projectId.get
       pathEndOrSingleSlash { // Operations on all mappings
         getAllMappings(projectId) ~ createMapping(projectId)
@@ -32,7 +31,7 @@ class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository:
   private def getAllMappings(projectId: String): Route = {
     get {
       complete {
-        service.getAllMetadata(projectId)
+        service.getAllMappings(projectId)
       }
     }
   }
@@ -85,7 +84,7 @@ class MappingEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository:
 }
 
 object MappingEndpoint {
-  val SEGMENT_MAPPING = "mappings"
+  val SEGMENT_MAPPINGS = "mappings"
 }
 
 

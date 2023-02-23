@@ -1,6 +1,7 @@
 package io.tofhir.engine.model
 
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
+import org.json4s.JsonAST.{JObject, JString}
 
 import java.util.UUID
 
@@ -37,6 +38,20 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
     if(useFhirSinkAsIdentityService &&sinkSettings.isInstanceOf[FhirRepositorySinkSettings])
       Some(sinkSettings.asInstanceOf[FhirRepositorySinkSettings])
     else identityServiceSettings
+
+  /**
+   * Retrieves metadata for this mapping job. The metadata is being used in the folder-based implementation for the time being.
+   *
+   * @return
+   */
+  def getMetadata(): JObject = {
+    JObject(
+      List(
+        "id" -> JString(this.id),
+        "name" -> JString(this.name.getOrElse(""))
+      )
+    )
+  }
 }
 
 /**

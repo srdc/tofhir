@@ -4,19 +4,18 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.server.endpoint.JobEndpoint.SEGMENT_JOB
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.JobService
-import io.tofhir.server.service.project.IProjectRepository
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.service.job.IJobRepository
 
-class JobEndpoint(toFhirEngineConfig: ToFhirEngineConfig, projectRepository: IProjectRepository) extends LazyLogging {
+class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
 
-  val service: JobService = new JobService(toFhirEngineConfig.jobRepositoryFolderPath, projectRepository)
+  val service: JobService = new JobService(jobRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_JOB) {

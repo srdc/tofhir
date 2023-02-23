@@ -8,9 +8,10 @@ import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.server.model.ToFhirRestCall
-import io.tofhir.server.service.db.FolderDBInitializer
-import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
-import io.tofhir.server.service.schema.{ISchemaRepository, SchemaFolderRepository}
+import io.tofhir.server.service.job.JobFolderRepository
+import io.tofhir.server.service.mapping.MappingFolderRepository
+import io.tofhir.server.service.project.{FolderDBInitializer, ProjectFolderRepository}
+import io.tofhir.server.service.schema.SchemaFolderRepository
 
 import java.util.UUID
 
@@ -22,13 +23,16 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
 
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(toFhirEngineConfig)
 
-  val projectRepository: IProjectRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
-  val schemaRepository: ISchemaRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
-  val projectEndpoint = new ProjectEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
-  val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
+  val projectRepository: ProjectFolderRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
+  val mappingRepository: MappingFolderRepository = new MappingFolderRepository(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
+  val schemaRepository: SchemaFolderRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository)
+  val mappingJobRepository: JobFolderRepository = new JobFolderRepository(toFhirEngineConfig.jobRepositoryFolderPath, projectRepository)
 
-  // initialize database
-  new FolderDBInitializer(toFhirEngineConfig, schemaRepository.asInstanceOf[SchemaFolderRepository]).initialize()
+  // Initialize the projects by reading the resources available in the file system
+  new FolderDBInitializer(toFhirEngineConfig, schemaRepository, mappingRepository, mappingJobRepository, projectRepository).init()
+
+  val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, projectRepository)
+  val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {

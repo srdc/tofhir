@@ -5,17 +5,15 @@ import akka.http.scaladsl.server.Directives.{parameterMap, _}
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.SEGMENT_SCHEMAS
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{SchemaDefinition, ToFhirRestCall}
 import io.tofhir.server.service.SchemaDefinitionService
-import io.tofhir.server.service.project.IProjectRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 
-class SchemaDefinitionEndpoint(toFhirEngineConfig: ToFhirEngineConfig, schemaRepository: ISchemaRepository, projectRepository: IProjectRepository) extends LazyLogging {
+class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository) extends LazyLogging {
 
-  val service: SchemaDefinitionService = new SchemaDefinitionService(toFhirEngineConfig.schemaRepositoryFolderPath, schemaRepository, projectRepository)
+  val service: SchemaDefinitionService = new SchemaDefinitionService(schemaRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_SCHEMAS) {

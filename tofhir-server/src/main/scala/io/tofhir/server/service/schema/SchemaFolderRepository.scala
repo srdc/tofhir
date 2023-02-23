@@ -28,11 +28,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
 
   private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(profilesPath = Some(schemaRepositoryFolderPath))
 
+  // Schema definition cache
+  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
+
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
   private val baseFhirConfig: BaseFhirConfig = fhirConfigurator.initializePlatform(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
-
-  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
 
   /**
    * Returns the schema cached schema definitions by this repository
@@ -44,14 +45,14 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   }
 
   /**
-   * Retrieve the metadata of all SchemaDefinitions (only url, type and name fields are populated)
+   * Retrieve all SchemaDefinitions
    *
    * @return
    */
-  override def getAllSchemaMetadata(projectId: String): Future[Seq[SchemaDefinition]] = {
+  override def getAllSchemas(projectId: String): Future[Seq[SchemaDefinition]] = {
     Future {
       if (schemaDefinitions.contains(projectId)) {
-        schemaDefinitions(projectId).values.map(_.copyAsMetadata).toSeq.sortWith(schemaComparisonFunc)
+        schemaDefinitions(projectId).values.toSeq.sortWith(schemaComparisonFunc)
       } else {
         Seq.empty
       }
@@ -109,8 +110,8 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         fw.write(structureDefinitionResource.toPrettyJson)
         fw.close()
 
-        // Update the project with the schema metadata
-        projectFolderRepository.addSchemaMetadata(projectId, schemaDefinition.copyAsMetadata())
+        // Update the project with the schema
+        projectFolderRepository.addSchema(projectId, schemaDefinition)
 
         // Update the caches with the new schema
         baseFhirConfig.profileRestrictions += schemaDefinition.url -> fhirFoundationResourceParser.parseStructureDefinition(structureDefinitionResource, includeElementMetadata = true)
@@ -170,8 +171,8 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         baseFhirConfig.profileRestrictions += schemaDefinition.url -> fhirFoundationResourceParser.parseStructureDefinition(structureDefinitionResource, includeElementMetadata = true)
         schemaDefinitions(projectId).put(id, schemaDefinition)
 
-        // Update the project metadata
-        projectFolderRepository.updateSchemaMetadata(projectId, schemaDefinition.copyAsMetadata())
+        // Update the project
+        projectFolderRepository.updateSchema(projectId, schemaDefinition)
       })
     })
   }
@@ -196,8 +197,8 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       val file = FileUtils.findFileByName(schemaRepositoryFolderPath, fileName)
       file.get.delete()
 
-      // Update project metadata
-      projectFolderRepository.deleteSchemaMetadata(projectId, schema.id)
+      // Update project
+      projectFolderRepository.deleteSchema(projectId, schema.id)
     }
   }
 
@@ -238,6 +239,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private def initMap(schemaRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, SchemaDefinition]] = {
     val schemaDefinitionMap = mutable.Map[String, mutable.Map[String, SchemaDefinition]]()
     val folder = new File(schemaRepositoryFolderPath)
+    if (!folder.exists()) {
+      folder.mkdirs()
+    }
     folder.listFiles().foreach(projectFolder => {
       var files = Seq.empty[File]
       try {

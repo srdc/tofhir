@@ -1,5 +1,7 @@
 package io.tofhir.server.model
 
+import org.json4s.JsonAST.{JObject, JString}
+
 import java.util.UUID
 
 /**
@@ -18,12 +20,21 @@ case class SchemaDefinition(id: String = UUID.randomUUID().toString,
                             name: String,
                             rootDefinition: Option[SimpleStructureDefinition],
                             fieldDefinitions: Option[Seq[SimpleStructureDefinition]]) {
+
+
   /**
-   * Copies this schema with only the metadata attributes
+   * Retrieves metadata for this schema. The metadata is being used in the folder-based implementation for the time being.
    *
    * @return
    */
-  def copyAsMetadata(): SchemaDefinition = {
-    copy(this.id, this.url, this.`type`, this.name, None, None)
+  def getMetadata(): JObject = {
+    JObject(
+      List(
+        "id" -> JString(this.id),
+        "url" -> JString(this.url),
+        "type" -> JString(this.`type`),
+        "name" -> JString(this.name)
+      )
+    )
   }
 }

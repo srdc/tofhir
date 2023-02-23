@@ -2,23 +2,19 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.model.JobMetadata
-import io.tofhir.server.service.job.{IJobRepository, JobFolderRepository}
-import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
+import io.tofhir.server.service.job.IJobRepository
 
 import scala.concurrent.Future;
 
-class JobService(jobRepositoryFolderPath: String, projectRepository: IProjectRepository) extends LazyLogging {
-
-  private val jobRepository: IJobRepository = new JobFolderRepository(jobRepositoryFolderPath, projectRepository.asInstanceOf[ProjectFolderRepository])
+class JobService(jobRepository: IJobRepository) extends LazyLogging {
 
   /**
    * Get all mapping metadata from the mapping repository
    * @param projectId project id the mappings belong to
    * @return
    */
-  def getAllMetadata(projectId: String): Future[Seq[JobMetadata]] = {
-    jobRepository.getAllJobMetadata(projectId)
+  def getAllMetadata(projectId: String): Future[Seq[FhirMappingJob]] = {
+    jobRepository.getAllJobs(projectId)
   }
 
   /**

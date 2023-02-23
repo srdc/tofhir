@@ -1,21 +1,21 @@
 package io.tofhir.server.service.mapping
 
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.model.FhirMappingMetadata
 
 import scala.concurrent.Future
 
 /**
- * Interface to save and load MappingFiles
- * so that the client applications can manage the mappings through CRUD operations
+ * Interface to save and load mappings so that the client applications can manage the mappings through CRUD operations
  */
 trait IMappingRepository {
 
   /**
-   * Retrieve the metadata of all MappingFile, filter by subfolder if given
+   * Retrieve all mappings for the given project
+   *
+   * @param projectId Identifier of the project for which the mappings to be retrieved
    * @return
    */
-  def getAllMappingMetadata(projectId: String): Future[Seq[FhirMappingMetadata]]
+  def getAllMappings(projectId: String): Future[Seq[FhirMapping]]
 
   /**
    * Save the mapping to the repository.

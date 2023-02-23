@@ -10,9 +10,10 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
-import io.tofhir.server.model.{FhirMappingMetadata, Project}
+import io.tofhir.server.model.Project
 import io.tofhir.server.service.project.ProjectFolderRepository
-import io.tofhir.server.util.FileOperations
+import io.tofhir.server.util.{FileOperations, TestUtil}
+import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
@@ -46,8 +47,8 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile)
-        projects.find(_.id == createdProject1.id).get.mappings.length shouldEqual 1
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping folder is created
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id, mapping1.id).toFile.exists()
       }
@@ -55,8 +56,8 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile)
-        projects.find(_.id == createdProject1.id).get.mappings.length shouldEqual 2
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 2
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id, mapping2.id).toFile.exists()
       }
     }
@@ -66,7 +67,7 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns two mappings
-        val mappings: Seq[FhirMappingMetadata] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingMetadata]]
+        val mappings: Seq[FhirMapping] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMapping]]
         mappings.length shouldEqual 2
       }
     }
@@ -94,8 +95,13 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
         mapping.url shouldEqual "http://example.com/mapping3"
         // validate that mapping metadata is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.find(_.id == createdProject1.id).get.mappings.find(_.id == mapping1.id).get.url shouldEqual "http://example.com/mapping3"
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (
+          (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id)
+            .get \ "mappings").asInstanceOf[JArray].arr
+            .find(m => (m \ "id").extract[String].contentEquals(mapping1.id)).get \ "url"
+          )
+          .extract[String] shouldEqual "http://example.com/mapping3"
       }
       // update a mapping with invalid id
       Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/123123", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(id = "123123")))) ~> route ~> check {
@@ -108,8 +114,9 @@ class MappingEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/${mapping1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that mapping metadata file is updated
-        val projects = FileOperations.readJsonContent[Project](new File(toFhirEngineConfig.toFhirDbFolderPath + File.separatorChar + ProjectFolderRepository.PROJECTS_JSON))
-        projects.find(_.id == createdProject1.id).get.mappings.length shouldEqual 1
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id)
+          .get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping folder is deleted
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id, mapping1.id).toFile.exists() shouldEqual false
       }

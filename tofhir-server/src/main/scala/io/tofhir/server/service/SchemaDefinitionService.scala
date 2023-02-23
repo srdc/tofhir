@@ -3,14 +3,13 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
 import io.tofhir.server.model.{BadRequest, SchemaDefinition, SimpleStructureDefinition}
-import io.tofhir.server.service.project.IProjectRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JArray
 import org.json4s.JsonDSL._
 
 import scala.concurrent.Future
 
-class SchemaDefinitionService(schemaRepositoryFolderPath: String, schemaRepository: ISchemaRepository, projectRepository: IProjectRepository) extends LazyLogging {
+class SchemaDefinitionService(schemaRepository: ISchemaRepository) extends LazyLogging {
 
   /**
    * Get all schema definition metadata (not populated with field definitions) from the schema repository
@@ -18,7 +17,7 @@ class SchemaDefinitionService(schemaRepositoryFolderPath: String, schemaReposito
    * @return A map of URL -> Seq[SimpleStructureDefinition]
    */
   def getAllSchemas(projectId: String): Future[Seq[SchemaDefinition]] = {
-    schemaRepository.getAllSchemaMetadata(projectId)
+    schemaRepository.getAllSchemas(projectId)
   }
 
   /**

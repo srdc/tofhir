@@ -1,18 +1,17 @@
 package io.tofhir.server.service.job
 
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.model.JobMetadata
 
 import scala.concurrent.Future
 
 trait IJobRepository {
 
   /**
-   * Retrieve the metadata of all jobs
+   * Retrieve all jobs
    * @param projectId project id the jobs belong to
    * @return
    */
-  def getAllJobMetadata(projectId: String): Future[Seq[JobMetadata]]
+  def getAllJobs(projectId: String): Future[Seq[FhirMappingJob]]
 
   /**
    * Save the job to the repository.

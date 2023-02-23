@@ -5,11 +5,12 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.endpoint.ProjectEndpoint.SEGMENT_PROJECTS
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{Project, ToFhirRestCall}
 import io.tofhir.server.service.ProjectService
+import io.tofhir.server.service.job.IJobRepository
+import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.project.IProjectRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JObject
@@ -19,12 +20,12 @@ import scala.concurrent.Future
 /**
  * Endpoints to manage projects.
  * */
-class ProjectEndpoint(toFhirEngineConfig: ToFhirEngineConfig, schemaRepository: ISchemaRepository, projectRepository: IProjectRepository) extends LazyLogging {
+class ProjectEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository, jobRepository: IJobRepository, projectRepository: IProjectRepository) extends LazyLogging {
 
   val service: ProjectService = new ProjectService(projectRepository)
-  val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(toFhirEngineConfig, schemaRepository, projectRepository)
-  val mappingEndpoint: MappingEndpoint = new MappingEndpoint(toFhirEngineConfig, projectRepository)
-  val jobEndpoint: JobEndpoint = new JobEndpoint(toFhirEngineConfig, projectRepository)
+  val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(schemaRepository)
+  val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository)
+  val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_PROJECTS) {
