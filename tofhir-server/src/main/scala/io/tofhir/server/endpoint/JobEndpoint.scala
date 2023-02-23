@@ -9,14 +9,13 @@ import io.tofhir.server.endpoint.JobEndpoint.SEGMENT_JOB
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.JobService
-import io.tofhir.server.service.project.IProjectRepository
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.service.job.IJobRepository
 
-class JobEndpoint(jobRepository: IJobRepository, projectRepository: IProjectRepository) extends LazyLogging {
+class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
 
-  val service: JobService = new JobService(jobRepository, projectRepository)
+  val service: JobService = new JobService(jobRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_JOB) {

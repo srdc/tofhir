@@ -2,12 +2,11 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.service.mapping.{IMappingRepository, MappingFolderRepository}
-import io.tofhir.server.service.project.{IProjectRepository, ProjectFolderRepository}
+import io.tofhir.server.service.mapping.IMappingRepository
 
 import scala.concurrent.Future
 
-class MappingService(mappingRepository: IMappingRepository, projectRepository: IProjectRepository) extends LazyLogging {
+class MappingService(mappingRepository: IMappingRepository) extends LazyLogging {
 
   /**
    * Get all mapping metadata from the mapping repository

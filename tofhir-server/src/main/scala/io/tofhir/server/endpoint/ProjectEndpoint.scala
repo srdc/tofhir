@@ -23,9 +23,9 @@ import scala.concurrent.Future
 class ProjectEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository, jobRepository: IJobRepository, projectRepository: IProjectRepository) extends LazyLogging {
 
   val service: ProjectService = new ProjectService(projectRepository)
-  val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(schemaRepository, projectRepository)
-  val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository, projectRepository)
-  val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository, projectRepository)
+  val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(schemaRepository)
+  val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository)
+  val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_PROJECTS) {
