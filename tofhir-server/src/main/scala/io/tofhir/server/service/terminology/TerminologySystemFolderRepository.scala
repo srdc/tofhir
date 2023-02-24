@@ -1,8 +1,9 @@
 package io.tofhir.server.service.terminology
 
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.model.{AlreadyExists, BadRequest, TerminologySystem, ResourceNotFound}
+import io.tofhir.server.model.{AlreadyExists, BadRequest, ResourceNotFound, TerminologySystem}
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository.{TERMINOLOGY_SYSTEMS_FOLDER, TERMINOLOGY_SYSTEMS_JSON}
 import io.tofhir.server.util.FileOperations
 
@@ -13,12 +14,12 @@ import scala.concurrent.Future
 /**
  * Folder/Directory based terminology system repository implementation.
  *
- * @param rootFolderPath root folder path to the terminology system repository
+ * @param toFhirEngineConfig
  */
-class TerminologySystemFolderRepository(rootFolderPath: String) extends ITerminologySystemRepository {
+class TerminologySystemFolderRepository(toFhirEngineConfig: ToFhirEngineConfig) extends ITerminologySystemRepository {
 
   // terminology system id -> TerminologySystem
-  private val terminologySystemMap: mutable.Map[String, TerminologySystem] = initMap(rootFolderPath)
+  private val terminologySystemMap: mutable.Map[String, TerminologySystem] = initMap()
 
   /**
    * Retrieve the metadata of all TerminologySystems
@@ -43,7 +44,7 @@ class TerminologySystemFolderRepository(rootFolderPath: String) extends ITermino
       if (this.terminologySystemMap.contains(terminologySystem.id)) {
         throw AlreadyExists("TerminologySystem already exists.", s"Id ${terminologySystem.id} already exists.")
       }
-      val terminologySystemFolder = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem.id).toFile
+      val terminologySystemFolder = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem.id).toFile
       // Update the internal JSON file that we use as our database
       val terminologySystemSeq = this.terminologySystemMap.values.toSeq :+ terminologySystem
       this.updateTerminologySystemsDBFile(terminologySystemSeq)
@@ -72,7 +73,7 @@ class TerminologySystemFolderRepository(rootFolderPath: String) extends ITermino
    * Update a TerminologySystem
    *
    * @param id          id of the TerminologySystem
-   * @param terminology TerminologySystem to update
+   * @param terminologySystem TerminologySystem to update
    * @return updated TerminologySystem
    */
   override def updateTerminologySystem(id: String, terminologySystem: TerminologySystem): Future[TerminologySystem] = {
@@ -116,7 +117,7 @@ class TerminologySystemFolderRepository(rootFolderPath: String) extends ITermino
           val updatedTerminologies = this.terminologySystemMap.values.toSeq.filterNot(_.id == id)
           this.updateTerminologySystemsDBFile(updatedTerminologies)
           //delete the terminology folder
-          val terminologyFolder = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER, foundTerminology.id).toFile
+          val terminologyFolder = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, foundTerminology.id).toFile
           org.apache.commons.io.FileUtils.deleteDirectory(terminologyFolder)
           // remove the terminology from the map
           this.terminologySystemMap.remove(id)
@@ -134,11 +135,11 @@ class TerminologySystemFolderRepository(rootFolderPath: String) extends ITermino
   private def createConceptMapAndCodeSystemFiles(terminologySystem: TerminologySystem): Future[Unit] = {
     Future {
       terminologySystem.conceptMaps.foreach(conceptMap => {
-        val file = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem.id, conceptMap.id).toFile
+        val file = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem.id, conceptMap.id).toFile
         file.createNewFile()
       })
       terminologySystem.codeSystems.foreach(codeSystem => {
-        val file = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem.id, codeSystem.id).toFile
+        val file = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem.id, codeSystem.id).toFile
         file.createNewFile()
       })
     }
@@ -166,25 +167,25 @@ class TerminologySystemFolderRepository(rootFolderPath: String) extends ITermino
       // delete concept maps
       conceptMapIdsToDelete.foreach { id =>
         val conceptMap = existingTerminologySystem.conceptMaps.find(_.id == id).get
-        val file = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER, existingTerminologySystem.id, conceptMap.id).toFile
+        val file = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, existingTerminologySystem.id, conceptMap.id).toFile
         file.delete()
       }
       // delete code systems
       codeSystemIdsToDelete.foreach { id =>
         val codeSystem = existingTerminologySystem.codeSystems.find(_.id == id).get
-        val file = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER, existingTerminologySystem.id, codeSystem.id).toFile
+        val file = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, existingTerminologySystem.id, codeSystem.id).toFile
         file.delete()
       }
       // add concept maps
       conceptMapIdsToAdd.foreach { id =>
         val conceptMap = newTerminologySystem.conceptMaps.find(_.id == id).get
-        val file = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER, existingTerminologySystem.id, conceptMap.id).toFile
+        val file = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, existingTerminologySystem.id, conceptMap.id).toFile
         file.createNewFile()
       }
       // add code systems
       codeSystemIdsToAdd.foreach { id =>
         val codeSystem = newTerminologySystem.codeSystems.find(_.id == id).get
-        val file = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER, existingTerminologySystem.id, codeSystem.id).toFile
+        val file = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, existingTerminologySystem.id, codeSystem.id).toFile
         file.createNewFile()
       }
     }
@@ -196,11 +197,11 @@ class TerminologySystemFolderRepository(rootFolderPath: String) extends ITermino
    * @return
    */
   private def readTerminologySystemsDBFile(): Seq[TerminologySystem] = {
-    val terminologySystemsFolder = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_FOLDER).toFile
+    val terminologySystemsFolder = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER).toFile
     if (!terminologySystemsFolder.exists()) {
       terminologySystemsFolder.mkdirs()
     }
-    val terminologySystemsJsonFile = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_JSON).toFile
+    val terminologySystemsJsonFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
     if (!terminologySystemsJsonFile.exists()) {
       terminologySystemsJsonFile.createNewFile()
       FileOperations.writeJsonContent(terminologySystemsJsonFile, Seq.empty[TerminologySystem])
@@ -212,10 +213,9 @@ class TerminologySystemFolderRepository(rootFolderPath: String) extends ITermino
   /**
    * Initialize the map that we use as cache.
    *
-   * @param localTerminologyRepositoryRoot
    * @return
    */
-  private def initMap(localTerminologyRepositoryRoot: String): mutable.Map[String, TerminologySystem] = {
+  private def initMap(): mutable.Map[String, TerminologySystem] = {
     val termonologySystems = readTerminologySystemsDBFile()
     val map = mutable.Map[String, TerminologySystem]()
     termonologySystems.foreach(terminology => {
@@ -251,7 +251,7 @@ class TerminologySystemFolderRepository(rootFolderPath: String) extends ITermino
   }
 
   private def updateTerminologySystemsDBFile(terminologySystems: Seq[TerminologySystem]): Unit = {
-    val localTerminologyFile = FileUtils.getPath(rootFolderPath, TERMINOLOGY_SYSTEMS_JSON).toFile
+    val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
     FileOperations.writeJsonContent(localTerminologyFile, terminologySystems)
   }
 

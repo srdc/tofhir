@@ -1,23 +1,21 @@
 package io.tofhir.server
 
-import java.io.File
-
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
+import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.Project
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
-import org.apache.commons.io.FileUtils
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.onfhir.util.JsonFormatter.formats
 
 trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
   // toFHIR engine config
@@ -53,10 +51,10 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   override def beforeAll(): Unit = {
     // onfhir needs schema folder to be created in advance,
     // terminology, mapping and job folders are created automatically
-    new File(toFhirEngineConfig.schemaRepositoryFolderPath).mkdirs()
-    new File(fhirDefinitionsConfig.profilesPath.get).mkdirs()
-    new File(fhirDefinitionsConfig.codesystemsPath.get).mkdirs()
-    new File(fhirDefinitionsConfig.valuesetsPath.get).mkdirs()
+    FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath).toFile.mkdirs()
+    FileUtils.getPath(fhirDefinitionsConfig.profilesPath.get).toFile.mkdirs()
+    FileUtils.getPath(fhirDefinitionsConfig.codesystemsPath.get).toFile.mkdirs()
+    FileUtils.getPath(fhirDefinitionsConfig.valuesetsPath.get).toFile.mkdirs()
     // initialize endpoint and route
     val endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig)
     route = endpoint.toFHIRRoute
@@ -66,13 +64,13 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
    * Deletes the repository folders after all test cases are completed.
    * */
   override def afterAll(): Unit = {
-    FileUtils.deleteDirectory(new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER))
-    FileUtils.deleteDirectory(new File(toFhirEngineConfig.toFhirDbFolderPath))
-    FileUtils.deleteDirectory(new File(toFhirEngineConfig.schemaRepositoryFolderPath))
-    FileUtils.deleteDirectory(new File(toFhirEngineConfig.jobRepositoryFolderPath))
-    FileUtils.deleteDirectory(new File(toFhirEngineConfig.mappingRepositoryFolderPath))
-    FileUtils.deleteDirectory(new File(fhirDefinitionsConfig.profilesPath.get))
-    FileUtils.deleteDirectory(new File(fhirDefinitionsConfig.codesystemsPath.get))
-    FileUtils.deleteDirectory(new File(fhirDefinitionsConfig.valuesetsPath.get))
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(fhirDefinitionsConfig.profilesPath.get).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(fhirDefinitionsConfig.codesystemsPath.get).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(fhirDefinitionsConfig.valuesetsPath.get).toFile)
   }
 }

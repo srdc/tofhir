@@ -48,7 +48,9 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
       collection.mutable.Map(projectMap.toSeq: _*)
     } else {
       logger.debug("There does not exist a metadata file for projects. Creating it...")
-      file.getParentFile.mkdirs()
+      if (!file.getParentFile.exists()) {
+        file.getParentFile.mkdirs()
+      }
       file.createNewFile()
       // Parse the folder structure of the respective resource and to initialize projects with the resources found.
       val projects = initProjectsWithResources()

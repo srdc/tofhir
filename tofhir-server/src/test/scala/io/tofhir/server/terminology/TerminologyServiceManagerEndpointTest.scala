@@ -3,6 +3,7 @@ package io.tofhir.server.terminology
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import io.onfhir.util.JsonFormatter.formats
+import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.{TerminologyCodeSystem, TerminologyConceptMap, TerminologySystem}
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
@@ -32,10 +33,10 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         // set the created terminology
         terminologySystem1 = terminologySystem
         // validate that a folder is created for the terminology
-        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar + terminologySystem.id).exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem.id).toFile.exists() shouldEqual true
         // validate that terminologies metadata file is updated
         val terminologySystems
-        = FileOperations.readJsonContent[TerminologySystem](new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
+        = FileOperations.readJsonContent[TerminologySystem](FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON).toFile)
         terminologySystems
           .length shouldEqual 1
       }
@@ -44,7 +45,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.Created
         // validate that terminologies metadata file is updated
         val terminologySystems
-        = FileOperations.readJsonContent[TerminologySystem](new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
+        = FileOperations.readJsonContent[TerminologySystem](FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON).toFile)
         terminologySystems
           .length shouldEqual 2
       }
@@ -82,7 +83,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         terminologySystem.name shouldEqual "nameUpdated1"
         // validate that terminology systems is updated
         val terminologySystems
-        = FileOperations.readJsonContent[TerminologySystem](new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
+        = FileOperations.readJsonContent[TerminologySystem](FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON).toFile)
         terminologySystems
           .find(_.id == terminologySystem.id).get.name shouldEqual "nameUpdated1"
         terminologySystem1 = terminologySystem
@@ -94,10 +95,10 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that terminology folder is deleted
-        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar + terminologySystem2.id).exists() shouldEqual false
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem2.id).toFile.exists() shouldEqual false
         // validate that terminology metadata file is updated
         val terminologySystems
-        = FileOperations.readJsonContent[TerminologySystem](new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
+        = FileOperations.readJsonContent[TerminologySystem](FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON).toFile)
         terminologySystems
           .length shouldEqual 1
       }
@@ -117,8 +118,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
         conceptMap.name shouldEqual "testCM"
         // validate that concept map file is created
-        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
-          terminologySystem1.id + File.separatorChar + conceptMap.id).exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, conceptMap.id).toFile.exists() shouldEqual true
       }
       // create a second concept map within same terminology
       Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap2))) ~> route ~> check {
@@ -127,8 +127,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
         conceptMap.name shouldEqual "testCM2"
         // validate that concept map file is created
-        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
-          terminologySystem1.id + File.separatorChar + conceptMap.id).exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, conceptMap.id).toFile.exists() shouldEqual true
       }
     }
 
@@ -168,8 +167,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that concept map file is deleted
-        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
-          terminologySystem1.name + File.separatorChar + conceptMap2.id).exists() shouldEqual false
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, conceptMap2.id).toFile.exists() shouldEqual false
       }
       // delete a non-existent concept map within a terminology system
       Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap2.id}") ~> route ~> check {
@@ -216,8 +214,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
         codeSystem.name shouldEqual "testCS"
         // validate that code system file is created
-        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
-          terminologySystem1.id + File.separatorChar + codeSystem.id).exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, codeSystem.id).toFile.exists() shouldEqual true
       }
       // create a second code system within same terminology
       Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem2))) ~> route ~> check {
@@ -226,8 +223,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
         codeSystem.name shouldEqual "testCS2"
         // validate that code system file is created
-        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
-          terminologySystem1.id + File.separatorChar + codeSystem.id).exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, codeSystem.id).toFile.exists() shouldEqual true
       }
     }
 
@@ -266,8 +262,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that code system file is deleted
-        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
-          terminologySystem1.id + File.separatorChar + codeSystem2.id).exists() shouldEqual false
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, codeSystem2.id).toFile.exists() shouldEqual false
       }
       // delete a non-existent code system within a terminology system
       Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem2.id}") ~> route ~> check {

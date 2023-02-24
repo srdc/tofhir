@@ -1,8 +1,10 @@
 package io.tofhir.server.service
 
+import com.typesafe.scalalogging.Logger
 import io.onfhir.api
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
 import io.onfhir.r4.config.FhirR4Configurator
+import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
 import io.tofhir.server.model.SimpleStructureDefinition
 
@@ -10,11 +12,44 @@ import scala.collection.mutable
 
 class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
 
+  private val logger: Logger = Logger(this.getClass)
+
   val fhirConfigReader: IFhirConfigReader = fhirDefinitionsConfig.definitionsFHIREndpoint match {
     case Some(_) =>
       new FhirEndpointResourceReader(fhirDefinitionsConfig)
     case None =>
-      new FSConfigReader(profilesPath = fhirDefinitionsConfig.profilesPath, codeSystemsPath = fhirDefinitionsConfig.codesystemsPath, valueSetsPath = fhirDefinitionsConfig.valuesetsPath)
+      // use the local file system, create Option[String] from Option[File] if file exists or None if not
+      val profilesPath = fhirDefinitionsConfig.profilesPath.flatMap(path => {
+        val filePath = FileUtils.getPath(path)
+        if (filePath.toFile.exists())
+          Some(filePath.toString)
+        else {
+          logger.warn("Profiles folder path is configured but folder does not exist.")
+          None
+        }
+      })
+
+      val codeSystemsPath = fhirDefinitionsConfig.codesystemsPath.flatMap(path => {
+        val filePath = FileUtils.getPath(path)
+        if (filePath.toFile.exists())
+          Some(filePath.toString)
+        else {
+          logger.warn("CodeSystems folder path is configured but folder does not exist.")
+          None
+        }
+      })
+
+      val valueSetsPath = fhirDefinitionsConfig.valuesetsPath.flatMap(path => {
+        val filePath = FileUtils.getPath(path)
+        if (filePath.toFile.exists())
+          Some(filePath.toString)
+        else {
+          logger.warn("ValueSets folder path is configured but folder does not exist.")
+          None
+        }
+      })
+
+      new FSConfigReader(profilesPath = profilesPath, codeSystemsPath = codeSystemsPath, valueSetsPath = valueSetsPath)
   }
 
   val baseFhirConfig: BaseFhirConfig = new FhirR4Configurator().initializePlatform(fhirConfigReader)
