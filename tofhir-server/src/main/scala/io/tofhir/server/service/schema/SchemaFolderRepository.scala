@@ -27,13 +27,11 @@ import scala.io.Source
 class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends AbstractSchemaRepository {
 
   private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(profilesPath = Some(schemaRepositoryFolderPath))
-
-  // Schema definition cache
-  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
-
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
   private val baseFhirConfig: BaseFhirConfig = fhirConfigurator.initializePlatform(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
+  // Schema definition cache
+  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
 
   /**
    * Returns the schema cached schema definitions by this repository
