@@ -1,44 +1,25 @@
-package io.tofhir.server
+package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import io.tofhir.engine.config.{ErrorHandlingType, ToFhirEngineConfig}
+import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.model.{FhirMappingJob, FhirSinkSettings, FileSystemSinkSettings}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.config.WebServerConfig
-import io.tofhir.server.endpoint.ToFhirServerEndpoint
-import io.tofhir.server.fhir.FhirDefinitionsConfig
+import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.Project
-import io.tofhir.server.service.project.ProjectFolderRepository
-import io.tofhir.server.util.{FileOperations, TestUtil}
+import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-import java.io.File
-
-class JobEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
-  // toFHIR engine config
-  val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
-
-  val webServerConfig = new WebServerConfig(system.settings.config.getConfig("webserver"))
-  val fhirDefinitionsConfig = new FhirDefinitionsConfig(system.settings.config.getConfig("fhir"))
-  var endpoint: ToFhirServerEndpoint = _
-  // route endpoint
-  var route: Route = _
-  // first project to be created
-  val project1: Project = Project(name = "example", description = Some("example project"))
+class JobEndpointTest extends BaseEndpointTest {
   // first job to be created
   val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
   val job1: FhirMappingJob = FhirMappingJob(name = Some("mappingJob1"), sourceSettings = Map.empty, sinkSettings = sinkSettings, mappings = Seq.empty, mappingErrorHandling = ErrorHandlingType.CONTINUE)
   // second job to be created
   val job2: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = Map.empty, sinkSettings = sinkSettings, mappings = Seq.empty, mappingErrorHandling = ErrorHandlingType.CONTINUE)
-  // project created
+
+  val project1: Project = Project(name = "example", description = Some("example project"))
   var createdProject1: Project = _
 
   "The service" should {
@@ -119,13 +100,10 @@ class JobEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
   }
 
   /**
-   * Creates a repository folder before tests are run.
+   * Creates a project to be used in the tests
    * */
   override def beforeAll(): Unit = {
-    new File(toFhirEngineConfig.toFhirDbFolderPath).mkdir()
-    // initialize endpoint and route
-    endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig)
-    route = endpoint.toFHIRRoute
+    super.beforeAll()
     // create a project
     Post("/tofhir/projects", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
       status shouldEqual StatusCodes.Created
@@ -133,14 +111,6 @@ class JobEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest 
       // set the created project
       createdProject1 = project
     }
-  }
-
-  /**
-   * Deletes the repository folder after all test cases are completed.
-   * */
-  override def afterAll(): Unit = {
-    org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.toFhirDbFolderPath))
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, createdProject1.id).toFile)
   }
 
 }

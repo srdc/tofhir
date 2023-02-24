@@ -1,42 +1,21 @@
-package io.tofhir.server
+package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.util.JsonFormatter.formats
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.config.WebServerConfig
-import io.tofhir.server.endpoint.ToFhirServerEndpoint
-import io.tofhir.server.fhir.FhirDefinitionsConfig
+import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.{Project, SchemaDefinition}
-import io.tofhir.server.service.project.ProjectFolderRepository
-import io.tofhir.server.util.{FileOperations, TestUtil}
+import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-import java.io.File
-
-class SchemaEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
-  // toFHIR engine config
-  val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
-
-  val webServerConfig = new WebServerConfig(system.settings.config.getConfig("webserver"))
-  val fhirDefinitionsConfig = new FhirDefinitionsConfig(system.settings.config.getConfig("fhir"))
-  var endpoint:ToFhirServerEndpoint = _
-  // route endpoint
-  var route: Route = _
-  // first project to be created
-  val project1: Project = Project(name = "example", description = Some("example project"))
+class SchemaEndpointTest extends BaseEndpointTest {
   // first schema schema to be created
   val schema1: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema", `type` = "ty", name = "name", rootDefinition = None, fieldDefinitions = None)
   // second schema to be created
   val schema2: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", `type` = "ty2", name = "name2", rootDefinition = None, fieldDefinitions = None)
-  // first project created
+  val project1: Project = Project(name = "example", description = Some("example project"))
   var createdProject1: Project = _
 
   "The service" should {
@@ -137,13 +116,10 @@ class SchemaEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTe
   }
 
   /**
-   * Creates a repository folder before tests are run and initializes endpoint and route.
+   * Creates a project to be used in the tests
    * */
   override def beforeAll(): Unit = {
-    new File(toFhirEngineConfig.toFhirDbFolderPath).mkdir()
-    // initialize endpoint and route
-    endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig)
-    route = endpoint.toFHIRRoute
+    super.beforeAll()
     // create a project
     Post("/tofhir/projects", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
       status shouldEqual StatusCodes.Created
@@ -151,13 +127,5 @@ class SchemaEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTe
       // set the created project
       createdProject1 = project
     }
-  }
-
-  /**
-   * Deletes the repository folder after all test cases are completed.
-   * */
-  override def afterAll(): Unit = {
-    org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.toFhirDbFolderPath))
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile)
   }
 }

@@ -1,32 +1,18 @@
-package io.tofhir.server
-import akka.http.scaladsl.model.headers.RawHeader
+package io.tofhir.server.terminology
+
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.model.headers.RawHeader
 import io.onfhir.util.JsonFormatter.formats
-import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint
-import io.tofhir.server.model.{TerminologySystem, TerminologyCodeSystem, TerminologyConceptMap, ToFhirRestCall}
+import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.model.{TerminologyCodeSystem, TerminologyConceptMap, TerminologySystem}
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
 import io.tofhir.server.util.FileOperations
-import org.apache.commons.io.FileUtils
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-import java.io.{File, FileWriter}
+import java.io.File
 
-class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
-
-  // toFHIR engine config
-  val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
-  // local terminology endpoint to be tested
-  val terminologyServiceManagerEndpoint: TerminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(toFhirEngineConfig)
-  // route of local terminology endpoint, it is initialized with dummy rest call
-  val route: Route = terminologyServiceManagerEndpoint.route(new ToFhirRestCall(HttpMethod.custom("GET"), "", "", HttpEntity(ContentTypes.`application/json`, "")))
-
+class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
   var conceptMap1: TerminologyConceptMap = TerminologyConceptMap(name = "testCM", conceptMapUrl = "", sourceValueSetUrl = "", targetValueSetUrl = "")
   var conceptMap2: TerminologyConceptMap = TerminologyConceptMap(name = "testCM2", conceptMapUrl = "", sourceValueSetUrl = "", targetValueSetUrl = "")
 
@@ -37,53 +23,32 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
   val localTerminology2: TerminologySystem = TerminologySystem(name = "testTerminology2", description = "example terminology 2", codeSystems = Seq.empty, conceptMaps = Seq.empty)
 
-  /**
-   * Creates a repository folder and terminology-services folder before tests are run.
-   * */
-  override def beforeAll(): Unit = {
-    new File(toFhirEngineConfig.contextPath).mkdir()
-    new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER).mkdir()
-    val terminologyServicesJson = new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON)
-    terminologyServicesJson.createNewFile()
-    val writer = new FileWriter(terminologyServicesJson)
-    try writer.write(writePretty(Seq.empty)) finally writer.close() // write empty array to the file
-  }
-
-  /**
-   * Deletes the repository folder after all test cases are completed.
-   * */
-  override def afterAll(): Unit = {
-    FileUtils.deleteDirectory(new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER))
-    val terminologyServicesJson = new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON)
-    terminologyServicesJson.delete()
-  }
-
   "The terminology service" should {
     "create a local terminology" in {
       // create the first terminology
-      Post("/terminologies", HttpEntity(ContentTypes.`application/json`, writePretty(localTerminology1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies", HttpEntity(ContentTypes.`application/json`, writePretty(localTerminology1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         val localTerminology: TerminologySystem = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
         // set the created terminology
         localTerminology1 = localTerminology
         // validate that a folder is created for the terminology
-        new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar + localTerminology.id).exists() shouldEqual true
+        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar + localTerminology.id).exists() shouldEqual true
         // validate that terminologies metadata file is updated
-        val localTerminologies = FileOperations.readJsonContent[TerminologySystem](new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
+        val localTerminologies = FileOperations.readJsonContent[TerminologySystem](new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
         localTerminologies.length shouldEqual 1
       }
       // create the second terminology
-      Post("/terminologies", HttpEntity(ContentTypes.`application/json`, writePretty(localTerminology2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies", HttpEntity(ContentTypes.`application/json`, writePretty(localTerminology2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that terminologies metadata file is updated
-        val localTerminologies = FileOperations.readJsonContent[TerminologySystem](new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
+        val localTerminologies = FileOperations.readJsonContent[TerminologySystem](new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
         localTerminologies.length shouldEqual 2
       }
     }
 
     "get all local terminologies" in {
       // retrieve all terminologies
-      Get("/terminologies") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns two terminologies
         val localTerminologies: Seq[TerminologySystem] = JsonMethods.parse(responseAs[String]).extract[Seq[TerminologySystem]]
@@ -93,7 +58,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "get a local terminology" in {
       // get a local terminology
-      Get(s"/terminologies/${localTerminology1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved local terminology
         val localTerminology: TerminologySystem = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -104,13 +69,13 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "put a local terminology" in {
       // create a copy of the first terminology and update its name and check if it is updated
-      Put(s"/terminologies/${localTerminology1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(localTerminology1.copy(name = "nameUpdated1")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(localTerminology1.copy(name = "nameUpdated1")))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned local terminology includes the update
         val localTerminology: TerminologySystem = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
         localTerminology.name shouldEqual "nameUpdated1"
         // validate that local terminologies is updated
-        val localTerminologies = FileOperations.readJsonContent[TerminologySystem](new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
+        val localTerminologies = FileOperations.readJsonContent[TerminologySystem](new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
         localTerminologies.find(_.id == localTerminology.id).get.name shouldEqual "nameUpdated1"
         localTerminology1 = localTerminology
       }
@@ -118,16 +83,16 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "delete a local terminology" in {
       // delete a local terminology
-      Delete(s"/terminologies/${localTerminology2.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/terminologies/${localTerminology2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that terminology folder is deleted
-        new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar + localTerminology2.id).exists() shouldEqual false
+        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar + localTerminology2.id).exists() shouldEqual false
         // validate that terminology metadata file is updated
-        val localTerminologies = FileOperations.readJsonContent[TerminologySystem](new File(toFhirEngineConfig.contextPath + File.separatorChar + TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
+        val localTerminologies = FileOperations.readJsonContent[TerminologySystem](new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_JSON))
         localTerminologies.length shouldEqual 1
       }
       // delete a non-existent local terminology
-      Delete(s"/terminologies/${localTerminology2.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/terminologies/${localTerminology2.id}") ~> route ~> check {
         status should not equal StatusCodes.OK
       }
     }
@@ -136,32 +101,30 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
   "The terminology concept map service" should {
     "create a concept map within a local terminology" in {
       // create a concept map
-      Post(s"/terminologies/${localTerminology1.id}/concept-maps", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that the returned concept map includes the id
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
         conceptMap.name shouldEqual "testCM"
         // validate that concept map file is created
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
+        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
           localTerminology1.id + File.separatorChar + conceptMap.id).exists() shouldEqual true
       }
       // create a second concept map within same terminology
-      Post(s"/terminologies/${localTerminology1.id}/concept-maps", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that the returned concept map includes the id
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
         conceptMap.name shouldEqual "testCM2"
         // validate that concept map file is created
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
+        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
           localTerminology1.id + File.separatorChar + conceptMap.id).exists() shouldEqual true
       }
     }
 
     "get concept maps within a local terminology" in {
       // get a concept map list within a local terminology
-      Get(s"/terminologies/${localTerminology1.id}/concept-maps") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns one concept maps
         val conceptMaps: Seq[TerminologyConceptMap] = JsonMethods.parse(responseAs[String]).extract[Seq[TerminologyConceptMap]]
@@ -171,7 +134,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "get a concept map within a local terminology" in {
       // get a concept map within a local terminology
-      Get(s"/terminologies/${localTerminology1.id}/concept-maps/${conceptMap1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps/${conceptMap1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the concept map
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
@@ -181,7 +144,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "put a concept map within a local terminology" in {
       // update a concept map within a local terminology
-      Put(s"/terminologies/${localTerminology1.id}/concept-maps/${conceptMap1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap1.copy(name = "testCMUpdated")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps/${conceptMap1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap1.copy(name = "testCMUpdated")))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned concept map includes the update
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
@@ -192,15 +155,14 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "delete a concept map within a local terminology" in {
       // delete a concept map within a local terminology
-      Delete(s"/terminologies/${localTerminology1.id}/concept-maps/${conceptMap2.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps/${conceptMap2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that concept map file is deleted
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
+        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
           localTerminology1.name + File.separatorChar + conceptMap2.id).exists() shouldEqual false
       }
       // delete a non-existent concept map within a local terminology
-      Delete(s"/terminologies/${localTerminology1.id}/concept-maps/${conceptMap2.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps/${conceptMap2.id}") ~> route ~> check {
         status should not equal StatusCodes.OK
       }
     }
@@ -211,7 +173,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file as a concept map within a local terminology
-      Post(s"/terminologies/${localTerminology1.id}/concept-maps/${conceptMap1.id}/content", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps/${conceptMap1.id}/content", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
         Thread.sleep(5000)
@@ -221,7 +183,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "download csv content of a concept map within a local terminology" in {
       // download csv content of a concept map within a local terminology
-      Get(s"/terminologies/${localTerminology1.id}/concept-maps/${conceptMap1.id}/content") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/concept-maps/${conceptMap1.id}/content") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]
@@ -238,32 +200,30 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
   "The terminology code system service" should {
     "create a code system within a local terminology" in {
       // create a code system
-      Post(s"/terminologies/${localTerminology1.id}/code-systems", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that the returned code system includes the id
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
         codeSystem.name shouldEqual "testCS"
         // validate that code system file is created
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
+        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
           localTerminology1.id + File.separatorChar + codeSystem.id).exists() shouldEqual true
       }
       // create a second code system within same terminology
-      Post(s"/terminologies/${localTerminology1.id}/code-systems", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that the returned code system includes the id
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
         codeSystem.name shouldEqual "testCS2"
         // validate that code system file is created
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
+        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
           localTerminology1.id + File.separatorChar + codeSystem.id).exists() shouldEqual true
       }
     }
 
     "get code systems within a local terminology" in {
       // get a code system list within a local terminology
-      Get(s"/terminologies/${localTerminology1.id}/code-systems") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns one code systems
         val codeSystems: Seq[TerminologyCodeSystem] = JsonMethods.parse(responseAs[String]).extract[Seq[TerminologyCodeSystem]]
@@ -273,7 +233,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "get a code system within a local terminology" in {
       // get a code system within a local terminology
-      Get(s"/terminologies/${localTerminology1.id}/code-systems/${codeSystem1.id}").addHeader(RawHeader("Content-Type", "application/json")) ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems/${codeSystem1.id}").addHeader(RawHeader("Content-Type", "application/json")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the code system
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
@@ -283,7 +243,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "put a code system within a local terminology" in {
       // update a code system within a local terminology
-      Put(s"/terminologies/${localTerminology1.id}/code-systems/${codeSystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem1.copy(name = "testCSUpdated")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems/${codeSystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem1.copy(name = "testCSUpdated")))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned code system includes the update
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
@@ -293,15 +253,14 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "delete a code system within a local terminology" in {
       // delete a code system within a local terminology
-      Delete(s"/terminologies/${localTerminology1.id}/code-systems/${codeSystem2.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems/${codeSystem2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that code system file is deleted
-        new File(toFhirEngineConfig.contextPath + File.separatorChar +
-          TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
+        new File(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER + File.separatorChar +
           localTerminology1.id + File.separatorChar + codeSystem2.id).exists() shouldEqual false
       }
       // delete a non-existent code system within a local terminology
-      Delete(s"/terminologies/${localTerminology1.id}/code-systems/${codeSystem2.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems/${codeSystem2.id}") ~> route ~> check {
         status should not equal StatusCodes.OK
       }
     }
@@ -312,7 +271,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file as a concept map within a local terminology
-      Post(s"/terminologies/${localTerminology1.id}/code-systems/${codeSystem1.id}/content", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems/${codeSystem1.id}/content", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
         Thread.sleep(5000)
@@ -321,7 +280,7 @@ class TerminologyServiceManagerEndpointTest extends AnyWordSpec with Matchers wi
 
     "download csv content of a code system within a local terminology" in {
       // download csv content of a code system within a local terminology
-      Get(s"/terminologies/${localTerminology1.id}/code-systems/${codeSystem1.id}/content") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${localTerminology1.id}/code-systems/${codeSystem1.id}/content") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]
