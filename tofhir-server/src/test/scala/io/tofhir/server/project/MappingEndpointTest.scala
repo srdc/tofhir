@@ -5,7 +5,6 @@ import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.model.Project
 import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
@@ -17,34 +16,31 @@ class MappingEndpointTest extends BaseEndpointTest {
   // second mapping to be created
   val mapping2: FhirMapping = FhirMapping(url = "http://example.com/mapping2", name = "mapping2", source = Seq.empty, context = Map.empty, mapping = Seq.empty)
 
-  val project1: Project = Project(name = "example", description = Some("example project"))
-  var createdProject1: Project = _
-
   "The service" should {
 
     "create a mapping within project" in {
       // create the first mapping
-      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping folder is created
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id, mapping1.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping1.id).toFile.exists()
       }
       // create the second mapping
-      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 2
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id, mapping2.id).toFile.exists()
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 2
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping2.id).toFile.exists()
       }
     }
 
     "get all mappings in a project" in {
       // get all mappings within a project
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns two mappings
         val mappings: Seq[FhirMapping] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMapping]]
@@ -54,7 +50,7 @@ class MappingEndpointTest extends BaseEndpointTest {
 
     "get a mapping in a project" in {
       // get a mapping
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/${mapping1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved mapping
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
@@ -62,14 +58,14 @@ class MappingEndpointTest extends BaseEndpointTest {
         mapping.name shouldEqual mapping1.name
       }
       // get a mapping with invalid id
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/123123") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "update a mapping in a project" in {
       // update a mapping
-      Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = "http://example.com/mapping3")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = "http://example.com/mapping3")))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned mapping includes the update
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
@@ -77,31 +73,31 @@ class MappingEndpointTest extends BaseEndpointTest {
         // validate that mapping metadata is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (
-          (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id)
+          (projects.arr.find(p => (p \ "id").extract[String] == projectId)
             .get \ "mappings").asInstanceOf[JArray].arr
             .find(m => (m \ "id").extract[String].contentEquals(mapping1.id)).get \ "url"
           )
           .extract[String] shouldEqual "http://example.com/mapping3"
       }
       // update a mapping with invalid id
-      Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/123123", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(id = "123123")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(id = "123123")))) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "delete a mapping from a project" in {
       // delete a mapping
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/${mapping1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that mapping metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id)
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId)
           .get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping folder is deleted
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, createdProject1.id, mapping1.id).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping1.id).toFile.exists() shouldEqual false
       }
       // delete a mapping with invalid id
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/mappings/123123") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
@@ -113,12 +109,6 @@ class MappingEndpointTest extends BaseEndpointTest {
    * */
   override def beforeAll(): Unit = {
     super.beforeAll()
-    // create a project
-    Post("/tofhir/projects", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
-      status shouldEqual StatusCodes.Created
-      val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
-      // set the created project
-      createdProject1 = project
-    }
+    this.createProject()
   }
 }

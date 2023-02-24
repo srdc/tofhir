@@ -1,18 +1,23 @@
 package io.tofhir.server
 
+import java.io.File
+
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
+import io.tofhir.server.model.Project
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
 import org.apache.commons.io.FileUtils
+import org.json4s.jackson.JsonMethods
+import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import java.io.File
+import io.onfhir.util.JsonFormatter.formats
 
 trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
   // toFHIR engine config
@@ -21,6 +26,26 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val fhirDefinitionsConfig = new FhirDefinitionsConfig(system.settings.config.getConfig("fhir"))
   // route endpoint
   var route: Route = _
+
+  /**
+   * Identifier of test project which can be used in endpoint tests.
+   * Endpoint tests, which require a test project, should call {@link createProject} method to create it
+   * */
+  var projectId: String = _
+
+  /**
+   * Creates a test project whose identifier is stored in {@link projectId}.
+   * */
+  def createProject(): Unit = {
+    val project1: Project = Project(name = "example", description = Some("example project"))
+    // create a project
+    Post("/tofhir/projects", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
+      status shouldEqual StatusCodes.Created
+      val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
+      // set the created project
+      projectId = project.id
+    }
+  }
 
   /**
    * Create the folders and initialize the endpoint and route

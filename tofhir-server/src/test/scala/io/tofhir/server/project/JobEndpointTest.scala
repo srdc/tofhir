@@ -6,7 +6,6 @@ import io.tofhir.engine.model.{FhirMappingJob, FhirSinkSettings, FileSystemSinkS
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.model.Project
 import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
@@ -19,34 +18,31 @@ class JobEndpointTest extends BaseEndpointTest {
   // second job to be created
   val job2: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = Map.empty, sinkSettings = sinkSettings, mappings = Seq.empty, mappingErrorHandling = ErrorHandlingType.CONTINUE)
 
-  val project1: Project = Project(name = "example", description = Some("example project"))
-  var createdProject1: Project = _
-
   "The service" should {
 
     "create a job within project" in {
       // create the first job
-      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is created
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, createdProject1.id, job1.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job1.id).toFile.exists()
       }
       // create the second job
-      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 2
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, createdProject1.id, job2.id).toFile.exists()
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 2
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job2.id).toFile.exists()
       }
     }
 
     "get all jobs in a project" in {
       // get all jobs
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved jobs
         val jobs: Seq[FhirMappingJob] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingJob]]
@@ -56,44 +52,44 @@ class JobEndpointTest extends BaseEndpointTest {
 
     "get a job in a project" in {
       // get a job
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs/${job1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
         job.name shouldEqual job1.name
       }
       // get a job with invalid id
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs/123123") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "update a job in a project" in {
       // update a job
-      Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs/${job1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(job1.copy(name = Some("updatedJob"))))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(job1.copy(name = Some("updatedJob"))))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the updated job
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
         job.name shouldEqual Some("updatedJob")
       }
       // update a job with invalid id
-      Put(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs/123123", HttpEntity(ContentTypes.`application/json`, writePretty(job1.copy(id = "123123")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/123123", HttpEntity(ContentTypes.`application/json`, writePretty(job1.copy(id = "123123")))) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "delete a job in a project" in {
       // delete a job
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs/${job1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is deleted
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, createdProject1.id, job1.id).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job1.id).toFile.exists() shouldEqual false
       }
       // delete a job with invalid id
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/jobs/123123") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
@@ -104,13 +100,7 @@ class JobEndpointTest extends BaseEndpointTest {
    * */
   override def beforeAll(): Unit = {
     super.beforeAll()
-    // create a project
-    Post("/tofhir/projects", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
-      status shouldEqual StatusCodes.Created
-      val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
-      // set the created project
-      createdProject1 = project
-    }
+    this.createProject()
   }
 
 }

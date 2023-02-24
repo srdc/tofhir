@@ -19,8 +19,6 @@ class ProjectEndpointTest extends BaseEndpointTest {
   val projectPatch = ProjectEditableFields.DESCRIPTION -> "updated description"
   // schema definition
   val schemaDefinition: SchemaDefinition = SchemaDefinition("id", "https://example.com/fhir/StructureDefinition/schema", "ty", "name", None, None)
-  // first project created
-  var createdProject1: Project = _
 
   "The service" should {
 
@@ -29,9 +27,6 @@ class ProjectEndpointTest extends BaseEndpointTest {
       // note that in the initialization of database, a dummy project is already created due to the schemas defined in test resources
       Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
-        val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
-        // set the created project
-        createdProject1 = project
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         projects.arr.length shouldEqual 1
@@ -57,12 +52,12 @@ class ProjectEndpointTest extends BaseEndpointTest {
 
     "get a project" in {
       // get a project
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved project
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
-        project.id shouldEqual createdProject1.id
-        project.name shouldEqual createdProject1.name
+        project.id shouldEqual project1.id
+        project.name shouldEqual project1.name
       }
       // get a project with invalid id
       Get(s"/${webServerConfig.baseUri}/projects/123123") ~> route ~> check {
@@ -72,14 +67,14 @@ class ProjectEndpointTest extends BaseEndpointTest {
 
     "patch a project" in {
       // patch a project
-      Patch(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
+      Patch(s"/${webServerConfig.baseUri}/projects/${project1.id}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned project includes the update
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
         project.description.get should not equal project1.description.get
         // validate that projects metadata is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "description").extract[String] shouldEqual "updated description"
+        (projects.arr.find(p => (p \ "id").extract[String] == project1.id).get \ "description").extract[String] shouldEqual "updated description"
       }
       // patch a project with invalid id
       Patch(s"/${webServerConfig.baseUri}/projects/123123", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
@@ -89,28 +84,28 @@ class ProjectEndpointTest extends BaseEndpointTest {
 
     "delete a project" in {
       // first create a schema to trigger creation of the project folder under the schemas folder
-      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${project1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.head \ "schemas").asInstanceOf[JArray].arr.length === 2
         // validate the project folder has been created within the schemas
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === true
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile.exists() === true
       }
 
       // delete a project
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         projects.arr.length === 1
 
         // validate the project file has been deleted under the schemas folder
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === false
-        FileUtils.getPath(toFhirEngineConfig.contextPath, createdProject1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.contextPath, project1.id).toFile.exists() === false
       }
       // delete a non-existent project
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
