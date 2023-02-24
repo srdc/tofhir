@@ -36,36 +36,31 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
    */
   def init(): Unit = {
 
-    val file = FileUtils.findFileByName(config.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
-    val parsedProjects = file match {
-      // A project json file exists. Initialize each project by resolving each resources referred by the project.
-      case Some(f) =>
-        val projects: JArray = FileOperations.readFileIntoJson(f).asInstanceOf[JArray]
-        val projectMap: Map[String, Project] = projects.arr.map(p => {
-          val project: Project = initProjectFromMetadata(p.asInstanceOf[JObject])
-          project.id -> project
-        })
-          .toMap
-        collection.mutable.Map(projectMap.toSeq: _*)
+    val file = FileUtils.getPath(config.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile
 
-      // There is no project json metadata, create it
-      case None =>
-        logger.debug("There does not exist a metadata file for projects. Creating it...")
-        val file = new File(config.toFhirDbFolderPath + File.separatorChar, ProjectFolderRepository.PROJECTS_JSON)
-        file.createNewFile()
+    val parsedProjects = if (file.exists()) {
+      val projects: JArray = FileOperations.readFileIntoJson(file).asInstanceOf[JArray]
+      val projectMap: Map[String, Project] = projects.arr.map(p => {
+        val project: Project = initProjectFromMetadata(p.asInstanceOf[JObject])
+        project.id -> project
+      })
+        .toMap
+      collection.mutable.Map(projectMap.toSeq: _*)
+    } else {
+      logger.debug("There does not exist a metadata file for projects. Creating it...")
+      file.getParentFile.mkdirs()
+      file.createNewFile()
+      // Parse the folder structure of the respective resource and to initialize projects with the resources found.
+      val projects = initProjectsWithResources()
+      if (projects.nonEmpty) {
+        projectFolderRepository.updateProjectsMetadata()
+      } else {
+        // Initialize projects metadata file with empty array
+        val fw = new FileWriter(file)
+        try fw.write("[]") finally fw.close()
+      }
 
-        // Parse the folder structure of the respective resource and to initialize projects with the resources found.
-        val projects = initProjectsWithResources()
-        if (projects.nonEmpty) {
-          projectFolderRepository.updateProjectsMetadata()
-
-        } else {
-          // Initialize projects metadata file with empty array
-          val fw = new FileWriter(file)
-          try fw.write("[]") finally fw.close()
-        }
-
-        projects
+      projects
     }
 
     // Inject the parsed projects to the repository
