@@ -1,24 +1,23 @@
 package io.tofhir.server.service.project
 
-import java.io.{File, FileWriter}
 import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter.formats
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.model.{FhirMapping, FhirMappingJob}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.{Project, SchemaDefinition}
 import io.tofhir.server.service.job.JobFolderRepository
 import io.tofhir.server.service.mapping.MappingFolderRepository
-import io.tofhir.server.service.project.ProjectFolderRepository
+import io.tofhir.server.service.mappingcontext.MappingContextFolderRepository
 import io.tofhir.server.service.schema.SchemaFolderRepository
 import io.tofhir.server.util.FileOperations
 import org.json4s.{JArray, JObject}
-import scala.language.postfixOps
-import scala.concurrent.duration.DurationInt
-import io.tofhir.engine.Execution.actorSystem.dispatcher
 
 import scala.collection.mutable
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
 
 /**
  * Folder/Directory based database initializer implementation.
@@ -27,7 +26,8 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
                           schemaFolderRepository: SchemaFolderRepository,
                           mappingFolderRepository: MappingFolderRepository,
                           mappingJobFolderRepository: JobFolderRepository,
-                          projectFolderRepository: ProjectFolderRepository) {
+                          projectFolderRepository: ProjectFolderRepository,
+                          mappingContextRepository: MappingContextFolderRepository) {
 
   private val logger: Logger = Logger(this.getClass)
 
@@ -54,19 +54,11 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
       file.createNewFile()
       // Parse the folder structure of the respective resource and to initialize projects with the resources found.
       val projects = initProjectsWithResources()
-      if (projects.nonEmpty) {
-        projectFolderRepository.updateProjectsMetadata()
-      } else {
-        // Initialize projects metadata file with empty array
-        val fw = new FileWriter(file)
-        try fw.write("[]") finally fw.close()
-      }
-
       projects
     }
-
     // Inject the parsed projects to the repository
     projectFolderRepository.setProjects(parsedProjects)
+    projectFolderRepository.updateProjectsMetadata() // update the metadata file after initialization
   }
 
   /**
@@ -79,7 +71,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     val id: String = (projectMetadata \ "id").extract[String]
     val name: String = (projectMetadata \ "name").extract[String]
     val description: Option[String] = (projectMetadata \ "description").extractOpt[String]
-    val contextConceptMaps: Seq[String] = (projectMetadata \ "contextConceptMaps").extract[Seq[String]]
+    val mappingContexts: Seq[String] = (projectMetadata \ "mappingContexts").extract[Seq[String]]
     // resolve schemas via the schema repository
     val schemaFutures: Future[Seq[Option[SchemaDefinition]]] = Future.sequence(
       (projectMetadata \ "schemas").asInstanceOf[JArray].arr.map(schemaMetadata => {
@@ -104,7 +96,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     )
     val jobs: Seq[FhirMappingJob] = Await.result[Seq[Option[FhirMappingJob]]](mappingJobFutures, 2 seconds).map(_.get)
 
-    Project(id, name, description, schemas, mappings, contextConceptMaps, jobs)
+    Project(id, name, description, schemas, mappings, mappingContexts, jobs)
   }
 
   /**
@@ -143,8 +135,14 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
       projects.put(projectId, project.copy(mappingJobs = projectIdAndMappingsJobs._2.values.toSeq))
     })
 
-    // Parse concept maps
-    // TODO parse concept maps
+    // Parse mapping contexts
+    val mappingContexts: mutable.Map[String, Seq[String]] = mappingContextRepository.getCachedMappingContexts()
+    mappingContexts.foreach(mappingContexts => {
+      val projectId: String = mappingContexts._1
+      // If there is no project create a new one. Use id as name as well
+      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, None))
+      projects.put(projectId, project.copy(mappingContexts = mappingContexts._2))
+    })
 
     projects
   }

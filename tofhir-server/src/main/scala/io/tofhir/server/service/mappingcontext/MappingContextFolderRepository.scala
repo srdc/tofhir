@@ -20,9 +20,18 @@ import scala.concurrent.Future
  *
  * @param mappingContextRepositoryFolderPath root folder path to the mapping context repository
  */
-class MappingContextRepository(mappingContextRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingContextRepository {
+class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingContextRepository {
   // project id -> mapping context id
   private val mappingContextDefinitions: mutable.Map[String, Seq[String]] = initMap(mappingContextRepositoryFolderPath)
+
+  /**
+   * Returns the mapping context cached in memory
+   *
+   * @return
+   */
+  def getCachedMappingContexts(): mutable.Map[String, Seq[String]] = {
+    mappingContextDefinitions
+  }
 
   /**
    * Retrieve the metadata of all mapping context ids
@@ -150,6 +159,9 @@ class MappingContextRepository(mappingContextRepositoryFolderPath: String, proje
   private def initMap(mappingContextRepositoryFolderPath: String): mutable.Map[String, Seq[String]] = {
     val map = mutable.Map.empty[String, Seq[String]]
     val folder = FileUtils.getPath(mappingContextRepositoryFolderPath).toFile
+    if (!folder.exists()) {
+      folder.mkdirs()
+    }
     var directories = Seq.empty[File]
     try {
       directories = folder.listFiles.filter(_.isDirectory).toSeq

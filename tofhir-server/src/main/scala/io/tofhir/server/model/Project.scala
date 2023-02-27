@@ -12,7 +12,7 @@ import java.util.UUID
  * @param name               Project name
  * @param description        Description of the project
  * @param schemas            Schemas defined in this project
- * @param contextConceptMaps Identifiers of the concept maps defined in this project
+ * @param mappingContexts    Identifiers of the mapping contexts defined in this project
  * @param mappingJobs        Mapping jobs defined in this project
  */
 case class Project(id: String = UUID.randomUUID().toString,
