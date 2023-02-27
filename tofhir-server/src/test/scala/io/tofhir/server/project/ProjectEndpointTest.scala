@@ -1,36 +1,16 @@
-package io.tofhir.server
+package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.util.JsonFormatter.formats
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.config.WebServerConfig
-import io.tofhir.server.endpoint.ToFhirServerEndpoint
-import io.tofhir.server.fhir.FhirDefinitionsConfig
+import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.{Project, ProjectEditableFields, SchemaDefinition}
-import io.tofhir.server.service.project.ProjectFolderRepository
-import io.tofhir.server.util.{FileOperations, TestUtil}
+import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-import java.io.File
-
-class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
-  // toFHIR engine config
-  val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
-
-  val webServerConfig = new WebServerConfig(system.settings.config.getConfig("webserver"))
-  val fhirDefinitionsConfig = new FhirDefinitionsConfig(system.settings.config.getConfig("fhir"))
-  var endpoint:ToFhirServerEndpoint = _
-  // route endpoint
-  var route: Route = _
-
+class ProjectEndpointTest extends BaseEndpointTest {
   // first project to be created
   val project1: Project = Project(name = "example", description = Some("example project"))
   // second project to be created
@@ -39,8 +19,6 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
   val projectPatch = ProjectEditableFields.DESCRIPTION -> "updated description"
   // schema definition
   val schemaDefinition: SchemaDefinition = SchemaDefinition("id", "https://example.com/fhir/StructureDefinition/schema", "ty", "name", None, None)
-  // first project created
-  var createdProject1: Project = _
 
   "The service" should {
 
@@ -49,9 +27,6 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
       // note that in the initialization of database, a dummy project is already created due to the schemas defined in test resources
       Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
-        val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
-        // set the created project
-        createdProject1 = project
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         projects.arr.length shouldEqual 1
@@ -77,12 +52,12 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "get a project" in {
       // get a project
-      Get(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved project
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
-        project.id shouldEqual createdProject1.id
-        project.name shouldEqual createdProject1.name
+        project.id shouldEqual project1.id
+        project.name shouldEqual project1.name
       }
       // get a project with invalid id
       Get(s"/${webServerConfig.baseUri}/projects/123123") ~> route ~> check {
@@ -92,14 +67,14 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "patch a project" in {
       // patch a project
-      Patch(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
+      Patch(s"/${webServerConfig.baseUri}/projects/${project1.id}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned project includes the update
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
         project.description.get should not equal project1.description.get
         // validate that projects metadata is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == createdProject1.id).get \ "description").extract[String] shouldEqual "updated description"
+        (projects.arr.find(p => (p \ "id").extract[String] == project1.id).get \ "description").extract[String] shouldEqual "updated description"
       }
       // patch a project with invalid id
       Patch(s"/${webServerConfig.baseUri}/projects/123123", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
@@ -109,48 +84,30 @@ class ProjectEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteT
 
     "delete a project" in {
       // first create a schema to trigger creation of the project folder under the schemas folder
-      Post(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${project1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.head \ "schemas").asInstanceOf[JArray].arr.length === 2
         // validate the project folder has been created within the schemas
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === true
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile.exists() === true
       }
 
       // delete a project
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         projects.arr.length === 1
 
         // validate the project file has been deleted under the schemas folder
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, createdProject1.id).toFile.exists() === false
-        FileUtils.getPath(toFhirEngineConfig.contextPath, createdProject1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.contextPath, project1.id).toFile.exists() === false
       }
       // delete a non-existent project
-      Delete(s"/${webServerConfig.baseUri}/projects/${createdProject1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
-  }
-
-  /**
-   * Creates a repository folder before tests are run and initializes endpoint and route.
-   * */
-  override def beforeAll(): Unit = {
-    new File(toFhirEngineConfig.toFhirDbFolderPath).mkdir()
-    // initialize endpoint and route
-    endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig)
-    route = endpoint.toFHIRRoute
-  }
-
-  /**
-   * Deletes the repository folders after all test cases are completed.
-   * */
-  override def afterAll(): Unit = {
-    org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.toFhirDbFolderPath))
-    org.apache.commons.io.FileUtils.deleteDirectory(new File(toFhirEngineConfig.schemaRepositoryFolderPath))
   }
 }

@@ -26,7 +26,8 @@ import scala.io.Source
  */
 class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends AbstractSchemaRepository {
 
-  private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(profilesPath = Some(schemaRepositoryFolderPath))
+  private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(
+    profilesPath = Some(FileUtils.getPath(schemaRepositoryFolderPath).toString))
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
   private val baseFhirConfig: BaseFhirConfig = fhirConfigurator.initializePlatform(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
@@ -236,7 +237,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    */
   private def initMap(schemaRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, SchemaDefinition]] = {
     val schemaDefinitionMap = mutable.Map[String, mutable.Map[String, SchemaDefinition]]()
-    val folder = new File(schemaRepositoryFolderPath)
+    val folder = FileUtils.getPath(schemaRepositoryFolderPath).toFile
     if (!folder.exists()) {
       folder.mkdirs()
     }

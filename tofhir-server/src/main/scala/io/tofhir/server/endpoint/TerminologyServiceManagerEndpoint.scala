@@ -15,7 +15,7 @@ import scala.concurrent.Future
 
 class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
 
-  private val terminologySystemFolderRepository: TerminologySystemFolderRepository = new TerminologySystemFolderRepository(toFhirEngineConfig.contextPath)
+  private val terminologySystemFolderRepository: TerminologySystemFolderRepository = new TerminologySystemFolderRepository(toFhirEngineConfig)
 
   private val conceptMapEndpoint: ConceptMapEndpoint = new ConceptMapEndpoint(toFhirEngineConfig)
   private val codeSystemEndpoint: CodeSystemEndpoint = new CodeSystemEndpoint(toFhirEngineConfig)
