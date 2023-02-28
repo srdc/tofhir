@@ -25,16 +25,21 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
       } ~ // Operations on a single mapping contexts identified by its id
         pathPrefix(Segment) { id: String =>
           pathEndOrSingleSlash {
-            deleteMappingContext(projectId, id)
+            deleteMappingContext(projectId, id) // Delete a mapping context
           } ~ pathPrefix(SEGMENT_CONTENT) {
             pathEndOrSingleSlash {
-              uploadDownloadMappingContextRoute(projectId, id)
+              uploadDownloadMappingContextRoute(projectId, id) // Upload/download a mapping context file content
             }
           }
         }
     }
   }
 
+  /**
+   * Route to get all mapping contexts
+   * @param projectId
+   * @return
+   */
   private def getAllMappingContexts(projectId: String): Route = {
     get {
       complete {
@@ -43,6 +48,12 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
     }
   }
 
+  /**
+   * Route to create a new mapping context
+   * @param request
+   * @param projectId
+   * @return
+   */
   private def createMappingContext(request: ToFhirRestCall, projectId: String): Route = {
     post { // Create a new mapping context definition
       val mappingContextId = request.requestEntity.asInstanceOf[HttpEntity.Strict].data.utf8String
@@ -54,6 +65,12 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
     }
   }
 
+  /**
+   * Route to delete a mapping context
+   * @param projectId
+   * @param id
+   * @return
+   */
   private def deleteMappingContext(projectId: String, id: String): Route = {
     delete {
       complete {

@@ -177,11 +177,7 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
       folder.mkdirs()
     }
     var directories = Seq.empty[File]
-    try {
-      directories = folder.listFiles.filter(_.isDirectory).toSeq
-    } catch {
-      case e: Throwable => throw FhirMappingException(s"Given folder for the mapping job repository is not valid.", e)
-    }
+    directories = folder.listFiles.filter(_.isDirectory).toSeq
     directories.foreach { projectDirectory =>
       // job-id -> FhirMappingJob
       val fhirJobMap: mutable.Map[String, FhirMappingJob] = mutable.Map.empty

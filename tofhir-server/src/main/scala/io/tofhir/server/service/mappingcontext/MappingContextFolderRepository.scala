@@ -58,7 +58,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    */
   override def createMappingContext(projectId: String, id: String): Future[String] = {
     Future {
-      if (mappingContextDefinitions.contains(projectId) && mappingContextDefinitions(projectId).contains(id)) {
+      if (mappingContextExists(projectId, id)) {
         throw AlreadyExists("Fhir mapping already exists.", s"A mapping context definition with id ${id} already exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
       }
       // Write to the repository as a new file
@@ -83,7 +83,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    */
   override def deleteMappingContext(projectId: String, id: String): Future[Unit] = {
     Future {
-      if (!mappingContextDefinitions.contains(projectId) || !mappingContextDefinitions(projectId).contains(id)) {
+      if (!mappingContextExists(projectId, id)) {
         throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
       }
       // delete the mapping context from the repository
@@ -106,7 +106,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @return
    */
   override def saveMappingContextContent(projectId: String, id: String, content: Source[ByteString, Any]): Future[Unit] = {
-    if (!mappingContextDefinitions.contains(projectId) || !mappingContextDefinitions(projectId).contains(id)) {
+    if (!mappingContextExists(projectId, id)) {
       throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Write content to the related file in the repository
@@ -123,13 +123,24 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @return
    */
   override def getMappingContextContent(projectId: String, id: String): Future[Source[ByteString, Any]] = {
-    if (!mappingContextDefinitions.contains(projectId) || !mappingContextDefinitions(projectId).contains(id)) {
+    if (!mappingContextExists(projectId, id)) {
       throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Read content from the related file in the repository
     getFileForMappingContext(projectId, id).map(file => {
       FileIO.fromPath(file.toPath)
     })
+  }
+
+  /**
+   * Checks if the mapping context exists in the repository
+   *
+   * @param projectId project id the mapping context belongs to
+   * @param id mapping context id
+   * @return
+   */
+  private def mappingContextExists(projectId: String, id: String): Boolean = {
+    mappingContextDefinitions.contains(projectId) && mappingContextDefinitions(projectId).contains(id)
   }
 
   /**
@@ -163,11 +174,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
       folder.mkdirs()
     }
     var directories = Seq.empty[File]
-    try {
-      directories = folder.listFiles.filter(_.isDirectory).toSeq
-    } catch {
-      case e: Throwable => throw FhirMappingException(s"Given folder for the mapping context repository is not valid.", e)
-    }
+    directories = folder.listFiles.filter(_.isDirectory).toSeq
     directories.foreach { projectDirectory =>
       val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = None, recursively = Some(true))
       val fileNameList = files.map(_.getName)
