@@ -10,6 +10,7 @@ import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.job.JobFolderRepository
 import io.tofhir.server.service.mapping.MappingFolderRepository
+import io.tofhir.server.service.mappingcontext.MappingContextFolderRepository
 import io.tofhir.server.service.project.{FolderDBInitializer, ProjectFolderRepository}
 import io.tofhir.server.service.schema.SchemaFolderRepository
 
@@ -27,11 +28,12 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val mappingRepository: MappingFolderRepository = new MappingFolderRepository(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
   val schemaRepository: SchemaFolderRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository)
   val mappingJobRepository: JobFolderRepository = new JobFolderRepository(toFhirEngineConfig.jobRepositoryFolderPath, projectRepository)
+  val mappingContextRepository: MappingContextFolderRepository = new MappingContextFolderRepository(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectRepository)
 
   // Initialize the projects by reading the resources available in the file system
-  new FolderDBInitializer(toFhirEngineConfig, schemaRepository, mappingRepository, mappingJobRepository, projectRepository).init()
+  new FolderDBInitializer(toFhirEngineConfig, schemaRepository, mappingRepository, mappingJobRepository, projectRepository, mappingContextRepository).init()
 
-  val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, projectRepository)
+  val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
 
   lazy val toFHIRRoute: Route =

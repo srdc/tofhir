@@ -12,7 +12,7 @@ import java.util.UUID
  * @param name               Project name
  * @param description        Description of the project
  * @param schemas            Schemas defined in this project
- * @param contextConceptMaps Identifiers of the concept maps defined in this project
+ * @param mappingContexts    Identifiers of the mapping contexts defined in this project
  * @param mappingJobs        Mapping jobs defined in this project
  */
 case class Project(id: String = UUID.randomUUID().toString,
@@ -20,7 +20,7 @@ case class Project(id: String = UUID.randomUUID().toString,
                    description: Option[String] = None,
                    schemas: Seq[SchemaDefinition] = Seq.empty,
                    mappings: Seq[FhirMapping] = Seq.empty,
-                   contextConceptMaps: Seq[String] = Seq.empty,
+                   mappingContexts: Seq[String] = Seq.empty,
                    mappingJobs: Seq[FhirMappingJob] = Seq.empty
                   ) {
   /**
@@ -54,9 +54,9 @@ case class Project(id: String = UUID.randomUUID().toString,
             this.mappings.map(_.getMetadata()): _*
           )
         ),
-        "contextConceptMaps" -> JArray(
+        "mappingContexts" -> JArray(
           List(
-            this.contextConceptMaps.map(cid => JString(cid)): _*
+            this.mappingContexts.map(cid => JString(cid)): _*
           )
         ),
         "mappingJobs" -> JArray(

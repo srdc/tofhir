@@ -11,6 +11,7 @@ import io.tofhir.server.model.{Project, ToFhirRestCall}
 import io.tofhir.server.service.ProjectService
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
+import io.tofhir.server.service.mappingcontext.IMappingContextRepository
 import io.tofhir.server.service.project.IProjectRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JObject
@@ -20,12 +21,17 @@ import scala.concurrent.Future
 /**
  * Endpoints to manage projects.
  * */
-class ProjectEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository, jobRepository: IJobRepository, projectRepository: IProjectRepository) extends LazyLogging {
+class ProjectEndpoint(schemaRepository: ISchemaRepository,
+                      mappingRepository: IMappingRepository,
+                      jobRepository: IJobRepository,
+                      mappingContextRepository: IMappingContextRepository,
+                      projectRepository: IProjectRepository) extends LazyLogging {
 
   val service: ProjectService = new ProjectService(projectRepository)
   val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(schemaRepository)
   val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository)
   val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository)
+  val mappingContextEndpoint: MappingContextEndpoint = new MappingContextEndpoint(mappingContextRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_PROJECTS) {
@@ -42,7 +48,7 @@ class ProjectEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IM
               }
               case Some(_) => {
                 request.projectId = Some(projectId)
-                schemaDefinitionEndpoint.route(request) ~ mappingEndpoint.route(request) ~ jobEndpoint.route(request)
+                schemaDefinitionEndpoint.route(request) ~ mappingEndpoint.route(request) ~ jobEndpoint.route(request) ~ mappingContextEndpoint.route(request)
               }
             }
           }

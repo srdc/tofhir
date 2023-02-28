@@ -183,11 +183,7 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
       folder.mkdirs()
     }
     var directories = Seq.empty[File]
-    try {
-      directories = folder.listFiles.filter(_.isDirectory).toSeq
-    } catch {
-      case e: Throwable => throw FhirMappingException(s"Given folder for the mapping repository is not valid.", e)
-    }
+    directories = folder.listFiles.filter(_.isDirectory).toSeq
     directories.foreach { projectDirectory =>
       // mapping-id -> FhirMapping
       val fhirMappingMap: mutable.Map[String, FhirMapping] = mutable.Map.empty

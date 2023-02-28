@@ -14,6 +14,9 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   /** Path to the folder where the mappings are kept. */
   lazy val mappingRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mappings.repository.folder-path")).getOrElse("mappings")
 
+  /** Path to the folder where the mapping context files are kept. */
+  lazy val mappingContextRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mappings.contexts.repository.folder-path")).getOrElse("mapping-contexts")
+
   /** Path to the folder where the schema definitions are kept. */
   lazy val schemaRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mappings.schemas.repository.folder-path")).getOrElse("schemas")
 

@@ -177,14 +177,10 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
       folder.mkdirs()
     }
     var directories = Seq.empty[File]
-    try {
-      directories = folder.listFiles.filter(_.isDirectory).toSeq
-    } catch {
-      case e: Throwable => throw FhirMappingException(s"Given folder for the mapping job repository is not valid.", e)
-    }
-    // job-id -> FhirMappingJob
-    val fhirJobMap: mutable.Map[String, FhirMappingJob] = mutable.Map.empty
+    directories = folder.listFiles.filter(_.isDirectory).toSeq
     directories.foreach { projectDirectory =>
+      // job-id -> FhirMappingJob
+      val fhirJobMap: mutable.Map[String, FhirMappingJob] = mutable.Map.empty
       val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
       files.map { file =>
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
