@@ -1,4 +1,5 @@
 {
+  "id": "mapping-using-identity-service",
   "url": "https://aiccelerate.eu/fhir/mappings/mapping-using-identity-service",
   "name": "mapping-using-identity-service",
   "title": "Mapping of schema Other Observation to AIC-IntraOperativeObservation, AIC-MedicationAdministration, AIC-NEWSScore, AIC-PEWSScore and AIC-GlascowScale FHIR profiles",
