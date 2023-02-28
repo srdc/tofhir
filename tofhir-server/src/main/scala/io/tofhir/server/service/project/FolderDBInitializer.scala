@@ -90,7 +90,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
 
     // resolve mapping jobs via the mapping repository
     val mappingJobFutures: Future[Seq[Option[FhirMappingJob]]] = Future.sequence(
-      (projectMetadata \ "schemas").asInstanceOf[JArray].arr.map(jobMetadata => {
+      (projectMetadata \ "mappingJobs").asInstanceOf[JArray].arr.map(jobMetadata => {
         mappingJobFolderRepository.getJob(id, (jobMetadata \ "id").extract[String])
       })
     )
