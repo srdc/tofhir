@@ -12,9 +12,9 @@ import org.json4s.jackson.Serialization.writePretty
 
 class MappingEndpointTest extends BaseEndpointTest {
   // first mapping to be created
-  val mapping1: FhirMapping = FhirMapping(url = "http://example.com/mapping1", name = "mapping1", source = Seq.empty, context = Map.empty, mapping = Seq.empty)
+  val mapping1: FhirMapping = FhirMapping(id = "mapping1", url = "http://example.com/mapping1", name = "mapping1", source = Seq.empty, context = Map.empty, mapping = Seq.empty)
   // second mapping to be created
-  val mapping2: FhirMapping = FhirMapping(url = "http://example.com/mapping2", name = "mapping2", source = Seq.empty, context = Map.empty, mapping = Seq.empty)
+  val mapping2: FhirMapping = FhirMapping(id = "mapping2", url = "http://example.com/mapping2", name = "mapping2", source = Seq.empty, context = Map.empty, mapping = Seq.empty)
 
   "The service" should {
 

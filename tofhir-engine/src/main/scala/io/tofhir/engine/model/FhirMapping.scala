@@ -18,7 +18,7 @@ import java.util.UUID
  * @param variable   Common variables calculated from source data to use in the mappings
  * @param mapping     Mapping scripts
  */
-case class FhirMapping(id: String = UUID.randomUUID().toString,
+case class FhirMapping(id: String,
                        url: String,
                        name: String,
                        title: Option[String] = None,

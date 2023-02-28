@@ -1,4 +1,5 @@
 {
+  "id": "specimen-results-mapping-using-ts",
   "url": "https://aiccelerate.eu/fhir/mappings/specimen-mapping-using-ts",
   "name": "specimen-results-mapping-using-ts",
   "title": "Mapping of specimen to FHIR Specimen profile",

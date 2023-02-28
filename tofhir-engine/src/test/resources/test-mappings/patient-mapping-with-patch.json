@@ -1,4 +1,5 @@
 {
+  "id": "patient-mapping-with-patch",
   "url": "https://aiccelerate.eu/fhir/mappings/patient-mapping-with-patch",
   "name": "patient-mapping-with-patch",
   "title": "Mapping of some patient data to a FHIR patch for FHIR Patient resource",
