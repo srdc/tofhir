@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.SEGMENT_JOB
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_JOB, SEGMENT_RUN}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.JobService
@@ -23,8 +23,14 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
       pathEndOrSingleSlash { // Operations on all mapping jobs
         getAllJobs(projectId) ~ createJob(projectId)
       } ~ pathPrefix(Segment) { id: String =>
+        pathEndOrSingleSlash { // Operations on all mapping jobs
           getJob(projectId, id) ~ updateJob(projectId, id) ~ deleteJob(projectId, id)
+        } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job
+          pathEndOrSingleSlash {
+            runJob(projectId, id)
+          }
         }
+      }
     }
   }
 
@@ -81,8 +87,19 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
     }
   }
 
+  private def runJob(projectId: String, id: String): Route = {
+    post {
+      complete {
+        service.runJob(projectId, id) map { _ =>
+          StatusCodes.OK
+        }
+      }
+    }
+  }
+
 }
 
 object JobEndpoint {
   val SEGMENT_JOB = "jobs"
+  val SEGMENT_RUN = "run"
 }

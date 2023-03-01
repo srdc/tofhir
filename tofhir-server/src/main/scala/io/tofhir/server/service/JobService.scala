@@ -57,4 +57,14 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
   def deleteJob(projectId: String, id: String): Future[Unit] = {
     jobRepository.deleteJob(projectId, id)
   }
+
+  /**
+   * Run the job
+   * @param projectId project id the job belongs to
+   * @param jobId job id
+   * @return
+   */
+  def runJob(projectId: String, jobId: String): Future[Unit] = {
+    jobRepository.runJob(projectId, jobId)
+  }
 }
