@@ -96,11 +96,10 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
         // find the log corresponding to the last run of mapping job
         var lastRunOfMappingJob: Array[Row] = Array()
         // handle the case where no job has been run yet which makes the data frame empty
-        if (!dataFrame.isEmpty) {
-          // filter logs by mapping job id
-          val x = dataFrame.filter(s"jobId = '$jobId'") // TODO: tofhir-mappings.log does not include the project information
-          lastRunOfMappingJob = x.tail(1)
-        }
+        if (!dataFrame.isEmpty)
+          // TODO: tofhir-mappings.log does not include the project information
+          lastRunOfMappingJob = dataFrame.filter(s"jobId = '$jobId'") // filter logs by mapping job id
+            .tail(1) // retrieve the log of last execution
 
         if (lastRunOfMappingJob.length == 0) {
           // job has not been run before
