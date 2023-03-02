@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_JOB, SEGMENT_RUN}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_JOB, SEGMENT_MONITORING, SEGMENT_RUN}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.JobService
@@ -28,6 +28,10 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
         } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job
           pathEndOrSingleSlash {
             runJob(projectId, id)
+          }
+        } ~ pathPrefix(SEGMENT_MONITORING) { // monitor the result of a mapping job
+          pathEndOrSingleSlash {
+            monitorJob(projectId, id)
           }
         }
       }
@@ -97,9 +101,23 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
     }
   }
 
+  /**
+   * Route to monitor the result of a mapping job
+   * */
+  private def monitorJob(projectId: String, id: String): Route = {
+    get {
+      complete {
+        service.monitorJob(projectId, id) map {
+          case Some(log) => StatusCodes.OK -> log // return the result of mapping job
+          case None => StatusCodes.NoContent -> None // indicates that mapping job has not been run before
+        }
+      }
+    }
+  }
 }
 
 object JobEndpoint {
   val SEGMENT_JOB = "jobs"
   val SEGMENT_RUN = "run"
+  val SEGMENT_MONITORING = "monitoring"
 }
