@@ -3,6 +3,7 @@ package io.tofhir.server.service.mapping
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
@@ -20,11 +21,11 @@ import scala.io.Source
 /**
  * Folder/Directory based mapping repository implementation.
  *
- * @param mappingRepositoryFolderPath root folder path to the mapping repository
+ * @param toFhirEngineConfig configuration for the ToFhir engine, including the mapping repository folder path
  */
-class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
+class MappingFolderRepository(toFhirEngineConfig: ToFhirEngineConfig, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
   // project id -> mapping id -> mapping
-  private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
+  private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(toFhirEngineConfig.mappingRepositoryFolderPath)
 
   /**
    * Returns the mappings managed by this repository
@@ -59,17 +60,19 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
   override def createMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping] = {
     Future {
       if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).contains(mapping.id)) {
-        throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with id ${mapping.id} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+        throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with id ${mapping.id} already exists in the mapping repository at ${FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath).toAbsolutePath.toString}")
       }
+      // add relative paths to the mapping
+      val pathFixedMapping = addRelativePaths(projectId, mapping)
       // Write to the repository as a new file
-      getFileForMapping(projectId, mapping).map(newFile => {
+      getFileForMapping(projectId, pathFixedMapping).map(newFile => {
         val fw = new FileWriter(newFile)
-        fw.write(writePretty(mapping))
+        fw.write(writePretty(pathFixedMapping))
         fw.close()
       })
       // Add to the project metadata json file
-      projectFolderRepository.addMapping(projectId, mapping)
-      // Add to the in-memory map
+      projectFolderRepository.addMapping(projectId, pathFixedMapping)
+      // Add to the in-memory map without the relative paths
       mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
       mapping
     }
@@ -103,15 +106,17 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
         throw BadRequest("Mapping definition is not valid.", s"Identifier of the mapping definition: ${mapping.id} does not match with explicit id: $id")
       }
       if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
-        throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+        throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath).toAbsolutePath.toString}")
       }
+      // add relative paths to the mapping
+      val pathFixedMapping = addRelativePaths(projectId, mapping)
       // update the mapping in the repository
-      getFileForMapping(projectId, mapping).map(file => {
+      getFileForMapping(projectId, pathFixedMapping).map(file => {
         val fw = new FileWriter(file)
-        fw.write(writePretty(mapping))
+        fw.write(writePretty(pathFixedMapping))
         fw.close()
       })
-      // update the mapping in the in-memory map
+      // update the mapping in the in-memory map without the relative paths
       mappingDefinitions(projectId).put(id, mapping)
       // update the projects metadata json file
       projectFolderRepository.updateMapping(projectId, mapping)
@@ -130,7 +135,7 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
   override def deleteMapping(projectId: String, id: String): Future[Unit] = {
     Future {
       if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
-        throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+        throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath).toAbsolutePath.toString}")
       }
       // delete the mapping from the repository
       getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
@@ -152,7 +157,7 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
   private def getFileForMapping(projectId: String, fhirMapping: FhirMapping): Future[File] = {
     val projectFuture: Future[Option[Project]] = projectFolderRepository.getProject(projectId)
     projectFuture.map(project => {
-      val file: File = FileUtils.getPath(mappingRepositoryFolderPath, project.get.id, getFileName(fhirMapping.id)).toFile
+      val file: File = FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, project.get.id, getFileName(fhirMapping.id)).toFile
       // If the project folder does not exist, create it
       if (!file.getParentFile.exists()) {
         file.getParentFile.mkdir()
@@ -169,6 +174,52 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
    */
   private def getFileName(mappingId: String): String = {
     s"$mappingId${FileExtensions.JSON}"
+  }
+
+  /**
+   * Removes the relative paths for the given mapping context
+   * @param mappingContextPath relative path to the mapping context from the mapping
+   * @return
+   */
+  private def removeRelativePathForContext(mappingContextPath: String): Option[String] = {
+    mappingContextPath.split("/").lastOption
+  }
+
+  /**
+   * Adds the relative path for the given mapping context from the mapping
+   * @param projectId project id the mapping and mapping context belongs to
+   * @param mappingContext mapping context id
+   * @return
+   */
+  private def addRelativePathForContext(projectId: String, mappingContext: String): Option[String] = {
+     Some(s"../../${toFhirEngineConfig.mappingContextRepositoryFolderPath}/${projectId}/${mappingContext}");
+  }
+
+  /**
+   * Adds the relative paths in the mapping
+   * @param projectId
+   * @param mapping
+   * @return
+   */
+  private def addRelativePaths(projectId: String, mapping: FhirMapping): FhirMapping = {
+    mapping.copy(
+      context = mapping.context.map(mappingContext => (mappingContext._1 -> mappingContext._2.copy(
+        url = addRelativePathForContext(projectId, mappingContext._2.url.get)
+      )))
+    )
+  }
+
+  /**
+   * Removes the relative paths in the mapping
+   * @param mapping
+   * @return
+   */
+  private def removeRelativePaths(mapping: FhirMapping): FhirMapping = {
+    mapping.copy(
+      context = mapping.context.map(mappingContext => (mappingContext._1 -> mappingContext._2.copy(
+        url = removeRelativePathForContext(mappingContext._2.url.get)
+      )))
+    )
   }
 
   /**
@@ -192,7 +243,7 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()
         val fhirMapping = fileContent.parseJson.extract[FhirMapping]
-        fhirMappingMap.put(fhirMapping.id, fhirMapping)
+        fhirMappingMap.put(fhirMapping.id, removeRelativePaths(fhirMapping))
       }
       map.put(projectDirectory.getName, fhirMappingMap)
     }

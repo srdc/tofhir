@@ -25,7 +25,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(toFhirEngineConfig)
 
   val projectRepository: ProjectFolderRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
-  val mappingRepository: MappingFolderRepository = new MappingFolderRepository(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
+  val mappingRepository: MappingFolderRepository = new MappingFolderRepository(toFhirEngineConfig, projectRepository)
   val schemaRepository: SchemaFolderRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository)
   val mappingJobRepository: JobFolderRepository = new JobFolderRepository(toFhirEngineConfig.jobRepositoryFolderPath, projectRepository)
   val mappingContextRepository: MappingContextFolderRepository = new MappingContextFolderRepository(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectRepository)
