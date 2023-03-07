@@ -3,7 +3,9 @@ package io.tofhir.engine.mapping
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
-import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
+import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.model.{FhirMapping, FhirMappingContextUrlPlaceHolder, FhirMappingException}
+import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import org.json4s._
 
@@ -67,11 +69,17 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
       val newContextDefinitionMap = fhirMapping.context.map { case (key, contextDefinition) => // iterate over each contextDefinition entry
         val newContextDefinition = // create a new context definition object
           if (contextDefinition.url.isDefined) {
-            val folderPathObj = Paths.get(file.getParent)
-            val contextDefinitionPath = Paths.get(contextDefinition.url.get) // parse the path
-            if (!contextDefinitionPath.isAbsolute) { //if the URL of the context definition object is relative
-              contextDefinition.withURL(Paths.get(folderPathObj.normalize().toString, contextDefinitionPath.normalize().toString).toAbsolutePath.toString) // join it with the folderPath of this repository
-            } else contextDefinition // keep it otherwise
+            if (contextDefinition.url.get.contains(FhirMappingContextUrlPlaceHolder.CONTEXT_REPO)) { // if the URL of the context definition object contains the $CONTEXT_REPO placeholder
+              val replacedContextDefinition = contextDefinition.url.get.replace(FhirMappingContextUrlPlaceHolder.CONTEXT_REPO,
+                ToFhirConfig.engineConfig.mappingContextRepositoryFolderPath)
+              contextDefinition.withURL(FileUtils.getPath(replacedContextDefinition).toAbsolutePath.toString)
+            } else { // context path is relative to the mapping file
+              val folderPathObj = Paths.get(file.getParent)
+              val contextDefinitionPath = Paths.get(contextDefinition.url.get) // parse the path
+              if (!contextDefinitionPath.isAbsolute) { //if the URL of the context definition object is relative
+                contextDefinition.withURL(Paths.get(folderPathObj.normalize().toString, contextDefinitionPath.normalize().toString).toAbsolutePath.toString) // join it with the folderPath of this repository
+              } else contextDefinition // keep it otherwise
+            }
           } else contextDefinition // keep it otherwise
         key -> newContextDefinition
       }

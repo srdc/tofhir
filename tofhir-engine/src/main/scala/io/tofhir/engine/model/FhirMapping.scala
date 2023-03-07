@@ -82,6 +82,14 @@ object FhirMappingContextCategories {
 }
 
 /**
+ * Placeholder string for a context in the mappings.
+ * This will be replaced with the mapping context repository folder path during the mapping evaluation
+ */
+object FhirMappingContextUrlPlaceHolder {
+  final val CONTEXT_REPO = "$CONTEXT_REPO"
+}
+
+/**
  * Provides the details about FHIR interaction to persist the new information
  * @param `type`      FHIR interaction type e.g. create | update | patch
  *                    For FHIR patch interaction, the mapped content should be arranged accordingly (JSON patch or FHIR Path patch)
