@@ -184,17 +184,15 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
             )
         streamingQuery.awaitTermination()
       } else {
-        val f =
-          fhirMappingJobManager
-            .executeMappingJob(
-              id = mappingJob.id,
-              tasks = mappingJob.mappings,
-              sourceSettings = mappingJob.sourceSettings,
-              sinkSettings = mappingJob.sinkSettings,
-              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-              identityServiceSettings = mappingJob.getIdentityServiceSettings()
-            )
-        Await.result(f, Duration.Inf)
+        fhirMappingJobManager
+          .executeMappingJob(
+            id = mappingJob.id,
+            tasks = mappingJob.mappings,
+            sourceSettings = mappingJob.sourceSettings,
+            sinkSettings = mappingJob.sinkSettings,
+            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+            identityServiceSettings = mappingJob.getIdentityServiceSettings()
+          )
       }
     }
   }
