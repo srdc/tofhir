@@ -81,47 +81,49 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
    * @return the result of mapping job. It returns {@link None} if the job has not been run before.
    * @throws ResourceNotFound when mapping job does not exist
    */
-  def monitorJob(projectId: String, jobId: String): Future[Option[FhirMappingJobLog]] = {
+  def monitorJob(projectId: String, jobId: String, queryParams: Map[String, String]): Future[Seq[FhirMappingJobLog]] = {
     // retrieve the job to validate its existence
-    val job = jobRepository.getJob(projectId, jobId)
-    job
-      .recover(_ => None) // catch the exception indicating that mapping job does not exist and return None
-      .map[Option[FhirMappingJobLog]](job => {
-        // throw an exception if the mapping job does not exist
-        if (job.isEmpty) {
-          throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists")
-        }
+    val page = queryParams.getOrElse("page", "1").toInt
+    jobRepository.getJob(projectId, jobId).map {
+      case Some(j) =>
         // read logs/tofhir-mappings.log file
         val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
-        // find the log corresponding to the last run of mapping job
-        var lastRunOfMappingJob: Array[Row] = Array()
-        // handle the case where no job has been run yet which makes the data frame empty
-        if (!dataFrame.isEmpty)
-          // TODO: tofhir-mappings.log does not include the project information
-          lastRunOfMappingJob = dataFrame.filter(s"jobId = '$jobId'") // filter logs by mapping job id
-            .tail(1) // retrieve the log of last execution
-
-        if (lastRunOfMappingJob.length == 0) {
-          // job has not been run before
-          None
+        // TODO: tofhir-mappings.log does not include the project information
+        val jobRuns = dataFrame.filter(s"jobId = '$jobId'")
+        // handle the case where the job has not been run yet which makes the data frame empty
+        if (jobRuns.isEmpty) {
+          Seq.empty
         } else {
-          val row = lastRunOfMappingJob.head
-          // get mapping url
-          val mappingUrl = row.getAs[String]("mappingUrl") match {
-            case null => None
-            case url => Some(url)
+          // page size is 50, handle pagination
+          val total = jobRuns.count()
+          val numOfPages = Math.ceil(total.toDouble / 50).toInt
+          if (page > numOfPages) {
+            throw ResourceNotFound("Page does not exist.", s"Page $page does not exist")
           }
-          // return the log
-          Some(FhirMappingJobLog(jobId = row.getAs[String]("jobId"),
-            mappingUrl = mappingUrl,
-            numOfInvalids = row.getAs[Long]("numOfInvalids"),
-            numOfNotMapped = row.getAs[Long]("numOfNotMapped"),
-            numOfFhirResources = row.getAs[Long]("numOfFhirResources"),
-            numOfFailedWrites = row.getAs[Long]("numOfFailedWrites"),
-            timestamp = row.getAs[String]("@timestamp"),
-            result = row.getAs[String]("result"),
-            message = row.getAs[String]("message")))
+          val start = (page - 1) * 50
+          val end = Math.min(start + 50, total.toInt)
+          // sort the runs by latest to oldest
+          val paginatedRuns = jobRuns.sort(jobRuns.col("@timestamp").desc).collect().slice(start, end)
+          // create the log model for each job run
+          paginatedRuns.map(row => {
+            // get mapping url
+            val mappingUrl = row.getAs[String]("mappingUrl") match {
+              case null => None
+              case url => Some(url)
+            }
+            // return the log
+            FhirMappingJobLog(jobId = row.getAs[String]("jobId"),
+              mappingUrl = mappingUrl,
+              numOfInvalids = row.getAs[Long]("numOfInvalids"),
+              numOfNotMapped = row.getAs[Long]("numOfNotMapped"),
+              numOfFhirResources = row.getAs[Long]("numOfFhirResources"),
+              numOfFailedWrites = row.getAs[Long]("numOfFailedWrites"),
+              timestamp = row.getAs[String]("@timestamp"),
+              result = row.getAs[String]("result"),
+              message = row.getAs[String]("message"))
+          })
         }
-      })
+      case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists")
+    }
   }
 }

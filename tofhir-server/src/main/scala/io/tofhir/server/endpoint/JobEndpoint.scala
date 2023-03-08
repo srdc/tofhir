@@ -106,10 +106,9 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
    * */
   private def monitorJob(projectId: String, id: String): Route = {
     get {
-      complete {
-        service.monitorJob(projectId, id) map {
-          case Some(log) => StatusCodes.OK -> log // return the result of mapping job
-          case None => StatusCodes.NoContent -> None // indicates that mapping job has not been run before
+      parameterMap { queryParams => // page is supported for now (e.g. page=1)
+        complete {
+          service.monitorJob(projectId, id, queryParams)
         }
       }
     }
