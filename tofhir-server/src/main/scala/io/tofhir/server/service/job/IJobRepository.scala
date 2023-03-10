@@ -46,4 +46,12 @@ trait IJobRepository {
    */
   def deleteJob(projectId: String, id: String): Future[Unit]
 
+  /**
+   * Run the job
+   * @param projectId project id the job belongs to
+   * @param id job id
+   * @return
+   */
+  def runJob(projectId: String, id: String): Future[Future[Unit]]
+
 }

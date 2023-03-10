@@ -1,8 +1,12 @@
 package io.tofhir.server.service.job
 
+import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.ToFhirEngine
+import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
+import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model.{FhirMappingException, FhirMappingJob}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
@@ -14,12 +18,28 @@ import org.json4s.jackson.Serialization.writePretty
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.io.Source
+import scala.concurrent.duration.Duration
 
 class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IJobRepository {
+
+  private val logger: Logger = Logger(this.getClass)
   // project id -> mapping job id -> mapping job
   private val jobDefinitions: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = initMap(jobRepositoryFolderPath)
+
+  val toFhirEngine = new ToFhirEngine(ToFhirConfig.sparkAppName, ToFhirConfig.sparkMaster,
+    ToFhirConfig.engineConfig.mappingRepositoryFolderPath,
+    ToFhirConfig.engineConfig.schemaRepositoryFolderPath)
+
+  val fhirMappingJobManager =
+    new FhirMappingJobManager(
+      toFhirEngine.mappingRepository,
+      toFhirEngine.contextLoader,
+      toFhirEngine.schemaLoader,
+      toFhirEngine.sparkSession,
+      ErrorHandlingType.CONTINUE
+    )
 
   /**
    * Returns the mappings managed by this repository
@@ -139,7 +159,49 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
   }
 
   /**
+   * Run the job
+   *
+   * @param projectId project id the job belongs to
+   * @param id        job id
+   * @return
+   */
+  override def runJob(projectId: String, id: String): Future[Future[Unit]] = {
+    Future {
+      if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
+        throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
+      }
+      val mappingJob: FhirMappingJob = jobDefinitions(projectId)(id)
+      if (mappingJob.sourceSettings.exists(_._2.asStream)) {
+        Future { // TODO we lose the ability to stop the streaming job
+          val streamingQuery =
+            fhirMappingJobManager
+              .startMappingJobStream(
+                id = mappingJob.id,
+                tasks = mappingJob.mappings,
+                sourceSettings = mappingJob.sourceSettings,
+                sinkSettings = mappingJob.sinkSettings,
+                terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+                identityServiceSettings = mappingJob.getIdentityServiceSettings()
+              )
+          streamingQuery.awaitTermination()
+        }
+      } else {
+        fhirMappingJobManager
+          .executeMappingJob(
+            id = mappingJob.id,
+            tasks = mappingJob.mappings,
+            sourceSettings = mappingJob.sourceSettings,
+            sinkSettings = mappingJob.sinkSettings,
+            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+            identityServiceSettings = mappingJob.getIdentityServiceSettings()
+          )
+      }
+    }
+  }
+
+  /**
    * Get the mapping job file for the given project id and job id
+ *
    * @param projectId
    * @param fhirMapping
    * @return
