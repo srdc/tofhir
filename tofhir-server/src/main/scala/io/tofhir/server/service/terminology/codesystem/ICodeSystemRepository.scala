@@ -2,7 +2,7 @@ package io.tofhir.server.service.terminology.codesystem
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import io.tofhir.server.model.TerminologyCodeSystem
+import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
 
 import scala.concurrent.Future
 

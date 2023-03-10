@@ -3,9 +3,11 @@ package io.tofhir.server.terminology
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import io.onfhir.util.JsonFormatter.formats
+import io.tofhir.engine.model.{CodeSystemFile, ConceptMapFile}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.model.{TerminologyCodeSystem, TerminologyConceptMap, TerminologySystem}
+import io.tofhir.server.model.TerminologySystem
+import io.tofhir.server.model.TerminologySystem.{TerminologyCodeSystem, TerminologyConceptMap}
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.JsonMethods
@@ -14,11 +16,11 @@ import org.json4s.jackson.Serialization.writePretty
 import java.io.File
 
 class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
-  var conceptMap1: TerminologyConceptMap = TerminologyConceptMap(name = "testCM", conceptMapUrl = "", sourceValueSetUrl = "", targetValueSetUrl = "")
-  var conceptMap2: TerminologyConceptMap = TerminologyConceptMap(name = "testCM2", conceptMapUrl = "", sourceValueSetUrl = "", targetValueSetUrl = "")
+  var conceptMap1: TerminologyConceptMap = ConceptMapFile(name = "testCM", conceptMapUrl = "", sourceValueSetUrl = "", targetValueSetUrl = "")
+  var conceptMap2: TerminologyConceptMap = ConceptMapFile(name = "testCM2", conceptMapUrl = "", sourceValueSetUrl = "", targetValueSetUrl = "")
 
-  var codeSystem1: TerminologyCodeSystem = TerminologyCodeSystem(name = "testCS", codeSystem = "")
-  var codeSystem2: TerminologyCodeSystem = TerminologyCodeSystem(name = "testCS2", codeSystem = "")
+  var codeSystem1: TerminologyCodeSystem = CodeSystemFile(name = "testCS", codeSystem = "")
+  var codeSystem2: TerminologyCodeSystem = CodeSystemFile(name = "testCS2", codeSystem = "")
 
   var terminologySystem1: TerminologySystem = TerminologySystem(name = "testTerminology1", description = "example terminology 1", codeSystems = Seq.empty, conceptMaps = Seq.empty)
 

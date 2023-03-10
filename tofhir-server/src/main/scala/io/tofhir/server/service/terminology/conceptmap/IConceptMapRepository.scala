@@ -2,7 +2,7 @@ package io.tofhir.server.service.terminology.conceptmap
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import io.tofhir.server.model.TerminologyConceptMap
+import io.tofhir.server.model.TerminologySystem.TerminologyConceptMap
 
 import scala.concurrent.Future
 

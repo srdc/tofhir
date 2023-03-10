@@ -264,10 +264,10 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     val terminologyServiceFolderPath = Paths.get(getClass.getResource("/terminology-service").toURI).normalize().toAbsolutePath.toString
     val terminologyServiceSettings = LocalFhirTerminologyServiceSettings(terminologyServiceFolderPath,
       conceptMapFiles = Seq(
-        ConceptMapFile("sample-concept-map.csv", "http://example.com/fhir/ConceptMap/sample1", "http://terminology.hl7.org/ValueSet/v2-0487", "http://snomed.info/sct?fhir_vs")
+        ConceptMapFile("sample-concept-map.csv", "sample-concept-map.csv", "http://example.com/fhir/ConceptMap/sample1", "http://terminology.hl7.org/ValueSet/v2-0487", "http://snomed.info/sct?fhir_vs")
       ),
       codeSystemFiles = Seq(
-        CodeSystemFile("sample-code-system.csv", "http://snomed.info/sct")
+        CodeSystemFile("sample-code-system.csv", "sample-code-system.csv", "http://snomed.info/sct")
       )
     )
 

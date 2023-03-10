@@ -35,8 +35,8 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
       .map(cmf =>
         cmf ->
           parseConceptMapGivenInCsv(
-            relatedFiles.get(cmf.fileName) match {
-              case None => throw FhirMappingException(s"Missing toFHIR ConceptMap CSV file '${cmf.fileName}' within configured folder '${settings.folderPath}'!")
+            relatedFiles.get(cmf.name) match {
+              case None => throw FhirMappingException(s"Missing toFHIR ConceptMap CSV file '${cmf.name}' within configured folder '${settings.folderPath}'!")
               case Some(f)=> f.getAbsolutePath
             }
       ))
@@ -48,8 +48,8 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
     settings
       .codeSystemFiles
       .map(cs => cs.codeSystem -> parseCodeSystemGivenInCsv(
-        relatedFiles.get(cs.fileName) match {
-          case None => throw FhirMappingException(s"Missing tofhir CodeSystem CSV file '${cs.fileName}' within configured folder '${settings.folderPath}'!")
+        relatedFiles.get(cs.name) match {
+          case None => throw FhirMappingException(s"Missing tofhir CodeSystem CSV file '${cs.name}' within configured folder '${settings.folderPath}'!")
           case Some(f)=> f.getAbsolutePath
         }
       ))
@@ -157,7 +157,7 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
         throw FhirMappingException("Only simple translate statements are supported in mappings with a local terminology service!, The 'source' or 'target' parameter should be given!")
 
       conceptMaps
-        .filter(cm => source.forall(_ == cm._1.sourceValueSet) && target.forall(_ == cm._1.targetValueSet))
+        .filter(cm => source.forall(_ == cm._1.sourceValueSetUrl) && target.forall(_ == cm._1.targetValueSetUrl))
         .map(_._2) match {
           case Nil => constructParametersResourceForNoTranslation(s"Concept map from source value set ${source.getOrElse("?")} to target value set ${target.getOrElse("?")} is not found!")
           case foundConceptMaps =>
@@ -192,7 +192,7 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
         throw FhirMappingException("Only simple translate statements are supported in mappings with a local terminology service! The 'reverse' parameter is not supported!")
 
       conceptMaps
-        .filter(cm => source.forall(_ == cm._1.sourceValueSet) && target.forall(_ == cm._1.targetValueSet))
+        .filter(cm => source.forall(_ == cm._1.sourceValueSetUrl) && target.forall(_ == cm._1.targetValueSetUrl))
         .map(_._2) match {
         case Nil => constructParametersResourceForNoTranslation(s"Concept map from source value set ${source.getOrElse("?")} to target value set ${target.getOrElse("?")} is not found!")
         case foundConceptMaps =>
