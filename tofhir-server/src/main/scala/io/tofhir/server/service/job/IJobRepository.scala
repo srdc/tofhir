@@ -52,6 +52,6 @@ trait IJobRepository {
    * @param id job id
    * @return
    */
-  def runJob(projectId: String, id: String): Future[Unit]
+  def runJob(projectId: String, id: String): Future[Future[Unit]]
 
 }

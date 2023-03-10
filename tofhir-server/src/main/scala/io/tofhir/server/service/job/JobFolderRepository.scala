@@ -165,24 +165,26 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
    * @param id        job id
    * @return
    */
-  override def runJob(projectId: String, id: String): Future[Unit] = {
+  override def runJob(projectId: String, id: String): Future[Future[Unit]] = {
     Future {
       if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
         throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
       }
       val mappingJob: FhirMappingJob = jobDefinitions(projectId)(id)
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-        val streamingQuery =
-          fhirMappingJobManager
-            .startMappingJobStream(
-              id = mappingJob.id,
-              tasks = mappingJob.mappings,
-              sourceSettings = mappingJob.sourceSettings,
-              sinkSettings = mappingJob.sinkSettings,
-              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-              identityServiceSettings = mappingJob.getIdentityServiceSettings()
-            )
-        streamingQuery.awaitTermination()
+        Future { // TODO we lose the ability to stop the streaming job
+          val streamingQuery =
+            fhirMappingJobManager
+              .startMappingJobStream(
+                id = mappingJob.id,
+                tasks = mappingJob.mappings,
+                sourceSettings = mappingJob.sourceSettings,
+                sinkSettings = mappingJob.sinkSettings,
+                terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+                identityServiceSettings = mappingJob.getIdentityServiceSettings()
+              )
+          streamingQuery.awaitTermination()
+        }
       } else {
         fhirMappingJobManager
           .executeMappingJob(

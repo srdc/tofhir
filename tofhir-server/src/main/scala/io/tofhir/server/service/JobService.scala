@@ -68,7 +68,7 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
    * @param jobId job id
    * @return
    */
-  def runJob(projectId: String, jobId: String): Future[Unit] = {
+  def runJob(projectId: String, jobId: String): Future[Future[Unit]] = {
     jobRepository.runJob(projectId, jobId)
   }
 
