@@ -14,7 +14,9 @@ import io.tofhir.server.service.SimpleStructureDefinitionService
 import io.tofhir.server.service.project.ProjectFolderRepository
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
+import io.onfhir.api.Resource
 import io.tofhir.common.model.SchemaDefinition
+import io.tofhir.common.util.SchemaUtil
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
@@ -91,7 +93,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    */
   override def saveSchema(projectId: String, schemaDefinition: SchemaDefinition): Future[SchemaDefinition] = {
       // Validate
-      val structureDefinitionResource = convertToStructureDefinitionResource(schemaDefinition)
+      var structureDefinitionResource:Resource = null
+      try{
+        structureDefinitionResource = SchemaUtil.convertToStructureDefinitionResource(schemaDefinition)
+      } catch {
+        case _: IllegalArgumentException => throw BadRequest("Missing data type.", s"A field definition must have at least one data type. Element rootPath: ${schemaDefinition.`type`}")
+      }
       try {
         fhirConfigurator.validateGivenInfrastructureResources(baseFhirConfig, api.FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION, Seq(structureDefinitionResource))
       } catch {
@@ -134,7 +141,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     }
 
     // Validate
-    val structureDefinitionResource = convertToStructureDefinitionResource(schemaDefinition)
+    var structureDefinitionResource:Resource = null
+    try{
+      structureDefinitionResource = SchemaUtil.convertToStructureDefinitionResource(schemaDefinition)
+    } catch {
+      case _: IllegalArgumentException => throw BadRequest("Missing data type.", s"A field definition must have at least one data type. Element rootPath: ${schemaDefinition.`type`}")
+    }
     try {
       fhirConfigurator.validateGivenInfrastructureResources(baseFhirConfig, api.FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION, Seq(structureDefinitionResource))
     } catch {

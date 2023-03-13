@@ -156,6 +156,12 @@
             <artifactId>onfhir-r4_${scala.binary.version}</artifactId>
         </dependency>
 
+        <!-- toFHIR dependencies -->
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>tofhir-common</artifactId>
+        </dependency>
+
         <!-- JSON4S -->
         <dependency>
             <groupId>org.json4s</groupId>
