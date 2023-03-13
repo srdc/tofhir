@@ -36,7 +36,7 @@ case class FileSystemSource(path: String, fileFormat:Option[String] = None, opti
  * @param tableName Name of the table
  * @param query     Query to execute in the database
  */
-case class SqlSource(tableName: Option[String] = None, query: Option[String] = None) extends FhirMappingSourceContext
+case class SqlSource(tableName: Option[String] = None, query: Option[String] = None, override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext
 
 /**
  * Context/configuration for one of the source of the mapping that will read the source data from a kafka as stream
@@ -45,7 +45,7 @@ case class SqlSource(tableName: Option[String] = None, query: Option[String] = N
  * @param groupId         The Kafka group id to use in Kafka consumer while reading from Kafka
  * @param startingOffsets The start point when a query is started
  */
-case class KafkaSource(topicName: String, groupId: String, startingOffsets: String) extends FhirMappingSourceContext
+case class KafkaSource(topicName: String, groupId: String, startingOffsets: String, override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext
 
 /**
  * List of source file formats supported by tofhir
