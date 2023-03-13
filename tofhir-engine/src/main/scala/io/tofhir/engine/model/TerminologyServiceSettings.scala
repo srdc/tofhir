@@ -14,7 +14,7 @@ trait TerminologyServiceSettings
  * @param folderPath      Path to the folder that all concept map files exists
  * @param conceptMapFiles List of concept map files
  */
-case class LocalFhirTerminologyServiceSettings(folderPath: String, conceptMapFiles: Seq[ConceptMapFile] = Nil, codeSystemFiles: Seq[CodeSystemFile] = Nil) extends TerminologyServiceSettings
+case class LocalFhirTerminologyServiceSettings(id: Option[String], folderPath: String, conceptMapFiles: Seq[ConceptMapFile] = Nil, codeSystemFiles: Seq[CodeSystemFile] = Nil) extends TerminologyServiceSettings
 
 /**
  * Metadata for a Concept map file for toFhir local terminology service
