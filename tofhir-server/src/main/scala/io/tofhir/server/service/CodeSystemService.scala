@@ -3,7 +3,7 @@ package io.tofhir.server.service
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.model.TerminologyCodeSystem
+import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
 import io.tofhir.server.service.terminology.codesystem.{CodeSystemRepository, ICodeSystemRepository}
 
 import scala.concurrent.Future

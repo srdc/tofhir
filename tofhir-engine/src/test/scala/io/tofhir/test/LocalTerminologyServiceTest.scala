@@ -16,12 +16,12 @@ class LocalTerminologyServiceTest extends AsyncFlatSpec with ToFhirTestSpec {
   implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   val terminologyServiceFolderPath: String = Paths.get(getClass.getResource("/terminology-service").toURI).normalize().toAbsolutePath.toString
-  val settings: LocalFhirTerminologyServiceSettings = LocalFhirTerminologyServiceSettings(terminologyServiceFolderPath,
+  val settings: LocalFhirTerminologyServiceSettings = LocalFhirTerminologyServiceSettings(Some(terminologyServiceFolderPath), terminologyServiceFolderPath,
     conceptMapFiles = Seq(
-      ConceptMapFile("sample-concept-map.csv", "http://example.com/fhir/ConceptMap/sample1", "http://terminology.hl7.org/ValueSet/v2-0487", "http://snomed.info/sct?fhir_vs")
+      ConceptMapFile("sample-concept-map.csv", "sample-concept-map.csv", "http://example.com/fhir/ConceptMap/sample1", "http://terminology.hl7.org/ValueSet/v2-0487", "http://snomed.info/sct?fhir_vs")
     ),
     codeSystemFiles = Seq(
-      CodeSystemFile("sample-code-system.csv", "http://snomed.info/sct")
+      CodeSystemFile("sample-concept-map.csv", "sample-code-system.csv", "http://snomed.info/sct")
     )
   )
   val localTerminologyService = new LocalTerminologyService(settings)

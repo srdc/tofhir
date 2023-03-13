@@ -18,15 +18,15 @@
     "folderPath": "/terminology-service",
     "conceptMapFiles": [
       {
-        "fileName": "sample-concept-map.csv",
+        "name": "sample-concept-map.csv",
         "conceptMapUrl": "http://example.com/fhir/ConceptMap/sample1",
-        "sourceValueSet": "http://terminology.hl7.org/ValueSet/v2-0487",
-        "targetValueSet": "http://snomed.info/sct?fhir_vs"
+        "sourceValueSetUrl": "http://terminology.hl7.org/ValueSet/v2-0487",
+        "targetValueSetUrl": "http://snomed.info/sct?fhir_vs"
       }
     ],
     "codeSystemFiles": [
       {
-        "fileName":"sample-code-system.csv",
+        "name":"sample-code-system.csv",
         "codeSystem": "http://snomed.info/sct"
       }
     ]

@@ -5,12 +5,13 @@ import akka.util.ByteString
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils
+import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
 import io.tofhir.server.model._
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository.{TERMINOLOGY_SYSTEMS_FOLDER, TERMINOLOGY_SYSTEMS_JSON}
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.Serialization.writePretty
 
-import java.io.{File, FileWriter}
+import java.io.FileWriter
 import scala.concurrent.Future
 
 class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICodeSystemRepository {
