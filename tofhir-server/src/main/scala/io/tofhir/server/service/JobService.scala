@@ -74,19 +74,19 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
   }
 
   /**
-   * Monitors the result of a mapping job. It extracts the log information from {@link logs/tofhir-mappings.log}
-   * file for the given mapping job and returns the last log.
+   * Monitors the result of a mapping job. It extracts the logs from {@link logs/tofhir-mappings.log} file for the
+   * given mapping job and returns the ones satisfying given parameters (e.g. paging).
    *
    * @param projectId project id the job belongs to
    * @param jobId     job id
-   * @return the result of mapping job. It returns {@link None} if the job has not been run before.
+   * @param queryParams parameters to filter results such as paging
+   * @return the execution logs of mapping job as a JSON array. It returns an empty array if the job has not been run before.
    * @throws ResourceNotFound when mapping job does not exist
    */
   def monitorJob(projectId: String, jobId: String, queryParams: Map[String, String]): Future[Seq[JValue]] = {
     // retrieve the job to validate its existence
-    val page = queryParams.getOrElse("page", "1").toInt
     jobRepository.getJob(projectId, jobId).map {
-      case Some(j) =>
+      case Some(_) =>
         // read logs/tofhir-mappings.log file
         val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
         // handle the case where no job has been run yet which makes the data frame empty
@@ -103,6 +103,7 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
             // page size is 50, handle pagination
             val total = jobRuns.count()
             val numOfPages = Math.ceil(total.toDouble / 50).toInt
+            val page = queryParams.getOrElse("page", "1").toInt
             // handle the case where requested page does not exist
             if (page > numOfPages) {
               Seq.empty
