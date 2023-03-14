@@ -103,16 +103,18 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
             // page size is 50, handle pagination
             val total = jobRuns.count()
             val numOfPages = Math.ceil(total.toDouble / 50).toInt
+            // handle the case where requested page does not exist
             if (page > numOfPages) {
-              throw ResourceNotFound("Page does not exist.", s"Page $page does not exist")
+              Seq.empty
+            } else {
+              val start = (page - 1) * 50
+              val end = Math.min(start + 50, total.toInt)
+              // sort the runs by latest to oldest
+              val paginatedRuns = jobRuns.sort(jobRuns.col("@timestamp").desc).collect().slice(start, end)
+              paginatedRuns.map(row => {
+                JsonMethods.parse(row.json)
+              })
             }
-            val start = (page - 1) * 50
-            val end = Math.min(start + 50, total.toInt)
-            // sort the runs by latest to oldest
-            val paginatedRuns = jobRuns.sort(jobRuns.col("@timestamp").desc).collect().slice(start, end)
-            paginatedRuns.map(row => {
-              JsonMethods.parse(row.json)
-            })
           }
         }
       case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists")
