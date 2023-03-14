@@ -262,7 +262,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
   it should "execute the FhirMapping task with a terminology service" in {
     val terminologyServiceFolderPath = Paths.get(getClass.getResource("/terminology-service").toURI).normalize().toAbsolutePath.toString
-    val terminologyServiceSettings = LocalFhirTerminologyServiceSettings(Some(terminologyServiceFolderPath), terminologyServiceFolderPath,
+    val terminologyServiceSettings = LocalFhirTerminologyServiceSettings(terminologyServiceFolderPath,
       conceptMapFiles = Seq(
         ConceptMapFile("sample-concept-map.csv", "sample-concept-map.csv", "http://example.com/fhir/ConceptMap/sample1", "http://terminology.hl7.org/ValueSet/v2-0487", "http://snomed.info/sct?fhir_vs")
       ),
@@ -294,7 +294,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     val lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobWithIdentityServiceFilePath)
 
     val terminologyServiceFolderPath = Paths.get(getClass.getResource("/terminology-service").toURI).normalize().toAbsolutePath.toString
-    val terminologyServiceSettings = LocalFhirTerminologyServiceSettings(Some(terminologyServiceFolderPath), terminologyServiceFolderPath)
+    val terminologyServiceSettings = LocalFhirTerminologyServiceSettings(terminologyServiceFolderPath)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling)
     fhirMappingJobManager
