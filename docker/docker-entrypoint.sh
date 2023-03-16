@@ -7,6 +7,11 @@ if [ ! -z "$APP_CONF_FILE" ]; then
   JAVA_CMD+="-Dconfig.file=$APP_CONF_FILE "
 fi
 
+# Configure logback configuration file
+if [ ! -z "$LOGBACK_CONF_FILE" ]; then
+  JAVA_CMD+="-Dlogback.configurationFile=$LOGBACK_CONF_FILE "
+fi
+
 # Configure Spark
 if [ ! -z "$SPARK_APPNAME" ]; then
   JAVA_CMD+="-Dspark.app-name=$SPARK_APPNAME "
