@@ -20,7 +20,7 @@ class ToFhirEngine(appName: String, sparkMaster: String, repositoryFolderPath: S
   val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
 
   //Repository for mapping definitions
-  val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(FileUtils.getPath(repositoryFolderPath).toUri)
+  val mappingRepository: IFhirMappingCachedRepository = new FhirMappingFolderRepository(FileUtils.getPath(repositoryFolderPath).toUri)
 
   //Context loader
   val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)

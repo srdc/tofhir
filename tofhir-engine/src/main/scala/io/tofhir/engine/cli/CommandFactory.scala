@@ -8,6 +8,7 @@ object CommandFactory {
       case "info" => new Info()
       case "load" => new Load()
       case "extract-redcap-schemas" => new ExtractRedCapSchemas()
+      case "reload" => new Reload()
       case "run" | "execute" => new Run()
       case "exit" | "quit" => new Exit()
       case cmd => new Unknown(cmd)

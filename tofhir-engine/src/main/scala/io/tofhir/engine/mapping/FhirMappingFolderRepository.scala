@@ -20,17 +20,17 @@ import scala.io.Source
  *
  * @param folderUri Path to the folder
  */
-class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository {
+class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingCachedRepository {
   private val logger: Logger = Logger(this.getClass)
 
-  private val fhirMappings: Map[String, FhirMapping] = loadMappings()
+  private var fhirMappings: Map[String, FhirMapping] = loadMappings()
 
   /**
    * Return the FhirMapping files among the JSON files in the folder repository by testing with JSON parsing against #FhirMapping.
    *
    * @return a sequence of tuples (FhirMapping, File) where the File is pointing to the FhirMapping.
    */
-  private def getFhirMappings: Seq[(FhirMapping, File)] = {
+  private def readFhirMappingsFromFolder: Seq[(FhirMapping, File)] = {
     val folder = new File(folderUri)
     var files = Seq.empty[File]
     try {
@@ -94,7 +94,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
    */
   private def loadMappings(): Map[String, FhirMapping] = {
     //logger.debug("Loading all mappings from folder:{}", folderUri)
-    val mappings = normalizeContextURLs(getFhirMappings)
+    val mappings = normalizeContextURLs(readFhirMappingsFromFolder)
       .foldLeft(Map[String, FhirMapping]()) { (map, fhirMapping) =>
         if (map.contains(fhirMapping.url)) {
           val msg = s"Multiple mapping definitions with the same URL: ${fhirMapping.url}. URLs must be unique."
@@ -106,6 +106,13 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
     //logger.debug("{} mappings were loaded from the mapping folder:{}", mappings.size, folderUri)
     //logger.debug("Loaded mappings are:{}{}", System.lineSeparator(), mappings.keySet.mkString(System.lineSeparator()))
     mappings
+  }
+
+  /**
+   * Invalidate the internal cache and refresh the cache with the FhirMappings directly from their source
+   */
+  override def invalidate(): Unit = {
+    this.fhirMappings = loadMappings()
   }
 
   /**
