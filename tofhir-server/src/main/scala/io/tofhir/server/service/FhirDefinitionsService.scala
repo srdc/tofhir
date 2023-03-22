@@ -6,7 +6,7 @@ import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
 import io.onfhir.r4.config.FhirR4Configurator
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
-import io.tofhir.server.model.SimpleStructureDefinition
+import io.tofhir.common.model.SimpleStructureDefinition
 
 import scala.collection.mutable
 

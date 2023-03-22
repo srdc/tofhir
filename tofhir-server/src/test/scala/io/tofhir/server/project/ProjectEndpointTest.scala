@@ -2,9 +2,10 @@ package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import io.onfhir.util.JsonFormatter.formats
+import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.model.{Project, ProjectEditableFields, SchemaDefinition}
+import io.tofhir.server.model.{Project, ProjectEditableFields}
 import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods

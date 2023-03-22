@@ -5,6 +5,8 @@ import org.json4s.{JArray, JObject, JString}
 
 import java.util.UUID
 
+import io.tofhir.common.model.SchemaDefinition
+
 /**
  * Definition of a project which holds relevant schemas, mapping, mapping-jobs, concept maps etc.
  *

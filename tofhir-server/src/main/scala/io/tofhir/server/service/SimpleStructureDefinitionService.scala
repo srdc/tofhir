@@ -3,7 +3,7 @@ package io.tofhir.server.service
 import io.onfhir.api.validation.{ConstraintKeys, ElementRestrictions, ProfileRestrictions}
 import io.onfhir.config.BaseFhirConfig
 import io.onfhir.validation._
-import io.tofhir.server.model._
+import io.tofhir.common.model._
 
 class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 

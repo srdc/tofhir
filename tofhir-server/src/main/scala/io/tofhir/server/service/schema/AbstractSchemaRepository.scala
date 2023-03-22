@@ -1,15 +1,12 @@
 package io.tofhir.server.service.schema
 
-import io.onfhir.api.Resource
 import io.onfhir.api.parsers.IFhirFoundationResourceParser
 import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.config.IFhirVersionConfigurator
 import io.onfhir.r4.config.FhirR4Configurator
 import io.onfhir.r4.parsers.R4Parser
-import io.tofhir.server.model.{BadRequest, DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.server.service.SimpleStructureDefinitionService
-import org.json4s.JArray
-import org.json4s.JsonDSL._
 
 /**
  * Abstract class to provide common functionality to the implementations of ISchemaRepository
@@ -32,70 +29,6 @@ abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISch
   protected val fhirFoundationResourceParser: IFhirFoundationResourceParser = fhirVersion match {
     case "R4" => new R4Parser()
     case _ => throw new NotImplementedError()
-  }
-
-  /**
-   * Convert our internal SchemaDefinition instance to FHIR StructureDefinition resource
-   *
-   * @param schemaDefinition
-   * @return
-   */
-  protected def convertToStructureDefinitionResource(schemaDefinition: SchemaDefinition): Resource = {
-    val structureDefinitionResource: Resource =
-        ("id" -> schemaDefinition.id) ~
-        ("resourceType" -> "StructureDefinition") ~
-        ("url" -> schemaDefinition.url) ~
-        ("name" -> schemaDefinition.name) ~
-        ("status" -> "draft") ~
-        ("fhirVersion" -> "4.0.1") ~
-        ("kind" -> "logical") ~
-        ("abstract" -> false) ~
-        ("type" -> schemaDefinition.`type`) ~
-        ("baseDefinition" -> "http://hl7.org/fhir/StructureDefinition/Element") ~
-        ("derivation" -> "specialization") ~
-        ("differential" -> ("element" -> generateElementArray(schemaDefinition.`type`, schemaDefinition.fieldDefinitions.getOrElse(Seq.empty))))
-    structureDefinitionResource
-  }
-
-  /**
-   * Helper function to convertToStructureDefinitionResource to convert each field definition.
-   *
-   * @param `type`
-   * @param fieldDefinitions
-   * @return
-   */
-  private def generateElementArray(`type`: String, fieldDefinitions: Seq[SimpleStructureDefinition]): JArray = {
-    // Check whether all field definitions have at least one data type
-    val integrityCheck = fieldDefinitions.forall(fd => fd.dataTypes.isDefined && fd.dataTypes.get.nonEmpty)
-    if (!integrityCheck) {
-      throw BadRequest("Missing data type.", s"A field definition must have at least one data type. Element rootPath: ${`type`}")
-    }
-
-    val rootElement =
-      ("id" -> `type`) ~
-        ("path" -> `type`) ~
-        ("min" -> 0) ~
-        ("max" -> "*") ~
-        ("type" -> JArray(List("code" -> "Element")))
-
-    val elements = fieldDefinitions.map { fd =>
-      val max: String = fd.maxCardinality match {
-        case Some(v) => v.toString
-        case None => "*"
-      }
-      ("id" -> fd.path) ~
-        ("path" -> fd.path) ~
-        ("short" -> fd.short) ~
-        ("definition" -> fd.definition) ~
-        ("min" -> fd.minCardinality) ~
-        ("max" -> max) ~
-        ("type" -> fd.dataTypes.get.map { dt =>
-          ("code" -> dt.dataType) ~
-            ("profile" -> dt.profiles)
-        })
-    }.toList
-
-    JArray(rootElement +: elements)
   }
 
   /**

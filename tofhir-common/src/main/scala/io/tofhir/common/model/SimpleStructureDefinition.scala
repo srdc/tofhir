@@ -1,4 +1,4 @@
-package io.tofhir.server.model
+package io.tofhir.common.model
 
 import io.onfhir.api.FHIR_ROOT_URL_FOR_DEFINITIONS
 

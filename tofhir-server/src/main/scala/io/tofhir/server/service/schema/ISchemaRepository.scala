@@ -1,6 +1,6 @@
 package io.tofhir.server.service.schema
 
-import io.tofhir.server.model.SchemaDefinition
+import io.tofhir.common.model.SchemaDefinition
 
 import scala.concurrent.Future
 

@@ -172,6 +172,10 @@ object CommandLineInterface {
         nextArg(map ++ Map("schemas" -> value), tail)
       case "--db" :: value :: tail =>
         nextArg(map ++ Map("db" -> value), tail)
+      case "--data-dictionary" :: value :: tail =>
+        nextArg(map ++ Map("data-dictionary" -> value), tail)
+      case "--definition-root-url" :: value :: tail =>
+        nextArg(map ++ Map("definition-root-url" -> value), tail)
       case str :: tail =>
         nextArg(map ++ Map("command" -> str), tail)
       case unknown :: _ =>
