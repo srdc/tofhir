@@ -1,11 +1,11 @@
 package io.tofhir.engine.cli
 
-import java.io.{File, FileNotFoundException, FileWriter}
+import java.io.{FileNotFoundException, FileWriter}
 
 import io.onfhir.api.Resource
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.util.{CsvUtil, RedCapUtil}
+import io.tofhir.engine.util.{CsvUtil, FileUtils, RedCapUtil}
 import org.json4s.jackson.Serialization.writePretty
 
 /**
@@ -29,7 +29,7 @@ class ExtractRedCapSchemas extends Command {
         // write each schema as a file
         fhirResources.foreach(fhirResource => {
           val resourceType = fhirResource.values("type")
-          val file = new File(ToFhirConfig.engineConfig.schemaRepositoryFolderPath + File.separatorChar + resourceType + ".StructureDefinition.json")
+          val file = FileUtils.getPath(ToFhirConfig.engineConfig.schemaRepositoryFolderPath,resourceType + ".StructureDefinition.json").toFile
           // when the schema already exists, warn user
           if (file.exists()) {
             println(s"Schema '$resourceType' already exists. Overriding it...")
