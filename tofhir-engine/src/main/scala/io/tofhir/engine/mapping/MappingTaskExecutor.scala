@@ -46,7 +46,7 @@ object MappingTaskExecutor {
     fhirMappingService.sources match {
       case Seq(_) => executeMappingOnSingleSource(spark, df, fhirMappingService, errorHandlingType)
       //Executing on multiple sources
-      case oth => executeMappingOnMultipleSources(spark, df, fhirMappingService,oth, errorHandlingType)
+      case oth => executeMappingOnMultipleSources(spark, df, fhirMappingService, oth, errorHandlingType)
     }
   }
 
@@ -83,7 +83,7 @@ object MappingTaskExecutor {
                 source = Some(jo.toJson),
                 error = Some(FhirMappingError(
                   code = FhirMappingErrorCodes.INVALID_INPUT,
-                  description =validationError
+                  description = validationError
                 ))
               ))
           }
@@ -94,7 +94,7 @@ object MappingTaskExecutor {
   private def executeMappingOnMultipleSources(spark: SparkSession,
                                               df: DataFrame,
                                               fhirMappingService: FhirMappingService,
-                                              sources:Seq[String],
+                                              sources: Seq[String],
                                               errorHandlingType: ErrorHandlingType): Dataset[FhirMappingResult] = {
     import spark.implicits._
     val result =
@@ -103,36 +103,36 @@ object MappingTaskExecutor {
           val otherSourceRows =
             sources
               .tail
-              .map(s => s -> Option(row.getList[Row](row.schema.fieldIndex( s"__$s"))).map(_.asScala.toList).getOrElse(List.empty))
+              .map(s => s -> Option(row.getList[Row](row.schema.fieldIndex(s"__$s"))).map(_.asScala.toList).getOrElse(List.empty))
 
           val mainSource = row.getStruct(row.schema.fieldIndex(s"__${sources.head}"))
 
           //Check if there is any validation error
           val validationErrors =
             Option(mainSource.getAs[String](SourceHandler.INPUT_VALIDITY_ERROR)).toSeq ++
-            otherSourceRows.flatMap(rows => rows._2.flatMap(r => Option(r.getAs[String](SourceHandler.INPUT_VALIDITY_ERROR))))
+              otherSourceRows.flatMap(rows => rows._2.flatMap(r => Option(r.getAs[String](SourceHandler.INPUT_VALIDITY_ERROR))))
 
           val jo =
             convertRowToJObject(mainSource) //convert the row to JSON object
               .removeField(f => f._1.startsWith("__")) //Remove the extra field appended during validation and other source objects
               .asInstanceOf[JObject]
           //Parse data coming from other sources as context parameters
-          val otherObjectMap:Map[String, JValue] =
+          val otherObjectMap: Map[String, JValue] =
             otherSourceRows
               .flatMap {
                 case (alias, rows) =>
                   rows
                     .map(r => convertRowToJObject(r).removeField(f => f._1.startsWith("__"))) match {
-                      case Nil => None
-                      case Seq(o) => Some(alias -> o)
-                      case oth => Some(alias -> JArray(oth))
+                    case Nil => None
+                    case Seq(o) => Some(alias -> o)
+                    case oth => Some(alias -> JArray(oth))
                   }
               }
               .toMap
 
           validationErrors match {
             //If input is valid
-            case Nil => executeMappingOnInput(jo,otherObjectMap, fhirMappingService, errorHandlingType)
+            case Nil => executeMappingOnInput(jo, otherObjectMap, fhirMappingService, errorHandlingType)
             //If the input is not valid, return the error
             case _ =>
               Seq(FhirMappingResult(
@@ -153,19 +153,20 @@ object MappingTaskExecutor {
 
   /**
    * Execute the mapping on an JSON converted input
-   * @param jo                    Input object
-   * @param fhirMappingService    Mapping service
-   * @param errorHandlingType     Error handling type
+   *
+   * @param jo                 Input object
+   * @param fhirMappingService Mapping service
+   * @param errorHandlingType  Error handling type
    * @return
    */
-  private def executeMappingOnInput(jo:JObject,
-                                    otherInputs:Map[String, JValue],
+  private def executeMappingOnInput(jo: JObject,
+                                    otherInputs: Map[String, JValue],
                                     fhirMappingService: FhirMappingService,
-                                    errorHandlingType: ErrorHandlingType):Seq[FhirMappingResult] = {
+                                    errorHandlingType: ErrorHandlingType): Seq[FhirMappingResult] = {
 
     val results =
       try {
-        val mappedResources = Await.result(fhirMappingService.mapToFhir(jo,otherInputs), ToFhirConfig.engineConfig.mappingTimeout)
+        val mappedResources = Await.result(fhirMappingService.mapToFhir(jo, otherInputs), ToFhirConfig.engineConfig.mappingTimeout)
         mappedResources.flatMap {
           //If this is a JSON Patch, the resources are patches so return it as single result
           case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "patch") && resources.length > 1 =>
@@ -194,86 +195,76 @@ object MappingTaskExecutor {
         }
       } catch {
         // Exception in expression evaluation
-        case FhirMappingException(mappingExpr, t:FhirExpressionException) =>
+        case FhirMappingException(mappingExpr, t: FhirExpressionException) =>
+          val fmr = FhirMappingResult(
+            jobId = fhirMappingService.jobId,
+            mappingUrl = fhirMappingService.mappingUrl,
+            mappingExpr = Some(mappingExpr),
+            timestamp = Timestamp.from(Instant.now()),
+            source = Some(jo.toJson),
+            error = Some(FhirMappingError(
+              code = FhirMappingErrorCodes.MAPPING_ERROR,
+              description = t.msg + t.t.map(_.getMessage).map(" " + _).getOrElse(""),
+              expression = t.expression
+            )))
           if (errorHandlingType == ErrorHandlingType.CONTINUE) {
-            Seq(
-              FhirMappingResult(
-                jobId = fhirMappingService.jobId,
-                mappingUrl = fhirMappingService.mappingUrl,
-                mappingExpr = Some(mappingExpr),
-                timestamp = Timestamp.from(Instant.now()),
-                source = Some(jo.toJson),
-                error = Some(FhirMappingError(
-                  code = FhirMappingErrorCodes.MAPPING_ERROR,
-                  description = t.msg + t.t.map(_.getMessage).map(" " + _).getOrElse(""),
-                  expression = t.expression
-                ))
-              )
-            )
+            Seq(fmr)
           } else {
-            throw FhirMappingException(s"Problem while evaluating the mapping expression ${t.expression} within mapping ${fhirMappingService.mappingUrl}!", t)
+            throw FhirMappingException(fmr.toString, t)
           }
         //Other general exceptions
         case e: FhirMappingException =>
-          // logger.error(e.getMessage, e)
+          val fmr = FhirMappingResult(
+            jobId = fhirMappingService.jobId,
+            mappingUrl = fhirMappingService.mappingUrl,
+            mappingExpr = None,
+            timestamp = Timestamp.from(Instant.now()),
+            source = Some(jo.toJson),
+            error = Some(FhirMappingError(
+              code = FhirMappingErrorCodes.MAPPING_ERROR,
+              description = e.getMessage
+            )))
           if (errorHandlingType == ErrorHandlingType.CONTINUE) {
-            Seq(
-              FhirMappingResult(
-                jobId = fhirMappingService.jobId,
-                mappingUrl = fhirMappingService.mappingUrl,
-                mappingExpr = None,
-                timestamp = Timestamp.from(Instant.now()),
-                source = Some(jo.toJson),
-                error = Some(FhirMappingError(
-                  code = FhirMappingErrorCodes.MAPPING_ERROR,
-                  description = e.getMessage
-                ))
-              )
-            )
+            Seq(fmr)
           } else {
-            throw e
+            throw FhirMappingException(fmr.toString, e)
           }
         case e: TimeoutException =>
-          //logger.error(s"TimeoutException. A single row could not be mapped to FHIR in 5 seconds. The row JObject: ${Serialization.write(jo)}")
+          val fmr = FhirMappingResult(
+            jobId = fhirMappingService.jobId,
+            mappingUrl = fhirMappingService.mappingUrl,
+            mappingExpr = None,
+            timestamp = Timestamp.from(Instant.now()),
+            source = Some(jo.toJson),
+            error = Some(FhirMappingError(
+              code = FhirMappingErrorCodes.MAPPING_TIMEOUT,
+              description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.engineConfig.mappingTimeout.toString}!"
+            )))
           if (errorHandlingType == ErrorHandlingType.CONTINUE) {
             logger.debug("Mapping timeout, continuing the processing of mappings...")
-            Seq(
-              FhirMappingResult(
-                jobId = fhirMappingService.jobId,
-                mappingUrl = fhirMappingService.mappingUrl,
-                mappingExpr = None,
-                timestamp = Timestamp.from(Instant.now()),
-                source = Some(jo.toJson),
-                error = Some(FhirMappingError(
-                  code = FhirMappingErrorCodes.MAPPING_TIMEOUT,
-                  description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.engineConfig.mappingTimeout.toString}!"
-                ))
-              )
-            )
+            Seq(fmr)
           } else {
             logger.debug("Mapping timeout, halting the mapping execution!")
-            throw e
+            throw FhirMappingException(fmr.toString, e)
           }
 
-        case oth:Exception =>
+        case oth: Exception =>
+          val fmr = FhirMappingResult(
+            jobId = fhirMappingService.jobId,
+            mappingUrl = fhirMappingService.mappingUrl,
+            mappingExpr = None,
+            timestamp = Timestamp.from(Instant.now()),
+            source = Some(jo.toJson),
+            error = Some(FhirMappingError(
+              code = FhirMappingErrorCodes.UNEXPECTED_PROBLEM,
+              description = "Exception:" + oth.getMessage
+            )))
           if (errorHandlingType == ErrorHandlingType.CONTINUE) {
             logger.error("Unexpected problem while executing the mappings...", oth)
-            Seq(
-              FhirMappingResult(
-                jobId = fhirMappingService.jobId,
-                mappingUrl = fhirMappingService.mappingUrl,
-                mappingExpr = None,
-                timestamp = Timestamp.from(Instant.now()),
-                source = Some(jo.toJson),
-                error = Some(FhirMappingError(
-                  code = FhirMappingErrorCodes.UNEXPECTED_PROBLEM,
-                  description = "Exception:" + oth.getMessage
-                ))
-              )
-            )
+            Seq(fmr)
           } else {
             logger.error("Unexpected problem while executing the mappings...", oth)
-            throw oth
+            throw FhirMappingException(fmr.toString, oth)
           }
       }
     results

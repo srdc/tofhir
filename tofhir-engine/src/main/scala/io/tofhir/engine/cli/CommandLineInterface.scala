@@ -67,10 +67,13 @@ object CommandLineInterface {
       val commandArgs = Try(args.tail).getOrElse(Seq.empty[String])
       commandExecutionContext = CommandFactory.apply(commandName).execute(commandArgs, commandExecutionContext)
       commandExecutionContext.runningStatus.foreach(_._2.onComplete {
-        case Success(_) => println("Job completed successfully for the command.")
+        case Success(_) =>
+          println("Job/Task running completed successfully for the command.")
+          commandExecutionContext = commandExecutionContext.withStatus(Option.empty)
         case Failure(exception) =>
           println("Problem during execution of the command!")
           exception.printStackTrace()
+          commandExecutionContext = commandExecutionContext.withStatus(Option.empty)
       })
       print("\n$ ")
     }
