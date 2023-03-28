@@ -47,11 +47,13 @@ trait IJobRepository {
   def deleteJob(projectId: String, id: String): Future[Unit]
 
   /**
-   * Run the job
+   * Run the job for the specified mapping tasks. If no mapping tasks are specified, run the mapping job for all
+   * of them.
    * @param projectId project id the job belongs to
    * @param id job id
+   * @param mappingUrls the urls of mapping tasks to be executed
    * @return
    */
-  def runJob(projectId: String, id: String): Future[Future[Unit]]
+  def runJob(projectId: String, id: String, mappingUrls: Option[Seq[String]]=None): Future[Future[Unit]]
 
 }

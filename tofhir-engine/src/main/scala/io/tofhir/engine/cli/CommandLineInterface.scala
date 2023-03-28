@@ -5,11 +5,11 @@ import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingJobScheduler}
 import io.tofhir.engine.util.FhirMappingJobFormatter
 import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.MappingException
-
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
 import java.util.Scanner
+import io.tofhir.engine.model.FhirMappingJobExecution
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -105,12 +105,12 @@ object CommandLineInterface {
           toFhirEngine.sparkSession,
           mappingJob.mappingErrorHandling
         )
+      val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings)
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
         val streamingQuery =
           fhirMappingJobManager
             .startMappingJobStream(
-              id = mappingJob.id,
-              tasks = mappingJob.mappings,
+              mappingJobExecution,
               sourceSettings = mappingJob.sourceSettings,
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
@@ -121,8 +121,7 @@ object CommandLineInterface {
         val f =
           fhirMappingJobManager
             .executeMappingJob(
-              id = mappingJob.id,
-              tasks = mappingJob.mappings,
+              mappingJobExecution,
               sourceSettings = mappingJob.sourceSettings,
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
@@ -143,8 +142,7 @@ object CommandLineInterface {
         new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader, toFhirEngine.schemaLoader, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
       fhirMappingJobManager
         .scheduleMappingJob(
-          id = mappingJob.id,
-          tasks = mappingJob.mappings,
+          mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings),
           sourceSettings = mappingJob.sourceSettings,
           sinkSettings = mappingJob.sinkSettings,
           schedulingSettings = mappingJob.schedulingSettings.get,

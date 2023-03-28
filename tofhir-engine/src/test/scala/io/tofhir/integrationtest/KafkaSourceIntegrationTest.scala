@@ -9,7 +9,7 @@ import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.mapping.FhirMappingJobManager
-import io.tofhir.engine.model.{FhirMappingTask, FhirRepositorySinkSettings, KafkaSource, KafkaSourceSettings}
+import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingTask, FhirRepositorySinkSettings, KafkaSource, KafkaSourceSettings}
 import io.tofhir.engine.util.FhirMappingUtility
 import org.apache.kafka.clients.admin.{AdminClient, AdminClientConfig, NewTopic}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
@@ -21,10 +21,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.utility.DockerImageName
-
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.{Collections, Properties, UUID}
+
 import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -161,7 +161,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
 
   it should "consume patients and observations data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
-    val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(tasks = Seq(patientMappingTask, otherObservationMappingTask), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
+    val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, otherObservationMappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
     streamingQuery.awaitTermination(20000L) //wait for 20 seconds to consume and write to the fhir repo and terminate
     streamingQuery.stop()
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>

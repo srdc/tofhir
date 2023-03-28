@@ -1,5 +1,8 @@
 package io.tofhir.server.service.job
 
+import java.io.{File, FileWriter}
+import java.nio.charset.StandardCharsets
+
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
@@ -7,7 +10,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.mapping.FhirMappingJobManager
-import io.tofhir.engine.model.{FhirMappingException, FhirMappingJob}
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
@@ -15,12 +18,9 @@ import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFo
 import io.tofhir.server.service.project.ProjectFolderRepository
 import org.json4s.jackson.Serialization.writePretty
 
-import java.io.{File, FileWriter}
-import java.nio.charset.StandardCharsets
 import scala.collection.mutable
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.io.Source
-import scala.concurrent.duration.Duration
 
 class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IJobRepository {
 
@@ -159,25 +159,32 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
   }
 
   /**
-   * Run the job
-   *
+   * Run the job for the specified mapping tasks. If no mapping tasks are specified, run the mapping job for all
+   * of them.
    * @param projectId project id the job belongs to
    * @param id        job id
+   * @param mappingUrls the urls of mapping tasks to be executed
    * @return
    */
-  override def runJob(projectId: String, id: String): Future[Future[Unit]] = {
+  override def runJob(projectId: String, id: String, mappingUrls: Option[Seq[String]]=None): Future[Future[Unit]] = {
     Future {
       if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
         throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
       }
       val mappingJob: FhirMappingJob = jobDefinitions(projectId)(id)
+      // get the list of mapping task to be executed
+      val mappingTasks = mappingUrls match {
+        case Some(urls) => mappingJob.mappings.filter(m => urls.contains(m.mappingRef))
+        case None => mappingJob.mappings
+      }
+      // create execution
+      val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks)
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
         Future { // TODO we lose the ability to stop the streaming job
           val streamingQuery =
             fhirMappingJobManager
               .startMappingJobStream(
-                id = mappingJob.id,
-                tasks = mappingJob.mappings,
+                mappingJobExecution,
                 sourceSettings = mappingJob.sourceSettings,
                 sinkSettings = mappingJob.sinkSettings,
                 terminologyServiceSettings = mappingJob.terminologyServiceSettings,
@@ -188,8 +195,7 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
       } else {
         fhirMappingJobManager
           .executeMappingJob(
-            id = mappingJob.id,
-            tasks = mappingJob.mappings,
+            mappingJobExecution = mappingJobExecution,
             sourceSettings = mappingJob.sourceSettings,
             sinkSettings = mappingJob.sinkSettings,
             terminologyServiceSettings = mappingJob.terminologyServiceSettings,

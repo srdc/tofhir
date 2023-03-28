@@ -5,15 +5,14 @@ import net.logstash.logback.marker.Markers.{append}
 
 /**
  * Result of a mapping job for a batch of input
- * @param jobId                  Job identifier
+ * @param mappingJobExecution    Fhir Mapping Job execution
  * @param mappingUrl             Url of the mapping if this is reporting single mapping
- * @param result                 Result of the job See [[JobResults]]
  * @param numOfInvalids          Total number of invalid input rows
  * @param numOfNotMapped         Total number of mappings per row that is not successful
  * @param numOfFhirResources     Total number of FHIR resources created as a result mapping(s)
  * @param numOfFailedWrites      Total number of FHIR resources that cannot be written to the configured sink (e.g. FHIR repository)
  */
-case class FhirMappingJobResult(jobId:String,
+case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
                                 mappingUrl:Option[String],
                                 numOfInvalids:Long = -1,
                                 numOfNotMapped:Long = -1,
@@ -28,7 +27,7 @@ case class FhirMappingJobResult(jobId:String,
   }
 
   override def toString: String = {
-    s"toFHIR batch mapping result ($result) for job '$jobId'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n" +
+    s"toFHIR batch mapping result ($result) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n" +
       (if(result != "FAILURE")
         s"\t# of Invalid Rows: \t$numOfInvalids\n" +
         s"\t# of Not Mapped: \t$numOfNotMapped\n" +
@@ -44,13 +43,15 @@ case class FhirMappingJobResult(jobId:String,
    * @return
    */
   def toLogstashMarker: LogstashMarker = {
-    append("jobId", jobId)
+    append("jobId", mappingJobExecution.jobId)
+      .and(append("projectId",mappingJobExecution.projectId)
+      .and(append("executionId",mappingJobExecution.id)
       .and(append("mappingUrl", mappingUrl.orElse(null))
         .and(append("result", result)
           .and(append("numOfInvalids", numOfInvalids)
           .and(append("numOfNotMapped", numOfNotMapped)
           .and(append("numOfFhirResources", numOfFhirResources)
             .and(append("numOfFailedWrites", numOfFailedWrites)
-              .and(append("eventId", eventId))))))))
+              .and(append("eventId", eventId))))))))))
   }
 }

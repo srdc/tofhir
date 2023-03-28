@@ -1,6 +1,7 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
@@ -11,6 +12,7 @@ import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.JobService
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.service.job.IJobRepository
 
 class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
@@ -32,6 +34,8 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
         } ~ pathPrefix(SEGMENT_MONITORING) { // monitor the result of a mapping job
           pathEndOrSingleSlash {
             monitorJob(projectId, id)
+          } ~ pathPrefix(Segment) { executionId: String => // operations on an execution
+            getExecutionLogs(executionId)
           }
         }
       }
@@ -93,23 +97,42 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
 
   private def runJob(projectId: String, id: String): Route = {
     post {
-      complete {
-        service.runJob(projectId, id) map { _ =>
-          StatusCodes.OK
+      entity(as[Option[Seq[String]]]) { mappingUrls =>
+        complete {
+          service.runJob(projectId, id,mappingUrls) map { _ =>
+            StatusCodes.OK
+          }
         }
       }
     }
   }
 
   /**
-   * Route to monitor the result of a mapping job
+   * Route to monitor the results of a mapping job
    * */
   private def monitorJob(projectId: String, id: String): Route = {
     get {
       parameterMap { queryParams => // page is supported for now (e.g. page=1)
-        complete {
-          service.monitorJob(projectId, id, queryParams)
+        onComplete(service.monitorJob(projectId, id, queryParams)){
+          case util.Success(response) =>
+            val headers = List(
+              RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString)
+            )
+            respondWithHeaders(headers){
+              complete(response._1)
+            }
         }
+      }
+    }
+  }
+
+  /**
+   * Route to retrieve execution logs i.e. the logs of mapping task which are ran in the execution
+   * */
+  private def getExecutionLogs(id: String): Route = {
+    get {
+      complete {
+        service.getExecutionLogs(id)
       }
     }
   }
