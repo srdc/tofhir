@@ -117,7 +117,7 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
    *         second element is the total number of executions without applying any filters i.e. query params
    * @throws ResourceNotFound when mapping job does not exist
    */
-  def monitorJob(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue],Long)] = {
+  def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue],Long)] = {
     // retrieve the job to validate its existence
     jobRepository.getJob(projectId, jobId).map {
       case Some(_) =>

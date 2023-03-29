@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_JOB, SEGMENT_MONITORING, SEGMENT_RUN}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_JOB, SEGMENT_EXECUTIONS, SEGMENT_RUN}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.JobService
@@ -31,9 +31,9 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
           pathEndOrSingleSlash {
             runJob(projectId, id)
           }
-        } ~ pathPrefix(SEGMENT_MONITORING) { // monitor the result of a mapping job
+        } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions
           pathEndOrSingleSlash {
-            monitorJob(projectId, id)
+            getExecutions(projectId, id)
           } ~ pathPrefix(Segment) { executionId: String => // operations on an execution
             getExecutionLogs(executionId)
           }
@@ -108,12 +108,12 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
   }
 
   /**
-   * Route to monitor the results of a mapping job
+   * Route to get executions of a mapping job
    * */
-  private def monitorJob(projectId: String, id: String): Route = {
+  private def getExecutions(projectId: String, id: String): Route = {
     get {
       parameterMap { queryParams => // page is supported for now (e.g. page=1)
-        onComplete(service.monitorJob(projectId, id, queryParams)){
+        onComplete(service.getExecutions(projectId, id, queryParams)){
           case util.Success(response) =>
             val headers = List(
               RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString)
@@ -141,5 +141,5 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
 object JobEndpoint {
   val SEGMENT_JOB = "jobs"
   val SEGMENT_RUN = "run"
-  val SEGMENT_MONITORING = "monitoring"
+  val SEGMENT_EXECUTIONS = "executions"
 }
