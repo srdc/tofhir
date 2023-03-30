@@ -5,14 +5,14 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_JOB, SEGMENT_EXECUTIONS, SEGMENT_RUN}
+import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingTask}
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_RUN, SEGMENT_TEST}
+import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.JobService
-import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.util.FhirMappingJobFormatter.formats
-import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.service.job.IJobRepository
 
 class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
@@ -30,6 +30,10 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
         } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job
           pathEndOrSingleSlash {
             runJob(projectId, id)
+          }
+        } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations
+          pathEndOrSingleSlash {
+            testMappingWithJob(projectId, id)
           }
         } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions
           pathEndOrSingleSlash {
@@ -108,6 +112,19 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
   }
 
   /**
+   * Route to test a mapping with mapping job configurations i.e. source data configurations
+   * */
+  private def testMappingWithJob(projectId: String, id: String): Route = {
+    post {
+      entity(as[FhirMappingTask]) { mappingTask =>
+        complete {
+          service.testMappingWithJob(projectId, id,mappingTask)
+        }
+      }
+    }
+  }
+
+  /**
    * Route to get executions of a mapping job
    * */
   private def getExecutions(projectId: String, id: String): Route = {
@@ -142,4 +159,5 @@ object JobEndpoint {
   val SEGMENT_JOB = "jobs"
   val SEGMENT_RUN = "run"
   val SEGMENT_EXECUTIONS = "executions"
+  val SEGMENT_TEST = "test"
 }

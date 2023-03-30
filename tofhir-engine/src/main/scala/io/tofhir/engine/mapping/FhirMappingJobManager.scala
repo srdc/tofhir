@@ -293,8 +293,12 @@ class FhirMappingJobManager(
   private def readJoinSourceData(task: FhirMappingTask,
                                  sourceSettings: Map[String, DataSourceSettings],
                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): (FhirMapping, DataSourceSettings, DataFrame) = {
-    //Retrieve the FHIR mapping definition
-    val fhirMapping = fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
+    // if the FhirMapping task includes the mapping to be executed (the case where the mapping is being tested), use it,
+    // otherwise retrieve it from the repository
+    val fhirMapping = task.mapping match {
+      case Some(mapping) => mapping
+      case None => fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
+    }
     val sourceNames = fhirMapping.source.map(_.alias).toSet
     val namesForSuppliedSourceContexts = task.sourceContext.keySet
     if (sourceNames != namesForSuppliedSourceContexts)

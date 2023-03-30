@@ -1,6 +1,6 @@
 package io.tofhir.server.service.job
 
-import io.tofhir.engine.model.FhirMappingJob
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingResult, FhirMappingTask}
 
 import scala.concurrent.Future
 
@@ -56,4 +56,14 @@ trait IJobRepository {
    */
   def runJob(projectId: String, id: String, mappingUrls: Option[Seq[String]]=None): Future[Future[Unit]]
 
+  /**
+   * Tests the given mapping task by running it with mapping job configurations (i.e. source data configurations) and
+   * returns its results
+   *
+   * @param projectId project id the job belongs to
+   * @param id job id
+   * @param mappingTask mapping task to be executed
+   * @return
+   */
+  def testMappingWithJob(projectId: String, id: String, mappingTask: FhirMappingTask): Future[Future[Seq[FhirMappingResult]]]
 }
