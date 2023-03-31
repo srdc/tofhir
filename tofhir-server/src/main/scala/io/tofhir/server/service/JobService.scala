@@ -3,7 +3,7 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingResult, FhirMappingTask}
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.ResourceNotFound
+import io.tofhir.server.model.{FhirMappingTaskTest, ResourceNotFound}
 import io.tofhir.server.service.job.IJobRepository
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -83,11 +83,11 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
    *
    * @param projectId project id the job belongs to
    * @param jobId job id
-   * @param mappingTask mapping task to be executed
+   * @param mappingTaskTest mapping task test to be executed
    * @return
    */
-  def testMappingWithJob(projectId: String, jobId: String, mappingTask: FhirMappingTask): Future[Future[Seq[FhirMappingResult]]] = {
-    jobRepository.testMappingWithJob(projectId, jobId, mappingTask)
+  def testMappingWithJob(projectId: String, jobId: String, mappingTaskTest: FhirMappingTaskTest): Future[Future[Seq[FhirMappingResult]]] = {
+    jobRepository.testMappingWithJob(projectId, jobId, mappingTaskTest)
   }
 
   /**

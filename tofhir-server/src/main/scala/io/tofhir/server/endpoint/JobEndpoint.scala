@@ -5,14 +5,14 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingTask}
-import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_RUN, SEGMENT_TEST}
-import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.model.{FhirMappingTaskTest, RowSelectionOrder, ToFhirRestCall}
 import io.tofhir.server.service.JobService
+import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.service.job.IJobRepository
 
 class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
@@ -116,9 +116,12 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
    * */
   private def testMappingWithJob(projectId: String, id: String): Route = {
     post {
-      entity(as[FhirMappingTask]) { mappingTask =>
-        complete {
-          service.testMappingWithJob(projectId, id,mappingTask)
+      entity(as[FhirMappingTaskTest]) { mappingTaskTest =>
+        validate(RowSelectionOrder.isValid(mappingTaskTest.selection.order),
+          "Invalid row selection order. Available options are: start, end, random") {
+          complete {
+            service.testMappingWithJob(projectId, id, mappingTaskTest)
+          }
         }
       }
     }

@@ -2,7 +2,6 @@ package io.tofhir.server.service.job
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
-
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
@@ -10,12 +9,13 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.mapping.FhirMappingJobManager
-import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingResult, FhirMappingTask}
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingResult, FhirMappingTask, FileSystemSource, FileSystemSourceSettings}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFound}
+import io.tofhir.server.model.{AlreadyExists, BadRequest, FhirMappingTaskTest, Project, ResourceNotFound}
 import io.tofhir.server.service.project.ProjectFolderRepository
+import io.tofhir.server.util.MappingTestUtil
 import org.json4s.jackson.Serialization.writePretty
 
 import scala.collection.mutable
@@ -211,21 +211,27 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
    *
    * @param projectId project id the job belongs to
    * @param id job id
-   * @param mappingTask mapping task to be executed
+   * @param mappingTaskTest mappingTaskTest object to be tested
    * @return
    */
-  override def testMappingWithJob(projectId: String, id: String, mappingTask: FhirMappingTask): Future[Future[Seq[FhirMappingResult]]] = {
+  override def testMappingWithJob(projectId: String, id: String, mappingTaskTest: FhirMappingTaskTest): Future[Future[Seq[FhirMappingResult]]] = {
     Future {
       if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
         throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
       }
       val mappingJob: FhirMappingJob = jobDefinitions(projectId)(id)
+      // create test files and return updated fhir mapping task
+      val updatedMappingTaskTest = MappingTestUtil.createTaskWithSelection(mappingJob, mappingTaskTest)
       fhirMappingJobManager.executeMappingTaskAndReturn(
-        mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = Seq(mappingTask)),
+        mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = Seq(updatedMappingTaskTest.fhirMappingTask)),
         sourceSettings = mappingJob.sourceSettings,
         terminologyServiceSettings = mappingJob.terminologyServiceSettings,
         identityServiceSettings = mappingJob.getIdentityServiceSettings()
-      )
+      ) map { results =>
+        // delete the test files after the test results are returned
+        MappingTestUtil.deleteCreatedTestFiles(mappingJob, updatedMappingTaskTest)
+        results
+      }
     }
   }
   /**

@@ -1,6 +1,7 @@
 package io.tofhir.server.service.job
 
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingResult, FhirMappingTask}
+import io.tofhir.server.model.FhirMappingTaskTest
 
 import scala.concurrent.Future
 
@@ -62,8 +63,8 @@ trait IJobRepository {
    *
    * @param projectId project id the job belongs to
    * @param id job id
-   * @param mappingTask mapping task to be executed
+   * @param mappingTaskTest mapping task test object to be executed
    * @return
    */
-  def testMappingWithJob(projectId: String, id: String, mappingTask: FhirMappingTask): Future[Future[Seq[FhirMappingResult]]]
+  def testMappingWithJob(projectId: String, id: String, mappingTaskTest: FhirMappingTaskTest): Future[Future[Seq[FhirMappingResult]]]
 }
