@@ -290,7 +290,7 @@ class FhirMappingJobManager(
    * @param sourceSettings    Source settings
    * @param timeRange         Time range for the source data to load
    */
-  private def readJoinSourceData(task: FhirMappingTask,
+  def readJoinSourceData(task: FhirMappingTask,
                                  sourceSettings: Map[String, DataSourceSettings],
                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): (FhirMapping, DataSourceSettings, DataFrame) = {
     // if the FhirMapping task includes the mapping to be executed (the case where the mapping is being tested), use it,
@@ -344,7 +344,7 @@ class FhirMappingJobManager(
    * @param identityServiceSettings     Identity service settings
    * @return
    */
-  private def executeTask(jobId:String,
+  def executeTask(jobId:String,
                           fhirMapping:FhirMapping,
                           df:DataFrame,
                           mainSourceSettings: DataSourceSettings,

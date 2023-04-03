@@ -1,7 +1,5 @@
 package io.tofhir.server.service.job
 
-import java.io.{File, FileWriter}
-import java.nio.charset.StandardCharsets
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
@@ -9,15 +7,17 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.mapping.FhirMappingJobManager
-import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingResult, FhirMappingTask, FileSystemSource, FileSystemSourceSettings}
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingResult}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, FhirMappingTaskTest, Project, ResourceNotFound}
+import io.tofhir.server.model._
 import io.tofhir.server.service.project.ProjectFolderRepository
 import io.tofhir.server.util.MappingTestUtil
 import org.json4s.jackson.Serialization.writePretty
 
+import java.io.{File, FileWriter}
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
@@ -220,18 +220,15 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
         throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
       }
       val mappingJob: FhirMappingJob = jobDefinitions(projectId)(id)
-      // create test files and return updated fhir mapping task
-      val updatedMappingTaskTest = MappingTestUtil.createTaskWithSelection(mappingJob, mappingTaskTest)
-      fhirMappingJobManager.executeMappingTaskAndReturn(
-        mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = Seq(updatedMappingTaskTest.fhirMappingTask)),
-        sourceSettings = mappingJob.sourceSettings,
-        terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-        identityServiceSettings = mappingJob.getIdentityServiceSettings()
-      ) map { results =>
-        // delete the test files after the test results are returned
-        MappingTestUtil.deleteCreatedTestFiles(mappingJob, updatedMappingTaskTest)
-        results
-      }
+
+      val (fhirMapping, mds, df) = fhirMappingJobManager.readJoinSourceData(mappingTaskTest.fhirMappingTask, mappingJob.sourceSettings)
+      val selected = MappingTestUtil.selectRows(df, mappingTaskTest.selection)
+      fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, mds, mappingJob.terminologyServiceSettings,  mappingJob.getIdentityServiceSettings())
+        .map { dataFrame =>
+          dataFrame
+            .collect() // Collect into an Array[String]
+            .toSeq // Convert to Seq[Resource]
+        }
     }
   }
   /**
