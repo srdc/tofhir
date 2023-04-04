@@ -6,8 +6,8 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
-import io.tofhir.engine.mapping.FhirMappingJobManager
-import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingResult}
+import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
+import io.tofhir.engine.model.{FhirMapping, FhirMappingJob, FhirMappingJobExecution, FhirMappingResult}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
@@ -15,9 +15,9 @@ import io.tofhir.server.model._
 import io.tofhir.server.service.project.ProjectFolderRepository
 import io.tofhir.server.util.MappingTestUtil
 import org.json4s.jackson.Serialization.writePretty
-
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
+
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
@@ -220,8 +220,12 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
         throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
       }
       val mappingJob: FhirMappingJob = jobDefinitions(projectId)(id)
+      // get the path of mapping file which will be used to normalize mapping context urls
+      val pathToMappingFile: File = FileUtils.getPath(ToFhirConfig.engineConfig.mappingRepositoryFolderPath, projectId, getFileName(mappingTaskTest.fhirMappingTask.mapping.get.id)).toFile
+      // normalize the mapping context urls
+      val mappingWithNormalizedContextUrls: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq((mappingTaskTest.fhirMappingTask.mapping.get, pathToMappingFile))).head
 
-      val (fhirMapping, mds, df) = fhirMappingJobManager.readJoinSourceData(mappingTaskTest.fhirMappingTask, mappingJob.sourceSettings)
+      val (fhirMapping, mds, df) = fhirMappingJobManager.readJoinSourceData(mappingTaskTest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls)), mappingJob.sourceSettings)
       val selected = MappingTestUtil.selectRows(df, mappingTaskTest.selection)
       fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, mds, mappingJob.terminologyServiceSettings,  mappingJob.getIdentityServiceSettings())
         .map { dataFrame =>
