@@ -131,7 +131,8 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                 Some(createdElementDefinition.withElements(definitionsOfChoiceTypes))
               } else if (createdElementDefinition.sliceDefinition.isDefined) {
                 val sliceNames = restrictionsOnSlicesOfField.collect {
-                  case t if t._2.sliceName.isDefined => t._2.sliceName.get
+                  // consider only the direct slices of field
+                  case t if t._2.sliceName.isDefined && t._1.contentEquals(s"$fieldName:${t._2.sliceName.get}") => t._2.sliceName.get
                 }
                 val definitionsOfSlices: Seq[SimpleStructureDefinition] = sliceNames.map { sliceFieldName =>
                   createDefinitionWithElements(fieldName, sliceFieldName, parentPath, createdElementDefinition.getProfileUrlForDataType, restrictionsOnSlicesOfField, restrictionsOnChildren, accumulatingTypeUrls)
