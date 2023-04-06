@@ -1,7 +1,7 @@
 package io.tofhir.engine.cli
 
 import io.tofhir.engine.mapping.FhirMappingJobManager
-import io.tofhir.engine.model.FhirMappingTask
+import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingTask}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -32,8 +32,7 @@ class Run extends Command {
             val f =
               fhirMappingJobManager
                 .executeMappingJob(
-                  id = mappingJob.id,
-                  tasks = mappingJob.mappings,
+                  mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings),
                   sourceSettings = mappingJob.sourceSettings,
                   sinkSettings = mappingJob.sinkSettings,
                   terminologyServiceSettings = mappingJob.terminologyServiceSettings,
@@ -58,7 +57,7 @@ class Run extends Command {
               val f =
                 fhirMappingJobManager
                   .executeMappingTask(
-                    task = task.get,
+                    mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(task.get)),
                     sourceSettings = mappingJob.sourceSettings,
                     sinkSettings = mappingJob.sinkSettings,
                     terminologyServiceSettings = mappingJob.terminologyServiceSettings,

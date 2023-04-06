@@ -8,18 +8,18 @@ import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader, MappingJobScheduler}
-import io.tofhir.engine.model.{FhirMappingJob, FhirRepositorySinkSettings}
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirRepositorySinkSettings}
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import it.sauronsoftware.cron4j.Scheduler
 import org.apache.commons.io.FileUtils
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
-
 import java.io.File
 import java.net.URI
 import java.nio.file.{Path, Paths}
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.io.{BufferedSource, Source}
@@ -100,7 +100,7 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
     val lMappingJob: FhirMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testScheduleMappingJobFilePath)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, sparkSession, lMappingJob.mappingErrorHandling, Some(mappingJobScheduler))
-    fhirMappingJobManager.scheduleMappingJob(tasks = lMappingJob.mappings, sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
+    fhirMappingJobManager.scheduleMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = lMappingJob.mappings), sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
     scheduler.start() //job set to run every minute
     Thread.sleep(61000) //wait for the job to be executed once
     scheduler.stop()
