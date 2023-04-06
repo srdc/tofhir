@@ -45,9 +45,6 @@
                 <levelValue>[ignore]</levelValue>
             </fieldNames>
         </encoder>
-        <!--encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} %-5level - %msg%n</Pattern>
-        </encoder-->
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <FileNamePattern>logs/tofhir-mappings.%i.log.zip</FileNamePattern>

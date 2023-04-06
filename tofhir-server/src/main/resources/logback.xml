@@ -42,9 +42,6 @@
                 <levelValue>[ignore]</levelValue>
             </fieldNames>
         </encoder>
-        <!--encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <Pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} %-5level - %msg%n</Pattern>
-        </encoder-->
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <FileNamePattern>logs/tofhir-mappings.%i.log.zip</FileNamePattern>
@@ -61,8 +58,8 @@
         <appender-ref ref="FILE-AUDIT" />
     </appender>
 
-    <!-- By default, the level of the root level is set to DEBUG -->
-    <root level="DEBUG">
+    <!-- By default, the level of the root level is set to ERROR -->
+    <root level="ERROR">
         <appender-ref ref="ASYNC" />
         <appender-ref ref="STDOUT" />
     </root>
@@ -71,15 +68,7 @@
         <appender-ref ref="ASYNC-AUDIT" />
     </logger>
 
-    <!-- Suppress the repeating and annoying DEBUG level logs by these classes -->
-    <logger name="org.apache.spark" level="WARN"/>
-    <logger name="org.apache.hadoop" level="WARN"/>
-    <logger name="org.apache.htrace" level="WARN"/>
-    <logger name="org.sparkproject" level="WARN"/>
-    <logger name="org.apache.kafka" level="WARN"/>
-    <logger name="io.netty" level="WARN"/>
-    <logger name="ca.uhn.fhir" level="WARN"/>
-    <logger name="com.typesafe.sslconfig" level="WARN"/>
-    <logger name="io.onfhir.path" level="WARN"/>
-    <logger name="io.onfhir.validation" level="WARN"/>
+    <!-- Give me DEBUG level logs from io.tofhir package because the default is set to ERROR at root (above) -->
+    <logger name ="io.tofhir" level="DEBUG" />
+
 </configuration>
