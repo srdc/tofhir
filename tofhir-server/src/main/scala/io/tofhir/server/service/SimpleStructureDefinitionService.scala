@@ -78,7 +78,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
         // Stop the recursion here because we are entering into a recursive type chain (e.g., Identifier -> Reference -> Identifier)
         Seq.empty[SimpleStructureDefinition]
       } else {
-        val profileRestrictionsSeq: Seq[ProfileRestrictions] = if (profileUrl.isDefined) fhirConfig.findProfileChain(profileUrl.get) else Seq.empty[ProfileRestrictions]
+        val profileRestrictionsSeq: Seq[ProfileRestrictions] = profileUrl.map(fhirConfig.findProfileChain).getOrElse(Seq.empty[ProfileRestrictions])
         val elementRestrictionsFromProfile = profileRestrictionsSeq
           .flatMap { pr =>
             // Make a list of all ElementRestrictions (respect their order)
@@ -138,8 +138,9 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                   createDefinitionWithElements(fieldName, sliceFieldName, parentPath, createdElementDefinition.getProfileUrlForDataType, restrictionsOnSlicesOfField, restrictionsOnChildren, accumulatingTypeUrls)
                 }
                 val createdNoSliceElement = generateSimpleDefinition("No Slice", parentPath, Seq.empty[ElementRestrictions])
+                val navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
                 val createdNoSliceElementWithChildren = createdNoSliceElement
-                  .withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, Some(createdNoSliceElement.path), restrictionsOnChildren, accumulatingTypeUrls ++ profileUrl))
+                  .withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, Some(createdNoSliceElement.path), navigatedRestrictionsOnChildren, accumulatingTypeUrls ++ profileUrl))
                 Some(createdElementDefinition.withElements(createdNoSliceElementWithChildren +: definitionsOfSlices))
               } else {
                 val navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
