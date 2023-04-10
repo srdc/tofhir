@@ -103,7 +103,7 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
     post {
       entity(as[Option[Seq[String]]]) { mappingUrls =>
         complete {
-          service.runJob(projectId, id,mappingUrls) map { _ =>
+          service.runJob(projectId, id, mappingUrls) map { _ =>
             StatusCodes.OK
           }
         }
@@ -133,12 +133,12 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
   private def getExecutions(projectId: String, id: String): Route = {
     get {
       parameterMap { queryParams => // page is supported for now (e.g. page=1)
-        onComplete(service.getExecutions(projectId, id, queryParams)){
+        onComplete(service.getExecutions(projectId, id, queryParams)) {
           case util.Success(response) =>
             val headers = List(
               RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString)
             )
-            respondWithHeaders(headers){
+            respondWithHeaders(headers) {
               complete(response._1)
             }
         }

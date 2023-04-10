@@ -48,7 +48,7 @@ class FhirMappingJobManager(
    * @param timeRange                  Time range for source data to map if given
    * @return
    */
-  override def executeMappingJob(mappingJobExecution:FhirMappingJobExecution,
+  override def executeMappingJob(mappingJobExecution: FhirMappingJobExecution,
                                  sourceSettings: Map[String, DataSourceSettings],
                                  sinkSettings: FhirSinkSettings,
                                  terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
@@ -73,7 +73,7 @@ class FhirMappingJobManager(
    * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
    * @return
    */
-  override def startMappingJobStream(mappingJobExecution:FhirMappingJobExecution,
+  override def startMappingJobStream(mappingJobExecution: FhirMappingJobExecution,
                                      sourceSettings: Map[String, DataSourceSettings],
                                      sinkSettings: FhirSinkSettings,
                                      terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
@@ -107,7 +107,7 @@ class FhirMappingJobManager(
    * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
    * @return
    */
-  override def scheduleMappingJob(mappingJobExecution:FhirMappingJobExecution,
+  override def scheduleMappingJob(mappingJobExecution: FhirMappingJobExecution,
                                   sourceSettings: Map[String, DataSourceSettings],
                                   sinkSettings: FhirSinkSettings,
                                   schedulingSettings: SchedulingSettings,
@@ -156,7 +156,7 @@ class FhirMappingJobManager(
     val timeRange = getScheduledTimeRange(id, mappingJobScheduler.get.folderUri, startTime)
     logger.info(s"Running scheduled job with the expression: ${schedulingSettings.cronExpression}")
     logger.info(s"Synchronizing data between ${timeRange._1} and ${timeRange._2}")
-    val mappingJobExecution = FhirMappingJobExecution(jobId = id,mappingTasks = tasks)
+    val mappingJobExecution = FhirMappingJobExecution(jobId = id, mappingTasks = tasks)
     executeMappingJob(mappingJobExecution, sourceSettings, sinkSettings, terminologyServiceSettings, identityServiceSettings, Some(timeRange))
       .map(_ => {
         val writer = new FileWriter(s"${mappingJobScheduler.get.folderUri.getPath}/$id.txt", true)
@@ -197,7 +197,7 @@ class FhirMappingJobManager(
    * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
    * @return
    */
-  override def executeMappingTask(mappingJobExecution:FhirMappingJobExecution,
+  override def executeMappingTask(mappingJobExecution: FhirMappingJobExecution,
                                   sourceSettings: Map[String, DataSourceSettings],
                                   sinkSettings: FhirSinkSettings,
                                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
@@ -214,6 +214,7 @@ class FhirMappingJobManager(
 
   /**
    * Read all the source data and execute the mapping task
+   *
    * @param jobId                      Job identifier
    * @param task                       FHIR Mapping task
    * @param sourceSettings             Source settings
@@ -222,13 +223,13 @@ class FhirMappingJobManager(
    * @param timeRange                  Time range for the source data to load
    * @return
    */
-  private def readSourceAndExecuteTask(jobId:String,
+  private def readSourceAndExecuteTask(jobId: String,
                                        task: FhirMappingTask,
                                        sourceSettings: Map[String, DataSourceSettings],
                                        terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                        identityServiceSettings: Option[IdentityServiceSettings] = None,
                                        timeRange: Option[(LocalDateTime, LocalDateTime)] = None
-                                      ):Future[Dataset[FhirMappingResult]] = {
+                                      ): Future[Dataset[FhirMappingResult]] = {
     val (fhirMapping, mds, df) = readJoinSourceData(task, sourceSettings, timeRange)
     executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings)
   }
@@ -237,24 +238,24 @@ class FhirMappingJobManager(
    * Read the source data, divide it into batches and execute the mapping (first mapping task in the Fhir Mapping Job
    * Execution) and write each batch sequentially
    *
-   * @param mappingJobExecution         Fhir Mapping Job execution
-   * @param sourceSettings              Source settings
-   * @param fhirWriter                  FHIR writer
-   * @param terminologyServiceSettings  Terminology service settings
-   * @param identityServiceSettings     Identity service settings
-   * @param timeRange                   Time range for the source data to load
+   * @param mappingJobExecution        Fhir Mapping Job execution
+   * @param sourceSettings             Source settings
+   * @param fhirWriter                 FHIR writer
+   * @param terminologyServiceSettings Terminology service settings
+   * @param identityServiceSettings    Identity service settings
+   * @param timeRange                  Time range for the source data to load
    * @return
    */
   private def readSourceExecuteAndWriteInBatches(mappingJobExecution: FhirMappingJobExecution,
                                                  sourceSettings: Map[String, DataSourceSettings],
-                                                 fhirWriter:BaseFhirWriter,
+                                                 fhirWriter: BaseFhirWriter,
                                                  terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                                  identityServiceSettings: Option[IdentityServiceSettings] = None,
-                                                 timeRange: Option[(LocalDateTime, LocalDateTime)] = None):Future[Unit] = {
+                                                 timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
     val mappingTask = mappingJobExecution.mappingTasks.head
     logger.debug(s"Reading source data for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
     val (fhirMapping, mds, df) = readJoinSourceData(mappingTask, sourceSettings, timeRange)
-    val sizeOfDf:Long = df.count()
+    val sizeOfDf: Long = df.count()
     logger.debug(s"$sizeOfDf records read for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
 
     ToFhirConfig.engineConfig.maxBatchSizeForMappingJobs match {
@@ -268,7 +269,7 @@ class FhirMappingJobManager(
         readSourceAndExecuteTask(mappingJobExecution.jobId, mappingTask, sourceSettings, terminologyServiceSettings, identityServiceSettings, timeRange) // Retrieve the source data and execute the mapping
           .map(dataset => SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
       //Otherwise divide the data into batches
-      case Some(batchSize)=>
+      case Some(batchSize) =>
         val numOfBatch: Int = Math.ceil(sizeOfDf * 1.0 / batchSize * 1.0).toInt
         logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.jobId} in $numOfBatch batches ...")
         val splitDf = df.randomSplit((1 to numOfBatch).map(_ => 1.0).toArray[Double])
@@ -278,7 +279,7 @@ class FhirMappingJobManager(
             case (fj, (df, i)) => fj.flatMap(_ =>
               executeTask(mappingJobExecution.jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings)
                 .map(dataset => SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter))
-                .map(_ => logger.debug(s"Batch ${i+1} is completed for mapping  ${mappingTask.mappingRef} within MappingJob: ${mappingJobExecution.jobId}..."))
+                .map(_ => logger.debug(s"Batch ${i + 1} is completed for mapping  ${mappingTask.mappingRef} within MappingJob: ${mappingJobExecution.jobId}..."))
             )
           }
     }
@@ -286,9 +287,10 @@ class FhirMappingJobManager(
 
   /**
    * Read and join the source data
-   * @param task              FHIR Mapping task
-   * @param sourceSettings    Source settings
-   * @param timeRange         Time range for the source data to load
+   *
+   * @param task           FHIR Mapping task
+   * @param sourceSettings Source settings
+   * @param timeRange      Time range for the source data to load
    */
   def readJoinSourceData(task: FhirMappingTask,
                          sourceSettings: Map[String, DataSourceSettings],
@@ -325,8 +327,8 @@ class FhirMappingJobManager(
     val df = handleJoin(fhirMapping.source, sourceDataFrames)
 
     val repartitionedDf = ToFhirConfig.engineConfig.partitionsForMappingJobs match {
-        case None => df
-        case Some(p) => df.repartition(p)
+      case None => df
+      case Some(p) => df.repartition(p)
     }
     //repartitionedDf.printSchema()
     //repartitionedDf.show(100)
@@ -336,21 +338,21 @@ class FhirMappingJobManager(
   /**
    * Execute a single mapping task.
    *
-   * @param jobId               Job identifier
-   * @param fhirMapping         toFHIR Mapping definition
-   * @param df                  Source data to be mapped
-   * @param mainSourceSettings  Main source data settings
-   * @param terminologyServiceSettings  Terminology service settings
-   * @param identityServiceSettings     Identity service settings
+   * @param jobId                      Job identifier
+   * @param fhirMapping                toFHIR Mapping definition
+   * @param df                         Source data to be mapped
+   * @param mainSourceSettings         Main source data settings
+   * @param terminologyServiceSettings Terminology service settings
+   * @param identityServiceSettings    Identity service settings
    * @return
    */
-  def executeTask(jobId:String,
-                          fhirMapping:FhirMapping,
-                          df:DataFrame,
-                          mainSourceSettings: DataSourceSettings,
-                          terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                          identityServiceSettings: Option[IdentityServiceSettings] = None,
-                         ): Future[Dataset[FhirMappingResult]] = {
+  def executeTask(jobId: String,
+                  fhirMapping: FhirMapping,
+                  df: DataFrame,
+                  mainSourceSettings: DataSourceSettings,
+                  terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
+                  identityServiceSettings: Option[IdentityServiceSettings] = None,
+                 ): Future[Dataset[FhirMappingResult]] = {
     //Load the contextual data for the mapping
     Future
       .sequence(
@@ -359,11 +361,11 @@ class FhirMappingJobManager(
           .toSeq
           .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
       ).map(loadedContextMap => {
-        //Get configuration context
-        val configurationContext = mainSourceSettings.toConfigurationContext
-        //Construct the mapping service
-        val fhirMappingService = new FhirMappingService(jobId,fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings)
-        MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandlingType)
+      //Get configuration context
+      val configurationContext = mainSourceSettings.toConfigurationContext
+      //Construct the mapping service
+      val fhirMappingService = new FhirMappingService(jobId, fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings)
+      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandlingType)
     })
   }
 
@@ -382,9 +384,9 @@ class FhirMappingJobManager(
         val mainSource = sourceDataFrames.head._1
         val mainJoinOnColumns = sources.find(_.alias == mainSource).get.joinOn
         var mainDf = sourceDataFrames.head._2.withColumn(s"__$mainSource", struct("*"))
-        mainDf = mainDf.select((mainJoinOnColumns :+ s"__$mainSource").map(mainDf.col):_*)
+        mainDf = mainDf.select((mainJoinOnColumns :+ s"__$mainSource").map(mainDf.col): _*)
         //Group other dataframes on join columns and rename their join columns
-        val otherDfs:Seq[(DataFrame, Seq[String])] =
+        val otherDfs: Seq[(DataFrame, Seq[String])] =
           sourceDataFrames
             .tail
             .map {
@@ -393,17 +395,17 @@ class FhirMappingJobManager(
                 val colsToJoinOn = joinColumnStmts.filter(_ != null)
                 val groupedDf =
                   df
-                    .groupBy(colsToJoinOn.map(df.col):_*)
+                    .groupBy(colsToJoinOn.map(df.col): _*)
                     .agg(collect_list(struct("*")).as(s"__$alias"))
 
-                if(colsToJoinOn.toSet.subsetOf(mainJoinOnColumns.toSet))
-                    groupedDf -> colsToJoinOn
+                if (colsToJoinOn.toSet.subsetOf(mainJoinOnColumns.toSet))
+                  groupedDf -> colsToJoinOn
                 else {
                   val actualJoinColumns = joinColumnStmts.zip(mainJoinOnColumns).filter(_._1 != null)
                   actualJoinColumns
                     .foldLeft(groupedDf) {
-                        case (gdf, (c1, r1)) => gdf.withColumnRenamed(c1, r1)
-                  } -> actualJoinColumns.map(_._2)
+                      case (gdf, (c1, r1)) => gdf.withColumnRenamed(c1, r1)
+                    } -> actualJoinColumns.map(_._2)
                 }
             }
         //Join other data frames to main data frame
@@ -422,7 +424,7 @@ class FhirMappingJobManager(
    * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
    * @return
    */
-  override def executeMappingTaskAndReturn(mappingJobExecution:FhirMappingJobExecution,
+  override def executeMappingTaskAndReturn(mappingJobExecution: FhirMappingJobExecution,
                                            sourceSettings: Map[String, DataSourceSettings],
                                            terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                            identityServiceSettings: Option[IdentityServiceSettings] = None,

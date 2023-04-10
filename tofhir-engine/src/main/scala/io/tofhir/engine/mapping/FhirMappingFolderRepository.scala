@@ -1,9 +1,5 @@
 package io.tofhir.engine.mapping
 
-import java.io.File
-import java.net.URI
-import java.nio.charset.StandardCharsets
-
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
@@ -11,6 +7,9 @@ import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import org.json4s._
 
+import java.io.File
+import java.net.URI
+import java.nio.charset.StandardCharsets
 import scala.io.Source
 
 /**

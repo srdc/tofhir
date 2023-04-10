@@ -1,0 +1,116 @@
+{
+  "id": "Ext-plt1-patient",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-patient",
+  "type": "Ext-plt1-patient",
+  "name": "Ext-plt1-patient",
+  "rootDefinition": {
+    "id": "Ext-plt1-patient",
+    "path": "Ext-plt1-patient",
+    "dataTypes": [
+      {
+        "dataType": "Element"
+      }
+    ],
+    "isPrimitive": false,
+    "isChoiceRoot": false,
+    "isArray": false,
+    "minCardinality": 0
+  },
+  "fieldDefinitions": [
+    {
+      "id": "pid",
+      "path": "Ext-plt1-patient.pid",
+      "dataTypes": [
+        {
+          "dataType": "id",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/id"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 1,
+      "maxCardinality": 1,
+      "short": "Patient identifier",
+      "definition": "Unique patient identifier  (a pseudoynm)"
+    },
+    {
+      "id": "gender",
+      "path": "Ext-plt1-patient.gender",
+      "dataTypes": [
+        {
+          "dataType": "code",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/code"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 1,
+      "maxCardinality": 1,
+      "short": "Gender of patient",
+      "definition": "Gender of patient"
+    },
+    {
+      "id": "birthDate",
+      "path": "Ext-plt1-patient.birthDate",
+      "dataTypes": [
+        {
+          "dataType": "date",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/date"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 1,
+      "maxCardinality": 1,
+      "short": "Birth date",
+      "definition": "The birth year of patient"
+    },
+    {
+      "id": "deceasedDateTime",
+      "path": "Ext-plt1-patient.deceasedDateTime",
+      "dataTypes": [
+        {
+          "dataType": "date",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/date"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 0,
+      "maxCardinality": 1,
+      "short": "Deceseased date",
+      "definition": "If patient is deceased, its date"
+    },
+    {
+      "id": "homePostalCode",
+      "path": "Ext-plt1-patient.homePostalCode",
+      "dataTypes": [
+        {
+          "dataType": "string",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/string"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 0,
+      "maxCardinality": 1,
+      "short": "Home postal code",
+      "definition": "Postal code for patient home address"
+    }
+  ]
+}
