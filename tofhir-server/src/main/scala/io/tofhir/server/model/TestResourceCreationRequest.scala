@@ -3,19 +3,19 @@ package io.tofhir.server.model
 import io.tofhir.engine.model.FhirMappingTask
 
 /**
- * FhirMappingTask and selection of rows to test a mapping
+ * FhirMappingTask and resource filter to test a mapping
  * @param fhirMappingTask task to be used for testing
- * @param selection row selection for testing
+ * @param resourceFilter resource filter for testing
  */
-case class FhirMappingTaskTest(fhirMappingTask: FhirMappingTask,
-                               selection: RowSelection)
+case class TestResourceCreationRequest(fhirMappingTask: FhirMappingTask,
+                                       resourceFilter: ResourceFilter)
 
 /**
- * Row selection for testing a mapping
+ * Resource filter config for testing a mapping
  * @param numberOfRows number of rows to select
  * @param order order of rows to select
  */
-case class RowSelection(numberOfRows: Int, order: String)
+case class ResourceFilter(numberOfRows: Int, order: String)
 
 /**
  * Available row selection orders

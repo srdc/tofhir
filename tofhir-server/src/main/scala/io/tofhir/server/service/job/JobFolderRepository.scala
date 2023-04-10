@@ -13,7 +13,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.model._
 import io.tofhir.server.service.project.ProjectFolderRepository
-import io.tofhir.server.util.MappingTestUtil
+import io.tofhir.server.util.DataFrameUtil
 import org.json4s.jackson.Serialization.writePretty
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
@@ -211,23 +211,23 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
    *
    * @param projectId project id the job belongs to
    * @param id job id
-   * @param mappingTaskTest mappingTaskTest object to be tested
+   * @param testResourceCreationRequest testResourceCreationRequest object to be tested
    * @return
    */
-  override def testMappingWithJob(projectId: String, id: String, mappingTaskTest: FhirMappingTaskTest): Future[Future[Seq[FhirMappingResult]]] = {
+  override def testMappingWithJob(projectId: String, id: String, testResourceCreationRequest: TestResourceCreationRequest): Future[Future[Seq[FhirMappingResult]]] = {
     Future {
       if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
         throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
       }
       val mappingJob: FhirMappingJob = jobDefinitions(projectId)(id)
       // get the path of mapping file which will be used to normalize mapping context urls
-      val pathToMappingFile: File = FileUtils.getPath(ToFhirConfig.engineConfig.mappingRepositoryFolderPath, projectId, getFileName(mappingTaskTest.fhirMappingTask.mapping.get.id)).toFile
+      val pathToMappingFile: File = FileUtils.getPath(ToFhirConfig.engineConfig.mappingRepositoryFolderPath, projectId, getFileName(testResourceCreationRequest.fhirMappingTask.mapping.get.id)).toFile
       // normalize the mapping context urls
-      val mappingWithNormalizedContextUrls: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq((mappingTaskTest.fhirMappingTask.mapping.get, pathToMappingFile))).head
+      val mappingWithNormalizedContextUrls: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq((testResourceCreationRequest.fhirMappingTask.mapping.get, pathToMappingFile))).head
 
-      val (fhirMapping, mds, df) = fhirMappingJobManager.readJoinSourceData(mappingTaskTest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls)), mappingJob.sourceSettings)
-      val selected = MappingTestUtil.selectRows(df, mappingTaskTest.selection)
-      fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, mds, mappingJob.terminologyServiceSettings,  mappingJob.getIdentityServiceSettings())
+      val (fhirMapping, dataSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(testResourceCreationRequest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls)), mappingJob.sourceSettings)
+      val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
+      fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, dataSourceSettings, mappingJob.terminologyServiceSettings,  mappingJob.getIdentityServiceSettings())
         .map { dataFrame =>
           dataFrame
             .collect() // Collect into an Array[String]

@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingTask}
 import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_RUN, SEGMENT_TEST}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{FhirMappingTaskTest, RowSelectionOrder, ToFhirRestCall}
+import io.tofhir.server.model.{TestResourceCreationRequest, RowSelectionOrder, ToFhirRestCall}
 import io.tofhir.server.service.JobService
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -116,11 +116,11 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
    * */
   private def testMappingWithJob(projectId: String, id: String): Route = {
     post {
-      entity(as[FhirMappingTaskTest]) { mappingTaskTest =>
-        validate(RowSelectionOrder.isValid(mappingTaskTest.selection.order),
+      entity(as[TestResourceCreationRequest]) { requestBody =>
+        validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
           "Invalid row selection order. Available options are: start, end, random") {
           complete {
-            service.testMappingWithJob(projectId, id, mappingTaskTest)
+            service.testMappingWithJob(projectId, id, requestBody)
           }
         }
       }

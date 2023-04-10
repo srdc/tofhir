@@ -291,8 +291,8 @@ class FhirMappingJobManager(
    * @param timeRange         Time range for the source data to load
    */
   def readJoinSourceData(task: FhirMappingTask,
-                                 sourceSettings: Map[String, DataSourceSettings],
-                                 timeRange: Option[(LocalDateTime, LocalDateTime)] = None): (FhirMapping, DataSourceSettings, DataFrame) = {
+                         sourceSettings: Map[String, DataSourceSettings],
+                         timeRange: Option[(LocalDateTime, LocalDateTime)] = None): (FhirMapping, DataSourceSettings, DataFrame) = {
     // if the FhirMapping task includes the mapping to be executed (the case where the mapping is being tested), use it,
     // otherwise retrieve it from the repository
     val fhirMapping = task.mapping match {
