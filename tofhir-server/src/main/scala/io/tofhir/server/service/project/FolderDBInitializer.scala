@@ -128,7 +128,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     })
 
     // Parse mapping jobs
-    val jobs: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = mappingJobFolderRepository.getCachedMappingsJobs()
+    val jobs: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = mappingJobFolderRepository.getCachedMappingsJobs
     jobs.foreach(projectIdAndMappingsJobs => {
       val projectId: String = projectIdAndMappingsJobs._1
       // If there is no project create a new one. Use id as name as well

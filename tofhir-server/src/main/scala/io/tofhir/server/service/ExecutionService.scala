@@ -21,6 +21,11 @@ import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+/**
+ * Service to handle all execution related operations
+ * E.g. Run a mapping job, run a mapping task, run a test resource creation, get execution logs
+ * @param jobRepository
+ */
 class ExecutionService(jobRepository: IJobRepository) extends LazyLogging {
 
   val toFhirEngine = new ToFhirEngine(ToFhirConfig.sparkAppName, ToFhirConfig.sparkMaster,
