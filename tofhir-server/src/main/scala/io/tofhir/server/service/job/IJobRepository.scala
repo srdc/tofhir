@@ -1,11 +1,17 @@
 package io.tofhir.server.service.job
 
-import io.tofhir.engine.model.{FhirMappingJob, FhirMappingResult, FhirMappingTask}
-import io.tofhir.server.model.TestResourceCreationRequest
+import io.tofhir.engine.model.FhirMappingJob
 
+import scala.collection.mutable
 import scala.concurrent.Future
 
 trait IJobRepository {
+
+  /**
+   * Returns a map of mapping jobs managed by this repository
+   * @return
+   */
+  def getCachedMappingsJobs: mutable.Map[String, mutable.Map[String, FhirMappingJob]]
 
   /**
    * Retrieve all jobs
@@ -46,25 +52,4 @@ trait IJobRepository {
    * @return
    */
   def deleteJob(projectId: String, id: String): Future[Unit]
-
-  /**
-   * Run the job for the specified mapping tasks. If no mapping tasks are specified, run the mapping job for all
-   * of them.
-   * @param projectId project id the job belongs to
-   * @param id job id
-   * @param mappingUrls the urls of mapping tasks to be executed
-   * @return
-   */
-  def runJob(projectId: String, id: String, mappingUrls: Option[Seq[String]]=None): Future[Future[Unit]]
-
-  /**
-   * Tests the given mapping task by running it with mapping job configurations (i.e. source data configurations) and
-   * returns its results
-   *
-   * @param projectId project id the job belongs to
-   * @param id job id
-   * @param testResourceCreationRequest test object to be executed
-   * @return
-   */
-  def testMappingWithJob(projectId: String, id: String, testResourceCreationRequest: TestResourceCreationRequest): Future[Future[Seq[FhirMappingResult]]]
 }
