@@ -24,7 +24,8 @@ object RedCapUtil {
       val schemaName = form._1
       val schemaId = schemaName.capitalize
       // get schema definitions
-      val definitions = form._2.map(row => {
+      var definitions:Seq[SimpleStructureDefinition] = Seq.empty
+      form._2.foreach(row => {
         // read columns
         val variableName = row(RedCapDataDictionaryColumns.VARIABLE_FIELD_NAME)
         val fieldType = row(RedCapDataDictionaryColumns.FIELD_TYPE)
@@ -33,33 +34,37 @@ object RedCapUtil {
         val required = row(RedCapDataDictionaryColumns.REQUIRED_FIELD)
         val textValidationType = row.get(RedCapDataDictionaryColumns.TEXT_VALIDATION_TYPE)
 
-        // find applicable data type
-        val dataType = getDataType(fieldType, textValidationType)
-        // find cardinality
-        val cardinality = getCardinality(fieldType, required)
+        // discard the descriptive fields since they do not provide any data and they are not included in the export
+        // record response
+        if(!fieldType.contentEquals(RedCapDataTypes.DESCRIPTIVE)){
+          // find applicable data type
+          val dataType = getDataType(fieldType, textValidationType)
+          // find cardinality
+          val cardinality = getCardinality(fieldType, required)
 
-        SimpleStructureDefinition(id = variableName,
-          path = s"${schemaId}.${variableName}",
-          dataTypes = Some(Seq(dataType)),
-          isPrimitive = false,
-          isChoiceRoot = false,
-          isArray = cardinality._2.isEmpty,
-          minCardinality = cardinality._1,
-          maxCardinality = cardinality._2,
-          boundToValueSet = None,
-          isValueSetBindingRequired = None,
-          referencableProfiles = None,
-          constraintDefinitions = None,
-          sliceDefinition = None,
-          sliceName = None,
-          fixedValue = None,
-          patternValue = None,
-          referringTo = None,
-          short = Some(fieldLabel),
-          definition = Some(fieldNotes),
-          comment = None,
-          elements = None
-        )
+          definitions = definitions :+ SimpleStructureDefinition(id = variableName,
+            path = s"$schemaId.$variableName",
+            dataTypes = Some(Seq(dataType)),
+            isPrimitive = false,
+            isChoiceRoot = false,
+            isArray = cardinality._2.isEmpty,
+            minCardinality = cardinality._1,
+            maxCardinality = cardinality._2,
+            boundToValueSet = None,
+            isValueSetBindingRequired = None,
+            referencableProfiles = None,
+            constraintDefinitions = None,
+            sliceDefinition = None,
+            sliceName = None,
+            fixedValue = None,
+            patternValue = None,
+            referringTo = None,
+            short = Some(fieldLabel),
+            definition = Some(fieldNotes),
+            comment = None,
+            elements = None
+          )
+        }
       })
       val definition = SchemaDefinition(id = schemaId,
         url = s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId",
