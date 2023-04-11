@@ -2,11 +2,14 @@ package io.tofhir.engine.model
 
 /**
  * FHIR Mapping task instance
+ * {@link mapping} will be executed if it is provided. Otherwise, the mapping referenced by {@link mappingRef} is
+ * retrieved from the repository and executed.
  *
  * @param mappingRef        Canonical URL of the FhirMapping definition to execute
  * @param sourceContext     Provide details how to load each source data for the mapping
+ * @param mapping           FhirMapping definition to execute
  */
-case class FhirMappingTask(mappingRef: String, sourceContext: Map[String, FhirMappingSourceContext])
+case class FhirMappingTask(mappingRef: String, sourceContext: Map[String, FhirMappingSourceContext], mapping: Option[FhirMapping] = None)
 
 
 /**

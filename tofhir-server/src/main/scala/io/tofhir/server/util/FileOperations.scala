@@ -69,10 +69,10 @@ object FileOperations {
    * @tparam K class that created from JSON
    * @return Sequence of objects
    */
-  def readJsonContentAsObject(f: File): JObject = {
+  def readJsonContentAsObject[K](f: File)(implicit ev: scala.reflect.Manifest[K]): K = {
     val source = Source.fromFile(f, StandardCharsets.UTF_8.name())
     val fileContent = try source.mkString finally source.close()
-    val parsed = parse(fileContent).extract[JObject]
+    val parsed = parse(fileContent).extract[K]
     parsed
   }
 

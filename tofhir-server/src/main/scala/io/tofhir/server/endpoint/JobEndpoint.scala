@@ -5,10 +5,10 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_JOB, SEGMENT_EXECUTIONS, SEGMENT_RUN}
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingTask}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_RUN, SEGMENT_TEST}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.model.{TestResourceCreationRequest, RowSelectionOrder, ToFhirRestCall}
 import io.tofhir.server.service.JobService
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -30,6 +30,10 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
         } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job
           pathEndOrSingleSlash {
             runJob(projectId, id)
+          }
+        } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations
+          pathEndOrSingleSlash {
+            testMappingWithJob(projectId, id)
           }
         } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions
           pathEndOrSingleSlash {
@@ -99,8 +103,24 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
     post {
       entity(as[Option[Seq[String]]]) { mappingUrls =>
         complete {
-          service.runJob(projectId, id,mappingUrls) map { _ =>
+          service.runJob(projectId, id, mappingUrls) map { _ =>
             StatusCodes.OK
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to test a mapping with mapping job configurations i.e. source data configurations
+   * */
+  private def testMappingWithJob(projectId: String, id: String): Route = {
+    post {
+      entity(as[TestResourceCreationRequest]) { requestBody =>
+        validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
+          "Invalid row selection order. Available options are: start, end, random") {
+          complete {
+            service.testMappingWithJob(projectId, id, requestBody)
           }
         }
       }
@@ -113,12 +133,12 @@ class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
   private def getExecutions(projectId: String, id: String): Route = {
     get {
       parameterMap { queryParams => // page is supported for now (e.g. page=1)
-        onComplete(service.getExecutions(projectId, id, queryParams)){
+        onComplete(service.getExecutions(projectId, id, queryParams)) {
           case util.Success(response) =>
             val headers = List(
               RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString)
             )
-            respondWithHeaders(headers){
+            respondWithHeaders(headers) {
               complete(response._1)
             }
         }
@@ -142,4 +162,5 @@ object JobEndpoint {
   val SEGMENT_JOB = "jobs"
   val SEGMENT_RUN = "run"
   val SEGMENT_EXECUTIONS = "executions"
+  val SEGMENT_TEST = "test"
 }
