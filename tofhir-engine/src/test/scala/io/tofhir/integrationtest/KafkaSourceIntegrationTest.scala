@@ -15,7 +15,7 @@ import org.apache.kafka.clients.admin.{AdminClient, AdminClientConfig, NewTopic}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
-import org.apache.spark.sql.streaming.StreamingQuery
+import org.apache.spark.sql.streaming.{StreamingQuery, StreamingQueryException}
 import org.rnorth.ducttape.unreliables.Unreliables
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
@@ -91,6 +91,10 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
     sourceContext = Map("source" -> KafkaSource(topicName = "observations", groupId = "tofhir", startingOffsets = "earliest"))
   )
+  val familyMemberHistoryMappingTask: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/family-member-history-mapping",
+    sourceContext = Map("source" -> KafkaSource(topicName = "familyMembers", groupId = "tofhir", startingOffsets = "earliest"))
+  )
 
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
   val fhirServerIsAvailable: Boolean =
@@ -159,9 +163,29 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     consumer.unsubscribe()
   }
 
-  it should "consume patients and observations data and map and write to the fhir repository" in {
+  it should "produce data to familyMembers topic" in {
+    val topicName = "familyMembers"
+    val topics = Collections.singletonList(new NewTopic(topicName, 1, 1.toShort))
+    adminClient.createTopics(topics).all.get(30, TimeUnit.SECONDS)
+    consumer.subscribe(Collections.singletonList(topicName))
+    producer.send(new ProducerRecord[String, String](topicName, "1", "{\"name\":\"test\",\"deceased\":\"true\",\"birthDate_y\":\"1995\",\"birthDate_m\":\"04\",\"birthDate_d\":\"12\"}")).get
+    Unreliables.retryUntilTrue(10, TimeUnit.SECONDS, () => {
+      def foo(): Boolean = {
+        val records = consumer.poll(Duration.ofMillis(100))
+        if (records.isEmpty) return false
+        records.iterator.next.topic shouldBe "familyMembers"
+        records.iterator.next.key shouldBe "1"
+        records.iterator.next.value shouldBe "{\"name\":\"test\",\"deceased\":\"true\",\"birthDate_y\":\"1995\",\"birthDate_m\":\"04\",\"birthDate_d\":\"12\"}"
+        true
+      }
+      foo()
+    })
+    consumer.unsubscribe()
+  }
+
+  it should "consume patients, observations and family member history data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
-    val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, otherObservationMappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
+    val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, otherObservationMappingTask, familyMemberHistoryMappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
     streamingQuery.awaitTermination(20000L) //wait for 20 seconds to consume and write to the fhir repo and terminate
     streamingQuery.stop()
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
@@ -169,13 +193,48 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
       FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "male"
       FHIRUtil.extractValue[String](p1Resource, "birthDate") shouldBe "1995-11-10"
 
-      onFhirClient.search("Observation").where("code", "9110-8").executeAndReturnBundle() map { observationBundle =>
+      onFhirClient.search("Observation").where("code", "9110-8").executeAndReturnBundle() flatMap  { observationBundle =>
         (observationBundle.searchResults.head \ "subject" \ "reference").extract[String] shouldBe
           FhirMappingUtility.getHashedReference("Patient", "p1")
+
+        onFhirClient.read("FamilyMemberHistory", FhirMappingUtility.getHashedId("FamilyMemberHistory","test")).executeAndReturnResource() map {resource =>
+          FHIRUtil.extractIdFromResource(resource) shouldBe FhirMappingUtility.getHashedId("FamilyMemberHistory", "test")
+          FHIRUtil.extractValue[Boolean](resource, "deceasedBoolean") shouldBe true
+          FHIRUtil.extractValue[String](resource, "bornDate") shouldBe "1995-04-12"
+        }
       }
     }
     Await.result(searchTest, FiniteDuration(60, TimeUnit.SECONDS))
   }
 
+  it should "should throw an exception when it encounters a corrupted topic message" in {
+    // publish a corrupted message to the familyMembersCorrupted topic
+    val topicName = "familyMembersCorrupted"
+    val topics = Collections.singletonList(new NewTopic(topicName, 1, 1.toShort))
+    adminClient.createTopics(topics).all.get(30, TimeUnit.SECONDS)
+    consumer.subscribe(Collections.singletonList(topicName))
+    producer.send(new ProducerRecord[String, String](topicName, "1", "{\"name\":\"test\",\"deceased\":\"true\",\"birthDate_y\":\"1995\",")).get
+    Unreliables.retryUntilTrue(10, TimeUnit.SECONDS, () => {
+      def foo(): Boolean = {
+        val records = consumer.poll(Duration.ofMillis(100))
+        if (records.isEmpty) return false
+        records.iterator.next.topic shouldBe "familyMembersCorrupted"
+        records.iterator.next.key shouldBe "1"
+        records.iterator.next.value shouldBe "{\"name\":\"test\",\"deceased\":\"true\",\"birthDate_y\":\"1995\","
+        true
+      }
+      foo()
+    })
+    consumer.unsubscribe()
+
+    assume(fhirServerIsAvailable)
+    // modify familyMemberHistoryMappingTask to listen to familyMembersCorrupted topic
+    val mappingTask = familyMemberHistoryMappingTask.copy(sourceContext = Map("source" -> KafkaSource(topicName = "familyMembersCorrupted", groupId = "tofhir", startingOffsets = "earliest")))
+    assertThrows[StreamingQueryException] {
+      val streamingQuery: StreamingQuery = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(mappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
+      streamingQuery.awaitTermination(20000L) //wait for 20 seconds to consume and write to the fhir repo and terminate
+      streamingQuery.stop()
+    }
+  }
 }
 

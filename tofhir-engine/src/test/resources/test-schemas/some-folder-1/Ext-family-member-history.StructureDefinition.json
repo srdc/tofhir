@@ -1,0 +1,107 @@
+{
+	"resourceType": "StructureDefinition",
+	"url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-family-member-history",
+	"name": "ext-family-member-history",
+	"status": "draft",
+	"fhirVersion": "4.0.1",
+	"kind": "logical",
+	"abstract": false,
+	"type": "Ext-family-member-history",
+	"baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+	"derivation": "specialization",
+	"differential": {
+		"element": [
+			{
+				"id": "Ext-family-member-history",
+				"path": "Ext-family-member-history",
+				"min": 0,
+				"max": "*",
+				"type": [
+					{
+						"code": "Element"
+					}
+				]
+			},
+			{
+				"id": "Ext-family-member-history.name",
+				"path": "Ext-family-member-history.name",
+				"short": "Name",
+				"definition": "Name",
+				"min": 1,
+				"max": "1",
+				"type": [
+					{
+						"code": "string",
+						"profile": [
+							"http://hl7.org/fhir/StructureDefinition/string"
+						]
+					}
+				]
+			},
+			{
+				"id": "Ext-family-member-history.deceased",
+				"path": "Ext-family-member-history.deceased",
+				"short": "Dead",
+				"definition": "Dead",
+				"min": 1,
+				"max": "1",
+				"type": [
+					{
+						"code": "boolean",
+						"profile": [
+							"http://hl7.org/fhir/StructureDefinition/boolean"
+						]
+					}
+				]
+			},
+			{
+				"id": "Ext-family-member-history.birthDate_y",
+				"path": "Ext-family-member-history.birthDate_y",
+				"short": "Year",
+				"definition": "Year",
+				"min": 0,
+				"max": "1",
+				"type": [
+					{
+						"code": "integer",
+						"profile": [
+							"http://hl7.org/fhir/StructureDefinition/integer"
+						]
+					}
+				]
+			},
+			{
+				"id": "Ext-family-member-history.birthDate_m",
+				"path": "Ext-family-member-history.birthDate_m",
+				"short": "Month",
+				"definition": "Month",
+				"min": 0,
+				"max": "1",
+				"type": [
+					{
+						"code": "integer",
+						"profile": [
+							"http://hl7.org/fhir/StructureDefinition/integer"
+						]
+					}
+				]
+			},
+			{
+				"id": "Ext-family-member-history.birthDate_d",
+				"path": "Ext-family-member-history.birthDate_d",
+				"short": "Day",
+				"definition": "Day",
+				"min": 0,
+				"max": "1",
+				"type": [
+					{
+						"code": "integer",
+						"profile": [
+							"http://hl7.org/fhir/StructureDefinition/integer"
+						]
+					}
+				]
+			}
+		]
+	}
+}
