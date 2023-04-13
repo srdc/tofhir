@@ -1,0 +1,42 @@
+{
+	"id": "family-member-history-mapping",
+	"url": "https://aiccelerate.eu/fhir/mappings/family-member-history-mapping",
+	"name": "family-member-history-mapping",
+	"title": "Mapping of family member history schema for pilots to FamilyMemberHistory FHIR profile",
+	"source": [
+		{
+			"alias": "source",
+			"url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-family-member-history"
+		}
+	],
+	"mapping": [
+		{
+			"expression": {
+				"name": "result",
+				"language": "application/fhir-template+json",
+				"value": {
+					"resourceType": "FamilyMemberHistory",
+					"id": "{{mpp:getHashedId('FamilyMemberHistory',name)}}",
+					"meta": {
+						"profile": [
+							"http://hl7.org/fhir/StructureDefinition/FamilyMemberHistory"
+						],
+						"source": "{{%sourceSystem.sourceUri}}"
+					},
+					"status": "completed",
+					"patient": "{{mpp:createFhirReferenceWithHashedId('Patient', name)}}",
+					"relationship": {
+						"coding": [
+							{
+								"code": "82101005",
+								"system": "http://snomed.info/sct"
+							}
+						]
+					},
+					"deceasedBoolean": "{{deceased}}",
+					"bornDate": "{{birthDate_y.toString()}}-{{iif(birthDate_m.toString().length() = 2, birthDate_m.toString(), '0' & birthDate_m.toString())}}-{{iif(birthDate_d.toString().length() = 2, birthDate_d.toString(), '0' & birthDate_d.toString())}}"
+				}
+			}
+		}
+	]
+}
