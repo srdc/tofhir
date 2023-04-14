@@ -165,17 +165,18 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
 
   it should "produce data to familyMembers topic" in {
     val topicName = "familyMembers"
+    val message = "{\"name\":\"test\",\"deceased\":\"true\",\"birthDate_y\":\"1995\",\"birthDate_m\":\"04\",\"birthDate_d\":\"12\"}"
     val topics = Collections.singletonList(new NewTopic(topicName, 1, 1.toShort))
     adminClient.createTopics(topics).all.get(30, TimeUnit.SECONDS)
     consumer.subscribe(Collections.singletonList(topicName))
-    producer.send(new ProducerRecord[String, String](topicName, "1", "{\"name\":\"test\",\"deceased\":\"true\",\"birthDate_y\":\"1995\",\"birthDate_m\":\"04\",\"birthDate_d\":\"12\"}")).get
+    producer.send(new ProducerRecord[String, String](topicName, "1", message)).get
     Unreliables.retryUntilTrue(10, TimeUnit.SECONDS, () => {
       def foo(): Boolean = {
         val records = consumer.poll(Duration.ofMillis(100))
         if (records.isEmpty) return false
         records.iterator.next.topic shouldBe "familyMembers"
         records.iterator.next.key shouldBe "1"
-        records.iterator.next.value shouldBe "{\"name\":\"test\",\"deceased\":\"true\",\"birthDate_y\":\"1995\",\"birthDate_m\":\"04\",\"birthDate_d\":\"12\"}"
+        records.iterator.next.value shouldBe message
         true
       }
       foo()

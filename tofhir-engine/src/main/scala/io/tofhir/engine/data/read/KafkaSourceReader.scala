@@ -47,25 +47,69 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
           fieldType.dataType match {
             case _: DoubleType =>
               try {
-                field._1 -> field._2.extractOpt[JDouble].getOrElse(JNull)
+                field._1 -> {
+                  // performs the following conversions:
+                  //  JString(v) => JDouble(v)
+                  //  JDouble(v) => JDouble(v)
+                  //  JString() => JNull
+                  field._2.extract[String] match {
+                    case str if str.nonEmpty => JDouble(str.toDouble)
+                    case _ => JNull
+                  }
+                }
               } catch {
                 case e: NumberFormatException => throw new InternalServerErrorException(s"${field._2} is not a parsable `Double`", e)
               }
             case _: IntegerType =>
               try {
-                field._1 -> field._2.extractOpt[JInt].getOrElse(JNull)
+                field._1 -> {
+                  // performs the following conversions:
+                  //  JString(v) => JInt(v)
+                  //  JInt(v) => JInt(v)
+                  //  JString() => JNull
+                  field._2.extract[String] match {
+                    case str if str.nonEmpty => JInt(str.toInt)
+                    case _ => JNull
+                  }
+                }
               } catch {
                 case e: NumberFormatException => throw new InternalServerErrorException(s"${field._2} is not a parsable `Integer`", e)
               }
             case _: LongType =>
               try {
-                field._1 -> field._2.extractOpt[JLong].getOrElse(JNull)
+                field._1 -> {
+                  // performs the following conversions:
+                  //  JString(v) => JLong(v)
+                  //  JLong(v) => JLong(v)
+                  //  JString() => JNull
+                  field._2.extract[String] match {
+                    case str if str.nonEmpty => JLong(str.toLong)
+                    case _ => JNull
+                  }
+                }
               } catch {
                 case e: NumberFormatException => throw new InternalServerErrorException(s"${field._2} is not a parsable `Long`", e)
               }
             case _: BooleanType =>
               try {
-                field._1 -> field._2.extractOpt[JBool].getOrElse(JNull)
+                field._1 -> {
+                  // performs the following conversions:
+                  //  JString(v) => JBool(v)
+                  //  JBool(v) => JBool(v)
+                  //  JString() => JNull
+                  val bool = field._2.extractOpt[Boolean] // try to extract as boolean
+                  bool match {
+                    // matches JBool(v)
+                    case Some(value) => JBool(value)
+                    // try to extract as string
+                    case None => field._2.extractOpt[String] match {
+                      // matches JString(v)
+                      case Some(value) if value.nonEmpty => JBool(value.toBoolean)
+                      // matches JString()
+                      case _ => JNull
+                    }
+                  }
+                }
               } catch {
                 case e: IllegalArgumentException => throw new InternalServerErrorException(s"${field._2} is not a parsable `Boolean`", e)
               }
