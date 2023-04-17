@@ -300,7 +300,7 @@ class FhirMappingJobManager(
     // if the FhirMapping task includes the mapping to be executed (the case where the mapping is being tested), use it,
     // otherwise retrieve it from the repository
     val fhirMapping = task.mapping match {
-      case Some(mapping) => mapping
+      case Some(mapping) => mapping.removeAtFields()
       case None => fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
     }
     val sourceNames = fhirMapping.source.map(_.alias).toSet

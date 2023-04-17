@@ -201,10 +201,12 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * @return
    */
   override def getFhirMappingByUrl(mappingUrl: String): FhirMapping = {
-    mappingDefinitions.values
+    val fhirMapping = mappingDefinitions.values
       .flatMap(_.values) // Flatten all the mappings managed for all projects
       .find(_.url.contentEquals(mappingUrl))
       .get
+
+    fhirMapping.removeAtFields()
   }
 
   /**

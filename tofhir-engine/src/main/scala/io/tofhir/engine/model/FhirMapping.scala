@@ -46,6 +46,21 @@ case class FhirMapping(id: String,
       )
     )
   }
+
+  /**
+   * Removes any fields starting with @ from the mapping expression JSON.
+   * @return
+   */
+  def removeAtFields(): FhirMapping = {
+    val atRemovedMappings = this.mapping.map(
+      me => {
+        val expressionValue = me.expression.value.get.removeField(f => f._1.startsWith("@"))
+        val newMappingExpression = me.copy(expression = me.expression.copy(value = Some(expressionValue)))
+        newMappingExpression
+      }
+    )
+    this.copy(mapping = atRemovedMappings)
+  }
 }
 
 /**
