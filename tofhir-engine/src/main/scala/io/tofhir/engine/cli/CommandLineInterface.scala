@@ -1,15 +1,16 @@
 package io.tofhir.engine.cli
 
-import io.tofhir.engine.{ToFhirEngine, cli}
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingJobScheduler}
+import io.tofhir.engine.model.FhirMappingJobExecution
 import io.tofhir.engine.util.FhirMappingJobFormatter
+import io.tofhir.engine.{ToFhirEngine, cli}
 import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.MappingException
+
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
 import java.util.Scanner
-import io.tofhir.engine.model.FhirMappingJobExecution
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -91,7 +92,7 @@ object CommandLineInterface {
    * @param mappingJobFilePath
    */
   def runJob(toFhirEngine: ToFhirEngine, mappingJobFilePath: Option[String], toFhirDbFolderPath: String): Unit = {
-    if(mappingJobFilePath.isEmpty) {
+    if (mappingJobFilePath.isEmpty) {
       println("There are no jobs to run. Exiting...")
       System.exit(1)
     }
@@ -114,8 +115,7 @@ object CommandLineInterface {
               sourceSettings = mappingJob.sourceSettings,
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-              identityServiceSettings = mappingJob.getIdentityServiceSettings()
-            )
+              identityServiceSettings = mappingJob.getIdentityServiceSettings())
         streamingQuery.awaitTermination()
       } else {
         val f =
@@ -130,7 +130,7 @@ object CommandLineInterface {
         Await.result(f, Duration.Inf)
       }
     } else {
-      if(toFhirDbFolderPath.isEmpty) {
+      if (toFhirDbFolderPath.isEmpty) {
         throw new IllegalArgumentException("runJob is called with a scheduled mapping job, but toFhir.db is not configured.");
       }
 
