@@ -1,5 +1,6 @@
 package io.tofhir.server.service.mapping
 
+import io.tofhir.engine.mapping.{IFhirMappingCachedRepository, IFhirMappingRepository}
 import io.tofhir.engine.model.FhirMapping
 
 import scala.concurrent.Future
@@ -7,7 +8,7 @@ import scala.concurrent.Future
 /**
  * Interface to save and load mappings so that the client applications can manage the mappings through CRUD operations
  */
-trait IMappingRepository {
+trait IMappingRepository extends IFhirMappingCachedRepository {
 
   /**
    * Retrieve all mappings for the given project

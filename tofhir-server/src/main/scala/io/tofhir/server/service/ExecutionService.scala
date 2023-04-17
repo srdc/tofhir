@@ -10,6 +10,8 @@ import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.config.SparkConfig
 import io.tofhir.server.model.{ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
+import io.tofhir.server.service.mapping.IMappingRepository
+import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -24,13 +26,14 @@ import scala.concurrent.Future
 /**
  * Service to handle all execution related operations
  * E.g. Run a mapping job, run a mapping task, run a test resource creation, get execution logs
+ *
  * @param jobRepository
+ * @param mappingRepository
+ * @param schemaRepository
  */
-class ExecutionService(jobRepository: IJobRepository) extends LazyLogging {
+class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
 
-  val toFhirEngine = new ToFhirEngine(ToFhirConfig.sparkAppName, ToFhirConfig.sparkMaster,
-    ToFhirConfig.engineConfig.mappingRepositoryFolderPath,
-    ToFhirConfig.engineConfig.schemaRepositoryFolderPath)
+  val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository))
 
   val fhirMappingJobManager =
     new FhirMappingJobManager(

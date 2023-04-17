@@ -130,15 +130,6 @@ class JobEndpointTest extends BaseEndpointTest {
     }
 
     "execute a mapping within a job and project and check mapped resources" in {
-      // create the mapping that will be tested
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping))) ~> route ~> check {
-        status shouldEqual StatusCodes.Created
-        // validate that mapping metadata file is updated
-        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
-        // check mapping folder is created
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping.id).toFile.exists()
-      }
       // create the schema that the mapping uses
       Post(s"/tofhir/projects/${projectId}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(patientMappingSchema))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
@@ -159,7 +150,7 @@ class JobEndpointTest extends BaseEndpointTest {
           "\"meta\":{\"profile\":[\"https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient\"]," +
           "\"source\":\"https://aiccelerate.eu/data-integration-suite/test-data\"}," +
           "\"active\":true,\"identifier\":[{\"use\":\"official\",\"system\":\"https://aiccelerate.eu/data-integration-suite/test-data\",\"value\":\"p1\"}]," +
-          "\"gender\":\"male\",\"birthDate\":\"2000-05-10 00:00:00\"}"
+          "\"gender\":\"male\",\"birthDate\":\"2000-05-10\"}"
       }
     }
   }

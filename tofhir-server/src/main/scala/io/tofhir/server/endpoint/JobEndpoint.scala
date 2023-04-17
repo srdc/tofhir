@@ -14,11 +14,13 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.service.job.IJobRepository
+import io.tofhir.server.service.mapping.IMappingRepository
+import io.tofhir.server.service.schema.ISchemaRepository
 
-class JobEndpoint(jobRepository: IJobRepository) extends LazyLogging {
+class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
 
   val service: JobService = new JobService(jobRepository)
-  val executionService: ExecutionService = new ExecutionService(jobRepository)
+  val executionService: ExecutionService = new ExecutionService(jobRepository, mappingRepository, schemaRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_JOB) {

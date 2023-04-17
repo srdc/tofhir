@@ -4,9 +4,6 @@ import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.ToFhirEngine
-import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
-import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
@@ -26,19 +23,6 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
   private val logger: Logger = Logger(this.getClass)
   // project id -> mapping job id -> mapping job
   private val jobDefinitions: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = initMap(jobRepositoryFolderPath)
-
-  val toFhirEngine = new ToFhirEngine(ToFhirConfig.sparkAppName, ToFhirConfig.sparkMaster,
-    ToFhirConfig.engineConfig.mappingRepositoryFolderPath,
-    ToFhirConfig.engineConfig.schemaRepositoryFolderPath)
-
-  val fhirMappingJobManager =
-    new FhirMappingJobManager(
-      toFhirEngine.mappingRepository,
-      toFhirEngine.contextLoader,
-      toFhirEngine.schemaLoader,
-      toFhirEngine.sparkSession,
-      ErrorHandlingType.CONTINUE
-    )
 
   /**
    * Returns the mappings managed by this repository

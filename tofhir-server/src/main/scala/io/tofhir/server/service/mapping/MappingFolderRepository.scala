@@ -3,7 +3,7 @@ package io.tofhir.server.service.mapping
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
+import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFound}
@@ -192,4 +192,23 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
     map
   }
 
+  /**
+   * Returns the Fhir mapping definition by given url
+   *
+   * @param mappingUrl Fhir mapping url
+   * @return
+   */
+  override def getFhirMappingByUrl(mappingUrl: String): FhirMapping = {
+    mappingDefinitions.values
+      .flatMap(_.values) // Flatten all the mappings managed for all projects
+      .find(_.url.contentEquals(mappingUrl))
+      .get
+  }
+
+  /**
+   * Invalidate the internal cache and refresh the cache with the FhirMappings directly from their source
+   */
+  override def invalidate(): Unit = {
+    // nothing needs to be done as we keep the cache always up-to-date
+  }
 }

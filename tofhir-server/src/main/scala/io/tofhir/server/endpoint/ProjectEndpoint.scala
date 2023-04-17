@@ -30,7 +30,7 @@ class ProjectEndpoint(schemaRepository: ISchemaRepository,
   val service: ProjectService = new ProjectService(projectRepository)
   val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(schemaRepository)
   val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository)
-  val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository)
+  val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository, mappingRepository, schemaRepository)
   val mappingContextEndpoint: MappingContextEndpoint = new MappingContextEndpoint(mappingContextRepository)
 
   def route(request: ToFhirRestCall): Route = {

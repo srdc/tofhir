@@ -13,7 +13,7 @@ import io.tofhir.server.service.SimpleStructureDefinitionService
  *
  * @param fhirVersion
  */
-abstract class AbstractSchemaRepository(fhirVersion: String = "R4") extends ISchemaRepository {
+abstract class AbstractSchemaRepository(val fhirVersion: String = "R4") extends ISchemaRepository {
 
   /**
    * So that its validation function can be used when a new schema needs to be validated.

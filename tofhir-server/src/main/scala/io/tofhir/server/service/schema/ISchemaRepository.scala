@@ -1,6 +1,7 @@
 package io.tofhir.server.service.schema
 
 import io.tofhir.common.model.SchemaDefinition
+import io.tofhir.engine.mapping.IFhirSchemaLoader
 
 import scala.concurrent.Future
 
@@ -8,7 +9,7 @@ import scala.concurrent.Future
  * Interface to save and load SchemaDefinitions
  * so that the client applications can manage the schemas through CRUD operations
  */
-trait ISchemaRepository {
+trait ISchemaRepository extends IFhirSchemaLoader {
 
   /**
    * Retrieve the metadata of all SchemaDefinitions (only id, url, type and name fields are populated)
