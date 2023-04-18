@@ -50,8 +50,10 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
    */
   override def beforeAll(): Unit = {
     // onfhir needs schema folder to be created in advance,
-    // terminology, mapping and job folders are created automatically
+    // terminology, job folders are created automatically
     FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath).toFile.mkdirs()
+    // Folder for the mapping repository is also created manually, as the engine's mapping repository requires it during the initialization
+    FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath).toFile.mkdirs()
     FileUtils.getPath(fhirDefinitionsConfig.profilesPath.get).toFile.mkdirs()
     FileUtils.getPath(fhirDefinitionsConfig.codesystemsPath.get).toFile.mkdirs()
     FileUtils.getPath(fhirDefinitionsConfig.valuesetsPath.get).toFile.mkdirs()

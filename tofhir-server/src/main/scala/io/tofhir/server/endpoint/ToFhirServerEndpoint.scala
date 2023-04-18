@@ -9,7 +9,7 @@ import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.job.JobFolderRepository
-import io.tofhir.server.service.mapping.MappingFolderRepository
+import io.tofhir.server.service.mapping.ProjectMappingFolderRepository
 import io.tofhir.server.service.mappingcontext.MappingContextFolderRepository
 import io.tofhir.server.service.project.{FolderDBInitializer, ProjectFolderRepository}
 import io.tofhir.server.service.schema.SchemaFolderRepository
@@ -25,7 +25,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(toFhirEngineConfig)
 
   val projectRepository: ProjectFolderRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
-  val mappingRepository: MappingFolderRepository = new MappingFolderRepository(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
+  val mappingRepository: ProjectMappingFolderRepository = new ProjectMappingFolderRepository(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
   val schemaRepository: SchemaFolderRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository)
   val mappingJobRepository: JobFolderRepository = new JobFolderRepository(toFhirEngineConfig.jobRepositoryFolderPath, projectRepository)
   val mappingContextRepository: MappingContextFolderRepository = new MappingContextFolderRepository(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectRepository)

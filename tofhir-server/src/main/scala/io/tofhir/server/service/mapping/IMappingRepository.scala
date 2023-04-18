@@ -1,6 +1,6 @@
 package io.tofhir.server.service.mapping
 
-import io.tofhir.engine.mapping.{IFhirMappingCachedRepository, IFhirMappingRepository}
+import io.tofhir.engine.mapping.IFhirMappingCachedRepository
 import io.tofhir.engine.model.FhirMapping
 
 import scala.concurrent.Future

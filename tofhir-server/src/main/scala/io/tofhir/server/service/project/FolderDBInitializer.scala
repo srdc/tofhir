@@ -9,7 +9,7 @@ import io.tofhir.engine.model.{FhirMapping, FhirMappingJob}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.Project
 import io.tofhir.server.service.job.JobFolderRepository
-import io.tofhir.server.service.mapping.MappingFolderRepository
+import io.tofhir.server.service.mapping.ProjectMappingFolderRepository
 import io.tofhir.server.service.mappingcontext.MappingContextFolderRepository
 import io.tofhir.server.service.schema.SchemaFolderRepository
 import io.tofhir.server.util.FileOperations
@@ -25,7 +25,7 @@ import scala.language.postfixOps
  * */
 class FolderDBInitializer(config: ToFhirEngineConfig,
                           schemaFolderRepository: SchemaFolderRepository,
-                          mappingFolderRepository: MappingFolderRepository,
+                          mappingFolderRepository: ProjectMappingFolderRepository,
                           mappingJobFolderRepository: JobFolderRepository,
                           projectFolderRepository: ProjectFolderRepository,
                           mappingContextRepository: MappingContextFolderRepository) {
