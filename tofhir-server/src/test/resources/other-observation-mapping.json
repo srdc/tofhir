@@ -1,0 +1,211 @@
+{
+  "id": "other-observation-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
+  "name": "other-observation-mapping",
+  "title": "Mapping of schema Other Observation to AIC-IntraOperativeObservation, AIC-MedicationAdministration, AIC-NEWSScore, AIC-PEWSScore and AIC-GlascowScale FHIR profiles",
+  "source": [{
+    "alias": "source",
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-other-observation"
+  }],
+  "context": {
+    "obsConceptMap":  {
+      "category": "concept-map",
+      "url": "$CONTEXT_REPO/deadbeef-dead-dead-dead-deaddeafbeef/other-observation-concept-map.csv"
+    }
+  },
+  "variable": [
+    {
+      "name": "hashedObsId",
+      "language": "text/fhirpath",
+      "expression": "mpp:getHashedId('Observation', pid & code & time.toString())"
+    },
+    {
+      "name": "obsUnit",
+      "language": "text/fhirpath",
+      "expression": "mpp:getConcept(%obsConceptMap, code, 'unit')"
+    }
+  ],
+  "mapping": [
+    {
+      "precondition": {
+        "name": "isSimpleObservation",
+        "language": "text/fhirpath",
+        "expression": "code != '9269-2' and code != '313002' and code!= '35629' and code != '33834'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{%hashedObsId}}",
+          "meta": {
+            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "{{mpp:getConcept(%obsConceptMap, code, 'source_system')}}",
+                "code": "{{code}}",
+                "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
+          "valueQuantity": {
+            "value": "{{value.toDecimal()}}",
+            "unit": "{{%obsUnit}}",
+            "system": "http://unitsofmeasure.org",
+            "code": "{{%obsUnit}}"
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isGcs",
+        "language": "text/fhirpath",
+        "expression": "code = '9269-2'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{%hashedObsId}}",
+          "meta": {
+            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "status": "final",
+          "code": {
+            "coding": [
+              {
+                "system": "{{mpp:getConcept(%obsConceptMap, code, 'source_system')}}",
+                "code": "{{code}}",
+                "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
+          "valueQuantity": {
+            "value": "{{value.split('-')[0].toDecimal()}}",
+            "unit": "{{%obsUnit}}",
+            "system": "http://unitsofmeasure.org",
+            "code": "{{%obsUnit}}"
+          },
+          "component": {
+            "{{#comp}}": "{{value.split('-').tail().select($this.toDecimal())}}",
+            "{{?}}": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://loinc.org",
+                      "code": "9267-6",
+                      "display": "GCS eye opening"
+                    }
+                  ]
+                },
+                "valueQuantity": {
+                  "value": "{{%comp[0]}}",
+                  "unit": "{score}",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "{score}"
+                }
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://loinc.org",
+                      "code": "9270-0",
+                      "display": "GCS verbal response"
+                    }
+                  ]
+                },
+                "valueQuantity": {
+                  "value": "{{%comp[1]}}",
+                  "unit": "{score}",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "{score}"
+                }
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://loinc.org",
+                      "code": "9268-4",
+                      "display": "GCS motor response"
+                    }
+                  ]
+                },
+                "valueQuantity": {
+                  "value": "{{%comp[2]}}",
+                  "unit": "{score}",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "{score}"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "precondition": {
+        "name": "isMedicationAdministration",
+        "language": "text/fhirpath",
+        "expression": "code = '313002' or code = '35629' or code = '33834'"
+      },
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "MedicationAdministration",
+          "id": "{{mpp:getHashedId('MedicationAdministration', pid & code & time.toString())}}",
+          "meta": {
+            "profile": ["https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "status": "completed",
+          "category": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/medication-admin-category",
+                "code": "inpatient",
+                "display": "Inpatient"
+              }
+            ]
+          },
+          "medicationCodeableConcept": {
+            "coding": [
+              {
+                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                "code": "{{code}}",
+                "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "context": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
+          "dosage": {
+            "dose": {
+              "value": "{{value.toDecimal()}}",
+              "unit": "mL",
+              "system": "http://unitsofmeasure.org",
+              "code": "mL"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

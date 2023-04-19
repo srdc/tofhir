@@ -1,0 +1,116 @@
+{
+  "id": "Ext-plt1-other-observation",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-other-observation",
+  "type": "Ext-plt1-other-observation",
+  "name": "Ext-plt1-other-observation",
+  "rootDefinition": {
+    "id": "Ext-plt1-other-observation",
+    "path": "Ext-plt1-other-observation",
+    "dataTypes": [
+      {
+        "dataType": "Element"
+      }
+    ],
+    "isPrimitive": false,
+    "isChoiceRoot": false,
+    "isArray": false,
+    "minCardinality": 0
+  },
+  "fieldDefinitions": [
+    {
+      "id": "pid",
+      "path": "Ext-plt1-other-observation.pid",
+      "dataTypes": [
+        {
+          "dataType": "id",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/id"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 1,
+      "maxCardinality": 1,
+      "short": "Patient identifier",
+      "definition": "Unique patient identifier  (a pseudoynm)"
+    },
+    {
+      "id": "time",
+      "path": "Ext-plt1-other-observation.time",
+      "dataTypes": [
+        {
+          "dataType": "dateTime",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/dateTime"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 1,
+      "maxCardinality": 1,
+      "short": "Observation time",
+      "definition": "Time that this measurement is done"
+    },
+    {
+      "id": "encounterId",
+      "path": "Ext-plt1-other-observation.encounterId",
+      "dataTypes": [
+        {
+          "dataType": "id",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/id"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 0,
+      "maxCardinality": 1,
+      "short": "Encounter",
+      "definition": "Reference to the encounter that this observation is performed"
+    },
+    {
+      "id": "code",
+      "path": "Ext-plt1-other-observation.code",
+      "dataTypes": [
+        {
+          "dataType": "code",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/code"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 1,
+      "maxCardinality": 1,
+      "short": "Observation code",
+      "definition": "Code for the type of the measurement"
+    },
+    {
+      "id": "value",
+      "path": "Ext-plt1-other-observation.value",
+      "dataTypes": [
+        {
+          "dataType": "string",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/string"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 1,
+      "maxCardinality": 1,
+      "short": "Value of the measurement.",
+      "definition": "Value of the measurement(s). If there are multiple measurements list of them seperated by '-'"
+    }
+  ]
+}

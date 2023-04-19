@@ -17,6 +17,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.util.UUID
+
 trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
   // toFHIR engine config
   val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
@@ -34,8 +36,8 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   /**
    * Creates a test project whose identifier is stored in {@link projectId}.
    * */
-  def createProject(): Unit = {
-    val project1: Project = Project(name = "example", description = Some("example project"))
+  def createProject(id: Option[String] = None): Unit = {
+    val project1: Project = Project(id = id.getOrElse(UUID.randomUUID().toString), name = "example", description = Some("example project"))
     // create a project
     Post("/tofhir/projects", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
       status shouldEqual StatusCodes.Created
@@ -49,6 +51,9 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
    * Create the folders and initialize the endpoint and route
    */
   override def beforeAll(): Unit = {
+    // Deleting folders to start with a clean environment
+    cleanFolders()
+
     // onfhir needs schema folder to be created in advance,
     // terminology, job folders are created automatically
     FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath).toFile.mkdirs()
@@ -66,6 +71,10 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
    * Deletes the repository folders after all test cases are completed.
    * */
   override def afterAll(): Unit = {
+    cleanFolders()
+  }
+
+  private def cleanFolders(): Unit = {
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER).toFile)
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath).toFile)
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath).toFile)
