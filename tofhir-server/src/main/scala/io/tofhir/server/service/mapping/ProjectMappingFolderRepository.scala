@@ -2,7 +2,7 @@ package io.tofhir.server.service.mapping
 
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.mapping.FhirMappingFolderRepository
+import io.tofhir.engine.mapping.{FhirMappingFolderRepository, MappingContextLoader}
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
@@ -64,11 +64,15 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
       val fw = new FileWriter(newFile)
       fw.write(writePretty(mapping))
       fw.close()
+
+      // Normalize the concept map uris so that they could be resolved during the mapping execution
+      val mappingWithNormalizedConceptMapUris: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq(mapping -> newFile)).head
+
       // Add to the project metadata json file
-      projectFolderRepository.addMapping(projectId, mapping)
+      projectFolderRepository.addMapping(projectId, mappingWithNormalizedConceptMapUris)
       // Add to the in-memory map
-      mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
-      mapping
+      mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mappingWithNormalizedConceptMapUris)
+      mappingWithNormalizedConceptMapUris
     })
   }
 
@@ -106,11 +110,15 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
       val fw = new FileWriter(file)
       fw.write(writePretty(mapping))
       fw.close()
+
+      // Normalize the concept map uris so that they could be resolved during the mapping execution
+      val mappingWithNormalizedConceptMapUris: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq(mapping -> file)).head
+
       // update the mapping in the in-memory map
-      mappingDefinitions(projectId).put(id, mapping)
+      mappingDefinitions(projectId).put(id, mappingWithNormalizedConceptMapUris)
       // update the projects metadata json file
-      projectFolderRepository.updateMapping(projectId, mapping)
-      mapping
+      projectFolderRepository.updateMapping(projectId, mappingWithNormalizedConceptMapUris)
+      mappingWithNormalizedConceptMapUris
     })
   }
 
