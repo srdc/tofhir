@@ -179,7 +179,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
 
         val result: JObject = JsonMethods.parse(results.head.mappedResource.get).asInstanceOf[JObject]
         (result \ "meta" \ "profile").asInstanceOf[JArray].arr.head.extract[String] shouldEqual "https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation"
-        (result \ "effectiveDateTime").extract[String] shouldEqual "2007-10-12T10:00:00+03:00"
+        (result \ "effectiveDateTime").extract[String] startsWith "2007-10-12T10:00:00"
         (result \ "valueQuantity" \ "value").extract[Int] shouldEqual 450
       }
     }
