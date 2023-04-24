@@ -74,20 +74,19 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
    * @return
    */
   override def createJob(projectId: String, job: FhirMappingJob): Future[FhirMappingJob] = {
-    Future {
-      if (jobDefinitions.contains(projectId) && jobDefinitions(projectId).contains(job.id)) {
-        throw AlreadyExists("Fhir mapping job already exists.", s"A job definition with id ${job.id} already exists in the job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
-      }
-      // Write to the repository as a new file
-      getFileForJob(projectId, job).map(file => {
-        val fw = new FileWriter(file)
-        fw.write(writePretty(job))
-        fw.close()
-      })
+    if (jobDefinitions.contains(projectId) && jobDefinitions(projectId).contains(job.id)) {
+      throw AlreadyExists("Fhir mapping job already exists.", s"A job definition with id ${job.id} already exists in the job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // Write to the repository as a new file
+    getFileForJob(projectId, job).map(file => {
+      val fw = new FileWriter(file)
+      fw.write(writePretty(job))
+      fw.close()
+      // add the job to the project repo and the map
       projectFolderRepository.addJob(projectId, job)
       jobDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(job.id, job)
       job
-    }
+    })
   }
 
   /**
@@ -112,26 +111,23 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
    * @return
    */
   override def putJob(projectId: String, id: String, job: FhirMappingJob): Future[FhirMappingJob] = {
-    Future {
-      if (!id.equals(job.id)) {
-        throw BadRequest("Job definition is not valid.", s"Identifier of the job definition: ${job.id} does not match with explicit id: $id")
-      }
-      if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
-        throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
-      }
-      // update the job in the repository
-      getFileForJob(projectId, job).map(file => {
-        val fw = new FileWriter(file)
-        fw.write(writePretty(job))
-        fw.close()
-      })
+    if (!id.equals(job.id)) {
+      throw BadRequest("Job definition is not valid.", s"Identifier of the job definition: ${job.id} does not match with explicit id: $id")
+    }
+    if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
+      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // update the job in the repository
+    getFileForJob(projectId, job).map(file => {
+      val fw = new FileWriter(file)
+      fw.write(writePretty(job))
+      fw.close()
       // update the mapping job in the map
       jobDefinitions(projectId).put(id, job)
       // update the job in the project
       projectFolderRepository.updateJob(projectId, job)
       job
-    }
-
+    })
   }
 
   /**
@@ -142,19 +138,17 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
    * @return
    */
   override def deleteJob(projectId: String, id: String): Future[Unit] = {
-    Future {
-      if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
-        throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
-      }
-      // delete the mapping job from the repository
-      getFileForJob(projectId, jobDefinitions(projectId)(id)).map(file => {
-        file.delete()
-      })
+    if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
+      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // delete the mapping job from the repository
+    getFileForJob(projectId, jobDefinitions(projectId)(id)).map(file => {
+      file.delete()
       // delete the mapping job from the map
       jobDefinitions(projectId).remove(id)
       // delete the job from the project
       projectFolderRepository.deleteJob(projectId, id)
-    }
+    })
   }
 
   /**
