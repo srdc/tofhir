@@ -404,7 +404,7 @@ Example of a Mapping definition file:
 The json snippet above illustrates the structure of an example mapping.
 It can be seen that exemplified mapping job with the file system source type in the previous section includes the mapping shown here.
 The real magic in mappings happens in the `expression` field.
-toFHIR uses the expression to generate the FHIR resources by using [onfhir-template-engine](https://github.com/aiccelerate/onfhir-template-engine).
+toFHIR uses the expression to generate the FHIR resources by using [onfhir-template-engine](https://github.com/srdc/fhir-template-engine).
 By doing so, it can generate the FHIR resources based on the source data.
 
 The json keys in the `expression.value` represent the FHIR resource attributes. That is, we write the FHIR resource structure
