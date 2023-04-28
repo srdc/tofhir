@@ -113,7 +113,9 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
                   .entry(uuid, _.patch(rtype).where(searchParams).patchContent(patchContent))
           }
       }
-    batchRequest = batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder]
+    // add 'return=minimal' header if asked
+    if(sinkSettings.returnMinimal)
+      batchRequest = batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder]
     batchRequest
   }
 
