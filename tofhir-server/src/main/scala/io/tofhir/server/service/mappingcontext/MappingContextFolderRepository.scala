@@ -57,20 +57,18 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @return
    */
   override def createMappingContext(projectId: String, id: String): Future[String] = {
-    Future {
-      if (mappingContextExists(projectId, id)) {
-        throw AlreadyExists("Fhir mapping already exists.", s"A mapping context definition with id ${id} already exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
-      }
-      // Write to the repository as a new file
-      getFileForMappingContext(projectId, id).map(newFile => {
-        newFile.createNewFile()
-      })
+    if (mappingContextExists(projectId, id)) {
+      throw AlreadyExists("Fhir mapping already exists.", s"A mapping context definition with id ${id} already exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // Write to the repository as a new file
+    getFileForMappingContext(projectId, id).map(newFile => {
+      newFile.createNewFile()
       // Add to the project metadata json file
       projectFolderRepository.addMappingContext(projectId, id)
       // Add to the in-memory map
       mappingContextDefinitions(projectId) = mappingContextDefinitions.getOrElseUpdate(projectId, Seq.empty) :+ id
       id
-    }
+    })
   }
 
 
@@ -82,19 +80,17 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @return
    */
   override def deleteMappingContext(projectId: String, id: String): Future[Unit] = {
-    Future {
-      if (!mappingContextExists(projectId, id)) {
-        throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
-      }
-      // delete the mapping context from the repository
-      getFileForMappingContext(projectId, id).map(file => {
-        file.delete()
-      })
+    if (!mappingContextExists(projectId, id)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // delete the mapping context from the repository
+    getFileForMappingContext(projectId, id).map(file => {
+      file.delete()
       // delete the mapping context from the in-memory map
       mappingContextDefinitions(projectId) = mappingContextDefinitions(projectId).filterNot(_ == id)
       // update the projects metadata json file
       projectFolderRepository.deleteMappingContext(projectId, id)
-    }
+    })
   }
 
   /**

@@ -57,22 +57,20 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
    * @return
    */
   override def createMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping] = {
-    Future {
-      if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).contains(mapping.id)) {
-        throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with id ${mapping.id} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
-      }
-      // Write to the repository as a new file
-      getFileForMapping(projectId, mapping).map(newFile => {
-        val fw = new FileWriter(newFile)
-        fw.write(writePretty(mapping))
-        fw.close()
-      })
+    if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).contains(mapping.id)) {
+      throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with id ${mapping.id} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // Write to the repository as a new file
+    getFileForMapping(projectId, mapping).map(newFile => {
+      val fw = new FileWriter(newFile)
+      fw.write(writePretty(mapping))
+      fw.close()
       // Add to the project metadata json file
       projectFolderRepository.addMapping(projectId, mapping)
       // Add to the in-memory map
       mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
       mapping
-    }
+    })
   }
 
   /**
@@ -97,27 +95,24 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
    * @return
    */
   override def putMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping] = {
-    Future {
-      // cross check ids
-      if (!id.equals(mapping.id)) {
-        throw BadRequest("Mapping definition is not valid.", s"Identifier of the mapping definition: ${mapping.id} does not match with explicit id: $id")
-      }
-      if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
-        throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
-      }
-      // update the mapping in the repository
-      getFileForMapping(projectId, mapping).map(file => {
-        val fw = new FileWriter(file)
-        fw.write(writePretty(mapping))
-        fw.close()
-      })
+    // cross check ids
+    if (!id.equals(mapping.id)) {
+      throw BadRequest("Mapping definition is not valid.", s"Identifier of the mapping definition: ${mapping.id} does not match with explicit id: $id")
+    }
+    if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
+      throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // update the mapping in the repository
+    getFileForMapping(projectId, mapping).map(file => {
+      val fw = new FileWriter(file)
+      fw.write(writePretty(mapping))
+      fw.close()
       // update the mapping in the in-memory map
       mappingDefinitions(projectId).put(id, mapping)
       // update the projects metadata json file
       projectFolderRepository.updateMapping(projectId, mapping)
       mapping
-    }
-
+    })
   }
 
   /**
@@ -128,19 +123,17 @@ class MappingFolderRepository(mappingRepositoryFolderPath: String, projectFolder
    * @return
    */
   override def deleteMapping(projectId: String, id: String): Future[Unit] = {
-    Future {
-      if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
-        throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
-      }
-      // delete the mapping from the repository
-      getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
-        file.delete()
-      })
+    if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
+      throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // delete the mapping from the repository
+    getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
+      file.delete()
       // delete the mapping from the map
       mappingDefinitions(projectId).remove(id)
       // delete the mapping from projects json file
       projectFolderRepository.deleteMapping(projectId, id)
-    }
+    })
   }
 
   /**
