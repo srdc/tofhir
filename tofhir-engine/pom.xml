@@ -20,6 +20,28 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <phase>install</phase>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                <configuration>
+                    <launchers>
+                        <!-- Run io.onfhir.path.validation.ValidateFhirPathFunctionLibraries to validate that each
+                         FhirPath function is annotated with io.onfhir.path.annotation.FhirPathFunction -->
+                        <launcher>
+                            <id>validateFhirPathFunctionLibraries</id>
+                            <mainClass>io.onfhir.path.validation.ValidateFhirPathFunctionLibraries</mainClass>
+                            <!-- List of packages which include the FhirPath function libraries -->
+                            <args>
+                                <arg>io.tofhir.engine.mapping</arg>
+                            </args>
+                        </launcher>
+                    </launchers>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -228,6 +250,11 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>kafka</artifactId>
             <scope>test</scope>
+        </dependency>
+        <!-- Reflection -->
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
         </dependency>
     </dependencies>
 
