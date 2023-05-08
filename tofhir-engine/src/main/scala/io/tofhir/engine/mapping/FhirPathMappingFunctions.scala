@@ -1,6 +1,7 @@
 package io.tofhir.engine.mapping
 
 import io.onfhir.path._
+import io.onfhir.path.annotation.FhirPathFunction
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
 import io.tofhir.engine.model.{ConceptMapContext, FhirMappingContext, UnitConversionContext}
 import io.tofhir.engine.util.FhirMappingUtility
@@ -22,6 +23,8 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param inputExpr
    * @return
    */
+  @FhirPathFunction(documentation = "Creates an id using the hash of given string.Resource name should be quoted and id should be string Ex: mpp:getHashedId('Encounter', id.toString())",
+    insertText = "mpp:getHashedId(<resourceName>, <id>)",detail = "mpp", label = "mpp:getHashedId")
   def getHashedId(resourceTypeExp:ExpressionContext, inputExpr:ExpressionContext):Seq[FhirPathResult] = {
     val resourceType = getStringValueOfExpr(resourceTypeExp, s"Invalid function call 'getHashedId', given expression for keyExpr:${resourceTypeExp.getText} should return a string value!")
     val input = getStringValueOfExpr(inputExpr, s"Invalid function call 'getHashedId', given expression for keyExpr:${inputExpr.getText} should return a string value!")
@@ -48,6 +51,8 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param inputExpr       Expression to return the value of referenced id
    * @return
    */
+  @FhirPathFunction(documentation = "Creates a FHIR Reference object with given resource type and hash of the given id.Resource name should be quoted and id should be string. Ex: mpp:createFhirReferenceWithHashedId('Encounter', id.toString())",
+    insertText = "mpp:createFhirReferenceWithHashedId(<resourceName>, <id>)",detail = "mpp", label = "mpp:createFhirReferenceWithHashedId")
   def createFhirReferenceWithHashedId(resourceTypeExp:ExpressionContext, inputExpr:ExpressionContext):Seq[FhirPathResult] = {
     val resourceType = getStringValueOfExpr(resourceTypeExp, s"Invalid function call 'createFhirReferenceWithHashedId', given expression for keyExpr:${resourceTypeExp.getText} should return a string value!")
     val input = getStringValuesOfExpr(inputExpr, s"Invalid function call 'createFhirReferenceWithHashedId', given expression for keyExpr:${inputExpr.getText} should return string value(s)!")
@@ -61,6 +66,8 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param keyExpr     This is any expression that will provide the key value e.g. code
    * @return
    */
+  @FhirPathFunction(documentation = "Returns concept from concept map.If there are more than one target column, it returns them as a complex Json object. Ex: mpp:getConcept(%prsConceptMap, code)",
+    insertText = "mpp:getConcept(<%conceptMap>, <keyExpr>)",detail = "mpp", label = "mpp:getConcept")
   def getConcept(conceptMap: ExpressionContext, keyExpr: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conceptMap.getText.substring(1) // skip the leading % character
     val conceptMapContext = getConceptMap(mapName)
@@ -108,6 +115,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param columnName This should be the FHIR Path string literal providing the name of the column
    * @return
    */
+  @FhirPathFunction(documentation = "Returns concept from concept map. Ex: mpp:getConcept(%prsConceptMap, %ind, 'target_code')",insertText = "mpp:getConcept(<%conceptMap>, <keyExpr>, <columnName>)",detail = "mpp", label = "mpp:getConcept")
   def getConcept(conceptMap: ExpressionContext, keyExpr: ExpressionContext, columnName: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conceptMap.getText.substring(1) // skip the leading % character
     val conceptMapContext = getConceptMap(mapName)
@@ -151,6 +159,8 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param unitExpr               FHIR Path expression returning the unit in the source
    * @return
    */
+  @FhirPathFunction(documentation = "Converts the given value in given unit to the target unit specified in the context file with specified conversion function, return FHIR Path Quantity.\nEx: mpp:convertAndReturnQuantity(%conversionFunctions, %ind, %ind, %ind)",
+    insertText = "mpp:convertAndReturnQuantity(<%conversionFunctions>, <keyExpr>, <valueExpr>, <unitExpr>)",detail = "mpp", label = "mpp:convertAndReturnQuantity")
   def convertAndReturnQuantity(conversionFunctionsMap: ExpressionContext, keyExpr: ExpressionContext, valueExpr: ExpressionContext, unitExpr: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conversionFunctionsMap.getText.substring(1) // skip the leading % character
     val unitConversionContext = try {
