@@ -18,7 +18,7 @@ class FhirPathFunctionsEndpoint extends LazyLogging {
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_FHIR_PATH_FUNCTIONS) {
       pathEndOrSingleSlash {
-        getFhirPathFunctionsDocumentation()
+        getFhirPathFunctionsDocumentation
       }
     }
   }
@@ -26,10 +26,10 @@ class FhirPathFunctionsEndpoint extends LazyLogging {
   /**
    * Returns the documentations of FhirPath functions.
    * */
-  private def getFhirPathFunctionsDocumentation(): Route = {
+  private def getFhirPathFunctionsDocumentation: Route = {
     get {
       complete {
-        service.getFhirPathFunctionsDocumentation()
+        service.getFhirPathFunctionsDocumentation
       }
     }
   }
