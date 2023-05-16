@@ -141,7 +141,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
             .concepts
             .get(conceptCode)
             .flatMap(codeEntry =>
-              codeEntry.get(targetField)
+              codeEntry.get(targetField).filter(_ != "")
             )
             .map(mappedValue =>  FhirPathString(mappedValue))
             .toSeq
