@@ -37,9 +37,10 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
   val fhirMappingJobManager =
     new FhirMappingJobManager(
-      toFhirEngine.mappingRepository,
+      toFhirEngine.mappingRepo,
       toFhirEngine.contextLoader,
       toFhirEngine.schemaLoader,
+      toFhirEngine.functionLibraries,
       toFhirEngine.sparkSession,
       ErrorHandlingType.CONTINUE
     )
