@@ -19,9 +19,10 @@ class Run extends Command {
         val mappingJob = context.fhirMappingJob.get
         val fhirMappingJobManager =
           new FhirMappingJobManager(
-            context.toFhirEngine.mappingRepository,
+            context.toFhirEngine.mappingRepo,
             context.toFhirEngine.contextLoader,
             context.toFhirEngine.schemaLoader,
+            context.toFhirEngine.functionLibraries,
             context.toFhirEngine.sparkSession,
             mappingJob.mappingErrorHandling
           )

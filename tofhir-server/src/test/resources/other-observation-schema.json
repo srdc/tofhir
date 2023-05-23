@@ -1,12 +1,11 @@
 {
-  "id": "Ext-plt1-patient",
-  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-patient",
-  "type": "Ext-plt1-patient",
-  "name": "Ext-plt1-patient",
-  "abstract": false,
+  "id": "Ext-plt1-other-observation",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-other-observation",
+  "type": "Ext-plt1-other-observation",
+  "name": "Ext-plt1-other-observation",
   "rootDefinition": {
-    "id": "Ext-plt1-patient",
-    "path": "Ext-plt1-patient",
+    "id": "Ext-plt1-other-observation",
+    "path": "Ext-plt1-other-observation",
     "dataTypes": [
       {
         "dataType": "Element"
@@ -20,7 +19,7 @@
   "fieldDefinitions": [
     {
       "id": "pid",
-      "path": "Ext-plt1-patient.pid",
+      "path": "Ext-plt1-other-observation.pid",
       "dataTypes": [
         {
           "dataType": "id",
@@ -38,8 +37,46 @@
       "definition": "Unique patient identifier  (a pseudoynm)"
     },
     {
-      "id": "gender",
-      "path": "Ext-plt1-patient.gender",
+      "id": "time",
+      "path": "Ext-plt1-other-observation.time",
+      "dataTypes": [
+        {
+          "dataType": "dateTime",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/dateTime"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 1,
+      "maxCardinality": 1,
+      "short": "Observation time",
+      "definition": "Time that this measurement is done"
+    },
+    {
+      "id": "encounterId",
+      "path": "Ext-plt1-other-observation.encounterId",
+      "dataTypes": [
+        {
+          "dataType": "id",
+          "profiles": [
+            "http://hl7.org/fhir/StructureDefinition/id"
+          ]
+        }
+      ],
+      "isPrimitive": true,
+      "isChoiceRoot": false,
+      "isArray": false,
+      "minCardinality": 0,
+      "maxCardinality": 1,
+      "short": "Encounter",
+      "definition": "Reference to the encounter that this observation is performed"
+    },
+    {
+      "id": "code",
+      "path": "Ext-plt1-other-observation.code",
       "dataTypes": [
         {
           "dataType": "code",
@@ -53,50 +90,12 @@
       "isArray": false,
       "minCardinality": 1,
       "maxCardinality": 1,
-      "short": "Gender of patient",
-      "definition": "Gender of patient"
+      "short": "Observation code",
+      "definition": "Code for the type of the measurement"
     },
     {
-      "id": "birthDate",
-      "path": "Ext-plt1-patient.birthDate",
-      "dataTypes": [
-        {
-          "dataType": "date",
-          "profiles": [
-            "http://hl7.org/fhir/StructureDefinition/date"
-          ]
-        }
-      ],
-      "isPrimitive": true,
-      "isChoiceRoot": false,
-      "isArray": false,
-      "minCardinality": 1,
-      "maxCardinality": 1,
-      "short": "Birth date",
-      "definition": "The birth year of patient"
-    },
-    {
-      "id": "deceasedDateTime",
-      "path": "Ext-plt1-patient.deceasedDateTime",
-      "dataTypes": [
-        {
-          "dataType": "date",
-          "profiles": [
-            "http://hl7.org/fhir/StructureDefinition/date"
-          ]
-        }
-      ],
-      "isPrimitive": true,
-      "isChoiceRoot": false,
-      "isArray": false,
-      "minCardinality": 0,
-      "maxCardinality": 1,
-      "short": "Deceseased date",
-      "definition": "If patient is deceased, its date"
-    },
-    {
-      "id": "homePostalCode",
-      "path": "Ext-plt1-patient.homePostalCode",
+      "id": "value",
+      "path": "Ext-plt1-other-observation.value",
       "dataTypes": [
         {
           "dataType": "string",
@@ -108,10 +107,10 @@
       "isPrimitive": true,
       "isChoiceRoot": false,
       "isArray": false,
-      "minCardinality": 0,
+      "minCardinality": 1,
       "maxCardinality": 1,
-      "short": "Home postal code",
-      "definition": "Postal code for patient home address"
+      "short": "Value of the measurement.",
+      "definition": "Value of the measurement(s). If there are multiple measurements list of them seperated by '-'"
     }
   ]
 }

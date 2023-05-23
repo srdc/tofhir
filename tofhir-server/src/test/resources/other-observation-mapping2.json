@@ -1,0 +1,63 @@
+{
+  "id": "other-observation-mapping2",
+  "url": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping2",
+  "name": "other-observation-mapping2",
+  "title": "Mapping of schema Other Observation to AIC-IntraOperativeObservation, AIC-MedicationAdministration, AIC-NEWSScore, AIC-PEWSScore and AIC-GlascowScale FHIR profiles",
+  "source": [{
+    "alias": "source",
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-other-observation"
+  }],
+  "context": {
+    "obsConceptMap":  {
+      "category": "concept-map",
+      "url": "$CONTEXT_REPO/deadbeef-dead-dead-dead-deaddeafbeef/other-observation-concept-map.csv"
+    }
+  },
+  "variable": [
+    {
+      "name": "hashedObsId",
+      "language": "text/fhirpath",
+      "expression": "mpp:getHashedId('Observation', pid & code & time.toString())"
+    },
+    {
+      "name": "obsUnit",
+      "language": "text/fhirpath",
+      "expression": "mpp:getConcept(%obsConceptMap, code, 'unit')"
+    }
+  ],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{%hashedObsId}}",
+          "meta": {
+            "profile": ["{{mpp:getConcept(%obsConceptMap, code, 'profile')}}"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "status": "test",
+          "code": {
+            "coding": [
+              {
+                "system": "{{mpp:getConcept(%obsConceptMap, code, 'source_system')}}",
+                "code": "{{code}}",
+                "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
+              }
+            ]
+          },
+          "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
+          "effectiveDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
+          "valueQuantity": {
+            "value": "{{value.toDecimal()}}",
+            "unit": "{{%obsUnit}}",
+            "system": "http://unitsofmeasure.org",
+            "code": "{{%obsUnit}}"
+          }
+        }
+      }
+    }
+  ]
+}

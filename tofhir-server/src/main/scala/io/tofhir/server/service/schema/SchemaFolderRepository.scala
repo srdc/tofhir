@@ -1,30 +1,36 @@
 package io.tofhir.server.service.schema
 
 import io.onfhir.api
+import io.onfhir.api.Resource
 import io.onfhir.api.util.IOUtil
 import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
 import io.onfhir.util.JsonFormatter._
+import io.tofhir.common.model.SchemaDefinition
+import io.tofhir.common.util.SchemaUtil
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.mapping.{AbstractFhirSchemaLoader, SchemaConverter}
 import io.tofhir.engine.model.FhirMappingException
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFound}
 import io.tofhir.server.service.SimpleStructureDefinitionService
 import io.tofhir.server.service.project.ProjectFolderRepository
+import org.apache.spark.sql.types.StructType
+import org.json4s.{Extraction, JBool, JObject}
+
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
-import io.onfhir.api.Resource
-import io.tofhir.common.model.SchemaDefinition
-import io.tofhir.common.util.SchemaUtil
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
+import scala.util.Try
 
 /**
  * Folder/Directory based schema repository implementation.
  *
  * @param schemaRepositoryFolderPath
+ * @param projectFolderRepository
  */
 class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends AbstractSchemaRepository {
 
@@ -33,7 +39,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
   private val baseFhirConfig: BaseFhirConfig = fhirConfigurator.initializePlatform(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
-  // Schema definition cache
+  // Schema definition cache: project id -> schema id -> schema definition
   private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
 
   /**
@@ -286,6 +292,22 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    */
   private def schemaComparisonFunc(s1: SchemaDefinition, s2: SchemaDefinition): Boolean = {
     s1.name.compareTo(s2.name) < 0
+  }
+
+  /**
+   * Read the schema given with the url and convert it to the Spark schema
+   *
+   * @param schemaUrl URL of the schema
+   * @return
+   */
+  override def getSchema(schemaUrl: String): Option[StructType] = {
+    schemaDefinitions.values
+      .flatMap(_.values) // Flatten all the schemas managed for all projects
+      .find(_.url.contentEquals(schemaUrl)) // Find the desired url
+      .map(s => {
+        val decomposedSchema: Resource = SchemaUtil.convertToStructureDefinitionResource(s) // Schema definition in the FHIR Resource representation
+        new SchemaConverter(fhirVersion).convertSchema(decomposedSchema)
+      })
   }
 }
 

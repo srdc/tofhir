@@ -4,12 +4,14 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
-import io.tofhir.engine.model.{FhirMapping, FhirMappingJob, FhirMappingJobExecution, FhirMappingResult}
+import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.config.SparkConfig
 import io.tofhir.server.model.{ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
+import io.tofhir.server.service.mapping.IMappingRepository
+import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -24,19 +26,21 @@ import scala.concurrent.Future
 /**
  * Service to handle all execution related operations
  * E.g. Run a mapping job, run a mapping task, run a test resource creation, get execution logs
+ *
  * @param jobRepository
+ * @param mappingRepository
+ * @param schemaRepository
  */
-class ExecutionService(jobRepository: IJobRepository) extends LazyLogging {
+class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
 
-  val toFhirEngine = new ToFhirEngine(ToFhirConfig.sparkAppName, ToFhirConfig.sparkMaster,
-    ToFhirConfig.engineConfig.mappingRepositoryFolderPath,
-    ToFhirConfig.engineConfig.schemaRepositoryFolderPath)
+  val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository))
 
   val fhirMappingJobManager =
     new FhirMappingJobManager(
-      toFhirEngine.mappingRepository,
+      toFhirEngine.mappingRepo,
       toFhirEngine.contextLoader,
       toFhirEngine.schemaLoader,
+      toFhirEngine.functionLibraries,
       toFhirEngine.sparkSession,
       ErrorHandlingType.CONTINUE
     )
@@ -49,42 +53,42 @@ class ExecutionService(jobRepository: IJobRepository) extends LazyLogging {
    * @param mappingUrls the mapping tasks to be executed
    * @return
    */
-  def runJob(projectId: String, jobId: String, mappingUrls: Option[Seq[String]] = None): Future[Future[Unit]] = {
-    Future {
-      if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
-        throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
+  def runJob(projectId: String, jobId: String, mappingUrls: Option[Seq[String]] = None): Future[Unit] = {
+    if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
+      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
+    }
+
+    val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
+
+    // get the list of mapping task to be executed
+    val mappingTasks = mappingUrls match {
+      case Some(urls) => mappingJob.mappings.filter(m => urls.contains(m.mappingRef))
+      case None => mappingJob.mappings
+    }
+    // create execution
+    val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks)
+    if (mappingJob.sourceSettings.exists(_._2.asStream)) {
+      Future { // TODO we lose the ability to stop the streaming job
+        val streamingQuery =
+          fhirMappingJobManager
+            .startMappingJobStream(
+              mappingJobExecution,
+              sourceSettings = mappingJob.sourceSettings,
+              sinkSettings = mappingJob.sinkSettings,
+              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+              identityServiceSettings = mappingJob.getIdentityServiceSettings()
+            )
+        streamingQuery.awaitTermination()
       }
-      val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
-      // get the list of mapping task to be executed
-      val mappingTasks = mappingUrls match {
-        case Some(urls) => mappingJob.mappings.filter(m => urls.contains(m.mappingRef))
-        case None => mappingJob.mappings
-      }
-      // create execution
-      val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks)
-      if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-        Future { // TODO we lose the ability to stop the streaming job
-          val streamingQuery =
-            fhirMappingJobManager
-              .startMappingJobStream(
-                mappingJobExecution,
-                sourceSettings = mappingJob.sourceSettings,
-                sinkSettings = mappingJob.sinkSettings,
-                terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-                identityServiceSettings = mappingJob.getIdentityServiceSettings()
-              )
-          streamingQuery.awaitTermination()
-        }
-      } else {
-        fhirMappingJobManager
-          .executeMappingJob(
-            mappingJobExecution = mappingJobExecution,
-            sourceSettings = mappingJob.sourceSettings,
-            sinkSettings = mappingJob.sinkSettings,
-            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-            identityServiceSettings = mappingJob.getIdentityServiceSettings()
-          )
-      }
+    } else {
+      fhirMappingJobManager
+        .executeMappingJob(
+          mappingJobExecution = mappingJobExecution,
+          sourceSettings = mappingJob.sourceSettings,
+          sinkSettings = mappingJob.sinkSettings,
+          terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+          identityServiceSettings = mappingJob.getIdentityServiceSettings()
+        )
     }
   }
 
@@ -97,26 +101,33 @@ class ExecutionService(jobRepository: IJobRepository) extends LazyLogging {
    * @param testResourceCreationRequest test resource creation request to be executed
    * @return
    */
-  def testMappingWithJob(projectId: String, jobId: String, testResourceCreationRequest: TestResourceCreationRequest): Future[Future[Seq[FhirMappingResult]]] = {
-    Future {
-      if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
-        throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository.")
-      }
-      val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
-      // get the path of mapping file which will be used to normalize mapping context urls
-      val pathToMappingFile: File = FileUtils.getPath(ToFhirConfig.engineConfig.mappingRepositoryFolderPath, projectId, s"${testResourceCreationRequest.fhirMappingTask.mapping.get.id}${FileExtensions.JSON}").toFile
-      // normalize the mapping context urls
-      val mappingWithNormalizedContextUrls: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq((testResourceCreationRequest.fhirMappingTask.mapping.get, pathToMappingFile))).head
-
-      val (fhirMapping, dataSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(testResourceCreationRequest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls)), mappingJob.sourceSettings)
-      val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
-      fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, dataSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings())
-        .map { dataFrame =>
-          dataFrame
-            .collect() // Collect into an Array[String]
-            .toSeq // Convert to Seq[Resource]
-        }
+  def testMappingWithJob(projectId: String, jobId: String, testResourceCreationRequest: TestResourceCreationRequest): Future[Seq[FhirMappingResult]] = {
+    if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
+      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository.")
     }
+    val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
+
+    // If an unmanaged mapping is provided within the mapping task, normalize the context urls
+    val mappingTask: FhirMappingTask =
+      testResourceCreationRequest.fhirMappingTask.mapping match {
+        case None => testResourceCreationRequest.fhirMappingTask
+        case _ =>
+          // get the path of mapping file which will be used to normalize mapping context urls
+          val pathToMappingFile: File = FileUtils.getPath(ToFhirConfig.engineConfig.mappingRepositoryFolderPath, projectId, s"${testResourceCreationRequest.fhirMappingTask.mapping.get.id}${FileExtensions.JSON}").toFile
+          // normalize the mapping context urls
+          val mappingWithNormalizedContextUrls: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq((testResourceCreationRequest.fhirMappingTask.mapping.get, pathToMappingFile))).head
+          // Copy the mapping with the normalized urls
+          testResourceCreationRequest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls))
+      }
+
+    val (fhirMapping, dataSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings)
+    val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
+    fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, dataSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings())
+      .map { dataFrame =>
+        dataFrame
+          .collect() // Collect into an Array[String]
+          .toSeq // Convert to Seq[Resource]
+      }
   }
 
   /**

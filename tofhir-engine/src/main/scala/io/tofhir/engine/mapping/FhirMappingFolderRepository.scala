@@ -20,14 +20,14 @@ import scala.io.Source
 class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingCachedRepository {
   private val logger: Logger = Logger(this.getClass)
 
-  private var fhirMappings: Map[String, FhirMapping] = loadMappings()
+  private var fhirMappings: Map[String, FhirMapping] = loadMappings(folderUri)
 
   /**
    * Return the FhirMapping files among the JSON files in the folder repository by testing with JSON parsing against #FhirMapping.
    *
    * @return a sequence of tuples (FhirMapping, File) where the File is pointing to the FhirMapping.
    */
-  private def readFhirMappingsFromFolder: Seq[(FhirMapping, File)] = {
+  private def readFhirMappingsFromFolder(folderUri: URI): Seq[(FhirMapping, File)] = {
     val folder = new File(folderUri)
     var files = Seq.empty[File]
     try {
@@ -58,9 +58,9 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingCachedRepo
    *
    * @return
    */
-  private def loadMappings(): Map[String, FhirMapping] = {
+  protected def loadMappings(folderUri: URI): Map[String, FhirMapping] = {
     //logger.debug("Loading all mappings from folder:{}", folderUri)
-    val mappings = MappingContextLoader.normalizeContextURLs(readFhirMappingsFromFolder)
+    val mappings = MappingContextLoader.normalizeContextURLs(readFhirMappingsFromFolder(folderUri))
       .foldLeft(Map[String, FhirMapping]()) { (map, fhirMapping) =>
         if (map.contains(fhirMapping.url)) {
           val msg = s"Multiple mapping definitions with the same URL: ${fhirMapping.url}. URLs must be unique."
@@ -78,7 +78,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingCachedRepo
    * Invalidate the internal cache and refresh the cache with the FhirMappings directly from their source
    */
   override def invalidate(): Unit = {
-    this.fhirMappings = loadMappings()
+    this.fhirMappings = loadMappings(folderUri)
   }
 
   /**

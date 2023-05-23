@@ -28,7 +28,7 @@ object CommandLineInterface {
           val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(mappingJobFilePath.get)
           cli.CommandExecutionContext(toFhirEngine = toFhirEngine,
             fhirMappingJob = Some(mappingJob),
-            mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJob.mappings, toFhirEngine.mappingRepository))
+            mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJob.mappings, toFhirEngine.mappingRepo))
         } catch {
           case _: FileNotFoundException =>
             println(s"The file cannot be found at the specified path found in the config:${mappingJobFilePath.get}")
@@ -100,9 +100,10 @@ object CommandLineInterface {
     if (mappingJob.schedulingSettings.isEmpty) {
       val fhirMappingJobManager =
         new FhirMappingJobManager(
-          toFhirEngine.mappingRepository,
+          toFhirEngine.mappingRepo,
           toFhirEngine.contextLoader,
           toFhirEngine.schemaLoader,
+          toFhirEngine.functionLibraries,
           toFhirEngine.sparkSession,
           mappingJob.mappingErrorHandling
         )
@@ -139,7 +140,14 @@ object CommandLineInterface {
       val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDbURI)
 
       val fhirMappingJobManager =
-        new FhirMappingJobManager(toFhirEngine.mappingRepository, toFhirEngine.contextLoader, toFhirEngine.schemaLoader, toFhirEngine.sparkSession, mappingJob.mappingErrorHandling, Some(mappingJobScheduler))
+        new FhirMappingJobManager(toFhirEngine.mappingRepo,
+          toFhirEngine.contextLoader,
+          toFhirEngine.schemaLoader,
+          toFhirEngine.functionLibraries,
+          toFhirEngine.sparkSession,
+          mappingJob.mappingErrorHandling,
+          Some(mappingJobScheduler)
+        )
       fhirMappingJobManager
         .scheduleMappingJob(
           mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings),

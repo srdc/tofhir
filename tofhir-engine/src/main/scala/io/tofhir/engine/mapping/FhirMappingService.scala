@@ -2,7 +2,7 @@ package io.tofhir.engine.mapping
 
 import io.onfhir.api.Resource
 import io.onfhir.expression.{FhirExpression, FhirExpressionException}
-import io.onfhir.path.{FhirPathEvaluator, FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory}
+import io.onfhir.path.{FhirPathEvaluator, FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory, IFhirPathFunctionLibraryFactory}
 import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.model.{ConfigurationContext, FhirInteraction, FhirMappingContext, FhirMappingException, FhirMappingExpression, IdentityServiceSettings, TerminologyServiceSettings}
@@ -15,11 +15,15 @@ import scala.concurrent.Future
 /**
  * Mapping service for a specific FhirMapping together with contextual data and mapping scripts
  *
- * @param sources                     List of source aliases
- * @param context                     Context data for mappings
- * @param mappings                    Mapping scripts
- * @param terminologyServiceSettings  Settings for terminology service to use within mappings (e.g. lookupDisplay)
- * @param identityServiceSettings     Settings for identity service to use within mappings (e.g. resolveIdentifier)
+ * @param jobId                      Identifier of the job referring to the mapping
+ * @param mappingUrl                 Url of the mapping being executed
+ * @param sources                    List of source aliases
+ * @param context                    Context data for mappings
+ * @param mappings                   Mapping scripts
+ * @param variables                  Variables defined in the mapping
+ * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
+ * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
+ * @param functionLibraries          External function libraries containing functions to use in FHIRPath expressions
  */
 class FhirMappingService(
                           val jobId:String,
@@ -29,7 +33,8 @@ class FhirMappingService(
                           mappings: Seq[FhirMappingExpression],
                           variables:Seq[FhirExpression],
                           terminologyServiceSettings: Option[TerminologyServiceSettings],
-                          identityServiceSettings: Option[IdentityServiceSettings]
+                          identityServiceSettings: Option[IdentityServiceSettings],
+                          functionLibraries: Map[String, IFhirPathFunctionLibraryFactory]
                         ) extends IFhirMappingService {
 
   lazy val terminologyService = terminologyServiceSettings.map(setting => IntegratedServiceFactory.createTerminologyService(setting))
@@ -41,11 +46,8 @@ class FhirMappingService(
   lazy val templateEngine =
     new FhirTemplateExpressionHandler(
       context.filter(_._2.isInstanceOf[ConfigurationContext]).map(c => c._1 -> c._2.toContextObject), // Provide the static contexts
-      Map(
-        "mpp" -> new FhirMappingFunctionsFactory(context.filterNot(_._2.isInstanceOf[ConfigurationContext])),
-        FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory,
-        FhirPathNavFunctionsFactory.defaultPrefix -> FhirPathNavFunctionsFactory
-      ), //Add our mapping function library,
+      functionLibraries + // Default libraries
+        ("mpp" -> new FhirMappingFunctionsFactory(context.filterNot(_._2.isInstanceOf[ConfigurationContext]))), //Add our mapping function library,
       terminologyService,
       identityService,
       isSourceContentFhir = false
