@@ -8,9 +8,9 @@ import io.tofhir.engine.config.ToFhirConfig
  * Entrypoint of toFHIR
  */
 object Boot extends App {
-  init()
+  init(args)
 
-  def init(functionLibraryFactories : Map[String, IFhirPathFunctionLibraryFactory] = Map.empty): Unit = {
+  def init(args: Array[String], functionLibraryFactories : Map[String, IFhirPathFunctionLibraryFactory] = Map.empty): Unit = {
     val options = CommandLineInterface.nextArg(Map(), args.toList)
     //Interactive command line interface
     if (options.isEmpty || !options.contains("command") || options("command").asInstanceOf[String] == "cli") {
