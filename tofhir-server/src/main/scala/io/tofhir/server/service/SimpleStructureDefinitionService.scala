@@ -133,7 +133,11 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                 val sliceNames = restrictionsOnSlicesOfField.collect {
                   // consider only the direct slices of field
                   case t if t._2.sliceName.isDefined && t._1.contentEquals(s"$fieldName:${t._2.sliceName.get}") => t._2.sliceName.get
-                }
+                }.distinct // Read the following explanation
+                // Same slice (using the same slice name) can be extended/restricted within the profile definitions tree.
+                // We take only one of these slices at this point, but we send the whole restrictions to createDefinitionWithElements function
+                // in which we partition those restrictions w.r.t the slice name which allows us to take all restrictions on the slice.
+                // This means we process the deepest restrictions on the slice and apply in the order of the profile tree as we handle in generateSimpleDefinition function.
                 val definitionsOfSlices: Seq[SimpleStructureDefinition] = sliceNames.map { sliceFieldName =>
                   createDefinitionWithElements(fieldName, sliceFieldName, parentPath, createdElementDefinition.getProfileUrlForDataType, restrictionsOnSlicesOfField, restrictionsOnChildren, accumulatingTypeUrls)
                 }
