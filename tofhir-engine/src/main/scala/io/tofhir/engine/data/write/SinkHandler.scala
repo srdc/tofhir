@@ -1,7 +1,7 @@
 package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.model.{FhirMappingErrorCodes, FhirMappingJobExecution, FhirMappingJobResult, FhirMappingResult}
+import io.tofhir.engine.model.{FhirMappingErrorCodes, FhirMappingException, FhirMappingInvalidResourceException, FhirMappingJobExecution, FhirMappingJobResult, FhirMappingResult}
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
@@ -33,7 +33,20 @@ object SinkHandler {
       val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
       fhirWriteProblemsAccum.reset()
       //Write the FHIR resources
-      resourceWriter.write(spark, mappedResults, fhirWriteProblemsAccum)
+      try {
+        resourceWriter.write(spark, mappedResults, fhirWriteProblemsAccum)
+      } catch {
+        case t:Throwable => {
+          // handle the exception caused by invalid mapping results
+          t.getCause match {
+            case e:FhirMappingInvalidResourceException =>
+              // log the mapping job results including the number of invalid resources provided by FhirMappingInvalidResourceException
+              val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfFhirResources, e.getNumOfInvalidResources)
+              logger.info(jobResult.toLogstashMarker, jobResult.toString)
+          }
+          throw t
+        }
+      }
       //Get the not written resources
       val notWrittenResources = fhirWriteProblemsAccum.value
       val numOfNotWritten = notWrittenResources.size()
@@ -55,10 +68,17 @@ object SinkHandler {
       //Unpersist the data frame
       df.unpersist()
     } catch {
-      case t: Throwable =>
-        val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl)
-        logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
+      case t:Throwable => {
+        t.getCause match {
+          // FhirMappingInvalidResourceException is already handled above
+          case e:FhirMappingInvalidResourceException => None
+          // log the mapping job result and exception for the rest
+          case _ =>
+            val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl)
+            logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
+        }
         throw t
+      }
     }
   }
 
