@@ -185,6 +185,9 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @param problemsAccumulator Spark accumulator for errors
    * @param onFhirClient        Client for FHIR API
    * @param retry               The number of retry for persistence
+   *
+   * @throws FhirMappingInvalidResourceException when there are some invalid mapping results
+   *                                             i.e. they are not valid FHIR resources or do not conform to the indicated profiles
    */
   private def checkResults(mappingResultMap: Map[String, FhirMappingResult],
                            responseBundle: FHIRTransactionBatchBundle,
@@ -219,7 +222,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
 
         logger.error(msg)
         if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
-          throw FhirMappingException(msg)
+          throw FhirMappingInvalidResourceException(msg, problemsAccumulator.value.size())
         }
     } else if(transientErrors.nonEmpty) {
       //Otherwise (having 409 Conflicts), retry the failed ones
