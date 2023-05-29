@@ -44,14 +44,23 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
   }
 
   /**
-   * Read the CSV file from the given filePath and return a Sequence where each element is a Map[column_name -> value)
+   * Read the CSV file from the given filePath and return a Sequence where each element is a Map[column_name -> value).
+   * It handles {@link FhirMappingContextUrlPlaceHolder.CONTEXT_REPO} placeholder in the given filePath by replacing it
+   * with the mapping context repository folder path.
    *
    * @param filePath
    * @return
    */
   private def readFromCSV(filePath: String): Future[(Seq[String],Seq[Map[String, String]])] = {
+    val path =
+    // replace $CONTEXT_REPO placeholder
+    if (filePath.contains(FhirMappingContextUrlPlaceHolder.CONTEXT_REPO))
+      filePath.replace(FhirMappingContextUrlPlaceHolder.CONTEXT_REPO,
+        ToFhirConfig.engineConfig.mappingContextRepositoryFolderPath)
+     else
+      filePath
     Future {
-      CsvUtil.readFromCSVAndReturnWithColumnNames(filePath)
+      CsvUtil.readFromCSVAndReturnWithColumnNames(path)
     }
   }
 
