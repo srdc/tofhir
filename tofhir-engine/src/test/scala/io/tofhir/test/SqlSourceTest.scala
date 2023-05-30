@@ -108,7 +108,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   "Patient mapping" should "should read data from SQL source and map it" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask)) , sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -142,7 +142,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   "Other observations mapping" should "should read data from SQL source and map it" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(otherObsMappingTask)), sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -184,7 +184,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(careSiteMappingTask)) , sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -219,7 +219,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(locationMappingTask)) , sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -252,7 +252,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(procedureOccurrenceMappingTask)) , sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource

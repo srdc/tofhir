@@ -119,7 +119,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask)) , sourceSettings = dataSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -192,7 +192,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(otherObservationMappingTask)) , sourceSettings = dataSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -279,7 +279,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(jobId = "test-task-with-terminology-service",mappingTasks = Seq(mappingTask)), dataSourceSettings, Some(terminologyServiceSettings)) flatMap { result =>
       val resources = result.map(mappingResult => {
-        mappingResult.mappedResource shouldBe defined
+        mappingResult.mappedResource should not be None
         val resource = mappingResult.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -315,7 +315,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTaskWithPreprocess)), sourceSettings = dataSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
