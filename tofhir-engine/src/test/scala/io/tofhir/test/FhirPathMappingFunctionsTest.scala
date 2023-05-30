@@ -4,14 +4,19 @@ import io.onfhir.path.FhirPathEvaluator
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.mapping.{FhirMappingFunctionsFactory, MappingContextLoader}
 import io.tofhir.engine.model.{FhirMapping, FhirMappingContextDefinition}
-import org.json4s.{JNull, JObject}
+import org.json4s.{JArray, JNull, JObject, JString}
 import org.scalatest.flatspec.AsyncFlatSpec
+import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
+import io.onfhir.util.JsonFormatter._
 
 import scala.concurrent.ExecutionContext
+import scala.io.Source
 
 class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
 
   implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
+  // a simple json on which we can run mpp:nonEmptyLoopedFields function
+  val loopJson = Source.fromInputStream(getClass.getResourceAsStream("/test-data/loop.json")).mkString.parseJson
 
   val labResultMapping: FhirMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
   val conceptMapContextDefinition: FhirMappingContextDefinition = labResultMapping.context("obsConceptMap")
@@ -67,4 +72,9 @@ class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
     hash1 != hash3 shouldBe(true)
   }
 
+  it should "correctly execute nonEmptyLoopedFields" in {
+    val fhirEvaluator = FhirPathEvaluator().withFunctionLibrary("mpp",  new FhirMappingFunctionsFactory(Map.empty))
+    val sct = fhirEvaluator.evaluateAndReturnJson("mpp:nonEmptyLoopedFields('sct_8116006_',1,5)", loopJson).head
+    sct mustEqual JArray(List(JString("sct_8116006_1"), JString("sct_8116006_2")))
+  }
 }
