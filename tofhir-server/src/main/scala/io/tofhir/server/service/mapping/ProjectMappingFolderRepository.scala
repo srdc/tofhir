@@ -2,7 +2,6 @@ package io.tofhir.server.service.mapping
 
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.mapping.{FhirMappingFolderRepository, MappingContextLoader}
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
@@ -24,7 +23,7 @@ import scala.io.Source
  * @param mappingRepositoryFolderPath root folder path to the mapping repository
  * @param projectFolderRepository     project repository to update corresponding projects based on updates on the mappings
  */
-class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends FhirMappingFolderRepository(FileUtils.getPath(mappingRepositoryFolderPath).toUri) with IMappingRepository {
+class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
   // project id -> mapping id -> mapping
   private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
 
