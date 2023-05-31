@@ -1,5 +1,6 @@
 package io.tofhir.engine.mapping
 
+import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path._
 import io.onfhir.path.annotation.FhirPathFunction
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
@@ -57,6 +58,57 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
     val resourceType = getStringValueOfExpr(resourceTypeExp, s"Invalid function call 'createFhirReferenceWithHashedId', given expression for keyExpr:${resourceTypeExp.getText} should return a string value!")
     val input = getStringValuesOfExpr(inputExpr, s"Invalid function call 'createFhirReferenceWithHashedId', given expression for keyExpr:${inputExpr.getText} should return string value(s)!")
     input.map(inp => FhirPathComplex(JObject("reference" -> JString(FhirMappingUtility.getHashedReference(resourceType, inp)))))
+  }
+
+  /**
+   * Creates a sequence of indices between from-to integers and concatenates them and prefix string to generate looped
+   * field names (i.e. prefix+from,...,prefix+to). After that, for each field, it checks whether it has a value or not and returns the list of field names
+   * which have values i.e the non-empty ones.
+   *
+   * @param prefixExpr Prefix string to be used to generate field name
+   * @param fromExpr Starting index
+   * @param toExpr   End index (inclusive)
+   * @return the field names which have values i.e. the non-empty ones
+   */
+  @FhirPathFunction(documentation = "It populates field names by concatenating indices (from..to) to the prefix and" +
+    " returns the ones which have a value. Ex: mpp:nonEmptyLoopedFields('child_',1,5)",
+    insertText = "mpp:nonEmptyLoopedFields(<prefixExpr>, <fromExpr>, <toExpr>)",detail = "mpp", label = "mpp:nonEmptyLoopedFields", kind = "Function",
+    returnType = Seq("String"), inputType = Seq())
+  def nonEmptyLoopedFields(prefixExpr: ExpressionContext, fromExpr: ExpressionContext, toExpr: ExpressionContext): Seq[FhirPathResult] = {
+    val prefix = new FhirPathExpressionEvaluator(context, current).visit(prefixExpr)
+    if (prefix.length != 1 || !prefix.forall(_.isInstanceOf[FhirPathString]))
+      throw new FhirPathException(s"Invalid function call 'nonEmptyLoopedFields', 'prefix' expression should return a string value!")
+
+    val from = new FhirPathExpressionEvaluator(context, current).visit(fromExpr)
+    if (from.length != 1 || !from.forall(_.isInstanceOf[FhirPathNumber]))
+      throw new FhirPathException(s"Invalid function call 'nonEmptyLoopedFields', 'from' expression should return a integer value!")
+
+    val to = new FhirPathExpressionEvaluator(context, current).visit(toExpr)
+    if (to.length != 1 || !to.forall(_.isInstanceOf[FhirPathNumber]))
+      throw new FhirPathException(s"Invalid function call 'nonEmptyLoopedFields', 'to' expression should return a integer value!")
+
+    current
+      .map(_.asInstanceOf[FhirPathComplex])
+      .flatMap(r => {
+        val prefixString = prefix.head.asInstanceOf[FhirPathString].s
+
+        (from.head.asInstanceOf[FhirPathNumber].v.toInt to to.head.asInstanceOf[FhirPathNumber].v.toInt) // create indices
+          .map(i => prefixString + i.toString) // concatenate prefix and index
+          .filter(p => { // filter non-empty fields
+            // all data types except boolean can be extracted as string
+            val stringValue = FHIRUtil.extractValueOption[String](r.json, p)
+
+            if(stringValue.nonEmpty){
+              // handle the empty string
+              stringValue.get.nonEmpty
+            } else {
+              // field can be a boolean, handle it
+              val booleanValue = FHIRUtil.extractValueOption[Boolean](r.json, p)
+              booleanValue.nonEmpty
+            }
+          })
+      })
+      .map(x => FhirPathString(x))
   }
 
   /**
