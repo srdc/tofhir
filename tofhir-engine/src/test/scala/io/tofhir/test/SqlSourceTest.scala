@@ -17,6 +17,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
+import io.onfhir.path.FhirPathUtilFunctionsFactory
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.{BufferedSource, Source}
@@ -66,7 +67,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
     )
 
-  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
+  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling)
 
   val fhirSinkSetting: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", errorHandling = Some(fhirWriteErrorHandling))
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSetting.fhirRepoUrl)
@@ -107,7 +108,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   "Patient mapping" should "should read data from SQL source and map it" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask)) , sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -141,7 +142,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   "Other observations mapping" should "should read data from SQL source and map it" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(otherObsMappingTask)), sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -183,7 +184,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(careSiteMappingTask)) , sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -218,7 +219,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(locationMappingTask)) , sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
@@ -251,7 +252,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(procedureOccurrenceMappingTask)) , sourceSettings = sqlSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource shouldBe defined
+        r.mappedResource should not be None
         val resource = r.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource

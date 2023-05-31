@@ -2,7 +2,7 @@ package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import io.onfhir.util.JsonFormatter.formats
-import io.tofhir.engine.model.FhirMapping
+import io.tofhir.engine.model.{FhirMapping, FhirMappingContextDefinition}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.util.TestUtil
@@ -12,7 +12,8 @@ import org.json4s.jackson.Serialization.writePretty
 
 class MappingEndpointTest extends BaseEndpointTest {
   // first mapping to be created
-  val mapping1: FhirMapping = FhirMapping(id = "mapping1", url = "http://example.com/mapping1", name = "mapping1", source = Seq.empty, context = Map.empty, mapping = Seq.empty)
+  val mapping1: FhirMapping = FhirMapping(id = "mapping1", url = "http://example.com/mapping1", name = "mapping1", source = Seq.empty,
+    context = Map("practitionerConceptMap" -> FhirMappingContextDefinition(category = "concept-map", url = Some("$CONTEXT_REPO/pilot1/practitioner-concept-map.csv"),value = None)), mapping = Seq.empty)
   // second mapping to be created
   val mapping2: FhirMapping = FhirMapping(id = "mapping2", url = "http://example.com/mapping2", name = "mapping2", source = Seq.empty, context = Map.empty, mapping = Seq.empty)
 
@@ -56,6 +57,9 @@ class MappingEndpointTest extends BaseEndpointTest {
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
         mapping.url shouldEqual mapping1.url
         mapping.name shouldEqual mapping1.name
+        // validate that the url of concept map is preserved
+        mapping.context.size shouldEqual 1
+        mapping.context("practitionerConceptMap").url.get shouldEqual "$CONTEXT_REPO/pilot1/practitioner-concept-map.csv"
       }
       // get a mapping with invalid id
       Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123") ~> route ~> check {
