@@ -58,6 +58,7 @@
         <module>tofhir-engine</module>
         <module>tofhir-server</module>
         <module>tofhir-common</module>
+        <module>tofhir-rxnorm</module>
     </modules>
 
     <properties>

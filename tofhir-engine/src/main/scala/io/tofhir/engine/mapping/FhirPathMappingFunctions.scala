@@ -23,8 +23,15 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param inputExpr
    * @return
    */
-  @FhirPathFunction(documentation = "Creates an id using the hash of given string.Resource name should be quoted and id should be string Ex: mpp:getHashedId('Encounter', id.toString())",
-    insertText = "mpp:getHashedId(<resourceName>, <id>)",detail = "mpp", label = "mpp:getHashedId", kind = "Function", returnType = Seq("string"), inputType = Seq())
+  @FhirPathFunction(
+    documentation = "Creates an id using the hash of given string.Resource name should be quoted and id should be string Ex: mpp:getHashedId('Encounter', id.toString())",
+    insertText = "mpp:getHashedId(<resourceName>, <id>)",
+    detail = "mpp",
+    label = "mpp:getHashedId",
+    kind = "Function",
+    returnType = Seq("string"),
+    inputType = Seq()
+  )
   def getHashedId(resourceTypeExp:ExpressionContext, inputExpr:ExpressionContext):Seq[FhirPathResult] = {
     val resourceType = getStringValueOfExpr(resourceTypeExp, s"Invalid function call 'getHashedId', given expression for keyExpr:${resourceTypeExp.getText} should return a string value!")
     val input = getStringValueOfExpr(inputExpr, s"Invalid function call 'getHashedId', given expression for keyExpr:${inputExpr.getText} should return a string value!")
