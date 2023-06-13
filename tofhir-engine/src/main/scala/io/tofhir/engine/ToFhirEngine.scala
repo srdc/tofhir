@@ -1,6 +1,6 @@
 package io.tofhir.engine
 
-import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory, IFhirPathFunctionLibraryFactory}
+import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory, FhirPathAggFunctionsFactory, FhirPathTerminologyServiceFunctionsFactory, FhirPathIdentityServiceFunctionsFactory, IFhirPathFunctionLibraryFactory}
 import io.tofhir.engine.config.{ToFhirConfig, ToFhirEngineConfig}
 import io.tofhir.engine.mapping._
 import io.tofhir.engine.model.EngineInitializationException
@@ -50,7 +50,10 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
   private def initializeFunctionLibraries(): Map[String, IFhirPathFunctionLibraryFactory] = {
     Map(
       FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory,
-      FhirPathNavFunctionsFactory.defaultPrefix -> FhirPathNavFunctionsFactory
+      FhirPathNavFunctionsFactory.defaultPrefix -> FhirPathNavFunctionsFactory,
+      FhirPathAggFunctionsFactory.defaultPrefix -> FhirPathAggFunctionsFactory,
+      FhirPathIdentityServiceFunctionsFactory.defaultPrefix -> FhirPathIdentityServiceFunctionsFactory,
+      FhirPathTerminologyServiceFunctionsFactory.defaultPrefix -> FhirPathTerminologyServiceFunctionsFactory
     ) ++ functionLibraryFactories
   }
 }

@@ -25,6 +25,7 @@ import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.{Collections, Properties, UUID}
 
+import io.onfhir.path.FhirPathUtilFunctionsFactory
 import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -101,7 +102,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
       .getOrElse(false)
 
-  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, ErrorHandlingType.HALT)
+  val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, ErrorHandlingType.HALT)
 
   it should "check the test container working" in {
     val topicName = "testTopic"

@@ -2,7 +2,6 @@ package io.tofhir.server.service.mapping
 
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.mapping.{FhirMappingFolderRepository, MappingContextLoader}
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
@@ -11,8 +10,11 @@ import io.tofhir.server.service.project.ProjectFolderRepository
 import org.json4s.jackson.Serialization.writePretty
 
 import java.io.{File, FileWriter}
+import java.nio.charset.StandardCharsets
+import io.onfhir.api.util.IOUtil
 import scala.collection.mutable
 import scala.concurrent.Future
+import scala.io.Source
 
 /**
  * Folder/Directory based mapping repository implementation. This implementation manages [[FhirMapping]]s per project.
@@ -21,7 +23,7 @@ import scala.concurrent.Future
  * @param mappingRepositoryFolderPath root folder path to the mapping repository
  * @param projectFolderRepository     project repository to update corresponding projects based on updates on the mappings
  */
-class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends FhirMappingFolderRepository(FileUtils.getPath(mappingRepositoryFolderPath).toUri) with IMappingRepository {
+class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
   // project id -> mapping id -> mapping
   private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
 
@@ -65,14 +67,11 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
       fw.write(writePretty(mapping))
       fw.close()
 
-      // Normalize the concept map uris so that they could be resolved during the mapping execution
-      val mappingWithNormalizedConceptMapUris: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq(mapping -> newFile)).head
-
       // Add to the project metadata json file
-      projectFolderRepository.addMapping(projectId, mappingWithNormalizedConceptMapUris)
+      projectFolderRepository.addMapping(projectId, mapping)
       // Add to the in-memory map
-      mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mappingWithNormalizedConceptMapUris)
-      mappingWithNormalizedConceptMapUris
+      mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
+      mapping
     })
   }
 
@@ -110,15 +109,11 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
       val fw = new FileWriter(file)
       fw.write(writePretty(mapping))
       fw.close()
-
-      // Normalize the concept map uris so that they could be resolved during the mapping execution
-      val mappingWithNormalizedConceptMapUris: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq(mapping -> file)).head
-
       // update the mapping in the in-memory map
-      mappingDefinitions(projectId).put(id, mappingWithNormalizedConceptMapUris)
+      mappingDefinitions(projectId).put(id, mapping)
       // update the projects metadata json file
-      projectFolderRepository.updateMapping(projectId, mappingWithNormalizedConceptMapUris)
-      mappingWithNormalizedConceptMapUris
+      projectFolderRepository.updateMapping(projectId, mapping)
+      mapping
     })
   }
 
@@ -185,11 +180,15 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
     var directories = Seq.empty[File]
     directories = folder.listFiles.filter(_.isDirectory).toSeq
     directories.foreach { projectDirectory =>
-      // Load the mappings in the project directory
-      val fhirMappingMap: mutable.Map[String, FhirMapping] = mutable.Map[String, FhirMapping](
-        loadMappings(projectDirectory.toURI) // Load mappings as (url, mapping) pairs
-          .map(entry => entry._2.id -> entry._2).toSeq: _* // Transform mapping entries to (id, mapping) pairs
-      )
+      // mapping-id -> FhirMapping
+      val fhirMappingMap: mutable.Map[String, FhirMapping] = mutable.Map.empty
+      val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
+      files.foreach { file =>
+        val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
+        val fileContent = try source.mkString finally source.close()
+        val fhirMapping = fileContent.parseJson.extract[FhirMapping]
+        fhirMappingMap.put(fhirMapping.id, fhirMapping)
+      }
       map.put(projectDirectory.getName, fhirMappingMap)
     }
     map
