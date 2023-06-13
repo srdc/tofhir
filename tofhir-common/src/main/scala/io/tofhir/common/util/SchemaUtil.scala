@@ -59,16 +59,22 @@ object SchemaUtil {
         case Some(v) => v.toString
         case None => "*"
       }
-      ("id" -> fd.path) ~
-        ("path" -> fd.path) ~
-        ("short" -> fd.short) ~
-        ("definition" -> fd.definition) ~
-        ("min" -> fd.minCardinality) ~
-        ("max" -> max) ~
-        ("type" -> fd.dataTypes.get.map { dt =>
-          ("code" -> dt.dataType) ~
-            ("profile" -> dt.profiles)
-        })
+      // create element json
+      var elementJson =
+        ("id" -> fd.path) ~
+          ("path" -> fd.path) ~
+          ("short" -> fd.short) ~
+          ("min" -> fd.minCardinality) ~
+          ("max" -> max) ~
+          ("type" -> fd.dataTypes.get.map { dt =>
+            ("code" -> dt.dataType) ~
+              ("profile" -> dt.profiles)
+          })
+      // add the field definition if it exists
+      if(fd.definition.nonEmpty){
+        elementJson = elementJson ~ ("definition" -> fd.definition)
+      }
+      elementJson
     }.toList
 
     JArray(rootElement +: elements)
