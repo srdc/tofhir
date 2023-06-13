@@ -2,7 +2,7 @@ package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import io.onfhir.util.JsonFormatter.formats
-import io.tofhir.common.model.SchemaDefinition
+import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.util.TestUtil
@@ -15,6 +15,24 @@ class SchemaEndpointTest extends BaseEndpointTest {
   val schema1: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema", `type` = "ty", name = "name", rootDefinition = None, fieldDefinitions = None)
   // second schema to be created
   val schema2: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", `type` = "ty2", name = "name2", rootDefinition = None, fieldDefinitions = None)
+  // third schema to be created
+  // it includes two elements:
+  //  - element-with-definition => An element having a definition
+  //  - element-with-no-definition => An element having no definition
+  val schema3: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema3", `type` = "ty3", name = "name3", rootDefinition = None, fieldDefinitions = Some(
+    Seq(
+      SimpleStructureDefinition(id = "element-with-definition",
+        path = "ty3.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+        isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
+        boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
+        sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-definition"), definition = Some("element definition"), comment = None, elements = None),
+      SimpleStructureDefinition(id = "element-with-no-definition",
+        path = "ty3.element-with-no-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+        isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
+        boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
+        sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-no-definition"), definition = None, comment = None, elements = None)
+    )
+  ))
 
   "The service" should {
 
@@ -108,6 +126,25 @@ class SchemaEndpointTest extends BaseEndpointTest {
       // delete a schema with invalid id
       Delete(s"/tofhir/projects/${projectId}/schemas/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "create a schema having some elements with/without description" in {
+      // create the third schema
+      Post(s"/tofhir/projects/${projectId}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(schema3))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+      // retrieve the third schema
+      Get(s"/tofhir/projects/${projectId}/schemas?url=${schema3.url}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual schema3.url
+        schema.name shouldEqual schema3.name
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 2
+        fieldDefinitions.head.definition.get shouldEqual "element definition"
+        fieldDefinitions.last.definition.nonEmpty shouldEqual false
       }
     }
 
