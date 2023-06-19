@@ -48,10 +48,17 @@ case class FhirMapping(id: String,
   }
 
   /**
-   * Removes any fields starting with @ from the mapping expression JSON.
+   * Removes fields starting with @ from the mapping expression JSON.
+   * Currently, we only keep slice names in keys that start with @.
+   * E.g. {
+   *         "system": "{{%sourceSystem.sourceUri}}",
+   *         "use": "official",
+   *         "value": "{{pid}}",
+   *         "@sliceName": "official"
+   *      }
    * @return
    */
-  def removeAtFields(): FhirMapping = {
+  def removeSliceNames(): FhirMapping = {
     val atRemovedMappings = this.mapping.map(
       me => {
         val expressionValue = me.expression.value.get.removeField(f => f._1.startsWith("@"))
