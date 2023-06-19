@@ -299,10 +299,12 @@ class FhirMappingJobManager(
                          timeRange: Option[(LocalDateTime, LocalDateTime)] = None): (FhirMapping, DataSourceSettings, DataFrame) = {
     // if the FhirMapping task includes the mapping to be executed (the case where the mapping is being tested), use it,
     // otherwise retrieve it from the repository
-    val fhirMapping = task.mapping match {
+    val mapping = task.mapping match {
       case Some(mapping) => mapping
       case None => fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
     }
+    // remove slice names from the mapping, otherwise FHIR resources will be created with slice names in fields starting with @
+    val fhirMapping = mapping.removeSliceNames()
     val sourceNames = fhirMapping.source.map(_.alias).toSet
     val namesForSuppliedSourceContexts = task.sourceContext.keySet
     if (sourceNames != namesForSuppliedSourceContexts)
