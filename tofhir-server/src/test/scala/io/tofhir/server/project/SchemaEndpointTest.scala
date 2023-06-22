@@ -33,6 +33,24 @@ class SchemaEndpointTest extends BaseEndpointTest {
         sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-no-definition"), definition = None, comment = None, elements = None)
     )
   ))
+  // fourth schema to be created
+  // it includes two elements:
+  //  - element-with-short => An element having a short
+  //  - element-with-no-short => An element having no short
+  val schema4: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema4", `type` = "ty4", name = "name4", rootDefinition = None, fieldDefinitions = Some(
+    Seq(
+      SimpleStructureDefinition(id = "element-with-short",
+        path = "ty4.element-with-short", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+        isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
+        boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
+        sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-short"), definition = None, comment = None, elements = None),
+      SimpleStructureDefinition(id = "element-with-no-short",
+        path = "ty4.element-with-no-short", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+        isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
+        boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
+        sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = None, definition = None, comment = None, elements = None)
+    )
+  ))
 
   "The service" should {
 
@@ -145,6 +163,25 @@ class SchemaEndpointTest extends BaseEndpointTest {
         fieldDefinitions.size shouldEqual 2
         fieldDefinitions.head.definition.get shouldEqual "element definition"
         fieldDefinitions.last.definition.nonEmpty shouldEqual false
+      }
+    }
+
+    "create a schema having some elements with/without short" in {
+      // create the fourth schema
+      Post(s"/tofhir/projects/${projectId}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(schema4))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+      // retrieve the fourth schema
+      Get(s"/tofhir/projects/${projectId}/schemas?url=${schema4.url}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual schema4.url
+        schema.name shouldEqual schema4.name
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 2
+        fieldDefinitions.head.short.get shouldEqual "element-with-short"
+        fieldDefinitions.last.short.nonEmpty shouldEqual false
       }
     }
 

@@ -176,8 +176,8 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository) extends LazyL
           fixedValue = None,
           patternValue = None,
           referringTo = None,
-          short = Some(structField.name),
-          definition = Some(structField.name),
+          short = None,
+          definition = None,
           comment = None,
           elements = None
         )
