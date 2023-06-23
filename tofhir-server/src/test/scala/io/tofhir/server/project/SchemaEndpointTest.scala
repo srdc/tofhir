@@ -1,16 +1,36 @@
 package io.tofhir.server.project
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import io.onfhir.util.JsonFormatter.formats
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.engine.model.{SqlSource, SqlSourceSettings}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.model.InferTask
 import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+
+import java.sql.{Connection, DriverManager, Statement}
+import scala.io.{BufferedSource, Source}
+import scala.util.{Failure, Success, Using}
+import scala.concurrent.duration._
 
 class SchemaEndpointTest extends BaseEndpointTest {
+  // database url for infer schema test
+  val DATABASE_URL = "jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE"
+  // set 5 second timeout for test because infer schema test can take longer than 1 second
+  implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(5.seconds)
+  // inferTask object for infer schema test
+  val inferTask: InferTask = InferTask(sourceSettings = Map(
+    "source" ->
+      SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
+  ), sqlSource = SqlSource(query = Some("select * from death")))
+
+
   // first schema schema to be created
   val schema1: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema", `type` = "ty", name = "name", rootDefinition = None, fieldDefinitions = None)
   // second schema to be created
@@ -185,13 +205,63 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
+    "Infer the schema and retrieve column types" in {
+      // infer the schema
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(inferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate data types of schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 7
+        fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual "integer"
+        fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual "date"
+        fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual "dateTime"
+        fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual "integer"
+        fieldDefinitions(4).dataTypes.get.head.dataType shouldEqual "integer"
+        fieldDefinitions(5).dataTypes.get.head.dataType shouldEqual "string"
+        fieldDefinitions(6).dataTypes.get.head.dataType shouldEqual "integer"
+      }
+    }
   }
 
   /**
-   * Creates a project to be used in the tests
+   * Creates a project to be used in the tests. Create a table for schema inferring.
    * */
   override def beforeAll(): Unit = {
     super.beforeAll()
+    val sql = readFileContent("/sql/sql-source-populate.sql")
+    runSQL(sql)
     this.createProject()
+  }
+
+  /**
+   * Drop tables after schema inferring.
+   * */
+  override def afterAll(): Unit = {
+    val sql = readFileContent("/sql/sql-source-drop.sql")
+    runSQL(sql)
+    super.afterAll()
+  }
+
+  /**
+   * Read sql file from file system
+   * */
+  private def readFileContent(fileName: String): String = {
+    val source: BufferedSource = Source.fromInputStream(getClass.getResourceAsStream(fileName))
+    try source.mkString finally source.close()
+  }
+
+  /**
+   * Run SQL queries for setting up database
+   * */
+  private def runSQL(sql: String): Boolean = {
+    Using.Manager { use =>
+      val con: Connection = use(DriverManager.getConnection(DATABASE_URL))
+      val stm: Statement = use(con.createStatement)
+      stm.execute(sql)
+    } match {
+      case Success(value) => value
+      case Failure(e) => throw e
+    }
   }
 }
