@@ -225,7 +225,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
   }
 
   /**
-   * Creates a project to be used in the tests. Create a table for schema inferring.
+   * Creates a project to be used in the tests. Moreover, it creates a SQL table to be used in the testing of infer schema functionality.
    * */
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -254,11 +254,12 @@ class SchemaEndpointTest extends BaseEndpointTest {
   /**
    * Run SQL queries for setting up database
    * */
-  private def runSQL(sql: String): Boolean = {
+  private def runSQL(sql: String): Unit = {
     Using.Manager { use =>
       val con: Connection = use(DriverManager.getConnection(DATABASE_URL))
       val stm: Statement = use(con.createStatement)
       stm.execute(sql)
+      con.close()
     } match {
       case Success(value) => value
       case Failure(e) => throw e
