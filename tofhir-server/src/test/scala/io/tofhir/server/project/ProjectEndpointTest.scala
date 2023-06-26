@@ -13,9 +13,9 @@ import org.json4s.jackson.Serialization.writePretty
 
 class ProjectEndpointTest extends BaseEndpointTest {
   // first project to be created
-  val project1: Project = Project(name = "example", description = Some("example project"))
+  val project1: Project = Project(name = "example", url = "https://www.example.com", description = Some("example project"))
   // second project to be created
-  val project2: Project = Project(name = "second example", description = Some("second example project"))
+  val project2: Project = Project(name = "second example", url = "https://www.secondexample.com", description = Some("second example project"))
   // patch to be applied to the existing project
   val projectPatch = ProjectEditableFields.DESCRIPTION -> "updated description"
   // schema definition
@@ -59,6 +59,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
         project.id shouldEqual project1.id
         project.name shouldEqual project1.name
+        project.url shouldEqual project1.url
       }
       // get a project with invalid id
       Get(s"/${webServerConfig.baseUri}/projects/123123") ~> route ~> check {

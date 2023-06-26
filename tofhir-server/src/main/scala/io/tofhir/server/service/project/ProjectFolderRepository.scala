@@ -132,6 +132,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.contextPath, id).toFile)
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingRepositoryFolderPath, id).toFile)
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.jobRepositoryFolderPath, id).toFile)
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingContextRepositoryFolderPath, id).toFile)
     }
   }
 

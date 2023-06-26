@@ -12,6 +12,7 @@ import io.tofhir.common.model.SchemaDefinition
  *
  * @param id                 Unique identifier for the project
  * @param name               Project name
+ * @param url                Project url
  * @param description        Description of the project
  * @param schemas            Schemas defined in this project
  * @param mappingContexts    Identifiers of the mapping contexts defined in this project
@@ -19,6 +20,7 @@ import io.tofhir.common.model.SchemaDefinition
  */
 case class Project(id: String = UUID.randomUUID().toString,
                    name: String,
+                   url: String,
                    description: Option[String] = None,
                    schemas: Seq[SchemaDefinition] = Seq.empty,
                    mappings: Seq[FhirMapping] = Seq.empty,
@@ -45,6 +47,7 @@ case class Project(id: String = UUID.randomUUID().toString,
       List(
         "id" -> JString(this.id),
         "name" -> JString(this.name),
+        "url" -> JString(this.url),
         "description" -> JString(this.description.getOrElse("")),
         "schemas" -> JArray(
           List(
