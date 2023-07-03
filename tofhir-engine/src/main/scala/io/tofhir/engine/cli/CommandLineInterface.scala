@@ -185,6 +185,8 @@ object CommandLineInterface {
         nextArg(map ++ Map("data-dictionary" -> value), tail)
       case "--definition-root-url" :: value :: tail =>
         nextArg(map ++ Map("definition-root-url" -> value), tail)
+      case "--encoding" :: value :: tail =>
+        nextArg(map ++ Map("encoding" -> value), tail)
       case str :: tail =>
         nextArg(map ++ Map("command" -> str), tail)
       case unknown :: _ =>
