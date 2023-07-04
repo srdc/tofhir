@@ -9,7 +9,7 @@ class Help extends Command {
       "\trun [<url>|<name>] - Run the task(s). Without a parameter, all task of the loaded Mapping Job are run. A specific task can be indicated with its name or URL.\n" +
       "\thelp - See the available commands and their use.\n" +
       "\tstop - Stop the execution of the MappingJob (if any).\n" +
-      "\textract-redcap-schemas <path> <definition-root-url> - Extracts schemas from the given REDCap data dictionary file. Schemas will be annotated with the given definition root url.\n" +
+      "\textract-redcap-schemas <path> <definition-root-url> <encoding> - Extracts schemas from the given REDCap data dictionary file. Schemas will be annotated with the given definition root url. If the encoding of CSV file is different from UTF-8, you should provide it.\n" +
       "\texit|quit - Exit the program.\n")
     context
   }

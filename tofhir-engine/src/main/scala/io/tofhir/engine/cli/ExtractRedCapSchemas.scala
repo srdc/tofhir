@@ -12,6 +12,12 @@ import org.json4s.jackson.Serialization.writePretty
  * Command to extract schemas from a REDCap data dictionary.
  * */
 class ExtractRedCapSchemas extends Command {
+  /**
+   * @param args The list of arguments.
+   *             The first argument is the path of REDCap data dictionary file.
+   *             The second argument is the definition root url.
+   *             The third argument is the encoding of CSV file (OPTIONAL).
+   */
   override def execute(args: Seq[String], context: CommandExecutionContext): CommandExecutionContext = {
     if (args.isEmpty) {
       println("extract-redcap-schemas command requires the path of RedCap data dictionary to extract from and definition root url.")
@@ -23,7 +29,7 @@ class ExtractRedCapSchemas extends Command {
       val filePath = args.head
       try {
         // read REDCap data dictionary
-        val content: Seq[Map[String, String]] = CsvUtil.readFromCSV(filePath)
+        val content: Seq[Map[String, String]] = CsvUtil.readFromCSV(filePath,args.lift(2).getOrElse("UTF-8"))
         // extract schemas
         val fhirResources: Seq[Resource] = RedCapUtil.extractSchemas(content, args(1))
         // write each schema as a file
