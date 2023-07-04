@@ -18,10 +18,14 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
   /**
    * Read the source data for the given task
    *
-   * @param mappingSource Context/configuration information for mapping source
+   * @param mappingSource   Context/configuration information for mapping source
+   * @param sourceSettings  Common settings for source system
+   * @param schema          Schema for the source data
+   * @param timeRange       Time range for the data to read if given
+   * @param limit           Limit the number of rows to read
    * @return
    */
-  override def read(mappingSource: SqlSource, sourceSettings: SqlSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
+  override def read(mappingSource: SqlSource, sourceSettings: SqlSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int]): DataFrame = {
     if (mappingSource.tableName.isDefined && mappingSource.query.isDefined) {
       throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} should not be specified at the same time.")
     }
@@ -35,13 +39,23 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
 
     // As in spark jdbc read docs, instead of a full table you could also use a sub-query in parentheses.
     val dbTable: String = mappingSource.tableName.getOrElse({
+
+      var query: String = mappingSource.query.get
+
+      // limit the number of rows returned by the query if limit is defined
+      if(limit.isDefined){
+        query = query.replaceFirst("limit (\\d+)", s"limit ${limit.get}") match {
+          case modifiedQuery if modifiedQuery == query => query.appendedAll(s" limit ${limit.get}")
+          case modifiedQuery => modifiedQuery
+        }
+      }
+
       if (timeRange.isDefined) {
         val (fromTs, toTs) = timeRange.get
-        val query = mappingSource.query.get.replace("$fromTs", "'" + fromTs.toString + "'").replace("$toTs", "'" + toTs.toString + "'")
-        s"( $query ) queryGeneratedTable"
-      } else {
-        s"( ${mappingSource.query.get} ) queryGeneratedTable"
+        query = query.replace("$fromTs", "'" + fromTs.toString + "'").replace("$toTs", "'" + toTs.toString + "'")
       }
+
+      s"( $query ) queryGeneratedTable"
     })
 
     spark.read

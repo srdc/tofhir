@@ -20,6 +20,7 @@ object SourceHandler {
    * @param sourceSettings General source settings e.g. See FileSystemSourceSettings
    * @param schema         Schema of the input supplied by the mapping definition
    * @param timeRange      Time range for the data to read if given
+   * @param limit          Limit the number of rows to read
    * @tparam T Type of the source definition class
    * @tparam S Type of the source settings class
    * @return
@@ -30,7 +31,8 @@ object SourceHandler {
                                                                           mappingSource: T,
                                                                           sourceSettings: S,
                                                                           schema: Option[StructType],
-                                                                          timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty
+                                                                          timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty,
+                                                                          limit: Option[Int] = Option.empty
                                                                         ): DataFrame = {
     val reader =
       DataSourceReaderFactory
@@ -38,7 +40,7 @@ object SourceHandler {
 
     val sourceData =
       reader
-        .read(mappingSource, sourceSettings, schema, timeRange)
+        .read(mappingSource, sourceSettings, schema, timeRange, limit)
 
 
     val finalSourceData =

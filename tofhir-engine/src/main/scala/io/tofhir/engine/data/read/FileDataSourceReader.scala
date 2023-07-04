@@ -18,9 +18,10 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    *
    * @param mappingSource Context/configuration information for mapping source
    * @param schema        Optional schema for the source
+   * @param limit         Limit the number of rows to read
    * @return
    */
-  override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)]): DataFrame = {
+  override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty): DataFrame = {
     val finalPath = FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
 
     val isDistinct = mappingSource.options.get("distinct").contains("true")

@@ -137,7 +137,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository) extends LazyL
 
     // Execute SQL and get the dataFrame
     val dataFrame = SourceHandler.readSource("unnamed", SparkConfig.sparkSession,
-      inferTask.sqlSource, inferTask.sourceSettings.head._2, None, None)
+      inferTask.sqlSource, inferTask.sourceSettings.head._2, None, None, Some(1))
 
     // Default name for undefined information
     val defaultName: String = "unnamed"
