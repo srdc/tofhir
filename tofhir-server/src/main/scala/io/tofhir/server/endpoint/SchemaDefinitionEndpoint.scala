@@ -6,11 +6,12 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.SEGMENT_SCHEMAS
+import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_SCHEMAS, SEGMENT_INFER}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.model.{InferTask, ToFhirRestCall}
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.schema.ISchemaRepository
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 
 class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository) extends LazyLogging {
 
@@ -26,10 +27,11 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository) extends Lazy
             case None => getAllSchemas(request) ~ createSchema(projectId) // Operations on all schemas
           }
         }
-      } ~ // Operations on a single schema identified by its id
-        pathPrefix(Segment) { id: String =>
-          getSchema(projectId, id) ~ updateSchema(projectId, id) ~ deleteSchema(projectId, id)
-        }
+      } ~ pathPrefix(SEGMENT_INFER) { // infer a schema
+        inferSchema()
+      } ~ pathPrefix(Segment) { id: String => // Operations on a single schema identified by its id
+        getSchema(projectId, id) ~ updateSchema(projectId, id) ~ deleteSchema(projectId, id)
+      }
     }
   }
 
@@ -94,10 +96,25 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository) extends Lazy
       }
     }
   }
-
+  /**
+   * Route to infer a schema
+   * */
+  private def inferSchema(): Route = {
+    post {
+      entity(as[InferTask]) { inferTask =>
+        complete {
+          service.inferSchema(inferTask) map {
+            case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
+            case None => StatusCodes.BadRequest -> s"Schema cannot be inferred"
+          }
+        }
+      }
+    }
+  }
 }
 
 object SchemaDefinitionEndpoint {
   val SEGMENT_SCHEMAS = "schemas"
+  val SEGMENT_INFER = "infer"
 }
 

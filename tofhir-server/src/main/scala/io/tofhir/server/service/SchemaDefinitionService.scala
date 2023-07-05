@@ -3,11 +3,15 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
 import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
-import io.tofhir.server.model.BadRequest
+import io.tofhir.engine.data.read.SourceHandler
+import io.tofhir.server.config.SparkConfig
+import io.tofhir.server.model.{BadRequest, InferTask}
 import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JArray
 import org.json4s.JsonDSL._
+import io.tofhir.engine.mapping.SchemaConverter
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class SchemaDefinitionService(schemaRepository: ISchemaRepository) extends LazyLogging {
@@ -124,4 +128,35 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository) extends LazyL
     JArray(rootElement +: elements)
   }
 
+  /**
+   * It takes inferTask object, connects to database, and executes the query. Infer a SchemaDefinition object from the result of the query.
+   * @param inferTask The object that contains database connection information and sql query
+   * @return SchemaDefinition object containing the field type information
+   */
+  def inferSchema(inferTask: InferTask): Future[Option[SchemaDefinition]] = {
+
+    // Execute SQL and get the dataFrame
+    val dataFrame = SourceHandler.readSource("unnamed", SparkConfig.sparkSession,
+      inferTask.sqlSource, inferTask.sourceSettings.head._2, None, None, Some(1))
+
+    // Default name for undefined information
+    val defaultName: String = "unnamed"
+
+    // Create unnamed Schema definition by infer the schema from DataFrame
+    val unnamedSchema = {
+
+      // Schema converter object for mapping spark data types to fhir data types
+      val schemaConverter = new SchemaConverter(majorFhirVersion = "R4")
+
+      // Map SQL DataTypes to Fhir DataTypes
+      var fieldDefinitions = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
+
+      // Remove INPUT_VALIDITY_ERROR fieldDefinition that is added by SourceHandler
+      fieldDefinitions = fieldDefinitions.filter(fieldDefiniton => fieldDefiniton.id != SourceHandler.INPUT_VALIDITY_ERROR)
+
+      SchemaDefinition(url = defaultName, `type` = defaultName, name = defaultName, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))
+    }
+
+    Future.apply(Some(unnamedSchema))
+  }
 }

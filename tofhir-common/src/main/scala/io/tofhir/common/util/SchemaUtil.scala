@@ -63,7 +63,6 @@ object SchemaUtil {
       var elementJson =
         ("id" -> fd.path) ~
           ("path" -> fd.path) ~
-          ("short" -> fd.short) ~
           ("min" -> fd.minCardinality) ~
           ("max" -> max) ~
           ("type" -> fd.dataTypes.get.map { dt =>
@@ -73,6 +72,10 @@ object SchemaUtil {
       // add the field definition if it exists
       if(fd.definition.nonEmpty){
         elementJson = elementJson ~ ("definition" -> fd.definition)
+      }
+      // add the field short if it exists
+      if(fd.short.nonEmpty){
+        elementJson = elementJson ~ ("short" -> fd.short)
       }
       elementJson
     }.toList
