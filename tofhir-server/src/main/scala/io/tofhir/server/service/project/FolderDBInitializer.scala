@@ -71,6 +71,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
   private def initProjectFromMetadata(projectMetadata: JObject): Project = {
     val id: String = (projectMetadata \ "id").extract[String]
     val name: String = (projectMetadata \ "name").extract[String]
+    val url: String = (projectMetadata \ "url").extract[String]
     val description: Option[String] = (projectMetadata \ "description").extractOpt[String]
     val mappingContexts: Seq[String] = (projectMetadata \ "mappingContexts").extract[Seq[String]]
     // resolve schemas via the schema repository
@@ -97,7 +98,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     )
     val jobs: Seq[FhirMappingJob] = Await.result[Seq[Option[FhirMappingJob]]](mappingJobFutures, 2 seconds).map(_.get)
 
-    Project(id, name, description, schemas, mappings, mappingContexts, jobs)
+    Project(id, name, url, description, schemas, mappings, mappingContexts, jobs)
   }
 
   /**
@@ -114,7 +115,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     schemas.foreach(projectIdAndSchemas => {
       val projectId: String = projectIdAndSchemas._1
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, None))
+      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, convertToUrl(projectId), None))
       projects.put(projectId, project.copy(schemas = projectIdAndSchemas._2.values.toSeq))
     })
 
@@ -123,7 +124,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     mappings.foreach(projectIdAndMappings => {
       val projectId: String = projectIdAndMappings._1
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, None))
+      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, convertToUrl(projectId), None))
       projects.put(projectId, project.copy(mappings = projectIdAndMappings._2.values.toSeq))
     })
 
@@ -132,7 +133,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     jobs.foreach(projectIdAndMappingsJobs => {
       val projectId: String = projectIdAndMappingsJobs._1
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, None))
+      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, convertToUrl(projectId), None))
       projects.put(projectId, project.copy(mappingJobs = projectIdAndMappingsJobs._2.values.toSeq))
     })
 
@@ -141,10 +142,21 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     mappingContexts.foreach(mappingContexts => {
       val projectId: String = mappingContexts._1
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, None))
+      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, convertToUrl(projectId), None))
       projects.put(projectId, project.copy(mappingContexts = mappingContexts._2))
     })
 
     projects
+  }
+
+  /**
+   * Converts a project id to a url in a specific format.
+   * @param inputString
+   * @return
+   */
+  private def convertToUrl(inputString: String): String = {
+    val transformedString = inputString.replaceAll("\\s", "").toLowerCase
+    val url = s"https://www.$inputString.com"
+    url
   }
 }

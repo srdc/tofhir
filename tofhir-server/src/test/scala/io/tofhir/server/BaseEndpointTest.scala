@@ -37,7 +37,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
    * Creates a test project whose identifier is stored in {@link projectId}.
    * */
   def createProject(id: Option[String] = None): Unit = {
-    val project1: Project = Project(id = id.getOrElse(UUID.randomUUID().toString), name = "example", description = Some("example project"))
+    val project1: Project = Project(id = id.getOrElse(UUID.randomUUID().toString), name = "example", url = "https://www.example.com", description = Some("example project"))
     // create a project
     Post("/tofhir/projects", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
       status shouldEqual StatusCodes.Created
