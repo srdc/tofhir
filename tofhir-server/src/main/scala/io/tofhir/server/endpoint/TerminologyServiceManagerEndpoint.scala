@@ -9,13 +9,14 @@ import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{TerminologySystem, ToFhirRestCall}
-import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
+import io.tofhir.server.service.TerminologySystemService
+import io.tofhir.server.service.terminology.ITerminologySystemRepository
 
 import scala.concurrent.Future
 
-class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
+class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminologySystemRepository, toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
 
-  private val terminologySystemFolderRepository: TerminologySystemFolderRepository = new TerminologySystemFolderRepository(toFhirEngineConfig)
+  private val terminologySystemService: TerminologySystemService = new TerminologySystemService(terminologySystemRepository)
 
   private val conceptMapEndpoint: ConceptMapEndpoint = new ConceptMapEndpoint()
   private val codeSystemEndpoint: CodeSystemEndpoint = new CodeSystemEndpoint()
@@ -30,7 +31,7 @@ class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) 
           pathEndOrSingleSlash {
             getTerminologySystemRoute(terminologySystemId) ~ putTerminologySystemRoute(terminologySystemId) ~ deleteTerminologySystemRoute(terminologySystemId)
           } ~ {
-            val terminologyExists: Future[Option[TerminologySystem]] = terminologySystemFolderRepository.getTerminologySystem(terminologySystemId)
+            val terminologyExists: Future[Option[TerminologySystem]] = terminologySystemService.getTerminologySystem(terminologySystemId)
             onSuccess(terminologyExists) {
               case None => complete {
                 StatusCodes.NotFound -> s"TerminologySystem with id $terminologySystemId not found"
@@ -53,7 +54,7 @@ class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) 
   private def getAllTerminologySystemsRoute: Route = {
     get {
       complete {
-        terminologySystemFolderRepository.getTerminologySystemsMetadata
+        terminologySystemService.getAllMetadata
       }
     }
   }
@@ -67,7 +68,7 @@ class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) 
     post {
       entity(as[TerminologySystem]) { terminologySystem =>
         complete {
-          terminologySystemFolderRepository.createTerminologySystem(terminologySystem) map { createdTerminologySystem =>
+          terminologySystemService.createTerminologySystem(terminologySystem) map { createdTerminologySystem =>
             StatusCodes.Created -> createdTerminologySystem
           }
         }
@@ -84,7 +85,7 @@ class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) 
   private def getTerminologySystemRoute(terminologySystemId: String): Route = {
     get {
       complete {
-        terminologySystemFolderRepository.getTerminologySystem(terminologySystemId) map {
+        terminologySystemService.getTerminologySystem(terminologySystemId) map {
           case Some(terminologySystem) => StatusCodes.OK -> terminologySystem
           case None => StatusCodes.NotFound -> s"TerminologySystem with id $terminologySystemId not found."
         }
@@ -102,7 +103,7 @@ class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) 
     put {
       entity(as[TerminologySystem]) { newTerminologySystem =>
         complete {
-          terminologySystemFolderRepository.updateTerminologySystem(terminologySystemId, newTerminologySystem) map { updatedTerminologySystem =>
+          terminologySystemService.updateTerminologySystem(terminologySystemId, newTerminologySystem) map { updatedTerminologySystem =>
             StatusCodes.OK -> updatedTerminologySystem
           }
         }
@@ -119,7 +120,7 @@ class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) 
   private def deleteTerminologySystemRoute(terminologySystemId: String): Route = {
     delete {
       complete {
-        terminologySystemFolderRepository.deleteTerminologySystem(terminologySystemId) map {
+        terminologySystemService.deleteTerminologySystem(terminologySystemId) map {
           _ => StatusCodes.NoContent
         }
       }
