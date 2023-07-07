@@ -30,7 +30,7 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
       throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} should not be specified at the same time.")
     }
     if (mappingSource.tableName.isEmpty && mappingSource.query.isEmpty) {
-      throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} cannot be empty at the same time. One of them must be provided.")
+      throw FhirMappingException(s"Both table name and query cannot be empty at the same time. One of them must be provided.")
     }
 
     if(schema.isDefined) {
