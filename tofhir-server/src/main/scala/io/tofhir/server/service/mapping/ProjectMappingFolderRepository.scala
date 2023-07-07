@@ -139,6 +139,21 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
   }
 
   /**
+   * Retrieves the identifiers of mappings referencing the given schema in their definitions.
+   * @param projectId identifier of project whose mappings will be checked
+   * @param schemaUrl the url of schema
+   * @return the identifiers of mappings referencing the given schema in their definitions
+   */
+  override def getMappingsReferencingSchema(projectId: String, schemaUrl: String): Future[Seq[String]] = {
+    Future {
+      mappingDefinitions.getOrElse(projectId,Map.empty) // handle the case where project has no mappings by returning an empty Map
+        .values.toSeq
+        .filter(mapping => mapping.source.exists(source => source.url.contentEquals(schemaUrl)))
+        .map(mapping => mapping.id)
+    }
+  }
+
+  /**
    * Gets the file for the given mapping definition.
    *
    * @param fhirMapping
