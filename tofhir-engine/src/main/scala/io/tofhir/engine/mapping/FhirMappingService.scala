@@ -84,7 +84,7 @@ class FhirMappingService(
                 getFhirPathEvaluator(contextVariables).satisfies(prc.expression.get, source)
               } catch {
                   case e: Exception =>
-                    throw FhirMappingException(mpp.expression.name, e)
+                    throw FhirMappingException(s"Expression: ${mpp.expression.name}. Error: ${e.getMessage}", e)
              }
             )
         )
@@ -103,14 +103,14 @@ class FhirMappingService(
                     .map(cnd => Some(fhirIntr.copy(condition = Some(cnd))))
                     .recover{
                       case e:Exception =>
-                        throw FhirMappingException(mpp.expression.name, e)
+                        throw FhirMappingException(s"Expression: ${mpp.expression.name}. Error: ${e.getMessage}", e)
                     }
                 case Some(fhirIntr) if fhirIntr.rid.isDefined =>
                     evaluateExpressionReturnString(fhirIntr.rid.get, contextVariables, source)
                       .map(rid => Some(fhirIntr.copy(rid = Some(rid))))
                       .recover {
                       case e: Exception =>
-                        throw FhirMappingException(mpp.expression.name, e)
+                        throw FhirMappingException(s"Expression: ${mpp.expression.name}. Error: ${e.getMessage}", e)
                     }
               }
           //Evaluate each mapping expression
@@ -127,7 +127,7 @@ class FhirMappingService(
                       )
                       .recover {
                         case e: FhirExpressionException =>
-                          throw FhirMappingException(mpp.expression.name, e)
+                          throw FhirMappingException(s"Expression: ${mpp.expression.name}. Error: ${e.getMessage}", e)
                       }
                 }
             )
