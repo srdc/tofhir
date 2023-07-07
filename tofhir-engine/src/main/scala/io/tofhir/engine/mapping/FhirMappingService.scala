@@ -154,7 +154,7 @@ class FhirMappingService(
         .evaluateAndReturnJson(fhirExpression.expression.get, source)
     } catch {
       case e: Exception =>
-        throw FhirMappingException(fhirExpression.name, e)
+        throw FhirMappingException(s"Expression: ${fhirExpression.name}. Error: ${e.getMessage}", e)
     }
   }
 
