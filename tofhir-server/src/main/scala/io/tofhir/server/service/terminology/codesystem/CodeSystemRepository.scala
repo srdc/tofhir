@@ -14,7 +14,7 @@ import org.json4s.jackson.Serialization.writePretty
 import java.io.FileWriter
 import scala.concurrent.Future
 
-class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICodeSystemRepository {
+class CodeSystemRepository extends ICodeSystemRepository {
   /**
    * Retrieve the code system within a terminology
    *

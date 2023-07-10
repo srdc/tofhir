@@ -5,7 +5,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.endpoint.CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
@@ -13,9 +12,9 @@ import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.CodeSystemService
 
-class CodeSystemEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
+class CodeSystemEndpoint extends LazyLogging {
 
-  val service: CodeSystemService = new CodeSystemService(toFhirEngineConfig.contextPath)
+  val service: CodeSystemService = new CodeSystemService()
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_CODE_SYSTEMS) {

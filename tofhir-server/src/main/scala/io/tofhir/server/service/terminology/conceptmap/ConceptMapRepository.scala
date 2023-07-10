@@ -14,7 +14,7 @@ import org.json4s.jackson.Serialization.writePretty
 import java.io.FileWriter
 import scala.concurrent.Future
 
-class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConceptMapRepository {
+class ConceptMapRepository extends IConceptMapRepository {
 
   /**
    * Retrieve the concept maps within a terminology
