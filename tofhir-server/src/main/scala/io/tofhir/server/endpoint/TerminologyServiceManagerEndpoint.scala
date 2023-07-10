@@ -17,8 +17,8 @@ class TerminologyServiceManagerEndpoint(toFhirEngineConfig: ToFhirEngineConfig) 
 
   private val terminologySystemFolderRepository: TerminologySystemFolderRepository = new TerminologySystemFolderRepository(toFhirEngineConfig)
 
-  private val conceptMapEndpoint: ConceptMapEndpoint = new ConceptMapEndpoint(toFhirEngineConfig)
-  private val codeSystemEndpoint: CodeSystemEndpoint = new CodeSystemEndpoint(toFhirEngineConfig)
+  private val conceptMapEndpoint: ConceptMapEndpoint = new ConceptMapEndpoint()
+  private val codeSystemEndpoint: CodeSystemEndpoint = new CodeSystemEndpoint()
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_TERMINOLOGY) {
