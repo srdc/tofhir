@@ -13,8 +13,8 @@ import org.json4s.jackson.Serialization.writePretty
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
+import scala.concurrent.Future
 import scala.io.Source
-import scala.util.{Failure, Success}
 
 object FileOperations {
 
@@ -109,12 +109,11 @@ object FileOperations {
    * @param file File to be saved
    * @param content Content of the file
    */
-  def saveFileContent(file: File, content: akka.stream.scaladsl.Source[ByteString, Any]): Unit = {
-    content.runWith(FileIO.toPath(file.toPath)).onComplete({
-      case Success(_) =>
-      case Failure(e) =>
-        throw InternalError("Error while writing file.", e.getMessage)
-    })
+  def saveFileContent(file: File, content: akka.stream.scaladsl.Source[ByteString, Any]): Future[Unit] = {
+    content.runWith(FileIO.toPath(file.toPath))
+      .map(_ => {})
+      .recover(e => throw InternalError("Error while writing file.", e.getMessage))
+
   }
 }
 

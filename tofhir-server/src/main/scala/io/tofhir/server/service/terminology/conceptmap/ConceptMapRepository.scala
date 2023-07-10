@@ -172,21 +172,19 @@ class ConceptMapRepository(localTerminologyRepositoryRoot: String) extends IConc
    * @return
    */
   override def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any]): Future[Unit] = {
-    Future {
-      //check if concept map id exists in json file
-      val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
-      val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-      localTerminology.find(_.id == terminologyId) match {
-        case Some(t) =>
-          if (!t.conceptMaps.exists(_.id == conceptMapId)) {
-            throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
-          }
-          // save concept map file
-          val conceptMapFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologyId, conceptMapId).toFile
-          FileOperations.saveFileContent(conceptMapFile, content)
-        case None =>
-          throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
-      }
+    //check if concept map id exists in json file
+    val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
+    localTerminology.find(_.id == terminologyId) match {
+      case Some(t) =>
+        if (!t.conceptMaps.exists(_.id == conceptMapId)) {
+          throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
+        }
+        // save concept map file
+        val conceptMapFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologyId, conceptMapId).toFile
+        FileOperations.saveFileContent(conceptMapFile, content)
+      case None =>
+        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
     }
   }
 
