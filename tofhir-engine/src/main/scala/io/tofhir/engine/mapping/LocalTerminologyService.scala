@@ -1,5 +1,6 @@
 package io.tofhir.engine.mapping
 
+import com.fasterxml.jackson.dataformat.csv.CsvReadException
 import io.onfhir.api.service.IFhirTerminologyService
 import io.onfhir.api.util.{FHIRUtil, IOUtil}
 import io.tofhir.engine.mapping.LocalTerminologyService.{CodeSystemFileColumns, ConceptMapFileColumns, equivalenceCodes}
@@ -392,6 +393,8 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
         ).groupBy(_._1).view.mapValues(_.map(_._2))
         .toMap
     } catch {
+      case t:CsvReadException =>
+        throw FhirMappingException(s"Invalid tofhir concept map CSV file $filePath!",t)
       case t:Throwable =>
         throw FhirMappingException(s"Invalid tofhir concept map CSV file $filePath! Columns ${Set(ConceptMapFileColumns.SOURCE_SYSTEM, ConceptMapFileColumns.SOURCE_CODE, ConceptMapFileColumns.TARGET_SYSTEM, ConceptMapFileColumns.TARGET_CODE).mkString(",")} are mandatory for concept map!",t)
     }
