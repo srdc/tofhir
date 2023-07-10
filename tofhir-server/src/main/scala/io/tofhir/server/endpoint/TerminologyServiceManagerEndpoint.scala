@@ -10,13 +10,15 @@ import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{TerminologySystem, ToFhirRestCall}
 import io.tofhir.server.service.TerminologySystemService
+import io.tofhir.server.service.job.JobFolderRepository
+import io.tofhir.server.service.project.IProjectRepository
 import io.tofhir.server.service.terminology.ITerminologySystemRepository
 
 import scala.concurrent.Future
 
-class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminologySystemRepository, toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
+class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminologySystemRepository, mappingJobRepository: JobFolderRepository, projectRepository: IProjectRepository, toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
 
-  private val terminologySystemService: TerminologySystemService = new TerminologySystemService(terminologySystemRepository)
+  private val terminologySystemService: TerminologySystemService = new TerminologySystemService(terminologySystemRepository, mappingJobRepository, projectRepository)
 
   private val conceptMapEndpoint: ConceptMapEndpoint = new ConceptMapEndpoint()
   private val codeSystemEndpoint: CodeSystemEndpoint = new CodeSystemEndpoint()
