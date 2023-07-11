@@ -56,27 +56,29 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
       jobs.map { jobs =>
         jobs
           .filter { job =>
-            job.terminologyServiceSettings.isDefined && job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings]
+            job.terminologyServiceSettings.isDefined
+          }
+          .filter { job =>
+            job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings]
+          }
+          .filter { job =>
+            checkEqualityOfIds(job, id) // Skip if id is not equal
           }
           .foreach { job =>
             // Get terminology service of the job
             val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
               job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
 
-            // Skip if id is not equal
-            if (terminologyServiceSettings.folderPath.split('/').lastOption.get.equals(terminologySystem.id)) {
+            // Update terminology service object
+            val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings =
+              terminologyServiceSettings.copy(conceptMapFiles = terminologySystem.conceptMaps,
+                codeSystemFiles = terminologySystem.codeSystems)
 
-              // Update terminology service object
-              val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings =
-                terminologyServiceSettings.copy(conceptMapFiles = terminologySystem.conceptMaps,
-                  codeSystemFiles = terminologySystem.codeSystems)
+            // Update job object
+            val updatedJob = job.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
 
-              // Update job object
-              val updatedJob = job.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
-
-              // Update job repository
-              mappingJobRepository.putJob(projectId, job.id, updatedJob)
-            }
+            // Update job repository
+            mappingJobRepository.putJob(projectId, job.id, updatedJob)
           }
       }
     }
@@ -102,26 +104,38 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
       jobs.map { jobs =>
         jobs
           .filter { job =>
-            job.terminologyServiceSettings.isDefined && job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings]
+            job.terminologyServiceSettings.isDefined
+          }
+          .filter { job =>
+            job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings]
+          }
+          .filter { job =>
+            checkEqualityOfIds(job, id) // Skip if id is not equal
           }
           .foreach { job =>
-            // Get terminology service of the job
-            val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
-              job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
+            // Update job object with deleting terminology service settings
+            val updatedJob = job.copy(terminologyServiceSettings = None)
 
-            // Skip if id is not equal
-            if (terminologyServiceSettings.folderPath.split('/').lastOption.get.equals(id)) {
-
-              // Update job object with deleting terminology service settings
-              val updatedJob = job.copy(terminologyServiceSettings = None)
-
-              // Update job repository
-              mappingJobRepository.putJob(projectId, job.id, updatedJob)
-            }
+            // Update job repository
+            mappingJobRepository.putJob(projectId, job.id, updatedJob)
           }
       }
     }
     // Delete terminology system
     terminologySystemRepository.deleteTerminologySystem(id)
+  }
+
+  /**
+   * Check whether job's id and terminologySystem id is equal
+   * @param job job object to be checked
+   * @param terminologySystemId id of terminogySystem
+   * @return Boolean indicating whether job's id and terminologySystem's id are equal
+   */
+  private def checkEqualityOfIds(job: FhirMappingJob, terminologySystemId: String): Boolean = {
+    // Get terminology service of the job
+    val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
+      job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
+
+    terminologyServiceSettings.folderPath.split('/').lastOption.get.equals(terminologySystemId)
   }
 }
