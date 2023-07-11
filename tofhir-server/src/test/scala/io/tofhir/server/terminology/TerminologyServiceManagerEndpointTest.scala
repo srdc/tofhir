@@ -2,14 +2,16 @@ package io.tofhir.server.terminology
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
-import io.onfhir.util.JsonFormatter.formats
-import io.tofhir.engine.model.{CodeSystemFile, ConceptMapFile}
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.engine.config.ErrorHandlingType
+import io.tofhir.engine.model.{CodeSystemFile, ConceptMapFile, FhirMappingJob, FhirSinkSettings, FileSystemSinkSettings, LocalFhirTerminologyServiceSettings, TerminologyServiceSettings}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.TerminologySystem
 import io.tofhir.server.model.TerminologySystem.{TerminologyCodeSystem, TerminologyConceptMap}
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
-import io.tofhir.server.util.FileOperations
+import io.tofhir.server.util.{FileOperations, TestUtil}
+import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 
@@ -25,6 +27,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
   var terminologySystem1: TerminologySystem = TerminologySystem(name = "testTerminology1", description = "example terminology 1", codeSystems = Seq.empty, conceptMaps = Seq.empty)
 
   val terminologySystem2: TerminologySystem = TerminologySystem(name = "testTerminology2", description = "example terminology 2", codeSystems = Seq.empty, conceptMaps = Seq.empty)
+
+  // Create job for test update on job terminology
+  val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
+  val terminologyServiceSettings: TerminologyServiceSettings = LocalFhirTerminologyServiceSettings(s"/${TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER}/${terminologySystem1.id}", codeSystemFiles = Seq.empty, conceptMapFiles = Seq.empty)
+  val job3: FhirMappingJob = FhirMappingJob(name = Some("mappingJob3"), sourceSettings = Map.empty, sinkSettings = sinkSettings, terminologyServiceSettings = Some(terminologyServiceSettings), mappings = Seq.empty, mappingErrorHandling = ErrorHandlingType.CONTINUE)
 
   "The terminology service" should {
     "create a terminology system" in {
@@ -112,24 +119,43 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
   }
 
   "The terminology concept map service" should {
+    "create a job and reference to a terminology system" in {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job3))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+        // validate that job metadata file is updated
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
+        // check job folder is created
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job3.id).toFile.exists()
+      }
+    }
+
+    // add a concept map to the terminology system object
+    var updatedTerminology: TerminologySystem = terminologySystem1.copy(conceptMaps = terminologySystem1.conceptMaps :+ conceptMap1)
+
     "create a concept map within a terminology system" in {
       // create a concept map
-      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap1))) ~> route ~> check {
-        status shouldEqual StatusCodes.Created
-        // validate that the returned concept map includes the id
-        val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
-        conceptMap.name shouldEqual "testCM"
+      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate that the returned concept map included in the terminologySystem
+        updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
+        updatedTerminology.conceptMaps.length shouldEqual 1
+        updatedTerminology.conceptMaps.last.name shouldEqual "testCM"
         // validate that concept map file is created
-        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, conceptMap.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, updatedTerminology.conceptMaps.last.id).toFile.exists() shouldEqual true
       }
+      // add a concept map to the terminology system object
+      updatedTerminology = updatedTerminology.copy(conceptMaps = updatedTerminology.conceptMaps :+ conceptMap2)
       // create a second concept map within same terminology
-      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap2))) ~> route ~> check {
-        status shouldEqual StatusCodes.Created
-        // validate that the returned concept map includes the id
-        val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
-        conceptMap.name shouldEqual "testCM2"
+      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate that the returned concept map included in the terminologySystem
+        updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
+        updatedTerminology.conceptMaps.length shouldEqual 2
+        updatedTerminology.conceptMaps.head.name shouldEqual "testCM"
+        updatedTerminology.conceptMaps.last.name shouldEqual "testCM2"
         // validate that concept map file is created
-        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, conceptMap.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, updatedTerminology.conceptMaps.last.id).toFile.exists() shouldEqual true
       }
     }
 
@@ -153,27 +179,71 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "put a concept map within a terminology system" in {
-      // update a concept map within a terminology system
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(conceptMap1.copy(name = "testCMUpdated")))) ~> route ~> check {
+    "get the job in a project to verify terminology system is updated with new conceptMaps" in {
+      // get the job
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
-        // validate that the returned concept map includes the update
-        val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
-        conceptMap.name shouldEqual "testCMUpdated"
-        conceptMap1 = conceptMap
+        // validate the retrieved job includes new conceptMaps
+        val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
+        job.id shouldEqual job3.id
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.length shouldEqual 2
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.head.name shouldEqual conceptMap1.name
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.last.name shouldEqual conceptMap2.name
+      }
+    }
+
+    "put a concept map within a terminology system" in {
+      // update concept maps in the terminology system object
+      updatedTerminology = updatedTerminology.copy(conceptMaps = updatedTerminology.conceptMaps.map(conceptMap => conceptMap.copy(name = conceptMap.name + "Updated")))
+      // update concept maps within same terminology
+      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate that the updated conceptMaps included in the terminologySystem
+        updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
+        updatedTerminology.conceptMaps.length shouldEqual 2
+        updatedTerminology.conceptMaps.head.name shouldEqual "testCMUpdated"
+        updatedTerminology.conceptMaps.last.name shouldEqual "testCM2Updated"
+        conceptMap1 = updatedTerminology.conceptMaps.head
+      }
+    }
+
+    "get the job in a project to verify terminology system is updated with updated conceptMap name" in {
+      // get the job
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved job includes updated conceptMaps
+        val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
+        job.id shouldEqual job3.id
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.length shouldEqual 2
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.head.name shouldEqual "testCMUpdated"
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.last.name shouldEqual "testCM2Updated"
       }
     }
 
     "delete a concept map within a terminology system" in {
-      // delete a concept map within a terminology system
-      Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap2.id}") ~> route ~> check {
-        status shouldEqual StatusCodes.NoContent
+      // delete a concept map in the terminology system object
+      updatedTerminology = updatedTerminology.copy(conceptMaps = Seq(updatedTerminology.conceptMaps.head))
+      // delete the concept map within same terminology
+      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate that the returned only first concept map in the terminologySystem
+        updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
+        updatedTerminology.conceptMaps.length shouldEqual 1
+        updatedTerminology.conceptMaps.head.name shouldEqual "testCMUpdated"
         // validate that concept map file is deleted
         FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, conceptMap2.id).toFile.exists() shouldEqual false
       }
-      // delete a non-existent concept map within a terminology system
-      Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap2.id}") ~> route ~> check {
-        status should not equal StatusCodes.OK
+    }
+
+    "get the job in a project to verify terminology system is updated with deleted conceptMap" in {
+      // get the job
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved job includes only first conceptMap
+        val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
+        job.id shouldEqual job3.id
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.length shouldEqual 1
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.head.name shouldEqual "testCMUpdated"
       }
     }
 
@@ -208,24 +278,33 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
   }
 
   "The terminology code system service" should {
+
+    // add a code system to the terminology system object
+    var updatedTerminology: TerminologySystem = terminologySystem1.copy(codeSystems = terminologySystem1.codeSystems :+ codeSystem1)
+
     "create a code system within a terminology system" in {
       // create a code system
-      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem1))) ~> route ~> check {
-        status shouldEqual StatusCodes.Created
-        // validate that the returned code system includes the id
-        val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
-        codeSystem.name shouldEqual "testCS"
+      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate that the returned code system included in the terminologySystem
+        updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
+        updatedTerminology.codeSystems.length shouldEqual 1
+        updatedTerminology.codeSystems.last.name shouldEqual "testCS"
         // validate that code system file is created
-        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, codeSystem.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, updatedTerminology.codeSystems.last.id).toFile.exists() shouldEqual true
       }
+      // add a code system to the terminology system object
+      updatedTerminology = updatedTerminology.copy(codeSystems = updatedTerminology.codeSystems :+ codeSystem2)
       // create a second code system within same terminology
-      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem2))) ~> route ~> check {
-        status shouldEqual StatusCodes.Created
-        // validate that the returned code system includes the id
-        val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
-        codeSystem.name shouldEqual "testCS2"
+      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate that the returned code system included in the terminologySystem
+        updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
+        updatedTerminology.codeSystems.length shouldEqual 2
+        updatedTerminology.codeSystems.head.name shouldEqual "testCS"
+        updatedTerminology.codeSystems.last.name shouldEqual "testCS2"
         // validate that code system file is created
-        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, codeSystem.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, updatedTerminology.codeSystems.last.id).toFile.exists() shouldEqual true
       }
     }
 
@@ -249,26 +328,71 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "put a code system within a terminology system" in {
-      // update a code system within a terminology system
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(codeSystem1.copy(name = "testCSUpdated")))) ~> route ~> check {
+    "get the job in a project to verify terminology system is updated with new codeSystems" in {
+      // get the job
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
-        // validate that the returned code system includes the update
-        val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
-        codeSystem.name shouldEqual "testCSUpdated"
+        // validate the retrieved job includes new codeSystems
+        val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
+        job.id shouldEqual job3.id
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.length shouldEqual 2
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.head.name shouldEqual codeSystem1.name
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.last.name shouldEqual codeSystem2.name
+      }
+    }
+
+    "put a code system within a terminology system" in {
+      // update code systems in the terminology system object
+      updatedTerminology = updatedTerminology.copy(codeSystems = updatedTerminology.codeSystems.map(codeSystem => codeSystem.copy(name = codeSystem.name + "Updated")))
+      // update code systems within same terminology
+      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate that the updated codeSystems included in the terminologySystem
+        updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
+        updatedTerminology.codeSystems.length shouldEqual 2
+        updatedTerminology.codeSystems.head.name shouldEqual "testCSUpdated"
+        updatedTerminology.codeSystems.last.name shouldEqual "testCS2Updated"
+        codeSystem1 = updatedTerminology.codeSystems.head
+      }
+    }
+
+    "get the job in a project to verify terminology system is updated with updated codeSystem name" in {
+      // get the job
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved job includes updated codeSystems
+        val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
+        job.id shouldEqual job3.id
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.length shouldEqual 2
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.head.name shouldEqual "testCSUpdated"
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.last.name shouldEqual "testCS2Updated"
       }
     }
 
     "delete a code system within a terminology system" in {
-      // delete a code system within a terminology system
-      Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem2.id}") ~> route ~> check {
-        status shouldEqual StatusCodes.NoContent
+      // delete a code system in the terminology system object
+      updatedTerminology = updatedTerminology.copy(codeSystems = Seq(updatedTerminology.codeSystems.head))
+      // delete the code system within same terminology
+      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate that the returned only first code system in the terminologySystem
+        updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
+        updatedTerminology.codeSystems.length shouldEqual 1
+        updatedTerminology.codeSystems.head.name shouldEqual "testCSUpdated"
         // validate that code system file is deleted
         FileUtils.getPath(TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER, terminologySystem1.id, codeSystem2.id).toFile.exists() shouldEqual false
       }
-      // delete a non-existent code system within a terminology system
-      Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem2.id}") ~> route ~> check {
-        status should not equal StatusCodes.OK
+    }
+
+    "get the job in a project to verify terminology system is updated with deleted codeSystem" in {
+      // get the job
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved job includes only first codeSystem
+        val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
+        job.id shouldEqual job3.id
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.length shouldEqual 1
+        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.head.name shouldEqual "testCSUpdated"
       }
     }
 
@@ -297,5 +421,13 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
           "119323008,Pus specimen,Spécimen de pus,Eiterprobe"
       }
     }
+  }
+
+  /**
+   * Creates a project to be used in the tests
+   * */
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    this.createProject()
   }
 }
