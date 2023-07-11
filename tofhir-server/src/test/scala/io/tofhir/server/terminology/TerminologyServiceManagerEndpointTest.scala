@@ -31,7 +31,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
   // Create job for test update on job terminology
   val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
   val terminologyServiceSettings: TerminologyServiceSettings = LocalFhirTerminologyServiceSettings(s"/${TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER}/${terminologySystem1.id}", codeSystemFiles = Seq.empty, conceptMapFiles = Seq.empty)
-  val job3: FhirMappingJob = FhirMappingJob(name = Some("mappingJob3"), sourceSettings = Map.empty, sinkSettings = sinkSettings, terminologyServiceSettings = Some(terminologyServiceSettings), mappings = Seq.empty, mappingErrorHandling = ErrorHandlingType.CONTINUE)
+  val jobTest: FhirMappingJob = FhirMappingJob(name = Some("mappingJobTest"), sourceSettings = Map.empty, sinkSettings = sinkSettings, terminologyServiceSettings = Some(terminologyServiceSettings), mappings = Seq.empty, mappingErrorHandling = ErrorHandlingType.CONTINUE)
 
   "The terminology service" should {
     "create a terminology system" in {
@@ -120,13 +120,13 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
   "The terminology concept map service" should {
     "create a job and reference to a terminology system" in {
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job3))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(jobTest))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is created
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job3.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, jobTest.id).toFile.exists()
       }
     }
 
@@ -181,11 +181,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with new conceptMaps" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes new conceptMaps
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
-        job.id shouldEqual job3.id
+        job.id shouldEqual jobTest.id
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.length shouldEqual 2
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.head.name shouldEqual conceptMap1.name
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.last.name shouldEqual conceptMap2.name
@@ -209,11 +209,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with updated conceptMap name" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes updated conceptMaps
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
-        job.id shouldEqual job3.id
+        job.id shouldEqual jobTest.id
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.length shouldEqual 2
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.head.name shouldEqual "testCMUpdated"
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.last.name shouldEqual "testCM2Updated"
@@ -237,11 +237,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with deleted conceptMap" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes only first conceptMap
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
-        job.id shouldEqual job3.id
+        job.id shouldEqual jobTest.id
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.length shouldEqual 1
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.head.name shouldEqual "testCMUpdated"
       }
@@ -330,11 +330,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with new codeSystems" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes new codeSystems
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
-        job.id shouldEqual job3.id
+        job.id shouldEqual jobTest.id
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.length shouldEqual 2
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.head.name shouldEqual codeSystem1.name
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.last.name shouldEqual codeSystem2.name
@@ -358,11 +358,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with updated codeSystem name" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes updated codeSystems
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
-        job.id shouldEqual job3.id
+        job.id shouldEqual jobTest.id
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.length shouldEqual 2
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.head.name shouldEqual "testCSUpdated"
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.last.name shouldEqual "testCS2Updated"
@@ -386,11 +386,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with deleted codeSystem" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job3.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes only first codeSystem
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
-        job.id shouldEqual job3.id
+        job.id shouldEqual jobTest.id
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.length shouldEqual 1
         job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.head.name shouldEqual "testCSUpdated"
       }
