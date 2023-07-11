@@ -35,7 +35,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint()
-  val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, mappingJobRepository, projectRepository, toFhirEngineConfig)
+  val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, mappingJobRepository, toFhirEngineConfig)
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {
