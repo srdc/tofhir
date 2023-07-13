@@ -56,7 +56,7 @@ class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
       obj("value") shouldBe 10
       obj("system") shouldBe "http://unitsofmeasure.org"
       obj("unit") shouldBe "g/dL"
-      obj("code") shouldBe "1552"
+      obj("code") shouldBe "g/dL"
 
       val unknownConversion = FhirPathEvaluator().withDefaultFunctionLibraries().withFunctionLibrary("mpp", fhirPathMappingFunctions).evaluateOptionalString("mpp:convertAndReturnQuantity(%labResultUnitConversion, 'UNKNOWN_CODE', 100, 'UNKNOWN_UNIT')", JNull)
       unknownConversion shouldBe None
