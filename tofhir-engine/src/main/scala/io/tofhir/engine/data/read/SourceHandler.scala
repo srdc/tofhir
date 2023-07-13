@@ -50,7 +50,6 @@ object SourceHandler {
         case None =>
           sourceData
       }
-
     schema match {
       //If there is a schema and also need validation
       case Some(sc) if reader.needTypeValidation || reader.needCardinalityValidation =>

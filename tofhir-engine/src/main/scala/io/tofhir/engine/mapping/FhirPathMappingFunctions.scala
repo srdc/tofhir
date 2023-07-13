@@ -266,7 +266,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
               "value" -> functionResult.head.toJson,
               "system" -> JString("http://unitsofmeasure.org"),
               "unit" -> JString(targetUnit),
-              "code" -> JString(code)
+              "code" -> JString(targetUnit)
             ) ++
               comparator.map(c => "comparator" -> JString(c)).toList,
             ))
