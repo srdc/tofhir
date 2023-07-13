@@ -13,6 +13,7 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
 
   /**
    * Get all TerminologySystem metadata from the TerminologySystem repository
+   *
    * @return List of TerminologySystem metadata
    */
   def getAllMetadata: Future[Seq[TerminologySystem]] = {
@@ -21,6 +22,7 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
 
   /**
    * Create a new TerminologySystem
+   *
    * @param terminologySystem The TerminologySystem will be created
    * @return Created TerminologySystem
    */
@@ -40,35 +42,30 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
 
   /**
    * Update the TerminologySystem
-   * @param id TerminologySystem id
+   *
+   * @param id                TerminologySystem id
    * @param terminologySystem TerminologySystem to update
    * @return Updated TerminologySystem
    */
   def updateTerminologySystem(id: String, terminologySystem: TerminologySystem): Future[TerminologySystem] = {
-    // Update TerminologySystem
-    val result: Future[TerminologySystem] = terminologySystemRepository.updateTerminologySystem(id, terminologySystem)
-
-    result.map{ terminologySystem =>
+    // Update TerminologySystem first, then update Jobs Terminology fields
+    terminologySystemRepository.updateTerminologySystem(id, terminologySystem).flatMap { terminologySystem =>
       // update Jobs Terminology fields if it is successful
-      updateJobTerminology(id ,Some(terminologySystem))
-      terminologySystem
+      updateJobTerminology(id, Some(terminologySystem)).map(_ => terminologySystem)
     }
   }
 
   /**
    * Delete the TerminologySystem
+   *
    * @param id TerminologySystem id
    * @return
    */
   def deleteTerminologySystem(id: String): Future[Unit] = {
-
-    // Delete terminology system
-    val result: Future[Unit] = terminologySystemRepository.deleteTerminologySystem(id)
-
-    result.map{ terminologySystem =>
+    // Delete terminology system first, then update Jobs Terminology fields
+    terminologySystemRepository.deleteTerminologySystem(id).flatMap { terminologySystem =>
       // update Jobs Terminology fields if it is successful
-      updateJobTerminology(id)
-      terminologySystem
+      updateJobTerminology(id).map(_ => terminologySystem)
     }
   }
 
@@ -87,52 +84,41 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
   }
 
   /**
-   * Update Job's terminology fields with updated terminology system
-   * @param id id of terminologySystem
+   * Update Job's terminology fields with the updated terminology system.
+   *
+   * @param id                id of terminologySystem
    * @param terminologySystem updated terminology system
    * @return
    */
   private def updateJobTerminology(id: String, terminologySystem: Option[TerminologySystem] = Option.empty): Future[Unit] = {
-    Future{
-        // Get project ids from job cache
-        val projectIds: Seq[String] = mappingJobRepository.getCachedMappingsJobs.keys.toSeq
+    // Get project ids from job cache
+    val projectIds: Seq[String] = mappingJobRepository.getCachedMappingsJobs.keys.toSeq
 
-        projectIds.foreach { projectId =>
-          // Get jobs of given project
-          val jobs: Future[Seq[FhirMappingJob]] = mappingJobRepository.getAllJobs(projectId)
+    Future.sequence(projectIds.map(projectId => {
+      // Get jobs of given project
+      mappingJobRepository.getAllJobs(projectId).flatMap { jobs =>
+        Future.sequence(jobs.filter(job => {
+          job.terminologyServiceSettings.isDefined && job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings] && checkEqualityOfIds(job, id)
+        }).map(jobToBeUpdated => {
+          // Create updated job object
+          val updatedJob = terminologySystem match {
+            // Update terminology service case
+            case Some(ts) => {
+              val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
+                jobToBeUpdated.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
 
-          jobs.map { jobs =>
-            jobs
-              .filter { job =>
-                job.terminologyServiceSettings.isDefined
-              }
-              .filter { job =>
-                job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings]
-              }
-              .filter { job =>
-                checkEqualityOfIds(job, id) // Skip if id is not equal
-              }
-              .foreach { job =>
-                // Create updated job object
-                val updatedJob = terminologySystem match {
-                  // Update terminology service case
-                  case Some(ts) => {
-                    val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
-                      job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
+              val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings =
+                terminologyServiceSettings.copy(conceptMapFiles = ts.conceptMaps, codeSystemFiles = ts.codeSystems)
 
-                    val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings =
-                      terminologyServiceSettings.copy(conceptMapFiles = ts.conceptMaps, codeSystemFiles = ts.codeSystems)
-
-                    job.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
-                  }
-                  // Delete terminology service case
-                  case None => job.copy(terminologyServiceSettings = None)
-                }
-                // Update job in the repository
-                mappingJobRepository.putJob(projectId, job.id, updatedJob)
-              }
+              jobToBeUpdated.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
+            }
+            // Delete terminology service case
+            case None => jobToBeUpdated.copy(terminologyServiceSettings = None)
           }
-        }
+          // Update job in the repository
+          mappingJobRepository.putJob(projectId, jobToBeUpdated.id, updatedJob)
+        }))
       }
-    }
+    })).map {_ => ()}
+  }
 }
