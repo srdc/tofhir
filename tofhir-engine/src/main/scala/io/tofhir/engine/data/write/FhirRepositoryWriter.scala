@@ -220,9 +220,11 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
           problemsAccumulator.add(failedResult)
         )
 
-        logger.error(msg)
         if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
-          throw FhirMappingInvalidResourceException(msg, problemsAccumulator.value.size())
+          // Spark will automatically log the msg of exception
+          throw FhirMappingInvalidResourceException(msg, problemsAccumulator.value)
+        } else {
+          logger.error(msg)
         }
     } else if(transientErrors.nonEmpty) {
       //Otherwise (having 409 Conflicts), retry the failed ones

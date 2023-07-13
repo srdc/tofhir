@@ -23,9 +23,10 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
    *
    * @param mappingSource Context/configuration information for mapping source
    * @param schema        Schema for the source
+   * @param limit         Limit the number of rows to read
    * @return
    */
-  override def read(mappingSource: KafkaSource, sourceSettings: KafkaSourceSettings, schema: Option[StructType] = Option.empty, timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty): DataFrame = {
+  override def read(mappingSource: KafkaSource, sourceSettings: KafkaSourceSettings, schema: Option[StructType] = Option.empty, timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, limit: Option[Int] = Option.empty): DataFrame = {
     import spark.implicits._
 
     if (schema.isEmpty) {

@@ -23,7 +23,8 @@ object Boot extends App {
       // get parameters
       val dataDictionary = options.get("data-dictionary").map(_.asInstanceOf[String])
       val definitionRootUrl = options.get("definition-root-url").map(_.asInstanceOf[String])
-      val commandArgs: Seq[String] = Seq(dataDictionary, definitionRootUrl).filter(arg => arg.nonEmpty).map(arg => arg.get)
+      val encoding = options.get("encoding").map(_.asInstanceOf[String])
+      val commandArgs: Seq[String] = Seq(dataDictionary, definitionRootUrl, encoding).filter(arg => arg.nonEmpty).map(arg => arg.get)
       // run command
       CommandFactory.apply("extract-redcap-schemas").execute(commandArgs, CommandExecutionContext(toFhirEngine))
     }

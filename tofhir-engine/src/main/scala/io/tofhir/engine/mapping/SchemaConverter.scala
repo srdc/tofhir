@@ -2,9 +2,10 @@ package io.tofhir.engine.mapping
 
 import io.onfhir.api.parsers.IFhirFoundationResourceParser
 import io.onfhir.api.validation.{ConstraintKeys, ElementRestrictions, ProfileRestrictions}
-import io.onfhir.api.{FHIR_DATA_TYPES, Resource}
+import io.onfhir.api.{FHIR_DATA_TYPES, FHIR_ROOT_URL_FOR_DEFINITIONS, Resource}
 import io.onfhir.r4.parsers.R4Parser
 import io.onfhir.validation.{ArrayRestriction, CardinalityMinRestriction, TypeRestriction}
+import io.tofhir.common.model.{DataTypeWithProfiles, SimpleStructureDefinition}
 import io.tofhir.engine.model.FhirMappingException
 import org.apache.spark.sql.types._
 
@@ -98,6 +99,52 @@ class SchemaConverter(majorFhirVersion: String) {
       case "R4" => new R4Parser()
       case _ => throw new NotImplementedError()
     }
+  }
+
+  /**
+   * Convert Spark data types to fhir data types and create a Schema.
+   * @param structField Spark column metadata
+   * @param defaultName Default name for path field
+   * @return SimpleStructureDefinition object that defines a Schema
+   */
+  def fieldsToSchema(structField: StructField, defaultName: String): SimpleStructureDefinition = {
+    SimpleStructureDefinition(
+      id = structField.name,
+      path = defaultName + "." + structField.name,
+      dataTypes = structField.dataType match {
+        case DataTypes.ShortType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.INTEGER, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.INTEGER}")))))
+        case DataTypes.LongType => Some(Seq(DataTypeWithProfiles(dataType = "integer64", profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/integer64")))))
+        case DataTypes.StringType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.STRING, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.STRING}")))))
+        case DataTypes.IntegerType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.INTEGER, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.INTEGER}")))))
+        case DataTypes.ByteType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.INTEGER, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.INTEGER}")))))
+        case DataTypes.BinaryType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.BASE64BINARY, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.BASE64BINARY}")))))
+        case DataTypes.BooleanType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.BOOLEAN, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.BOOLEAN}")))))
+        case DataTypes.CalendarIntervalType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.DATETIME, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.DATETIME}")))))
+        case DataTypes.DateType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.DATE, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.DATE}")))))
+        case DataTypes.DoubleType | _: DecimalType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.DECIMAL, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.DECIMAL}")))))
+        case DataTypes.FloatType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.DECIMAL, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.DECIMAL}")))))
+        case DataTypes.NullType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.STRING, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.STRING}")))))
+        case DataTypes.TimestampType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.DATETIME, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.DATETIME}")))))
+      },
+      isPrimitive = true,
+      isChoiceRoot = false,
+      isArray = false,
+      minCardinality = 0,
+      maxCardinality = Some(1),
+      boundToValueSet = None,
+      isValueSetBindingRequired = None,
+      referencableProfiles = None,
+      constraintDefinitions = None,
+      sliceDefinition = None,
+      sliceName = None,
+      fixedValue = None,
+      patternValue = None,
+      referringTo = None,
+      short = None,
+      definition = None,
+      comment = None,
+      elements = None
+    )
   }
 
 }

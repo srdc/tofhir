@@ -14,7 +14,7 @@ import org.json4s.jackson.Serialization.writePretty
 import java.io.FileWriter
 import scala.concurrent.Future
 
-class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICodeSystemRepository {
+class CodeSystemRepository extends ICodeSystemRepository {
   /**
    * Retrieve the code system within a terminology
    *
@@ -170,21 +170,19 @@ class CodeSystemRepository(localTerminologyRepositoryRoot: String) extends ICode
    * @return
    */
   override def saveCodeSystemContent(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any]): Future[Unit] = {
-    Future {
-      //check if code system id exists in json file
-      val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
-      val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-      localTerminology.find(_.id == terminologyId) match {
-        case Some(t) =>
-          if (!t.codeSystems.exists(_.id == codeSystemId)) {
-            throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
-          }
-          // save code system file
-          val codeSystemFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologyId, codeSystemId).toFile
-          FileOperations.saveFileContent(codeSystemFile, content)
-        case None =>
-          throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
-      }
+    //check if code system id exists in json file
+    val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
+    localTerminology.find(_.id == terminologyId) match {
+      case Some(t) =>
+        if (!t.codeSystems.exists(_.id == codeSystemId)) {
+          throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
+        }
+        // save code system file
+        val codeSystemFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologyId, codeSystemId).toFile
+        FileOperations.saveFileContent(codeSystemFile, content)
+      case None =>
+        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
     }
   }
 

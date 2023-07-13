@@ -30,6 +30,7 @@ If no arguments are provided, toFHIR starts the command line interface (CLI). Po
 - `extract-redcap-schemas`: Extracts schemas from a REDCap data dictionary. `extract-redcap-schemas` command accepts the following parameters:
   - `--data-dictionary`: The path to the REDCap data dictionary
   - `--definition-root-url`: The root url of FHIR resources
+  - `--encoding`: The encoding of CSV file whose default value is UTF-8 (OPTIONAL)
 ## CLI
 
 toFHIR serves via CLI with certain commands:
@@ -37,7 +38,7 @@ toFHIR serves via CLI with certain commands:
 - `info`: See info about the loaded Mapping Job.
 - `load`: Loads a Mapping Job Load the Mapping Job definition file from the path.
 - `run [<url>|<name>]`: Run the task(s). Without a parameter, all task of the loaded Mapping Job are run. A specific task can be indicated with its name or URL.
-- `extract-redcap-schemas [path] [definition-root-url]`: Extracts schemas from the given REDCap data dictionary file. Schemas will be annotated with the given definition root url.
+- `extract-redcap-schemas [path] [definition-root-url] [encoding]`: Extracts schemas from the given REDCap data dictionary file. Schemas will be annotated with the given definition root url. If the encoding of CSV file is different from UTF-8, you should provide it.
 - `stop`: Stop the execution of the MappingJob (if any).
 - `exit|quit`: Exit the program.
 
