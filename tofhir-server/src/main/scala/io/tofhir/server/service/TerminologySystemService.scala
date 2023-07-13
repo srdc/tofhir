@@ -93,45 +93,46 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
    * @return
    */
   private def updateJobTerminology(id: String, terminologySystem: Option[TerminologySystem] = Option.empty): Future[Unit] = {
-    // Get project ids from job cache
-    val projectIds: Seq[String] = mappingJobRepository.getCachedMappingsJobs.keys.toSeq
+    Future{
+        // Get project ids from job cache
+        val projectIds: Seq[String] = mappingJobRepository.getCachedMappingsJobs.keys.toSeq
 
-    projectIds.foreach { projectId =>
-      // Get jobs of given project
-      val jobs: Future[Seq[FhirMappingJob]] = mappingJobRepository.getAllJobs(projectId)
+        projectIds.foreach { projectId =>
+          // Get jobs of given project
+          val jobs: Future[Seq[FhirMappingJob]] = mappingJobRepository.getAllJobs(projectId)
 
-      jobs.map { jobs =>
-        jobs
-          .filter { job =>
-            job.terminologyServiceSettings.isDefined
-          }
-          .filter { job =>
-            job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings]
-          }
-          .filter { job =>
-            checkEqualityOfIds(job, id) // Skip if id is not equal
-          }
-          .foreach { job =>
-            // Create updated job object
-            val updatedJob = terminologySystem match {
-              // Update terminology service case
-              case Some(ts) => {
-                val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
-                  job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
-
-                val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings =
-                  terminologyServiceSettings.copy(conceptMapFiles = ts.conceptMaps, codeSystemFiles = ts.codeSystems)
-
-                job.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
+          jobs.map { jobs =>
+            jobs
+              .filter { job =>
+                job.terminologyServiceSettings.isDefined
               }
-              // Delete terminology service case
-              case None => job.copy(terminologyServiceSettings = None)
-            }
-            // Update job in the repository
-            mappingJobRepository.putJob(projectId, job.id, updatedJob)
+              .filter { job =>
+                job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings]
+              }
+              .filter { job =>
+                checkEqualityOfIds(job, id) // Skip if id is not equal
+              }
+              .foreach { job =>
+                // Create updated job object
+                val updatedJob = terminologySystem match {
+                  // Update terminology service case
+                  case Some(ts) => {
+                    val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
+                      job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
+
+                    val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings =
+                      terminologyServiceSettings.copy(conceptMapFiles = ts.conceptMaps, codeSystemFiles = ts.codeSystems)
+
+                    job.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
+                  }
+                  // Delete terminology service case
+                  case None => job.copy(terminologyServiceSettings = None)
+                }
+                // Update job in the repository
+                mappingJobRepository.putJob(projectId, job.id, updatedJob)
+              }
           }
+        }
       }
     }
-    Future.apply(None)
-  }
 }
