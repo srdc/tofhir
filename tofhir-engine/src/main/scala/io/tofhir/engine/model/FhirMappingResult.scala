@@ -16,6 +16,7 @@ import net.logstash.logback.marker.Markers._
  * @param source            If there is a problem in the process, the JSON serialization of the source data
  * @param error             If there is a problem in the process, description of the problem
  * @param fhirInteraction   FHIR interaction details to persist the mapped result
+ * @param executionId       Id of FhirMappingJobExecution object
  */
 case class FhirMappingResult(
                               jobId:String,
@@ -25,11 +26,12 @@ case class FhirMappingResult(
                               mappedResource:Option[String] = None,
                               source:Option[String] = None,
                               error:Option[FhirMappingError] = None,
-                              fhirInteraction:Option[FhirInteraction] = None
+                              fhirInteraction:Option[FhirInteraction] = None,
+                              executionId: Option[String] = None
                             ) {
   final val eventId:String = "MAPPING_RESULT"
   override def toString: String = {
-    s"Mapping failure (${error.get.code}) for job '$jobId' and mapping '$mappingUrl'${mappingExpr.map(e => s" within expression '$e'").getOrElse("")}!\n"+
+    s"Mapping failure (${error.get.code}) for job '$jobId' and mapping '$mappingUrl'${mappingExpr.map(e => s" within expression '$e'").getOrElse("")} execution '${executionId.getOrElse("")}'!\n"+
     s"\tSource: ${source.get}\n"+
     s"\tError: ${error.get.description}" +
       error.get.expression.map(e =>  s"\n\tExpression: $e").getOrElse("")
@@ -42,13 +44,14 @@ case class FhirMappingResult(
   def toLogstashMarker:LogstashMarker = {
     val marker:LogstashMarker =
       append("jobId", jobId)
-      .and(append("mappingUrl", mappingUrl)
-        .and(append("mappingExpr", mappingExpr.orElse(null))
-          .and(appendRaw("source", source.get)
-            .and(append("errorCode", error.get.code)
-              .and(append("errorDesc", error.get.description)
-                .and(append("errorExpr", error.get.expression.orElse(null))
-                  .and(append("eventId", eventId))))))))
+        .and(append("executionId", executionId.getOrElse(""))
+          .and(append("mappingUrl", mappingUrl)
+            .and(append("mappingExpr", mappingExpr.orElse(null))
+              .and(appendRaw("source", source.get)
+                .and(append("errorCode", error.get.code)
+                  .and(append("errorDesc", error.get.description)
+                    .and(append("errorExpr", error.get.expression.orElse(null))
+                      .and(append("eventId", eventId)))))))))
 
     if(mappedResource.isDefined && error.get.code == FhirMappingErrorCodes.INVALID_RESOURCE)
       marker.and(appendRaw("mappedResource", mappedResource.get))
