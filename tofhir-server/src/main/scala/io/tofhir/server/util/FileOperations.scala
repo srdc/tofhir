@@ -6,6 +6,7 @@ import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.model.InternalError
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -114,6 +115,22 @@ object FileOperations {
       .map(_ => {})
       .recover(e => throw InternalError("Error while writing file.", e.getMessage))
 
+  }
+
+  /**
+   * Check whether the file name matches with the entity id
+   * @param entityId id of the entity e.g. job id, mapping id
+   * @param file file to whose name will be checked
+   * @param entityType type of the entity e.g. job, mapping
+   * @return true if the file name matches with the entity id, false otherwise
+   */
+  def checkFileNameMatchesEntityId(entityId: String, file: File, entityType: String): Boolean = {
+    if (!entityId.equals(file.getName.replace(FileExtensions.JSON.toString, ""))) {
+      logger.warn(s"Discarding ${entityType} definition with id ${entityId} as it does not match with the file name ${file.getName}")
+      false
+    } else {
+      true
+    }
   }
 }
 
