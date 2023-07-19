@@ -20,10 +20,10 @@ class CodeSystemEndpoint extends LazyLogging {
     pathPrefix(SEGMENT_CODE_SYSTEMS) {
       val terminologyId: String = request.terminologyId.get
       pathEndOrSingleSlash {
-        getAllCodeSystemsRoute(terminologyId) // ~ createCodeSystemRoute(terminologyId)
+        getAllCodeSystemsRoute(terminologyId)
       } ~ pathPrefix(Segment) { codeSystemId =>
         pathEndOrSingleSlash {
-          getCodeSystemRoute(terminologyId, codeSystemId) // ~ putCodeSystemRoute(terminologyId, codeSystemId) ~ deleteCodeSystemRoute(terminologyId, codeSystemId)
+          getCodeSystemRoute(terminologyId, codeSystemId)
         } ~ pathPrefix(SEGMENT_CONTENT) {
           pathEndOrSingleSlash {
             uploadDownloadCodeSystemFileRoute(terminologyId, codeSystemId)
@@ -48,23 +48,6 @@ class CodeSystemEndpoint extends LazyLogging {
     }
   }
 
-//  /**
-//   * Route to create a code system within a terminology
-//   * TODO: Implement job terminology update feature before using this
-//   * @return
-//   */
-//  private def createCodeSystemRoute(terminologyId: String): Route = {
-//    post {
-//      entity(as[TerminologyCodeSystem]) { codeSystem =>
-//        complete {
-//          service.createCodeSystem(terminologyId, codeSystem) map { created =>
-//            StatusCodes.Created -> created
-//          }
-//        }
-//      }
-//    }
-//  }
-
   /**
    * Route to get a code system terminology
    *
@@ -82,42 +65,6 @@ class CodeSystemEndpoint extends LazyLogging {
       }
     }
   }
-
-//  /**
-//   * Route to put a code system terminology
-//   * TODO: Implement job terminology update feature before using this
-//   * @param terminologyId id of code system terminology
-//   * @param codeSystemId  id of code system
-//   * @return
-//   */
-//  private def putCodeSystemRoute(terminologyId: String, codeSystemId: String): Route = {
-//    put {
-//      entity(as[TerminologyCodeSystem]) { codeSystem =>
-//        complete {
-//          service.updateCodeSystem(terminologyId, codeSystemId, codeSystem) map {
-//            terminologyCodeSystem => StatusCodes.OK -> terminologyCodeSystem
-//          }
-//        }
-//      }
-//    }
-//  }
-
-//  /**
-//   * Route to delete a code system terminology
-//   * TODO: Implement job terminology update feature before using this
-//   * @param terminologyId id of code system terminology
-//   * @param codeSystemId  id of code system
-//   * @return
-//   */
-//  private def deleteCodeSystemRoute(terminologyId: String, codeSystemId: String): Route = {
-//    delete {
-//      complete {
-//        service.removeCodeSystem(terminologyId, codeSystemId) map {
-//          _ => StatusCodes.NoContent
-//        }
-//      }
-//    }
-//  }
 
   /**
    * Route to upload/download a code system file
