@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
-import io.tofhir.engine.model.{SqlSource, SqlSourceSettings}
+import io.tofhir.engine.model.{FhirMapping, FhirMappingSource, SqlSource, SqlSourceSettings}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.InferTask
@@ -13,8 +13,8 @@ import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
-
 import java.sql.{Connection, DriverManager, Statement}
+
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Using}
 import scala.concurrent.duration._
@@ -71,6 +71,9 @@ class SchemaEndpointTest extends BaseEndpointTest {
         sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = None, definition = None, comment = None, elements = None)
     )
   ))
+
+  // mapping using schema2
+  val mapping: FhirMapping = FhirMapping(id = "mapping", url = "http://example.com/mapping", name = "mapping", source = Seq(FhirMappingSource(alias="test",url = "https://example.com/fhir/StructureDefinition/schema2")), context = Map.empty, mapping = Seq.empty)
 
   "The service" should {
 
@@ -164,6 +167,23 @@ class SchemaEndpointTest extends BaseEndpointTest {
       // delete a schema with invalid id
       Delete(s"/tofhir/projects/${projectId}/schemas/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "cannot delete a schema from a project if it is referenced by some mappings" in {
+      // create the mapping which makes use of schema2
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+        // validate that mapping metadata file is updated
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
+        // check mapping folder is created
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping.id).toFile.exists()
+      }
+
+      // delete schema2
+      Delete(s"/tofhir/projects/${projectId}/schemas/${schema2.id}") ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
       }
     }
 

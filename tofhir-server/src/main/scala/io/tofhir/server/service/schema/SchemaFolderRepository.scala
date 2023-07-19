@@ -200,10 +200,6 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    * @return
    */
   override def deleteSchema(projectId: String, id: String): Future[Unit] = {
-    if (!schemaDefinitions.contains(projectId) || !schemaDefinitions(projectId).contains(id)) {
-      throw ResourceNotFound("Schema does not exists.", s"A schema definition with id ${id} does not exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
-    }
-
     Future {
       // Update cache
       val schema: SchemaDefinition = schemaDefinitions(projectId)(id)

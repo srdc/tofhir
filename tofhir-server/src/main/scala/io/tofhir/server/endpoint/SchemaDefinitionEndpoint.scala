@@ -6,16 +6,17 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_SCHEMAS, SEGMENT_INFER}
+import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_INFER, SEGMENT_SCHEMAS}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{InferTask, ToFhirRestCall}
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.service.mapping.IMappingRepository
 
-class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository) extends LazyLogging {
+class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
-  val service: SchemaDefinitionService = new SchemaDefinitionService(schemaRepository)
+  val service: SchemaDefinitionService = new SchemaDefinitionService(schemaRepository, mappingRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_SCHEMAS) {
