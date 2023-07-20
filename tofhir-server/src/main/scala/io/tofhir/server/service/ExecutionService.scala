@@ -64,7 +64,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
     // get the list of mapping task to be executed
     val mappingTasks = mappingUrls match {
-      case Some(urls) => mappingJob.mappings.filter(m => urls.contains(m.mappingRef))
+      case Some(urls) => urls.flatMap(url => mappingJob.mappings.find(p => p.mappingRef.contentEquals(url)))
       case None => mappingJob.mappings
     }
     // create execution
