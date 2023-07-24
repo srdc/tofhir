@@ -1,12 +1,15 @@
 package io.tofhir.engine.data.write
 
 import java.util
-
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.model.{FhirMappingErrorCodes, FhirMappingException, FhirMappingInvalidResourceException, FhirMappingJobExecution, FhirMappingJobResult, FhirMappingResult}
+import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingInvalidResourceException, FhirMappingJobExecution, FhirMappingJobResult, FhirMappingResult}
+import org.apache.spark.SparkException
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
+
+import java.sql.Timestamp
+import java.time.Instant
 
 object SinkHandler {
   val logger: Logger = Logger(this.getClass)
@@ -41,7 +44,7 @@ object SinkHandler {
         case t:Throwable => {
           // handle the exception caused by invalid mapping results
           t.getCause match {
-            case e:FhirMappingInvalidResourceException =>
+            case e:FhirMappingInvalidResourceException  =>
               logMappingJobResult(mappingJobExecution,mappingUrl,numOfFhirResources,e.getProblems,mappingErrors,invalidInputs)
           }
           throw t
@@ -57,6 +60,21 @@ object SinkHandler {
           case e:FhirMappingInvalidResourceException => None
           // FhirMappingException is already handled and logged by Spark while running the mapping
           case e:FhirMappingException => None
+          // Handle mismatching of schema column names and CSV column names
+          case e: IllegalArgumentException =>
+            val csvHeaderError = FhirMappingResult(
+              jobId = mappingJobExecution.jobId,
+              mappingUrl = mappingUrl.getOrElse(""),
+              timestamp = Timestamp.from(Instant.now()),
+              error = Some(FhirMappingError(
+                code = FhirMappingErrorCodes.INVALID_INPUT,
+                description = "Schema column names and CSV column names does not match!!"
+              )),
+              executionId = Some(mappingJobExecution.id)
+            )
+            logger.error(csvHeaderError.toLogstashMarker, csvHeaderError.toString, t)
+            val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl)
+            logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
           // log the mapping job result and exception for the rest
           case _ =>
             val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl)

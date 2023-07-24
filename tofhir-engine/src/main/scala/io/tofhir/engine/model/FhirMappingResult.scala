@@ -32,7 +32,7 @@ case class FhirMappingResult(
   final val eventId:String = "MAPPING_RESULT"
   override def toString: String = {
     s"Mapping failure (${error.get.code}) for job '$jobId' and mapping '$mappingUrl'${mappingExpr.map(e => s" within expression '$e'").getOrElse("")} execution '${executionId.getOrElse("")}'!\n"+
-    s"\tSource: ${source.get}\n"+
+    s"\tSource: ${source.getOrElse("test")}\n"+
     s"\tError: ${error.get.description}" +
       error.get.expression.map(e =>  s"\n\tExpression: $e").getOrElse("")
   }
@@ -47,7 +47,7 @@ case class FhirMappingResult(
         .and(append("executionId", executionId.getOrElse(""))
           .and(append("mappingUrl", mappingUrl)
             .and(append("mappingExpr", mappingExpr.orElse(null))
-              .and(appendRaw("source", source.get)
+              .and(appendRaw("source", source.getOrElse("null"))
                 .and(append("errorCode", error.get.code)
                   .and(append("errorDesc", error.get.description)
                     .and(append("errorExpr", error.get.expression.orElse(null))
