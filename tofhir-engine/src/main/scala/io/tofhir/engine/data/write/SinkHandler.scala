@@ -80,9 +80,6 @@ object SinkHandler {
             val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl)
             logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
         }
-        // if we throw the original exception i.e. t, Spark will log it (and its cause exception) which results in duplicate logs
-        // therefore we throw FhirMappingException which just includes a message that will be logged by Spark and not cause exception
-        throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")} terminated with exceptions!")
       }
     }
   }
