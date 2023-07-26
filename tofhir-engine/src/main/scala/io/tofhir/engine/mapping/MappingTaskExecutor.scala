@@ -3,6 +3,7 @@ package io.tofhir.engine.mapping
 import com.typesafe.scalalogging.Logger
 import io.onfhir.expression.FhirExpressionException
 import io.onfhir.util.JsonFormatter._
+import io.tofhir.common.util.ExceptionUtil
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.data.read.SourceHandler
@@ -233,7 +234,7 @@ object MappingTaskExecutor {
             source = Some(jo.toJson),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
-              description = e.getMessage
+              description = ExceptionUtil.extractExceptionMessages(e)
             )),
             executionId = executionId)
           if (errorHandlingType == ErrorHandlingType.CONTINUE) {
