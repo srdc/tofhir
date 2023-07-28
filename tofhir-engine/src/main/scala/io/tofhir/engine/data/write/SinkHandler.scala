@@ -1,8 +1,8 @@
 package io.tofhir.engine.data.write
 
 import java.util
-
 import com.typesafe.scalalogging.Logger
+import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.model.{FhirMappingErrorCodes, FhirMappingException, FhirMappingInvalidResourceException, FhirMappingJobExecution, FhirMappingJobResult, FhirMappingResult}
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{Dataset, SparkSession}
@@ -64,7 +64,9 @@ object SinkHandler {
         }
         // if we throw the original exception i.e. t, Spark will log it (and its cause exception) which results in duplicate logs
         // therefore we throw FhirMappingException which just includes a message that will be logged by Spark and not cause exception
-        throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")} terminated with exceptions!")
+        // Throw exception if error handling type is halt, continue otherwise.
+        if(mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT)
+          throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")} terminated with exceptions!")
       }
     }
   }
