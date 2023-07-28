@@ -8,7 +8,7 @@ import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.{ResourceNotFound, TestResourceCreationRequest}
+import io.tofhir.server.model.{ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
@@ -47,14 +47,14 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     )
 
   /**
-   * Run the job for the given mapping tasks
+   * Run the job for the given execute job tasks
    *
-   * @param projectId   project id the job belongs to
-   * @param jobId       job id
-   * @param mappingUrls the mapping tasks to be executed
+   * @param projectId      project id the job belongs to
+   * @param jobId          job id
+   * @param executeJobTask execute job task instance contains mapping urls and error handling type
    * @return
    */
-  def runJob(projectId: String, jobId: String, mappingUrls: Option[Seq[String]] = None): Future[Unit] = {
+  def runJob(projectId: String, jobId: String, executeJobTask: ExecuteJobTask): Future[Unit] = {
     if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
       throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
     }
@@ -62,12 +62,13 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
 
     // get the list of mapping task to be executed
-    val mappingTasks = mappingUrls match {
+    val mappingTasks = executeJobTask.mappingUrls match {
       case Some(urls) => urls.flatMap(url => mappingJob.mappings.find(p => p.mappingRef.contentEquals(url)))
       case None => mappingJob.mappings
     }
     // create execution
-    val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks, mappingErrorHandling = mappingJob.mappingErrorHandling)
+    val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
+      mappingErrorHandling = executeJobTask.mappingErrorHandling.getOrElse(mappingJob.mappingErrorHandling))
     if (mappingJob.sourceSettings.exists(_._2.asStream)) {
       Future { // TODO we lose the ability to stop the streaming job
         val streamingQuery =

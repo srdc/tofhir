@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_RUN, SEGMENT_TEST}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{RowSelectionOrder, TestResourceCreationRequest, ToFhirRestCall}
+import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest, ToFhirRestCall}
 import io.tofhir.server.service.{ExecutionService, JobService}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -104,9 +104,9 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
 
   private def runJob(projectId: String, id: String): Route = {
     post {
-      entity(as[Option[Seq[String]]]) { mappingUrls =>
+      entity(as[ExecuteJobTask]) { executeJobTask =>
         complete {
-          executionService.runJob(projectId, id, mappingUrls) map { _ =>
+          executionService.runJob(projectId, id, executeJobTask) map { _ =>
             StatusCodes.OK
           }
         }
