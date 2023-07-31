@@ -104,7 +104,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
 
   private def runJob(projectId: String, id: String): Route = {
     post {
-      entity(as[ExecuteJobTask]) { executeJobTask =>
+      entity(as[Option[ExecuteJobTask]]) { executeJobTask =>
         complete {
           executionService.runJob(projectId, id, executeJobTask) map { _ =>
             StatusCodes.OK

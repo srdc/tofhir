@@ -54,7 +54,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @param executeJobTask execute job task instance contains mapping urls and error handling type
    * @return
    */
-  def runJob(projectId: String, jobId: String, executeJobTask: ExecuteJobTask): Future[Unit] = {
+  def runJob(projectId: String, jobId: String, executeJobTask: Option[ExecuteJobTask]): Future[Unit] = {
     if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
       throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
     }
@@ -62,13 +62,13 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
 
     // get the list of mapping task to be executed
-    val mappingTasks = executeJobTask.mappingUrls match {
+    val mappingTasks = executeJobTask.getOrElse(ExecuteJobTask(mappingErrorHandling = None)).mappingUrls match {
       case Some(urls) => urls.flatMap(url => mappingJob.mappings.find(p => p.mappingRef.contentEquals(url)))
       case None => mappingJob.mappings
     }
     // create execution
     val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
-      mappingErrorHandling = executeJobTask.mappingErrorHandling.getOrElse(mappingJob.mappingErrorHandling))
+      mappingErrorHandling = executeJobTask.getOrElse(ExecuteJobTask(mappingErrorHandling = None)).mappingErrorHandling.getOrElse(mappingJob.mappingErrorHandling))
     if (mappingJob.sourceSettings.exists(_._2.asStream)) {
       Future { // TODO we lose the ability to stop the streaming job
         val streamingQuery =
