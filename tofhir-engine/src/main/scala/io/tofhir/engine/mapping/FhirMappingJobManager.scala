@@ -3,7 +3,7 @@ package io.tofhir.engine.mapping
 import com.typesafe.scalalogging.Logger
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
-import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.data.write.{BaseFhirWriter, FhirWriterFactory, SinkHandler}
 import io.tofhir.engine.model._
@@ -60,7 +60,27 @@ class FhirMappingJobManager(
 
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
-        readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings, fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
+        try{
+          readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings, fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
+        }catch{
+          case t: Throwable => {
+            t.getCause match{
+              // write error that logged in SinkHandler#writeBatch
+              case e: FhirMappingException => None
+              // read error or unknown error can be anywhere in readSourceExecuteAndWriteInBatches function
+              case _ =>
+                val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
+                logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
+            }
+            // Continue or halt according to error handling type
+            if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
+              throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project " +
+                s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!")
+            }else{
+              Future.successful((): Unit)
+            }
+          }
+        }
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.jobId}.") }
   }
