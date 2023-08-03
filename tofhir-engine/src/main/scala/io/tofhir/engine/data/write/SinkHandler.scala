@@ -83,6 +83,7 @@ object SinkHandler {
 
     df
       .writeStream
+      .option("checkpointLocation","./checkpoint") //Checkpoint directory for streaming
       .foreachBatch(datasetWrite)
       .start()
   }
