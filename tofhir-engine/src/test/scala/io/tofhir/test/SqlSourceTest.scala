@@ -72,7 +72,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling)
 
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"),
-    writeErrorHandling = Some(fhirWriteErrorHandling))
+    errorHandling = Some(fhirWriteErrorHandling))
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
 
   val fhirServerIsAvailable: Boolean =
