@@ -138,7 +138,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
     } catch {
       case tout: TimeoutException =>
         val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} timeout for batch interaction while writing the resources!"
-        if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
+        if (sinkSettings.writeErrorHandling.isEmpty || sinkSettings.writeErrorHandling.get == ErrorHandlingType.HALT) {
           logger.error(msg, tout)
           throw FhirMappingException(msg, tout)
         } else {
@@ -170,7 +170,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
             logger.error(ecfMsg)
           case _ => ()
         }
-        if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
+        if (sinkSettings.writeErrorHandling.isEmpty || sinkSettings.writeErrorHandling.get == ErrorHandlingType.HALT) {
           throw FhirMappingException(msg, e)
         } else {
           mappingResults
@@ -232,7 +232,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
           problemsAccumulator.add(failedResult)
         )
 
-        if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
+        if (sinkSettings.writeErrorHandling.isEmpty || sinkSettings.writeErrorHandling.get == ErrorHandlingType.HALT) {
           // Spark will automatically log the msg of exception
           throw FhirMappingInvalidResourceException(msg, problemsAccumulator.value)
         } else {
