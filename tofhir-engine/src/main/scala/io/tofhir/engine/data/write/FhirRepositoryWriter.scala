@@ -160,7 +160,8 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         logger.error(msg, e)
         // special handling for some errors
         e match {
-          case fce: FhirClientException =>
+          // log the server response for FhirClientException
+          case fce: FhirClientException if fce.serverResponse.isDefined =>
             val serverResponse: FHIRResponse = fce.serverResponse.get
             var ecfMsg = s"FHIR Repository responds with status code ${serverResponse.httpStatus}"
             // extend error message with response body if available
