@@ -29,16 +29,16 @@ case class FileSystemSinkSettings(path: String,
 /**
  * Settings for a FHIR repository to store the mapped resources
  *
- * @param fhirRepoUrl      FHIR endpoint root url
- * @param securitySettings Security settings if target API is secured
- * @param errorHandling    How to handle error while writing mapped FHIR resources to this FHIR repository
- * @param returnMinimal    Whether 'return=minimal' header should be added to the batch request while writing the
- *                         resources into the FHIR Repository. If this header is added, the response does not return the
- *                         body which improves the performance.
+ * @param fhirRepoUrl         FHIR endpoint root url
+ * @param securitySettings    Security settings if target API is secured
+ * @param writeErrorHandling  How to handle error while writing mapped FHIR resources to this FHIR repository
+ * @param returnMinimal       Whether 'return=minimal' header should be added to the batch request while writing the
+ *                            resources into the FHIR Repository. If this header is added, the response does not return the
+ *                            body which improves the performance.
  */
 case class FhirRepositorySinkSettings(fhirRepoUrl: String,
                                       securitySettings: Option[IFhirRepositorySecuritySettings] = None,
-                                      errorHandling: Option[ErrorHandlingType] = None,
+                                      writeErrorHandling: Option[ErrorHandlingType] = None,
                                       returnMinimal: Boolean = true) extends FhirSinkSettings with IdentityServiceSettings with TerminologyServiceSettings {
   /**
    * Create an OnFhir client
