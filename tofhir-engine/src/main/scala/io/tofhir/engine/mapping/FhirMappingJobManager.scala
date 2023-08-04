@@ -99,22 +99,15 @@ class FhirMappingJobManager(
                                      sinkSettings: FhirSinkSettings,
                                      terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                      identityServiceSettings: Option[IdentityServiceSettings] = None,
-                                    ): StreamingQuery = {
+                                    ): Seq[StreamingQuery] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
 
-    val mappedResourcesDf =
       mappingJobExecution.mappingTasks
-        .map(t => Await.result(readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id)), Duration.Inf))
-        .reduce((ts1, ts2) => ts1.union(ts2))
-    logger.info(s"Streaming mapping job ${mappingJobExecution.jobId} is started and waiting for the data...")
-    SinkHandler.writeStream(spark, mappingJobExecution, mappedResourcesDf, fhirWriter)
-    /*
-    val datasetWrite = (dataset: Dataset[String], batchN: Long) => fhirWriter.write(dataset)
-
-    mappedResourcesDf
-      .writeStream
-      .foreachBatch(datasetWrite)
-      .start()*/
+        .map(t => {
+          val ts = Await.result(readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id)), Duration.Inf)
+          logger.info(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping url ${t.mappingRef} is started and waiting for the data...")
+          SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
+        })
   }
 
   /**

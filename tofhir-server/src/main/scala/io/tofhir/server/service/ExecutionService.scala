@@ -80,7 +80,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
               identityServiceSettings = mappingJob.getIdentityServiceSettings()
             )
-        streamingQuery.awaitTermination()
+        streamingQuery.foreach(sq => sq.awaitTermination())
       }
     } else {
       fhirMappingJobManager

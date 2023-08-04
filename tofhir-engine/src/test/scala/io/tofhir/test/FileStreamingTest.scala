@@ -78,10 +78,10 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "other-observations.csv").toFile, FileUtils.getPath(observationWatchFolder.getAbsolutePath, "other-observations.csv").toFile)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling)
-    val streamingQuery = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask)), dataSourceSettings, fileSinkSettings)
-    streamingQuery.isActive shouldBe true
+    val streamingQueries = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask)), dataSourceSettings, fileSinkSettings)
+    streamingQueries.foreach(sq => sq.isActive shouldBe true)
 //    streamingQuery.awaitTermination()
-    streamingQuery.stop() shouldBe ()
+    streamingQueries.foreach(sq => sq.stop() shouldBe ())
 //    println("TESTINNGGGG") shouldBe ()
   }
 

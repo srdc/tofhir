@@ -45,7 +45,7 @@ trait IFhirMappingJobManager {
                             sinkSettings: FhirSinkSettings,
                             terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                             identityServiceSettings: Option[IdentityServiceSettings] = None,
-                           ): StreamingQuery
+                           ): Seq[StreamingQuery]
 
   /**
    * Schedule to execute the given mapping job with given cron expression and write the resulting FHIR resources to the given sink

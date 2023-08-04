@@ -117,7 +117,7 @@ object CommandLineInterface {
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
               identityServiceSettings = mappingJob.getIdentityServiceSettings())
-        streamingQuery.awaitTermination()
+        streamingQuery.foreach(sq => sq.awaitTermination())
       } else {
         val f =
           fhirMappingJobManager
