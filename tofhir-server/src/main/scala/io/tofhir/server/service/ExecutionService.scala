@@ -157,7 +157,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           // Collect job run logs for matching with mappingUrl field of mapping error logs
           var jobRunLogsData = jobRunLogs.collect()
 
-          // Get error logs for the given execution and select needed columns. ProjectId field is null for selecting mapping error logs, filter out jobRunsLogs.
+          // Get error logs for the given execution. ProjectId field is null for selecting mapping error logs, filter out jobRunsLogs.
           var mappingErrorLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is null")
 
           // Check whether there is any mapping error
