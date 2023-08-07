@@ -188,13 +188,13 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               )
             )
 
-            // Build a map for updated mapping tasks logs (mappingUrl -> mappingTasksErrorLogsWithRowErrorLogs)
-            val updatedMappingTasksLogsMap = mappingTasksErrorLogsWithRowErrorLogs.collect().map(updatedJobRunLog =>
-              updatedJobRunLog.getAs[String]("mappingUrl") -> updatedJobRunLog).toMap
+            // Build a map for updated job run logs (mappingUrl -> jobRunLogsWithErrorDetails)
+            val updatedJobRunLogsMap = mappingTasksErrorLogsWithRowErrorLogs.collect().map(updatedJobRunLog =>
+              (updatedJobRunLog.getAs[String]("mappingUrl"), updatedJobRunLog.getAs[String]("@timestamp")) -> updatedJobRunLog).toMap
 
-            // Replace mapping tasks logs if it is in the map
+            // Replace job run logs if it is in the map
             mappingTasksLogsData = mappingTasksLogsData.map(jobRunLog =>
-              updatedMappingTasksLogsMap.getOrElse(jobRunLog.getAs[String]("mappingUrl"), jobRunLog))
+              updatedJobRunLogsMap.getOrElse((jobRunLog.getAs[String]("mappingUrl"), jobRunLog.getAs[String]("@timestamp")), jobRunLog))
 
           }
           // return json objects for mapping tasks logs
