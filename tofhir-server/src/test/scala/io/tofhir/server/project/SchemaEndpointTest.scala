@@ -28,7 +28,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
   val inferTask: InferTask = InferTask(sourceSettings = Map(
     "source" ->
       SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
-  ), sqlSource = SqlSource(query = Some("select * from death")))
+  ), fhirMappingSourceContext = SqlSource(query = Some("select * from death")))
 
 
   // first schema schema to be created
