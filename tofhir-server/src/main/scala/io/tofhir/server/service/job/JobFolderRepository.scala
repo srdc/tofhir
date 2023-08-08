@@ -10,6 +10,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.model._
 import io.tofhir.server.service.project.ProjectFolderRepository
+import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.Serialization.writePretty
 
 import java.io.{File, FileWriter}
@@ -184,7 +185,10 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()
         val job = fileContent.parseJson.extract[FhirMappingJob]
-        fhirJobMap.put(job.id, job)
+        // discard if the job id and file name not match
+        if(FileOperations.checkFileNameMatchesEntityId(job.id, file, "job")) {
+          fhirJobMap.put(job.id, job)
+        }
       }
       map.put(projectDirectory.getName, fhirJobMap)
     }

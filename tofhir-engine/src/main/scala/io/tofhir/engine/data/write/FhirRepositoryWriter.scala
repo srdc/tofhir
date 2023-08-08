@@ -3,7 +3,8 @@ package io.tofhir.engine.data.write
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.FHIR_INTERACTIONS
-import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder}
+import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder, FhirClientException}
+import io.onfhir.api.model.FHIRResponse
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.util.JsonFormatter._
@@ -156,11 +157,21 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         }
       case e: Throwable =>
         val msg = "!!!There is an error while writing resources to the FHIR Repository."
+        logger.error(msg, e)
+        // special handling for some errors
+        e match {
+          // log the server response for FhirClientException
+          case fce: FhirClientException if fce.serverResponse.isDefined =>
+            val serverResponse: FHIRResponse = fce.serverResponse.get
+            var ecfMsg = s"FHIR Repository responds with status code ${serverResponse.httpStatus}"
+            // extend error message with response body if available
+            if(serverResponse.responseBody.isDefined)
+              ecfMsg = ecfMsg.concat(s" and body ${serverResponse.responseBody.get.toJson}")
+            logger.error(ecfMsg)
+        }
         if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
-          logger.error(msg, e)
           throw FhirMappingException(msg, e)
         } else {
-          logger.error(msg, e)
           mappingResults
             .map(_._2)
             .map(mr =>

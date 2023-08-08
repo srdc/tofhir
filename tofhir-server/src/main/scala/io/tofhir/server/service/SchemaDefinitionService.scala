@@ -1,20 +1,18 @@
 package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
-import io.onfhir.api.Resource
-import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.{BadRequest, InferTask}
+import io.tofhir.server.model.{BadRequest, InferTask, ResourceNotFound}
 import io.tofhir.server.service.schema.ISchemaRepository
-import org.json4s.JArray
-import org.json4s.JsonDSL._
 import io.tofhir.engine.mapping.SchemaConverter
+import io.tofhir.server.service.mapping.IMappingRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SchemaDefinitionService(schemaRepository: ISchemaRepository) extends LazyLogging {
+class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
   /**
    * Get all schema definition metadata (not populated with field definitions) from the schema repository
@@ -75,57 +73,21 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository) extends LazyL
    *
    * @param projectId
    * @param id
+   * @throws ResourceNotFound when the schema does not exist
+   * @throws BadRequest when the schema is in use by some mappings
    * @return
    */
   def deleteSchema(projectId: String, id: String): Future[Unit] = {
-    schemaRepository.deleteSchema(projectId, id)
-  }
-
-  private def convertToFhirResource(schemaUrl: String, name: String, `type`: String, rootPath: String, fieldDefinitions: Seq[SimpleStructureDefinition]): Resource = {
-    val structureDefinitionResource: Resource =
-      ("resourceType" -> "StructureDefinition") ~
-        ("url" -> schemaUrl) ~
-        ("name" -> name) ~
-        ("status" -> "draft") ~
-        ("fhirVersion" -> "4.0.1") ~
-        ("kind" -> "logical") ~
-        ("abstract" -> false) ~
-        ("type" -> `type`) ~
-        ("baseDefinition" -> "http://hl7.org/fhir/StructureDefinition/Element") ~
-        ("derivation" -> "specialization") ~
-        ("differential" -> ("element" -> generateElementArray(rootPath, fieldDefinitions)))
-
-    structureDefinitionResource
-  }
-
-  private def generateElementArray(rootPath: String, fieldDefinitions: Seq[SimpleStructureDefinition]): JArray = {
-    // Check whether all field definitions have at least one data type
-    val integrityCheck = fieldDefinitions.forall(fd => fd.dataTypes.isDefined && fd.dataTypes.get.nonEmpty)
-    if (!integrityCheck) {
-      throw BadRequest("Missing data type.", s"A field definition must have at least one data type. Element rootPath: ${rootPath}")
-    }
-
-    val rootElement =
-      ("id" -> rootPath) ~
-        ("path" -> rootPath) ~
-        ("min" -> 0) ~
-        ("max" -> "*") ~
-        ("type" -> JArray(List("code" -> "Element")))
-
-    val elements = fieldDefinitions.map { fd =>
-      ("id" -> fd.id) ~
-        ("path" -> fd.path) ~
-        ("short" -> fd.short) ~
-        ("definition" -> fd.definition) ~
-        ("min" -> fd.minCardinality) ~
-        ("max" -> fd.maxCardinality) ~
-        ("type" -> fd.dataTypes.get.map { dt =>
-          ("code" -> dt.dataType) ~
-            ("profile" -> dt.profiles)
-        })
-    }.toList
-
-    JArray(rootElement +: elements)
+    schemaRepository.getSchema(projectId, id).flatMap(schema => {
+      if (schema.isEmpty)
+        throw ResourceNotFound("Schema does not exists.", s"A schema definition with id $id does not exists in the schema repository.")
+      mappingRepository.getMappingsReferencingSchema(projectId,schema.get.url).flatMap(mappingIds => {
+        if (mappingIds.isEmpty)
+          schemaRepository.deleteSchema(projectId, id)
+        else
+          throw BadRequest("Schema is referenced by some mappings.",s"Schema definition with id $id is referenced by the following mappings:${mappingIds.mkString(",")}")
+      })
+    })
   }
 
   /**

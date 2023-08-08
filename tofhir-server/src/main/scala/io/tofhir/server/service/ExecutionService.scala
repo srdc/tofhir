@@ -1,5 +1,6 @@
 package io.tofhir.server.service
 
+import akka.shapeless.HList.ListCompat.::
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
@@ -14,8 +15,9 @@ import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Encoders, Row}
+import org.apache.spark.sql.functions.{col, lit}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, IntegerType, ObjectType, StringType, StructField, StructType}
+import org.apache.spark.sql.{Encoder, Encoders, Row}
 import org.json4s.JsonAST.JValue
 import org.json4s.jackson.JsonMethods
 
@@ -62,7 +64,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
     // get the list of mapping task to be executed
     val mappingTasks = mappingUrls match {
-      case Some(urls) => mappingJob.mappings.filter(m => urls.contains(m.mappingRef))
+      case Some(urls) => urls.flatMap(url => mappingJob.mappings.find(p => p.mappingRef.contentEquals(url)))
       case None => mappingJob.mappings
     }
     // create execution
@@ -145,12 +147,50 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         Seq.empty
       }
       else {
-        val jobRuns = dataFrame.filter(s"executionId = '$executionId'")
-        // handle the case where the job has not been run yet which makes the data frame empty
-        if (jobRuns.isEmpty) {
+        // Get job run logs for the given execution. ProjectId field is not null for selecting jobRunsLogs, filter out mapping error logs.
+        val jobRunLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is not null")
+
+        // Handle the case where the job has not been run yet, which makes the data frame empty
+        if (jobRunLogs.isEmpty) {
           Seq.empty
         } else {
-          jobRuns.collect().map(row => {
+          // Get error logs for the given execution and select needed columns. ProjectId field is null for selecting mapping error logs, filter out jobRunsLogs.
+          val mappingErrorLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is null").select(List("errorCode", "errorDesc", "message", "mappingUrl").map(col):_*)
+
+          // Group mapping error logs by mapping url
+          val jobErrorLogsGroupedByMappingUrl = mappingErrorLogs.groupByKey(row => row.get(row.fieldIndex("mappingUrl")).toString)(Encoders.STRING)
+
+          // Collect job run logs for matching with mappingUrl field of mapping error logs
+          var jobRunLogsData = jobRunLogs.collect()
+
+          // Add mapping error details to job run logs if any error occurred while executing the job.
+          val jobRunLogsWithErrorDetails = jobErrorLogsGroupedByMappingUrl.mapGroups((key, values) => {
+            // Find the related job run log to given mapping url
+            val jobRunLog = jobRunLogsData.filter(row => row.getAs[String]("mappingUrl") == key)
+            // Append mapping error logs to the related job run log
+            Row.fromSeq(Row.unapplySeq(jobRunLog.head).get :+ values.toSeq)
+          })(
+              // Define a new schema for the resulting rows and create an encoder for it. We will add a "error_logs" column to job run logs that contains related error logs.
+              RowEncoder(jobRunLogs.schema.add("error_logs", ArrayType(
+                  new StructType()
+                    .add("errorCode", StringType)
+                    .add("errorDesc", StringType)
+                    .add("message", StringType)
+                    .add("mappingUrl", StringType)
+                ))
+              )
+          )
+
+          // Build a map for updated job run logs (mappingUrl -> jobRunLogsWithErrorDetails)
+          val updatedJobRunLogsMap = jobRunLogsWithErrorDetails.collect().map(updatedJobRunLog =>
+            updatedJobRunLog.getAs[String]("mappingUrl") -> updatedJobRunLog).toMap
+
+          // Replace job run logs if it is in the map
+          jobRunLogsData = jobRunLogsData.map(jobRunLog =>
+            updatedJobRunLogsMap.getOrElse(jobRunLog.getAs[String]("mappingUrl"), jobRunLog))
+
+          // return json objects for job run logs
+          jobRunLogsData.map(row => {
             JsonMethods.parse(row.json)
           })
         }

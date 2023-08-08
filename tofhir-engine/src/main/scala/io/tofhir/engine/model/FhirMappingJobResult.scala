@@ -32,8 +32,8 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
       (if (result != "FAILURE")
         s"\t# of Invalid Rows: \t$numOfInvalids\n" +
           s"\t# of Not Mapped: \t$numOfNotMapped\n" +
-          s"\t# of FHIR resources:\t$numOfFhirResources\n" +
-          s"\t# of Failed writes:\t$numOfFailedWrites"
+          s"\t# of Failed writes:\t$numOfFailedWrites\n" +
+          s"\t# of Written FHIR resources:\t$numOfFhirResources"
       else
         ""
         )

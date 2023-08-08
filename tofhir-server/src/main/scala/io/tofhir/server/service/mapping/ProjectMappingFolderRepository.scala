@@ -12,6 +12,8 @@ import org.json4s.jackson.Serialization.writePretty
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
 import io.onfhir.api.util.IOUtil
+import io.tofhir.server.util.FileOperations
+
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
@@ -139,6 +141,21 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
   }
 
   /**
+   * Retrieves the identifiers of mappings referencing the given schema in their definitions.
+   * @param projectId identifier of project whose mappings will be checked
+   * @param schemaUrl the url of schema
+   * @return the identifiers of mappings referencing the given schema in their definitions
+   */
+  override def getMappingsReferencingSchema(projectId: String, schemaUrl: String): Future[Seq[String]] = {
+    Future {
+      mappingDefinitions.getOrElse(projectId,Map.empty) // handle the case where project has no mappings by returning an empty Map
+        .values.toSeq
+        .filter(mapping => mapping.source.exists(source => source.url.contentEquals(schemaUrl)))
+        .map(mapping => mapping.id)
+    }
+  }
+
+  /**
    * Gets the file for the given mapping definition.
    *
    * @param fhirMapping
@@ -187,7 +204,10 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()
         val fhirMapping = fileContent.parseJson.extract[FhirMapping]
-        fhirMappingMap.put(fhirMapping.id, fhirMapping)
+        // discard if the mapping id and file name not match
+        if (FileOperations.checkFileNameMatchesEntityId(fhirMapping.id, file, "mapping")) {
+          fhirMappingMap.put(fhirMapping.id, fhirMapping)
+        }
       }
       map.put(projectDirectory.getName, fhirMappingMap)
     }
