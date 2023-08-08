@@ -7,7 +7,7 @@ import io.onfhir.template.FhirTemplateExpressionHandler
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.model.{ConfigurationContext, FhirInteraction, FhirMappingContext, FhirMappingException, FhirMappingExpression, IdentityServiceSettings, TerminologyServiceSettings}
 import org.json4s.JsonAST.JArray
-import org.json4s.{JObject, JValue}
+import org.json4s.{JInt, JNull, JObject, JValue}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -72,7 +72,6 @@ class FhirMappingService(
             }
         }
 
-
     //Find out eligible mappings on this source JObject based on preconditions
     val eligibleMappings =
       mappings
@@ -81,7 +80,9 @@ class FhirMappingService(
             .precondition
             .forall(prc =>
               try {
-                getFhirPathEvaluator(contextVariables).satisfies(prc.expression.get, source)
+                getFhirPathEvaluator(contextVariables)
+                  .evaluateOptionalBoolean(prc.expression.get, source)
+                  .exists(t => t)
               } catch {
                   case e: Exception =>
                     throw FhirMappingException(s"Expression: ${mpp.expression.name}. Error: ${e.getMessage}", e)
@@ -135,6 +136,7 @@ class FhirMappingService(
       .map(_._2) // Get the accumulated result set
       .map(resources =>
         resources.map {
+          case (expName, JNull, fhirIntr) => (expName, Nil, fhirIntr)
           case (expName, a: JArray, fhirIntr) => (expName, a.arr.map(_.asInstanceOf[Resource]), fhirIntr)
           case (expName, o: JObject, fhirIntr) =>  (expName, Seq(o), fhirIntr)
           case _ => throw new IllegalStateException("This is an unexpected situation. Among the FHIR resources returned by evaluatedExpression, there is something which is neither JArray nor JObject.")
