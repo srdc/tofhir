@@ -258,7 +258,7 @@ class FhirMappingJobManager(
                                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
     val mappingTask = mappingJobExecution.mappingTasks.head
     logger.debug(s"Reading source data for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
-    val (fhirMapping, mds, df) = readJoinSourceData(mappingTask, sourceSettings, timeRange)
+    val (fhirMapping, mds, df) = readJoinSourceData(mappingTask, sourceSettings, timeRange) // FIXME: Why reading again below? ASK
     val sizeOfDf: Long = df.count()
     logger.debug(s"$sizeOfDf records read for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
 

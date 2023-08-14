@@ -5,23 +5,26 @@
       "jsonClass": "FileSystemSourceSettings",
       "name": "pilot2-source",
       "sourceUri": "https://aiccelerate.eu/data-integration-suite/pilot2-data",
-      "dataFolderPath": "/test-data",
+      "dataFolderPath": "/test-data/streaming/watch",
       "asStream": true
     }
   },
   "sinkSettings": {
     "jsonClass": "FileSystemSinkSettings",
-    "path": "./fhir.ndjson"
+    "path": "/test-data/sink/streaming-test-fhir.ndjson"
   },
-  "mappingErrorHandling": "continue",
+  "mappingErrorHandling": "halt",
   "mappings": [
     {
-      "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot2/patient-mapping",
+      "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       "sourceContext": {
         "source": {
           "jsonClass": "FileSystemSource",
           "path": "patients_csv",
-          "fileFormat": "csv"
+          "fileFormat": "csv",
+          "options": {
+            "cleanSource": "delete"
+          }
         }
       }
     }

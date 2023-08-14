@@ -376,7 +376,7 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
   /**
    * Parse the concept map given in CSV format
    * @param filePath File path
-   * @return  A map of (source system, source code) -> (target system, target code, target display, equivalance)
+   * @return  A map of (source system, source code) -> (target system, target code, target display, equivalence)
    */
   private def parseConceptMapGivenInCsv(filePath:String): Map[(String, String), Seq[(String, String, Option[String], String)]] = {
     try {

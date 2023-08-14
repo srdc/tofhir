@@ -14,13 +14,15 @@ import it.sauronsoftware.cron4j.Scheduler
 import org.apache.commons.io.FileUtils
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
+
 import java.io.File
 import java.net.URI
 import java.nio.file.{Path, Paths}
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
-
 import io.onfhir.path.FhirPathUtilFunctionsFactory
+import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
+
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.io.{BufferedSource, Source}
@@ -87,7 +89,8 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
 
   val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDb.toUri)
 
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", errorHandling = Some(fhirWriteErrorHandling))
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"),
+    errorHandling = Some(fhirWriteErrorHandling))
 
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
   val fhirServerIsAvailable: Boolean =

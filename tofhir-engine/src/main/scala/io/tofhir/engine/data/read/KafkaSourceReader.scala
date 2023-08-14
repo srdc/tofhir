@@ -7,7 +7,7 @@ import io.tofhir.engine.model.{KafkaSource, KafkaSourceSettings}
 import org.apache.spark.sql.functions.{col, from_json, udf}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.json4s.{JBool, JLong, JNull, JDouble, JInt}
+import org.json4s.{JBool, JDouble, JInt, JLong, JNull}
 
 import java.time.LocalDateTime
 import javax.ws.rs.InternalServerErrorException

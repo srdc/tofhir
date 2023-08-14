@@ -5,7 +5,7 @@ import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import org.json4s._
+import org.json4s.JField
 
 import java.io.File
 import java.net.URI

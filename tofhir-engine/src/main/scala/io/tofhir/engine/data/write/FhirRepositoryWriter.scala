@@ -151,7 +151,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
               )))
             )
             .foreach(failedResult =>
-              problemsAccumulator.add(failedResult)
+              problemsAccumulator.add(failedResult) // FIXME: Why use the accumulator only in writing stream? ASK
             )
           None
         }
