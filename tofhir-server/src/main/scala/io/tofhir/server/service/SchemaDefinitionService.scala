@@ -96,29 +96,21 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * @return SchemaDefinition object containing the field type information
    */
   def inferSchema(inferTask: InferTask): Future[Option[SchemaDefinition]] = {
-
     // Execute SQL and get the dataFrame
     val dataFrame = SourceHandler.readSource("unnamed", SparkConfig.sparkSession,
-      inferTask.sqlSource, inferTask.sourceSettings.head._2, None, None, Some(1))
-
+      inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
     // Default name for undefined information
     val defaultName: String = "unnamed"
-
     // Create unnamed Schema definition by infer the schema from DataFrame
     val unnamedSchema = {
-
       // Schema converter object for mapping spark data types to fhir data types
       val schemaConverter = new SchemaConverter(majorFhirVersion = "R4")
-
       // Map SQL DataTypes to Fhir DataTypes
       var fieldDefinitions = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
-
       // Remove INPUT_VALIDITY_ERROR fieldDefinition that is added by SourceHandler
-      fieldDefinitions = fieldDefinitions.filter(fieldDefiniton => fieldDefiniton.id != SourceHandler.INPUT_VALIDITY_ERROR)
-
+      fieldDefinitions = fieldDefinitions.filter(fieldDefinition => fieldDefinition.id != SourceHandler.INPUT_VALIDITY_ERROR)
       SchemaDefinition(url = defaultName, `type` = defaultName, name = defaultName, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))
     }
-
     Future.apply(Some(unnamedSchema))
   }
 }
