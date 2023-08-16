@@ -21,11 +21,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.utility.DockerImageName
+
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.{Collections, Properties, UUID}
-
 import io.onfhir.path.FhirPathUtilFunctionsFactory
+import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
+
 import scala.concurrent.Await
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -82,7 +84,8 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   val streamingSourceSettings: Map[String, KafkaSourceSettings] =
     Map("source" -> KafkaSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort"))
 
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", errorHandling = Some(fhirWriteErrorHandling))
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"),
+    errorHandling = Some(fhirWriteErrorHandling))
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",

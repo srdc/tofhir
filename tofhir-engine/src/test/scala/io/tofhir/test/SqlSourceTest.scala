@@ -18,6 +18,8 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.concurrent.TimeUnit
 import io.onfhir.path.FhirPathUtilFunctionsFactory
+import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.{BufferedSource, Source}
@@ -69,8 +71,9 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
 
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling)
 
-  val fhirSinkSetting: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://localhost:8081/fhir", errorHandling = Some(fhirWriteErrorHandling))
-  val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSetting.fhirRepoUrl)
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"),
+    errorHandling = Some(fhirWriteErrorHandling))
+  val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
 
   val fhirServerIsAvailable: Boolean =
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
@@ -126,7 +129,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
     //Send it to our fhir repo if they are also validated
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask)), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
+      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask)), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSettings)
       .flatMap(_ => {
         //Delete patients
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -159,7 +162,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   it should "map test data and write it to FHIR repo successfully" in {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(otherObsMappingTask)), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
+      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(otherObsMappingTask)), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSettings)
       .flatMap(_ => {
         // Delete all observations
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -202,7 +205,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
     //Send it to our fhir repo if they are also validated
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(careSiteMappingTask)) , sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
+      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(careSiteMappingTask)) , sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSettings)
       .flatMap(_ => {
         //Delete care sites
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -235,7 +238,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   it should "map test data and write it to FHIR repo successfully" in {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(locationMappingTask)), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
+      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(locationMappingTask)), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSettings)
       .flatMap(_ => {
         //Delete locations
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -270,7 +273,7 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
   it should "map test data and write it to FHIR repo successfully" in {
     assume(fhirServerIsAvailable)
     fhirMappingJobManager
-      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(procedureOccurrenceMappingTask)), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSetting)
+      .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(procedureOccurrenceMappingTask)), sourceSettings = sqlSourceSettings, sinkSettings = fhirSinkSettings)
       .flatMap(_ => {
         //Delete procedures
         var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()

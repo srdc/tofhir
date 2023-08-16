@@ -9,7 +9,7 @@ import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
-import org.json4s.{JArray, JObject, JValue}
+import org.json4s.JsonAST.{JArray, JObject, JValue}
 
 import java.sql.Timestamp
 import java.time.Instant

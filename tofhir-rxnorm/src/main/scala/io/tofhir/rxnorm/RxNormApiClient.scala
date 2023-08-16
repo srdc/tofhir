@@ -16,8 +16,6 @@ import scala.concurrent.{Await, ExecutionContext}
 
 case class RxNormApiClient(rxNormApiRootUrl:String, timeoutInSec:Int) {
 
-
-
   /**
    * Find out RxNorm Concept Id (rxcui) for given NDC code (active or historic)
    * See https://lhncbc.nlm.nih.gov/RxNav/APIs/api-RxNorm.getNDCProperties.html
@@ -165,7 +163,7 @@ case class RxNormApiClient(rxNormApiRootUrl:String, timeoutInSec:Int) {
    * @return
    */
   private def executeRequest(request: HttpRequest): Option[Resource] = {
-    implicit val actorSystem = RxNormApiClient.actorSystem
+    implicit val actorSystem: ActorSystem = RxNormApiClient.actorSystem
     implicit val ec:ExecutionContext = actorSystem.dispatcher
     import RxNormApiClient.rxnormApiJsonUnmarshaller
     val call =
@@ -182,7 +180,7 @@ case class RxNormApiClient(rxNormApiRootUrl:String, timeoutInSec:Int) {
 }
 
 object RxNormApiClient {
-  implicit val actorSystem = ActorSystem("RxNormApiClient")
+  implicit val actorSystem: ActorSystem = ActorSystem("RxNormApiClient")
 
   /**
    * Unmarshaller for

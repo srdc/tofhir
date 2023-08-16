@@ -1,6 +1,5 @@
 package io.tofhir.server.service
 
-import akka.shapeless.HList.ListCompat.::
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
@@ -15,9 +14,9 @@ import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.functions.{col, lit}
-import org.apache.spark.sql.types.{ArrayType, BinaryType, IntegerType, ObjectType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Encoder, Encoders, Row}
+import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Encoders, Row}
 import org.json4s.JsonAST.JValue
 import org.json4s.jackson.JsonMethods
 
