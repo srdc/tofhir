@@ -147,37 +147,37 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         Seq.empty
       }
       else {
-        // Get job run logs for the given execution. ProjectId field is not null for selecting jobRunsLogs, filter out mapping error logs.
-        val jobRunLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is not null")
+        // Get mapping tasks logs for the given execution. ProjectId field is not null for selecting mappingTasksLogs, filter out row error logs.
+        val mappingTasksLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is not null")
 
         // Handle the case where the job has not been run yet, which makes the data frame empty
-        if (jobRunLogs.isEmpty) {
+        if (mappingTasksLogs.isEmpty) {
           Seq.empty
         } else {
-          // Collect job run logs for matching with mappingUrl field of mapping error logs
-          var jobRunLogsData = jobRunLogs.collect()
+          // Collect mapping tasks logs for matching with mappingUrl field of row error logs
+          var mappingTasksLogsData = mappingTasksLogs.collect()
 
-          // Get error logs for the given execution. ProjectId field is null for selecting mapping error logs, filter out jobRunsLogs.
-          var mappingErrorLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is null")
+          // Get row error logs for the given execution. ProjectId field is null for selecting row error logs, filter out mappingTasksLogs.
+          var rowErrorLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is null")
 
-          // Check whether there is any mapping error
-          if(!mappingErrorLogs.isEmpty){
+          // Check whether there is any row error
+          if(!rowErrorLogs.isEmpty){
 
-            // Select needed columns from mapping error logs
-            mappingErrorLogs = mappingErrorLogs.select(List("errorCode", "errorDesc", "message", "mappingUrl").map(col):_*)
+            // Select needed columns from row error logs
+            rowErrorLogs = rowErrorLogs.select(List("errorCode", "errorDesc", "message", "mappingUrl").map(col):_*)
 
-            // Group mapping error logs by mapping url
-            val jobErrorLogsGroupedByMappingUrl = mappingErrorLogs.groupByKey(row => row.get(row.fieldIndex("mappingUrl")).toString)(Encoders.STRING)
+            // Group row error logs by mapping url
+            val rowErrorLogsGroupedByMappingUrl = rowErrorLogs.groupByKey(row => row.get(row.fieldIndex("mappingUrl")).toString)(Encoders.STRING)
 
-            // Add mapping error details to job run logs if any error occurred while executing the job.
-            val jobRunLogsWithErrorDetails = jobErrorLogsGroupedByMappingUrl.mapGroups((key, values) => {
-              // Find the related job run log to given mapping url
-              val jobRunLog = jobRunLogsData.filter(row => row.getAs[String]("mappingUrl") == key)
-              // Append mapping error logs to the related job run log
-              Row.fromSeq(Row.unapplySeq(jobRunLog.head).get :+ values.toSeq)
+            // Add row error details to mapping tasks logs if any error occurred while executing the mapping task.
+            val mappingTasksErrorLogsWithRowErrorLogs = rowErrorLogsGroupedByMappingUrl.mapGroups((mappingUrl, rowError) => {
+              // Find the related mapping task log to given mapping url
+              val mappingTaskLog = mappingTasksLogsData.filter(row => row.getAs[String]("mappingUrl") == mappingUrl)
+              // Append row error logs to the related mapping task log
+              Row.fromSeq(Row.unapplySeq(mappingTaskLog.head).get :+ rowError.toSeq)
             })(
-              // Define a new schema for the resulting rows and create an encoder for it. We will add a "error_logs" column to job run logs that contains related error logs.
-              RowEncoder(jobRunLogs.schema.add("error_logs", ArrayType(
+              // Define a new schema for the resulting rows and create an encoder for it. We will add a "error_logs" column to mapping tasks logs that contains related error logs.
+              RowEncoder(mappingTasksLogs.schema.add("error_logs", ArrayType(
                 new StructType()
                   .add("errorCode", StringType)
                   .add("errorDesc", StringType)
@@ -187,17 +187,17 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               )
             )
 
-            // Build a map for updated job run logs (mappingUrl -> jobRunLogsWithErrorDetails)
-            val updatedJobRunLogsMap = jobRunLogsWithErrorDetails.collect().map(updatedJobRunLog =>
+            // Build a map for updated mapping tasks logs (mappingUrl -> mappingTasksErrorLogsWithRowErrorLogs)
+            val updatedMappingTasksLogsMap = mappingTasksErrorLogsWithRowErrorLogs.collect().map(updatedJobRunLog =>
               updatedJobRunLog.getAs[String]("mappingUrl") -> updatedJobRunLog).toMap
 
-            // Replace job run logs if it is in the map
-            jobRunLogsData = jobRunLogsData.map(jobRunLog =>
-              updatedJobRunLogsMap.getOrElse(jobRunLog.getAs[String]("mappingUrl"), jobRunLog))
+            // Replace mapping tasks logs if it is in the map
+            mappingTasksLogsData = mappingTasksLogsData.map(jobRunLog =>
+              updatedMappingTasksLogsMap.getOrElse(jobRunLog.getAs[String]("mappingUrl"), jobRunLog))
 
           }
-          // return json objects for job run logs
-          jobRunLogsData.map(row => {
+          // return json objects for mapping tasks logs
+          mappingTasksLogsData.map(row => {
             JsonMethods.parse(row.json)
           })
         }
