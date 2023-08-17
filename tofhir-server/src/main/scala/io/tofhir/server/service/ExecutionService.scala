@@ -62,13 +62,13 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
 
     // get the list of mapping task to be executed
-    val mappingTasks = executeJobTask.getOrElse(ExecuteJobTask(mappingErrorHandling = None)).mappingUrls match {
+    val mappingTasks = executeJobTask.flatMap(_.mappingUrls) match {
       case Some(urls) => urls.flatMap(url => mappingJob.mappings.find(p => p.mappingRef.contentEquals(url)))
       case None => mappingJob.mappings
     }
     // create execution
     val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
-      mappingErrorHandling = executeJobTask.getOrElse(ExecuteJobTask(mappingErrorHandling = None)).mappingErrorHandling.getOrElse(mappingJob.mappingErrorHandling))
+      mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.mappingErrorHandling))
     if (mappingJob.sourceSettings.exists(_._2.asStream)) {
       Future { // TODO we lose the ability to stop the streaming job
         val streamingQuery =
