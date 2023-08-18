@@ -62,14 +62,17 @@ class FhirMappingJobManager(
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
           readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
             fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange).recover { t =>
-            t match {
-              // write error that logged in SinkHandler#writeBatch
-              case e: FhirMappingException => None
-              // read error or unknown error can be anywhere in readSourceExecuteAndWriteInBatches function
+            t.getCause match {
+              // FhirMappingInvalidResourceException is already handled
+              case e:FhirMappingInvalidResourceException => None
+              // FhirMappingException is already handled and logged by Spark while running the mapping
+              case e:FhirMappingException => None
+              // log the mapping job result and exception for the rest
               case _ =>
                 val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
                 logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
             }
+
             // Continue or halt according to error handling type
             if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
               throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project " +

@@ -20,55 +20,35 @@ object SinkHandler {
    * @param resourceWriter
    */
   def writeBatch(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, mappingUrl: Option[String], df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter): Unit = {
+    //Cache the dataframe
+    df.cache()
+    //Filter out the errors
+    val invalidInputs = df.filter(_.error.map(_.code).contains(FhirMappingErrorCodes.INVALID_INPUT))
+    val mappingErrors = df.filter(_.error.exists(_.code != FhirMappingErrorCodes.INVALID_INPUT))
+    val mappedResults = df.filter(_.mappedResource.isDefined)
+    val numOfInvalids = invalidInputs.count()
+    val numOfNotMapped = mappingErrors.count()
+    val numOfFhirResources = mappedResults.count()
+    //Create an accumulator to accumulate the results that cannot be written
+    val accumName = s"${mappingJobExecution.jobId}:${mappingUrl.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
+    val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
+    fhirWriteProblemsAccum.reset()
+    //Write the FHIR resources
     try {
-      //Cache the dataframe
-      df.cache()
-      //Filter out the errors
-      val invalidInputs = df.filter(_.error.map(_.code).contains(FhirMappingErrorCodes.INVALID_INPUT))
-      val mappingErrors = df.filter(_.error.exists(_.code != FhirMappingErrorCodes.INVALID_INPUT))
-      val mappedResults = df.filter(_.mappedResource.isDefined)
-      val numOfInvalids = invalidInputs.count()
-      val numOfNotMapped = mappingErrors.count()
-      val numOfFhirResources = mappedResults.count()
-      //Create an accumulator to accumulate the results that cannot be written
-      val accumName = s"${mappingJobExecution.jobId}:${mappingUrl.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
-      val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
-      fhirWriteProblemsAccum.reset()
-      //Write the FHIR resources
-      try {
-        resourceWriter.write(spark, mappedResults, fhirWriteProblemsAccum)
-      } catch {
-        case t:Throwable => {
-          // handle the exception caused by invalid mapping results
-          t.getCause match {
-            case e:FhirMappingInvalidResourceException =>
-              logMappingJobResult(mappingJobExecution,mappingUrl,numOfFhirResources,e.getProblems,mappingErrors,invalidInputs)
-          }
-          throw t
-        }
-      }
-      logMappingJobResult(mappingJobExecution,mappingUrl,numOfFhirResources,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
-      //Unpersist the data frame
-      df.unpersist()
+      resourceWriter.write(spark, mappedResults, fhirWriteProblemsAccum)
     } catch {
       case t:Throwable => {
+        // handle the exception caused by invalid mapping results
         t.getCause match {
-          // FhirMappingInvalidResourceException is already handled above
-          case e:FhirMappingInvalidResourceException => None
-          // FhirMappingException is already handled and logged by Spark while running the mapping
-          case e:FhirMappingException => None
-          // log the mapping job result and exception for the rest
-          case _ =>
-            val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl)
-            logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
+          case e:FhirMappingInvalidResourceException =>
+            logMappingJobResult(mappingJobExecution,mappingUrl,numOfFhirResources,e.getProblems,mappingErrors,invalidInputs)
         }
-        // if we throw the original exception i.e. t, Spark will log it (and its cause exception) which results in duplicate logs
-        // therefore we throw FhirMappingException which just includes a message that will be logged by Spark and not cause exception
-        // Throw exception if error handling type is halt, continue otherwise.
-        if(mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT)
-          throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")} terminated with exceptions!")
+        throw t
       }
     }
+    logMappingJobResult(mappingJobExecution,mappingUrl,numOfFhirResources,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
+    //Unpersist the data frame
+    df.unpersist()
   }
 
   /**
