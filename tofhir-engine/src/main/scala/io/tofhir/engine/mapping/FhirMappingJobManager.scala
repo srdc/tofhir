@@ -60,11 +60,9 @@ class FhirMappingJobManager(
 
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
-        try{
-          readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings, fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
-        }catch{
-          case t: Throwable => {
-            t.getCause match{
+          readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
+            fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange).recover { t =>
+            t match {
               // write error that logged in SinkHandler#writeBatch
               case e: FhirMappingException => None
               // read error or unknown error can be anywhere in readSourceExecuteAndWriteInBatches function
@@ -76,11 +74,10 @@ class FhirMappingJobManager(
             if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
               throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project " +
                 s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!")
-            }else{
+            } else {
               Future.successful((): Unit)
             }
           }
-        }
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.jobId}.") }
   }
