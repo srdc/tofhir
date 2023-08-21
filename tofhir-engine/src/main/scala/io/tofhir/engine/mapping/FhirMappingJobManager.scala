@@ -61,26 +61,24 @@ class FhirMappingJobManager(
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
           readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
-            fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange).recover { t =>
-            t.getCause match {
-              // FhirMappingInvalidResourceException is already handled
-              case e:FhirMappingInvalidResourceException => None
-              // FhirMappingException is already handled and logged by Spark while running the mapping
-              case e:FhirMappingException => None
-              // log the mapping job result and exception for the rest
-              case _ =>
-                val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
-                logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
-            }
+            fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
+      }.recover { t =>
+        t.getCause match {
+          // FhirMappingInvalidResourceException is already handled
+          case e:FhirMappingInvalidResourceException => None
+          // FhirMappingException is already handled and logged by Spark while running the mapping
+          case e:FhirMappingException => None
+          // log the mapping job result and exception for the rest
+          case _ =>
+            val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
+            logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
+        }
 
-            // Continue or halt according to error handling type
-            if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
-              throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project " +
-                s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!")
-            } else {
-              Future.successful((): Unit)
-            }
-          }
+        // Continue or halt according to error handling type
+        if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
+          throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project " +
+            s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!")
+        }
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.jobId}.") }
   }
