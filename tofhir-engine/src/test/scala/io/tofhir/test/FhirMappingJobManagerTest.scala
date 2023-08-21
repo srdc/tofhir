@@ -9,7 +9,7 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
-import io.tofhir.engine.model._
+import io.tofhir.engine.model.{FhirMappingException, _}
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
@@ -21,7 +21,7 @@ import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.onfhir.path.FhirPathIdentityServiceFunctionsFactory
 import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
 
@@ -242,6 +242,44 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
           }
         }
       }
+    }
+  }
+
+  it should "halt execute the mapping job when encounter with an error" in {
+    assume(fhirServerIsAvailable)
+
+    val patientMappingTaskWithError = patientMappingTask.copy(sourceContext = Map("source" -> FileSystemSource(path = "wrong.csv")))
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling)
+
+    val future = fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(
+      mappingTasks = Seq(patientMappingTaskWithError, otherObservationMappingTask),
+      mappingErrorHandling = ErrorHandlingType.HALT),
+      sourceSettings = dataSourceSettings,
+      sinkSettings = fhirSinkSettings)
+    try {
+      Await.result(future, Duration.apply("5000 ms"))
+      fail()
+    }catch{
+      case t: Throwable => t shouldBe a[FhirMappingException]
+    }
+  }
+
+  it should "continue execute the mapping job when encounter without an error" in {
+    assume(fhirServerIsAvailable)
+
+    val patientMappingTaskWithError = patientMappingTask.copy(sourceContext = Map("source" -> FileSystemSource(path = "wrong.csv")))
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling)
+
+    val future = fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(
+      mappingTasks = Seq(patientMappingTaskWithError, otherObservationMappingTask),
+      mappingErrorHandling = ErrorHandlingType.CONTINUE),
+      sourceSettings = dataSourceSettings,
+      sinkSettings = fhirSinkSettings)
+    try {
+      Await.result(future, Duration.apply("5000 ms"))
+      succeed
+    }catch{
+      case t: Throwable => t shouldNot be (a[FhirMappingException])
     }
   }
 

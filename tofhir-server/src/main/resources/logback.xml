@@ -68,6 +68,10 @@
         <appender-ref ref="ASYNC-AUDIT" />
     </logger>
 
+    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager" level="INFO">
+        <appender-ref ref="ASYNC-AUDIT" />
+    </logger>
+
     <!-- Give me DEBUG level logs from io.tofhir package because the default is set to ERROR at root (above) -->
     <logger name ="io.tofhir" level="DEBUG" />
 

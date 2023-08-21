@@ -168,6 +168,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
             if(serverResponse.responseBody.isDefined)
               ecfMsg = ecfMsg.concat(s" and body ${serverResponse.responseBody.get.toJson}")
             logger.error(ecfMsg)
+          case _ => ()
         }
         if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
           throw FhirMappingException(msg, e)
