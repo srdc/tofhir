@@ -23,9 +23,10 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
    * @param schema          Schema for the source data
    * @param timeRange       Time range for the data to read if given
    * @param limit           Limit the number of rows to read
+   * @param jobId           The identifier of mapping job which executes the mapping
    * @return
    */
-  override def read(mappingSource: SqlSource, sourceSettings: SqlSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int]): DataFrame = {
+  override def read(mappingSource: SqlSource, sourceSettings: SqlSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int], jobId: Option[String]): DataFrame = {
     if (mappingSource.tableName.isDefined && mappingSource.query.isDefined) {
       throw FhirMappingException(s"Both table name: ${mappingSource.tableName.get} and query: ${mappingSource.query.get} should not be specified at the same time.")
     }

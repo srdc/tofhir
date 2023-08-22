@@ -105,7 +105,7 @@ class FhirMappingJobManager(
       mappingJobExecution.mappingTasks
         .map(t => Await.result(readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id)), Duration.Inf))
         .reduce((ts1, ts2) => ts1.union(ts2))
-
+    logger.info(s"Streaming mapping job ${mappingJobExecution.jobId} is started and waiting for the data...")
     SinkHandler.writeStream(spark, mappingJobExecution, mappedResourcesDf, fhirWriter)
     /*
     val datasetWrite = (dataset: Dataset[String], batchN: Long) => fhirWriter.write(dataset)
@@ -252,7 +252,7 @@ class FhirMappingJobManager(
                                        timeRange: Option[(LocalDateTime, LocalDateTime)] = None,
                                        executionId: Option[String] = None
                                       ): Future[Dataset[FhirMappingResult]] = {
-    val (fhirMapping, mds, df) = readJoinSourceData(task, sourceSettings, timeRange)
+    val (fhirMapping, mds, df) = readJoinSourceData(task, sourceSettings, timeRange, jobId = Some(jobId))
     executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId)
   }
 
@@ -276,7 +276,7 @@ class FhirMappingJobManager(
                                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
     val mappingTask = mappingJobExecution.mappingTasks.head
     logger.debug(s"Reading source data for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
-    val (fhirMapping, mds, df) = readJoinSourceData(mappingTask, sourceSettings, timeRange) // FIXME: Why reading again below?
+    val (fhirMapping, mds, df) = readJoinSourceData(mappingTask, sourceSettings, timeRange, jobId = Some(mappingJobExecution.jobId)) // FIXME: Why reading again below?
     val sizeOfDf: Long = df.count()
     logger.debug(s"$sizeOfDf records read for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
 
@@ -313,10 +313,12 @@ class FhirMappingJobManager(
    * @param task           FHIR Mapping task
    * @param sourceSettings Source settings
    * @param timeRange      Time range for the source data to load
+   * @param jobId          The identifier of mapping job which executes the mapping
    */
   def readJoinSourceData(task: FhirMappingTask,
                          sourceSettings: Map[String, DataSourceSettings],
-                         timeRange: Option[(LocalDateTime, LocalDateTime)] = None): (FhirMapping, DataSourceSettings, DataFrame) = {
+                         timeRange: Option[(LocalDateTime, LocalDateTime)] = None,
+                         jobId: Option[String] = None): (FhirMapping, DataSourceSettings, DataFrame) = {
     // if the FhirMapping task includes the mapping to be executed (the case where the mapping is being tested), use it,
     // otherwise retrieve it from the repository
     val mapping = task.mapping match {
@@ -345,7 +347,7 @@ class FhirMappingJobManager(
       sources.map {
         case (alias, schema, sourceContext, sourceStt, timeRange) =>
           alias ->
-            SourceHandler.readSource(alias, spark, sourceContext, sourceStt, schema, timeRange)
+              SourceHandler.readSource( alias, spark, sourceContext, sourceStt, schema, timeRange, jobId = jobId)
       }
 
     val df = handleJoin(fhirMapping.source, sourceDataFrames)
