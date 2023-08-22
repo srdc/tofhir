@@ -28,7 +28,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
   val inferTask: InferTask = InferTask(name="test", sourceSettings = Map(
     "source" ->
       SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
-  ), sourceContext = SqlSource(query = Some("select * from death")))
+  ), sourceContext = SqlSource(query = Some("select * from death"), preprocessSql = Some("select person_id, death_date, death_datetime, cause_source_value from test")))
 
 
   // first schema schema to be created
@@ -232,14 +232,11 @@ class SchemaEndpointTest extends BaseEndpointTest {
         // validate data types of schema
         val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
         val fieldDefinitions = schema.fieldDefinitions.get
-        fieldDefinitions.size shouldEqual 7
+        fieldDefinitions.size shouldEqual 4
         fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual "integer"
         fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual "date"
         fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual "dateTime"
-        fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual "integer"
-        fieldDefinitions(4).dataTypes.get.head.dataType shouldEqual "integer"
-        fieldDefinitions(5).dataTypes.get.head.dataType shouldEqual "string"
-        fieldDefinitions(6).dataTypes.get.head.dataType shouldEqual "integer"
+        fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual "string"
       }
     }
   }
