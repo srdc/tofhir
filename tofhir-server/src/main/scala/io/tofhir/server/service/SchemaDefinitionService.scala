@@ -97,7 +97,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    */
   def inferSchema(inferTask: InferTask): Future[Option[SchemaDefinition]] = {
     // Execute SQL and get the dataFrame
-    val dataFrame = SourceHandler.readSource("unnamed", SparkConfig.sparkSession,
+    val dataFrame = SourceHandler.readSource(inferTask.name, SparkConfig.sparkSession,
       inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
     // Default name for undefined information
     val defaultName: String = "unnamed"
