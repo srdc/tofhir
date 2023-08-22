@@ -25,7 +25,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
   // set 5 second timeout for test because infer schema test can take longer than 1 second
   implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(5.seconds)
   // inferTask object for infer schema test
-  val inferTask: InferTask = InferTask(sourceSettings = Map(
+  val inferTask: InferTask = InferTask(name="test", sourceSettings = Map(
     "source" ->
       SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
   ), sourceContext = SqlSource(query = Some("select * from death")))
