@@ -1,12 +1,15 @@
 package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
+import eu.dt4h.dataingestionsuite.mappingfunctions.ICRCMappingFunctionsFactory
+import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
+import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
 import io.tofhir.server.config.SparkConfig
 import io.tofhir.server.model.{ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
@@ -34,7 +37,12 @@ import scala.concurrent.Future
  */
 class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
 
-  val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository))
+  val externalMappingFunctions: Map[String, IFhirPathFunctionLibraryFactory] = Map(
+    "rxn" -> new RxNormApiFunctionLibraryFactory("https://rxnav.nlm.nih.gov", 2),
+    "icrc" -> new ICRCMappingFunctionsFactory()
+  )
+  val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository), externalMappingFunctions)
+
 
   val fhirMappingJobManager =
     new FhirMappingJobManager(
