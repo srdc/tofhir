@@ -18,9 +18,10 @@ abstract class BaseDataSourceReader[T <: FhirMappingSourceContext, S<:DataSource
    * @param schema          Schema for the source data
    * @param timeRange       Time range for the data to read if given
    * @param limit           Limit the number of rows to read
+   * @param jobId           The identifier of mapping job which executes the mapping
    * @return
    */
-  def read(mappingSource: T, sourceSettings:S, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, limit: Option[Int]): DataFrame
+  def read(mappingSource: T, sourceSettings:S, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, limit: Option[Int], jobId: Option[String]): DataFrame
 
   /**
    * Whether this reader needs a data type validation for columns after reading the source
