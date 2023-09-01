@@ -25,6 +25,7 @@ import scala.io.Source
  * @param contextLoader         Context loader
  * @param schemaLoader          Schema (StructureDefinition) loader
  * @param spark                 Spark session
+ * @param mappingErrorHandlingType How to handle errors encountered while executing the mapping
  * @param ec                    Execution context
  */
 class FhirMappingJobManager(
