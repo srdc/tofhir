@@ -76,3 +76,10 @@ case class BearerTokenAuthorizationSettings(clientId: String,
  * @param password Password for basic authentication
  */
 case class BasicAuthenticationSettings(username: String, password: String) extends IFhirRepositorySecuritySettings
+
+/**
+ * Security settings for FHIR API access via fixed token
+ *
+ * @param token The fixed token
+ */
+case class FixedTokenAuthenticationSettings(token: String) extends IFhirRepositorySecuritySettings

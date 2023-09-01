@@ -3,7 +3,7 @@ package io.tofhir.server.fhir
 import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, Resource}
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.config.{FSConfigReader, IFhirConfigReader}
-import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings}
+import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FixedTokenAuthenticationSettings}
 import io.tofhir.engine.util.FhirClientUtil
 import io.tofhir.engine.Execution.actorSystem
 import actorSystem.dispatcher
@@ -43,6 +43,12 @@ class FhirEndpointResourceReader(fhirDefinitionsConfig: FhirDefinitionsConfig) e
           }
           FhirClientUtil.createOnFhirClient(fhirDefinitionsConfig.definitionsFHIREndpoint.get,
             Some(BearerTokenAuthorizationSettings(fhirDefinitionsConfig.authTokenClientId.get, fhirDefinitionsConfig.authTokenClientSecret.get, fhirDefinitionsConfig.authTokenScopeList.get, fhirDefinitionsConfig.authTokenEndpoint.get)))
+        case FhirAuthMethod.FIXED_TOKEN =>
+          if (fhirDefinitionsConfig.authFixedToken.isEmpty) {
+            throw new IllegalArgumentException("For fixed token authentication, a token must be provided!")
+          }
+          FhirClientUtil.createOnFhirClient(fhirDefinitionsConfig.definitionsFHIREndpoint.get,
+            Some(FixedTokenAuthenticationSettings(fhirDefinitionsConfig.authFixedToken.get)))
       }
     }
   }

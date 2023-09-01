@@ -24,7 +24,7 @@ class FhirDefinitionsConfig(fhirDefinitionsConfig: Config) {
   lazy val authTokenClientSecret: Option[String] = Try(fhirDefinitionsConfig.getString("fhir-endpoint-auth.token.client-secret")).toOption
   lazy val authTokenScopeList: Option[Seq[String]] = Try(fhirDefinitionsConfig.getStringList("fhir-endpoint-auth.token.scopes").asScala.toSeq).toOption
   lazy val authTokenEndpoint: Option[String] = Try(fhirDefinitionsConfig.getString("fhir-endpoint-auth.token.token-endpoint")).toOption
-
+  lazy val authFixedToken: Option[String] = Try(fhirDefinitionsConfig.getString("fhir-endpoint-auth.fixed-token")).toOption
   /** Path to the zip file or folder that includes the FHIR resource and data type profile definitions (FHIR StructureDefinition) to be served by toFHIR webserver so that mappings can be performed accordingly. */
   lazy val profilesPath: Option[String] = Try(fhirDefinitionsConfig.getString("profiles-path")).toOption
 
