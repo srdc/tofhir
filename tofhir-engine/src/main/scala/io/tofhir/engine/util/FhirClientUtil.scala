@@ -2,7 +2,7 @@ package io.tofhir.engine.util
 
 import akka.actor.ActorSystem
 import io.onfhir.client.OnFhirNetworkClient
-import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, IFhirRepositorySecuritySettings}
+import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FixedTokenAuthenticationSettings, IFhirRepositorySecuritySettings}
 
 object FhirClientUtil {
   /**
@@ -18,6 +18,7 @@ object FhirClientUtil {
         case BearerTokenAuthorizationSettings(clientId, clientSecret, requiredScopes, authzServerTokenEndpoint, clientAuthenticationMethod) =>
           client.withOpenIdBearerTokenAuthentication(clientId, clientSecret, requiredScopes, authzServerTokenEndpoint, clientAuthenticationMethod)
         case BasicAuthenticationSettings(username, password) => client.withBasicAuthentication(username, password)
+        case FixedTokenAuthenticationSettings(token) => client.withFixedBasicTokenAuthentication(token)
       }
       .getOrElse(client)
   }

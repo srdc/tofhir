@@ -5,5 +5,6 @@ package object fhir {
     type FhirAuthMethod = Value
     final val BASIC = Value("basic")
     final val BEARER_TOKEN = Value("token")
+    final val FIXED_TOKEN = Value("fixed-token")
   }
 }
