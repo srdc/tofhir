@@ -31,21 +31,21 @@ trait IFhirMappingJobManager {
                         timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit]
 
   /**
-   * Start streaming mapping job
+   * Start streaming mapping job. A [[Future]] of [[StreamingQuery]] is returned for each mapping task included in the job, encapsulated in a map.
    *
    * @param mappingJobExecution        Fhir Mapping Job execution
    * @param sourceSettings             Settings for the source system(s)
    * @param sinkSettings               FHIR sink settings (can be a FHIR repository, file system, kafka)
    * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
    * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
-   * @return
+   * @return A map of (mapping url -> streaming query futures).
    */
   def startMappingJobStream(mappingJobExecution:FhirMappingJobExecution,
                             sourceSettings: Map[String, DataSourceSettings],
                             sinkSettings: FhirSinkSettings,
                             terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                             identityServiceSettings: Option[IdentityServiceSettings] = None,
-                           ): Seq[StreamingQuery]
+                           ): Map[String, Future[StreamingQuery]]
 
   /**
    * Schedule to execute the given mapping job with given cron expression and write the resulting FHIR resources to the given sink

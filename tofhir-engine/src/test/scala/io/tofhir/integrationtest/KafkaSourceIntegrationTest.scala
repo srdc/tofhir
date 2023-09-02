@@ -4,12 +4,14 @@ import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
+import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.mapping.FhirMappingJobManager
-import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingTask, FhirRepositorySinkSettings, KafkaSource, KafkaSourceSettings}
+import io.tofhir.engine.model._
+import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import io.tofhir.engine.util.FhirMappingUtility
 import org.apache.kafka.clients.admin.{AdminClient, AdminClientConfig, NewTopic}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
@@ -25,10 +27,7 @@ import org.testcontainers.utility.DockerImageName
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.{Collections, Properties, UUID}
-import io.onfhir.path.FhirPathUtilFunctionsFactory
-import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
-
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
@@ -190,9 +189,13 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
 
   it should "consume patients, observations and family member history data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
-    val streamingQuery: Seq[StreamingQuery] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, otherObservationMappingTask, familyMemberHistoryMappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
-    streamingQuery.foreach(sq => sq.awaitTermination(20000L)) //wait for 20 seconds to consume and write to the fhir repo and terminate
-    streamingQuery.foreach(sq => sq.stop())
+    val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, otherObservationMappingTask, familyMemberHistoryMappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
+    streamingQueryFutures.foreach(sq => {
+      val streamingQuery: StreamingQuery = Await.result(sq._2, FiniteDuration.apply(5, TimeUnit.SECONDS)) // First wait for the StreamingQuery to become available
+      streamingQuery.awaitTermination(20000L) // Wait for 20 seconds to consume and write to the fhir repo and terminate
+      streamingQuery.stop()
+    })
+
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
       FHIRUtil.extractIdFromResource(p1Resource) shouldBe FhirMappingUtility.getHashedId("Patient", "p1")
       FHIRUtil.extractValue[String](p1Resource, "gender") shouldBe "male"
@@ -236,9 +239,11 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     // modify familyMemberHistoryMappingTask to listen to familyMembersCorrupted topic
     val mappingTask = familyMemberHistoryMappingTask.copy(sourceContext = Map("source" -> KafkaSource(topicName = "familyMembersCorrupted", groupId = "tofhir", startingOffsets = "earliest")))
     assertThrows[StreamingQueryException] {
-      val streamingQuery: Seq[StreamingQuery] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(mappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
-      streamingQuery.head.awaitTermination(20000L) //wait for 20 seconds to consume and write to the fhir repo and terminate
-      streamingQuery.head.stop()
+      val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(mappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
+      val streamingQuery = Await.result(streamingQueryFutures.head._2, FiniteDuration(5, TimeUnit.SECONDS))
+
+      streamingQuery.awaitTermination(20000L) //wait for 20 seconds to consume and write to the fhir repo and terminate
+      streamingQuery.stop()
     }
   }
 }

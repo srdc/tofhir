@@ -1,5 +1,6 @@
 package io.tofhir.engine.cli
 
+import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingJobScheduler}
 import io.tofhir.engine.model.FhirMappingJobExecution
 import io.tofhir.engine.util.FhirMappingJobFormatter
@@ -11,6 +12,7 @@ import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
 import java.util.Scanner
+import java.util.concurrent.CompletableFuture
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -109,7 +111,7 @@ object CommandLineInterface {
         )
       val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings)
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-        val streamingQuery =
+        val streamingQueryInitializationTasks: Seq[CompletableFuture[_]] =
           fhirMappingJobManager
             .startMappingJobStream(
               mappingJobExecution,
@@ -117,7 +119,11 @@ object CommandLineInterface {
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
               identityServiceSettings = mappingJob.getIdentityServiceSettings())
-        streamingQuery.foreach(sq => sq.awaitTermination())
+            .map(sq => RunningJobRegistry.listenStreamingQueryInitialization(mappingJobExecution.jobId, sq._1, sq._2, true))
+            .toSeq
+        // Wait for all the CompletableFutures to complete i.e. all streams are stopped
+        CompletableFuture.allOf(streamingQueryInitializationTasks: _*).get()
+
       } else {
         val f =
           fhirMappingJobManager

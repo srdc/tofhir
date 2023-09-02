@@ -11,7 +11,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.File
 import java.nio.file.Paths
-import scala.concurrent.ExecutionContext
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
 
@@ -78,7 +80,8 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "other-observations.csv").toFile, FileUtils.getPath(observationWatchFolder.getAbsolutePath, "other-observations.csv").toFile)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling)
-    val streamingQueries = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask)), dataSourceSettings, fileSinkSettings)
+    val streamingQueryFutures = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask)), dataSourceSettings, fileSinkSettings)
+    val streamingQueries = Await.result(Future.sequence(streamingQueryFutures.values), FiniteDuration(5, TimeUnit.SECONDS))
     streamingQueries.foreach(sq => sq.isActive shouldBe true)
 //    streamingQuery.awaitTermination()
     streamingQueries.foreach(sq => sq.stop() shouldBe ())

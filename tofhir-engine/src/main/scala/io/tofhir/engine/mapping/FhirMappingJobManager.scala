@@ -85,29 +85,33 @@ class FhirMappingJobManager(
   }
 
   /**
-   * Start streaming mapping job
+   * Start streaming mapping job. A future of StreamingQuery is returned for each mapping task included in the job, encapsulated in a map.
    *
    * @param mappingJobExecution        Fhir Mapping Job execution
    * @param sourceSettings             Settings for the source system(s)
    * @param sinkSettings               FHIR sink settings (can be a FHIR repository, file system, kafka)
    * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
    * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
-   * @return
+   * @return A map of (mapping url -> streaming query futures).
    */
   override def startMappingJobStream(mappingJobExecution: FhirMappingJobExecution,
                                      sourceSettings: Map[String, DataSourceSettings],
                                      sinkSettings: FhirSinkSettings,
                                      terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                      identityServiceSettings: Option[IdentityServiceSettings] = None,
-                                    ): Seq[StreamingQuery] = {
+                                    ): Map[String, Future[StreamingQuery]] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
-
-      mappingJobExecution.mappingTasks
-        .map(t => {
-          val ts = Await.result(readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id)), Duration.Inf)
-          logger.info(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping url ${t.mappingRef} is started and waiting for the data...")
-          SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
-        })
+    mappingJobExecution.mappingTasks
+      .map(t => {
+        logger.info(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping url ${t.mappingRef} is started and waiting for the data...")
+        // Construct a tuple of (mapping url, Future[StreamingQuery])
+        t.mappingRef ->
+          readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
+            .map(ts => {
+              SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
+            })
+      })
+      .toMap
   }
 
   /**

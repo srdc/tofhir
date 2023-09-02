@@ -6,6 +6,7 @@ import io.tofhir.common.util.CustomMappingFunctionsFactory
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
@@ -70,17 +71,16 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.mappingErrorHandling))
     val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.mappingErrorHandling)
     if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-      Future { // TODO we lose the ability to stop the streaming job
-        val streamingQuery =
-          fhirMappingJobManager
-            .startMappingJobStream(
-              mappingJobExecution,
-              sourceSettings = mappingJob.sourceSettings,
-              sinkSettings = mappingJob.sinkSettings,
-              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-              identityServiceSettings = mappingJob.getIdentityServiceSettings()
-            )
-        streamingQuery.foreach(sq => sq.awaitTermination())
+      Future {
+        fhirMappingJobManager
+          .startMappingJobStream(
+            mappingJobExecution,
+            sourceSettings = mappingJob.sourceSettings,
+            sinkSettings = mappingJob.sinkSettings,
+            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+            identityServiceSettings = mappingJob.getIdentityServiceSettings()
+          )
+          .foreach(sq => RunningJobRegistry.listenStreamingQueryInitialization(mappingJobExecution.jobId, sq._1, sq._2))
       }
     } else {
       fhirMappingJobManager
@@ -282,10 +282,32 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   }
 
   /**
-   * Returns FhirMappingJobManager instance for the given mapping error handling type.
-   * @param mappingErrorHandlingType How to handle errors encountered while executing the mapping
-   * @return FhirMappingJobManager
+   * Stops the specified job execution. This means that all running executions regarding the mappings included in this job will be stopped.
+   *
+   * @param jobId Identifier of the job
+   * @return
    */
+  def stopJobExecution(jobId: String): Future[Unit] = {
+    Future {
+      RunningJobRegistry.stopJobExecution(jobId)
+      logger.debug(s"Job executed stopped. executionId: $jobId")
+    }
+  }
+
+  /**
+   * Stops the execution of the specific mapping task
+   *
+   * @param executionId Execution in which the mapping is run
+   * @param mappingUrl  Mapping to be stopped
+   * @return
+   */
+  def stopMappingExecution(executionId: String, mappingUrl: String): Future[Unit] = {
+    Future {
+      RunningJobRegistry.stopMappingExecution(executionId, mappingUrl)
+      logger.debug(s"Mapping execution stopped. executionId: $executionId, mappingUrl: $mappingUrl")
+    }
+  }
+
   private def getFhirMappingJobManager(mappingErrorHandlingType: ErrorHandlingType) =
     new FhirMappingJobManager(
       toFhirEngine.mappingRepo,

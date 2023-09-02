@@ -236,6 +236,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-scala_2.13</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- cron4j -->
         <dependency>
             <groupId>it.sauronsoftware.cron4j</groupId>
