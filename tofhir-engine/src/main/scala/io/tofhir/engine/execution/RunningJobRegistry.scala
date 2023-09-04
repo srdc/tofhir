@@ -89,11 +89,11 @@ object RunningJobRegistry {
   }
 
   /**
-   * Returns the job identifiers for which there is an active execution
+   * Returns a map of (job -> sequence of urls of running mappings inside the job)
    *
    * @return
    */
-  def getRunningExecutions(): Seq[String] = {
-    streams.keys.toSeq
+  def getRunningExecutions(): Map[String, Seq[String]] = {
+    streams.map(entry => entry._1 -> entry._2.keySet.toSeq).toMap
   }
 }
