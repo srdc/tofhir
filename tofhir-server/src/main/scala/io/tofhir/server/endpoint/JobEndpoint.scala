@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_TEST}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STOP, SEGMENT_TEST}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest, ToFhirRestCall}
 import io.tofhir.server.service.{ExecutionService, JobService}
@@ -32,7 +32,14 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
           getJob(projectId, id) ~ updateJob(projectId, id) ~ deleteJob(projectId, id)
         } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job, job/<jobId>/run
           pathEndOrSingleSlash {
-            runJob(projectId, id) ~ stopJobExecution(id) ~
+            runJob(projectId, id)
+          }
+        } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations, job/<jobId>/test
+          pathEndOrSingleSlash {
+            testMappingWithJob(projectId, id)
+          }
+        } ~ pathPrefix(SEGMENT_STOP) {
+          stopJobExecution(id) ~
             pathPrefix(SEGMENT_MAPPINGS) { // job/<jobId>/mappings/
               pathPrefix(Segment) { mappingUrl: String =>
                 pathEndOrSingleSlash {
@@ -40,11 +47,6 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
                 }
               }
             }
-          }
-        } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations, job/<jobId>/test
-          pathEndOrSingleSlash {
-            testMappingWithJob(projectId, id)
-          }
         } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, job/<jobId>/executions
           pathEndOrSingleSlash {
             getExecutions(projectId, id)
@@ -202,5 +204,6 @@ object JobEndpoint {
   val SEGMENT_RUN = "run"
   val SEGMENT_EXECUTIONS = "executions"
   val SEGMENT_TEST = "test"
+  val SEGMENT_STOP = "stop"
   val SEGMENT_MAPPINGS = "mappings"
 }

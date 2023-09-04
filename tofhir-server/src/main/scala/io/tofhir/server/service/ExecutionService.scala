@@ -290,7 +290,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   def stopJobExecution(jobId: String): Future[Unit] = {
     Future {
       RunningJobRegistry.stopJobExecution(jobId)
-      logger.debug(s"Job executed stopped. executionId: $jobId")
+      logger.debug(s"Job execution stopped. jobId: $jobId")
     }
   }
 
@@ -304,7 +304,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   def stopMappingExecution(executionId: String, mappingUrl: String): Future[Unit] = {
     Future {
       RunningJobRegistry.stopMappingExecution(executionId, mappingUrl)
-      logger.debug(s"Mapping execution stopped. executionId: $executionId, mappingUrl: $mappingUrl")
+      logger.debug(s"Mapping execution stopped. jobId: $executionId, mappingUrl: $mappingUrl")
     }
   }
 
