@@ -1,8 +1,8 @@
 package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
-import eu.dt4h.dataingestionsuite.mappingfunctions.ICRCMappingFunctionsFactory
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
+import io.tofhir.common.util.CustomMappingFunctionsFactory
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
@@ -39,7 +39,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
   val externalMappingFunctions: Map[String, IFhirPathFunctionLibraryFactory] = Map(
     "rxn" -> new RxNormApiFunctionLibraryFactory("https://rxnav.nlm.nih.gov", 2),
-    "icrc" -> new ICRCMappingFunctionsFactory()
+    "cst" -> new CustomMappingFunctionsFactory()
   )
   val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository), externalMappingFunctions)
 

@@ -169,11 +169,6 @@
             <groupId>io.onfhir</groupId>
             <artifactId>tofhir-rxnorm_2.13</artifactId>
         </dependency>
-        <dependency>
-            <!-- TODO get rid of this dependency when the server supports injecting libraries in some other way -->
-            <groupId>io.onfhir</groupId>
-            <artifactId>tofhir-dt4h-functions_2.13</artifactId>
-        </dependency>
 
         <!-- For Unit testing -->
         <dependency>

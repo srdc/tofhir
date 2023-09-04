@@ -371,11 +371,6 @@
                 <artifactId>tofhir-rxnorm_2.13</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.onfhir</groupId>
-                <artifactId>tofhir-dt4h-functions_2.13</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
             <!-- Testkit for Akka Http-->
             <dependency>
