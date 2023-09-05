@@ -10,7 +10,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 
-class InMemoryExecutionManagerTest extends AnyFlatSpec with Matchers {
+class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   implicit val actorSystem: ActorSystem = ActorSystem("toFhirEngineTest")
   implicit val executionContext: ExecutionContext = actorSystem.getDispatcher
