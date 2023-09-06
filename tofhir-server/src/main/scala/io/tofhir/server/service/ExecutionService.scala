@@ -6,7 +6,6 @@ import io.tofhir.common.util.CustomMappingFunctionsFactory
 import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
@@ -80,7 +79,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             terminologyServiceSettings = mappingJob.terminologyServiceSettings,
             identityServiceSettings = mappingJob.getIdentityServiceSettings()
           )
-          .foreach(sq => RunningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, sq._1, sq._2))
+          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, sq._1, sq._2))
       }
     } else {
       fhirMappingJobManager
@@ -290,7 +289,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    */
   def stopJobExecution(jobId: String): Future[Unit] = {
     Future {
-      RunningJobRegistry.stopJobExecution(jobId)
+      toFhirEngine.runningJobRegistry.stopJobExecution(jobId)
       logger.debug(s"Job execution stopped. jobId: $jobId")
     }
   }
@@ -304,7 +303,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    */
   def stopMappingExecution(executionId: String, mappingUrl: String): Future[Unit] = {
     Future {
-      RunningJobRegistry.stopMappingExecution(executionId, mappingUrl)
+      toFhirEngine.runningJobRegistry.stopMappingExecution(executionId, mappingUrl)
       logger.debug(s"Mapping execution stopped. jobId: $executionId, mappingUrl: $mappingUrl")
     }
   }

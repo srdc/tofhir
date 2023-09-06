@@ -12,6 +12,7 @@ import io.tofhir.engine.Execution
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.model._
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 import org.json4s.jackson.{JsonMethods, Serialization}

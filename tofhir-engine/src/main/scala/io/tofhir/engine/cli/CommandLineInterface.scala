@@ -1,6 +1,5 @@
 package io.tofhir.engine.cli
 
-import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingJobScheduler}
 import io.tofhir.engine.model.FhirMappingJobExecution
 import io.tofhir.engine.util.FhirMappingJobFormatter
@@ -119,7 +118,7 @@ object CommandLineInterface {
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
               identityServiceSettings = mappingJob.getIdentityServiceSettings())
-            .map(sq => RunningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, sq._1, sq._2, true))
+            .map(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, sq._1, sq._2, true))
             .toSeq
         // Wait for all Futures (i.e. Streaming Queries) to complete
         Await.result(Future.sequence(streamingQueryInitializationTasks), Duration.Inf)

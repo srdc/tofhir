@@ -1,6 +1,7 @@
 package io.tofhir.engine.execution
 
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.StreamingQuery
 
 import java.util.concurrent.Executors
@@ -12,7 +13,7 @@ import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 /**
  * Execution manager that keeps track of running mapping tasks in-memory
  */
-object RunningJobRegistry {
+class RunningJobRegistry(spark: SparkSession) {
   // Keeps active executions in the form of: jobId -> (mappingUrl -> streaming query)
   // Using a concurrent map as multiple threads may update same resources in the map.
   private val streams: concurrent.Map[String, concurrent.Map[String, StreamingQuery]] = new java.util.concurrent.ConcurrentHashMap[String, concurrent.Map[String, StreamingQuery]]().asScala

@@ -1,7 +1,5 @@
 package io.tofhir.engine.cli
 
-import io.tofhir.engine.execution.RunningJobRegistry
-
 /**
  * Stop one or more running mappings. Its usage is stop <jobID> [<mappingUrl>].
  */
@@ -15,10 +13,10 @@ class Stop extends Command {
       mappingUrl match {
         case None =>
           // Stop all the mappings running inside a job
-          RunningJobRegistry.stopJobExecution(jobId)
+          context.toFhirEngine.runningJobRegistry.stopJobExecution(jobId)
         case Some(url) =>
           // Stop a single mapping
-          RunningJobRegistry.stopMappingExecution(jobId, url)
+          context.toFhirEngine.runningJobRegistry.stopMappingExecution(jobId, url)
       }
       println(s"Processed the command: stop ${args.mkString(" ")}")
     }

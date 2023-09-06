@@ -1,6 +1,5 @@
 package io.tofhir.engine.cli
 
-import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingTask}
 
@@ -80,7 +79,7 @@ class Run extends Command {
           terminologyServiceSettings = mappingJob.terminologyServiceSettings,
           identityServiceSettings = mappingJob.getIdentityServiceSettings()
         )
-          .foreach(sq => RunningJobRegistry.registerStreamingQuery(mappingJob.id, sq._1, sq._2))
+          .foreach(sq => context.toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJob.id, sq._1, sq._2))
 
         context
       }
