@@ -39,14 +39,15 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
             testMappingWithJob(projectId, id)
           }
         } ~ pathPrefix(SEGMENT_STOP) {
-          stopJobExecution(id) ~
-            pathPrefix(SEGMENT_MAPPINGS) { // job/<jobId>/mappings/
-              pathPrefix(Segment) { mappingUrl: String =>
-                pathEndOrSingleSlash {
-                  stopMappingExecution(id, mappingUrl)
-                }
+          pathEndOrSingleSlash {
+            stopJobExecution(id)
+          } ~ pathPrefix(SEGMENT_MAPPINGS) { // job/<jobId>/mappings/
+            pathPrefix(Segment) { mappingUrl: String =>
+              pathEndOrSingleSlash {
+                stopMappingExecution(id, mappingUrl)
               }
             }
+          }
         } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, job/<jobId>/executions
           pathEndOrSingleSlash {
             getExecutions(projectId, id)
