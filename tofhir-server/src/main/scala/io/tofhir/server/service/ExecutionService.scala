@@ -80,7 +80,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             terminologyServiceSettings = mappingJob.terminologyServiceSettings,
             identityServiceSettings = mappingJob.getIdentityServiceSettings()
           )
-          .foreach(sq => RunningJobRegistry.listenStreamingQueryInitialization(mappingJobExecution.jobId, sq._1, sq._2))
+          .foreach(sq => RunningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, sq._1, sq._2))
       }
     } else {
       fhirMappingJobManager

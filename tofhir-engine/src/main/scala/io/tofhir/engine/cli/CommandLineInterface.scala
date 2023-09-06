@@ -14,7 +14,7 @@ import java.nio.file.Paths
 import java.util.Scanner
 import java.util.concurrent.CompletableFuture
 import scala.annotation.tailrec
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
@@ -111,7 +111,7 @@ object CommandLineInterface {
         )
       val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings)
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-        val streamingQueryInitializationTasks: Seq[CompletableFuture[_]] =
+        val streamingQueryInitializationTasks: Seq[Future[Unit]] =
           fhirMappingJobManager
             .startMappingJobStream(
               mappingJobExecution,
@@ -119,10 +119,10 @@ object CommandLineInterface {
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
               identityServiceSettings = mappingJob.getIdentityServiceSettings())
-            .map(sq => RunningJobRegistry.listenStreamingQueryInitialization(mappingJobExecution.jobId, sq._1, sq._2, true))
+            .map(sq => RunningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, sq._1, sq._2, true))
             .toSeq
-        // Wait for all the CompletableFutures to complete i.e. all streams are stopped
-        CompletableFuture.allOf(streamingQueryInitializationTasks: _*).get()
+        // Wait for all Futures (i.e. Streaming Queries) to complete
+        Await.result(Future.sequence(streamingQueryInitializationTasks), Duration.Inf)
 
       } else {
         val f =

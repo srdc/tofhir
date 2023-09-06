@@ -80,7 +80,7 @@ class Run extends Command {
           terminologyServiceSettings = mappingJob.terminologyServiceSettings,
           identityServiceSettings = mappingJob.getIdentityServiceSettings()
         )
-          .foreach(sq => RunningJobRegistry.listenStreamingQueryInitialization(mappingJob.id, sq._1, sq._2))
+          .foreach(sq => RunningJobRegistry.registerStreamingQuery(mappingJob.id, sq._1, sq._2))
 
         context
       }

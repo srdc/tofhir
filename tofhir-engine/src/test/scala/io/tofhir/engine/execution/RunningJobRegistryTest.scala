@@ -17,7 +17,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   "InMemoryExecutionManager" should "cache a StreamingQuery" in {
     val streamingQueryFuture = getMockStreamingQuery()
-    RunningJobRegistry.listenStreamingQueryInitialization("j", "m", streamingQueryFuture)
+    RunningJobRegistry.registerStreamingQuery("j", "m", streamingQueryFuture)
     // The streaming future is resolved inside the listener. 2 seconds waiting time seems safe for runnable to be submitted and
     // future to be resolved. It can be adjusted though.
     Await.result(streamingQueryFuture, 2 seconds)
@@ -29,8 +29,8 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
   "it" should "stop all StreamingQueries associated with a job" in {
     val streamingQueryFuture = getMockStreamingQuery()
     val streamingQueryFuture2 = getMockStreamingQuery()
-    RunningJobRegistry.listenStreamingQueryInitialization("j", "m2", streamingQueryFuture)
-    RunningJobRegistry.listenStreamingQueryInitialization("j", "m3", streamingQueryFuture2)
+    RunningJobRegistry.registerStreamingQuery("j", "m2", streamingQueryFuture)
+    RunningJobRegistry.registerStreamingQuery("j", "m3", streamingQueryFuture2)
     // The streaming future is resolved inside the listener. 2 seconds waiting time seems safe for runnable to be submitted and
     // future to be resolved. It can be adjusted though.
     val streamingQuery = Await.result(streamingQueryFuture, 2 seconds)
@@ -45,7 +45,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   "InMemoryExecutionManager" should "stop StreamingQuery associated with a mapping" in {
     val streamingQueryFuture = getMockStreamingQuery()
-    RunningJobRegistry.listenStreamingQueryInitialization("j", "m", streamingQueryFuture)
+    RunningJobRegistry.registerStreamingQuery("j", "m", streamingQueryFuture)
     // The streaming future is resolved inside the listener. 2 seconds waiting time seems safe for runnable to be submitted and
     // future to be resolved. It can be adjusted though.
     val streamingQuery = Await.result(streamingQueryFuture, 2 seconds)

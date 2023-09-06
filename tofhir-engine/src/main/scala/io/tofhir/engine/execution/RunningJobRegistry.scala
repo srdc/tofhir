@@ -1,10 +1,12 @@
 package io.tofhir.engine.execution
 
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import org.apache.spark.sql.streaming.StreamingQuery
 
-import java.util.concurrent.{CompletableFuture, ExecutorService, Executors}
+import java.util.concurrent.Executors
 import scala.collection.concurrent
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 
 /**
@@ -15,8 +17,8 @@ object RunningJobRegistry {
   // Using a concurrent map as multiple threads may update same resources in the map.
   private val streams: concurrent.Map[String, concurrent.Map[String, StreamingQuery]] = new java.util.concurrent.ConcurrentHashMap[String, concurrent.Map[String, StreamingQuery]]().asScala
 
-  // Unbounded thread pool that is appropriate for many short-lived asynchronous tasks
-  val executor: ExecutorService = Executors.newCachedThreadPool
+  // Dedicated execution context for blocking streaming jobs
+  val streamingTaskExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
 
   /**
    * Caches a [[StreamingQuery]] for an individual mapping task
@@ -26,17 +28,22 @@ object RunningJobRegistry {
    * @param streamingQueryFuture Future for the streaming query. It resolves into a [[StreamingQuery]] of Spark
    * @return Java Future as a handler for the submitted Runnable task
    */
-  def listenStreamingQueryInitialization(jobId: String, mappingUrl: String, streamingQueryFuture: Future[StreamingQuery], blocking: Boolean = false): CompletableFuture[_] = {
-    val listenerTask: StreamingQueryListener = new StreamingQueryListener(streamingQueryFuture,
-      // Callback method for the future. It gets the initialized StreamingQuery and puts it in the cache
-      (streamingQuery: StreamingQuery) => {
-        val jobsQueryMap = streams.getOrElseUpdate(jobId, new java.util.concurrent.ConcurrentHashMap[String, StreamingQuery]().asScala)
-        jobsQueryMap.put(mappingUrl, streamingQuery)
-      },
-      blocking
-    )
-    // Utilize Java's CompletableFuture API to have an actionable handler for the result of the listener task
-    CompletableFuture.runAsync(listenerTask, executor)
+  def registerStreamingQuery(jobId: String, mappingUrl: String, streamingQueryFuture: Future[StreamingQuery], blocking: Boolean = false): Future[Unit] = {
+    Future {
+      // Wait for the initial Future to be resolved
+      val streamingQuery: StreamingQuery = Await.result(streamingQueryFuture, Duration.Inf)
+
+      // Update the StreamingQuery map
+      val jobsQueryMap = streams.getOrElseUpdate(jobId, new java.util.concurrent.ConcurrentHashMap[String, StreamingQuery]().asScala)
+      jobsQueryMap.put(mappingUrl, streamingQuery)
+
+      // If blocking was set true, we are going to wait for StreamingQuery to terminate
+      if (blocking) {
+        streamingQuery.awaitTermination()
+      }
+
+      // Use the dedicated ExecutionContext for streaming jobs
+    }(if (blocking) streamingTaskExecutionContext else dispatcher)
   }
 
   /**
