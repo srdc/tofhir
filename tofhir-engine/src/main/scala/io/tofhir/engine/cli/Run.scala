@@ -1,40 +1,41 @@
 package io.tofhir.engine.cli
 
 import io.tofhir.engine.mapping.FhirMappingJobManager
-import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingTask}
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.util.Try
 
 class Run extends Command {
   override def execute(args: Seq[String], context: CommandExecutionContext): CommandExecutionContext = {
     if (context.fhirMappingJob.isEmpty) {
       println("There is no loaded FhirMappingJob! I cannot run anything!")
-      context
+
     } else {
       val mappingJob = context.fhirMappingJob.get
 
       if (!isStreamingJob(mappingJob)) {
-        if (context.runningStatus.isDefined && !context.runningStatus.get._2.isCompleted) {
-          println("I am still running some mappings!!! I will not run another one before I finish!!!")
-          context
-        } else {
           val fhirMappingJobManager = getFhirMappingJobManager(context, mappingJob)
 
-          val runningStatus =
             if (args.isEmpty) {
               // Execute all tasks in the mapping job
+              val mappingJobExecution: FhirMappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings)
               val f =
                 fhirMappingJobManager
                   .executeMappingJob(
-                    mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings),
+                    mappingJobExecution = mappingJobExecution,
                     sourceSettings = mappingJob.sourceSettings,
                     sinkSettings = mappingJob.sinkSettings,
                     terminologyServiceSettings = mappingJob.terminologyServiceSettings,
                     identityServiceSettings = mappingJob.getIdentityServiceSettings()
                   )
-              Option.empty[FhirMappingTask] -> f
+              context.toFhirEngine.runningJobRegistry.registerBatchJob(
+                mappingJobExecution.jobId,
+                mappingJobExecution.id,
+                mappingJobExecution.mappingTasks.map(_.mappingRef),
+                f,
+                s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
+              )
             } else {
               // Understand whether the argument is the name or the URL of the mapping and then find/execute it.
               if (args.length > 2) {
@@ -51,23 +52,27 @@ class Run extends Command {
               val task = mappingJob.mappings.filter(_.mappingRef == mappingUrl).drop(indexAmongMappingToRun - 1).headOption
               if (task.isEmpty) {
                 println(s"There is no such mapping: $mappingUrl with index $indexAmongMappingToRun")
-                task -> Future.failed(new IllegalArgumentException(s"The mapping URL: $mappingUrl cannot be found or invalid mapping task index!"))
+
               } else {
+                val mappingJobExecution: FhirMappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(task.get))
                 val f =
                   fhirMappingJobManager
                     .executeMappingTask(
-                      mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(task.get)),
+                      mappingJobExecution = mappingJobExecution,
                       sourceSettings = mappingJob.sourceSettings,
                       sinkSettings = mappingJob.sinkSettings,
                       terminologyServiceSettings = mappingJob.terminologyServiceSettings,
                       identityServiceSettings = mappingJob.getIdentityServiceSettings()
                     )
-                task -> f
+                context.toFhirEngine.runningJobRegistry.registerBatchJob(
+                  mappingJobExecution.jobId,
+                  mappingJobExecution.id,
+                  mappingJobExecution.mappingTasks.map(_.mappingRef),
+                  f,
+                  s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
+                )
               }
             }
-
-          context.withStatus(Some(runningStatus))
-        }
 
         // Streaming job
       } else {
@@ -81,10 +86,9 @@ class Run extends Command {
           identityServiceSettings = mappingJob.getIdentityServiceSettings()
         )
           .foreach(sq => context.toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJob.id, mappingJobExecution.id, sq._1, sq._2))
-
-        context
       }
     }
+    context
   }
 
   /**
