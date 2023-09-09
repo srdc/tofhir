@@ -28,31 +28,33 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
       pathEndOrSingleSlash { // Operations on all mapping jobs
         getAllJobs(projectId) ~ createJob(projectId)
       } ~ pathPrefix(Segment) { id: String =>
-        pathEndOrSingleSlash { // Operations on a single job, job/<jobId>
+        pathEndOrSingleSlash { // Operations on a single job, jobs/<jobId>
           getJob(projectId, id) ~ updateJob(projectId, id) ~ deleteJob(projectId, id)
-        } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job, job/<jobId>/run
+        } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job, jobs/<jobId>/run
           pathEndOrSingleSlash {
             runJob(projectId, id)
           }
-        } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations, job/<jobId>/test
+        } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations, jobs/<jobId>/test
           pathEndOrSingleSlash {
             testMappingWithJob(projectId, id)
           }
-        } ~ pathPrefix(SEGMENT_STOP) {
-          pathEndOrSingleSlash {
-            stopJobExecution(id)
-          } ~ pathPrefix(SEGMENT_MAPPINGS) { // job/<jobId>/mappings/
-            pathPrefix(Segment) { mappingUrl: String =>
-              pathEndOrSingleSlash {
-                stopMappingExecution(id, mappingUrl)
-              }
-            }
-          }
-        } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, job/<jobId>/executions
+        } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, jobs/<jobId>/executions
           pathEndOrSingleSlash {
             getExecutions(projectId, id)
-          } ~ pathPrefix(Segment) { executionId: String => // operations on a single execution, job/<jobId>/executions/<executionId>
-            getExecutionLogs(executionId)
+          } ~ pathPrefix(Segment) { executionId: String => // operations on a single execution, jobs/<jobId>/executions/<executionId>
+            pathEndOrSingleSlash {
+              getExecutionLogs(executionId)
+            } ~ pathPrefix(SEGMENT_STOP) { // jobs/<jobId>/executions/<executionId>/stop
+              pathEndOrSingleSlash {
+                stopJobExecution(id, executionId)
+              } ~ pathPrefix(SEGMENT_MAPPINGS) { // jobs/<jobId>/executions/<executionId>/stop/mappings
+                pathPrefix(Segment) { mappingUrl: String =>
+                  pathEndOrSingleSlash { // // jobs/<jobId>/executions/<executionId>/stop/mappings/<mappingUrl>
+                    stopMappingExecution(id, executionId, mappingUrl)
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -165,10 +167,10 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
    * @param jobId Identifier of the job
    * @return
    */
-  private def stopJobExecution(jobId: String): Route = {
+  private def stopJobExecution(jobId: String, executionId: String): Route = {
     delete {
       complete {
-        executionService.stopJobExecution(jobId).map(_ => StatusCodes.OK)
+        executionService.stopJobExecution(jobId, executionId).map(_ => StatusCodes.OK)
       }
     }
   }
@@ -180,10 +182,10 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
    * @param mappingUrl Url of the mapping to be stopped
    * @return
    */
-  private def stopMappingExecution(jobId: String, mappingUrl: String): Route = {
+  private def stopMappingExecution(jobId: String, executionId: String, mappingUrl: String): Route = {
     delete {
       complete {
-        executionService.stopMappingExecution(jobId, mappingUrl).map(_ => StatusCodes.OK)
+        executionService.stopMappingExecution(jobId, executionId, mappingUrl).map(_ => StatusCodes.OK)
       }
     }
   }

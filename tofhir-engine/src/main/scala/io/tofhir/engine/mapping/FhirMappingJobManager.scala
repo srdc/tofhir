@@ -6,7 +6,9 @@ import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.data.write.{BaseFhirWriter, FhirWriterFactory, SinkHandler}
+import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model._
+import org.apache.spark.SparkException
 import org.apache.spark.sql.functions.{collect_list, struct}
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
@@ -35,6 +37,7 @@ class FhirMappingJobManager(
                              functionLibraries : Map[String, IFhirPathFunctionLibraryFactory],
                              spark: SparkSession,
                              mappingErrorHandlingType: ErrorHandlingType,
+                             runningJobRegistry: RunningJobRegistry,
                              mappingJobScheduler: Option[MappingJobScheduler] = Option.empty
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
 
@@ -57,29 +60,39 @@ class FhirMappingJobManager(
                                  terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                  identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
-    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings, runningJobRegistry)
 
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
           readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
             fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
-      }.recover { t =>
-        t.getCause match {
-          // FhirMappingInvalidResourceException is already handled
-          case e:FhirMappingInvalidResourceException => None
-          // FhirMappingException is already handled and logged by Spark while running the mapping
-          case e:FhirMappingException => None
-          // log the mapping job result and exception for the rest
-          case _ =>
-            val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
-            logger.error(jobResult.toLogstashMarker, jobResult.toString, t)
-        }
-
-        // Continue or halt according to error handling type
-        if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
-          throw FhirMappingException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project " +
-            s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!")
-        }
+      }.recover {
+        // Check whether the job is stopped
+        case se: SparkException if se.getMessage.contains("cancelled part of cancelled job group") =>
+          logger.debug(s"Job is interrupted. jobId: ${mappingJobExecution.jobId}, executionId: ${mappingJobExecution.id}")
+          throw FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project ${mappingJobExecution.projectId}' terminated manually!")
+        // Exceptions from Spark executors are wrapped inside a SparkException, which are caught below
+        case se: SparkException =>
+          se.getCause match {
+            // FhirMappingInvalidResourceException is already handled
+            case _: FhirMappingInvalidResourceException =>
+            // FhirMappingException is already handled and logged by Spark while running the mapping
+            case _: FhirMappingException =>
+            // log the mapping job result and exception for the rest
+            case _ =>
+              val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
+              logger.error(jobResult.toLogstashMarker, jobResult.toString, se)
+          }
+          // Continue or halt according to error handling type.
+          // In the halt case, thrown exception is caught by the upstream Futures and a new exception is created until the root is reached.
+          if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
+            throw FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project " +
+              s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!", se)
+          }
+        // Pass the stop exception to the upstream Futures in the chain laid out by foldLeft above
+        case t: FhirMappingJobStoppedException =>
+          throw t
+        case _ =>
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.jobId}.") }
   }
@@ -100,7 +113,7 @@ class FhirMappingJobManager(
                                      terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                      identityServiceSettings: Option[IdentityServiceSettings] = None,
                                     ): Map[String, Future[StreamingQuery]] = {
-    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings, runningJobRegistry)
     mappingJobExecution.mappingTasks
       .map(t => {
         logger.info(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping url ${t.mappingRef} is started and waiting for the data...")
@@ -221,7 +234,7 @@ class FhirMappingJobManager(
                                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                   identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  ): Future[Unit] = {
-    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings, runningJobRegistry)
 
     readSourceAndExecuteTask(mappingJobExecution.jobId, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
       .map {

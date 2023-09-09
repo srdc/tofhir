@@ -69,8 +69,10 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
       mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.mappingErrorHandling))
     val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.mappingErrorHandling)
-    if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-      Future {
+
+    // Streaming jobs
+    val submittedJob = Future {
+      if (mappingJob.sourceSettings.exists(_._2.asStream)) {
         fhirMappingJobManager
           .startMappingJobStream(
             mappingJobExecution,
@@ -79,18 +81,32 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             terminologyServiceSettings = mappingJob.terminologyServiceSettings,
             identityServiceSettings = mappingJob.getIdentityServiceSettings()
           )
-          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, sq._1, sq._2))
+          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, mappingJobExecution.id, sq._1, sq._2))
       }
-    } else {
-      fhirMappingJobManager
-        .executeMappingJob(
-          mappingJobExecution = mappingJobExecution,
-          sourceSettings = mappingJob.sourceSettings,
-          sinkSettings = mappingJob.sinkSettings,
-          terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-          identityServiceSettings = mappingJob.getIdentityServiceSettings()
+
+      // Batch jobs
+      else {
+        val executionFuture: Future[Unit] = fhirMappingJobManager
+          .executeMappingJob(
+            mappingJobExecution = mappingJobExecution,
+            sourceSettings = mappingJob.sourceSettings,
+            sinkSettings = mappingJob.sinkSettings,
+            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+            identityServiceSettings = mappingJob.getIdentityServiceSettings()
+          )
+
+        // Register the job to the registry
+        toFhirEngine.runningJobRegistry.registerBatchJob(
+          mappingJobExecution.jobId,
+          mappingJobExecution.id,
+          mappingTasks.map(_.mappingRef),
+          executionFuture,
+          s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
         )
+      }
     }
+    logger.debug(s"Submitted job for project: $projectId, job: $jobId, execution: ${mappingJobExecution.id}")
+    submittedJob
   }
 
   /**
@@ -287,10 +303,10 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @param jobId Identifier of the job
    * @return
    */
-  def stopJobExecution(jobId: String): Future[Unit] = {
+  def stopJobExecution(jobId: String, executionId: String): Future[Unit] = {
     Future {
-      toFhirEngine.runningJobRegistry.stopJobExecution(jobId)
-      logger.debug(s"Job execution stopped. jobId: $jobId")
+      toFhirEngine.runningJobRegistry.stopJobExecution(jobId, executionId)
+      logger.debug(s"Job execution stopped. jobId: $jobId, execution: $executionId")
     }
   }
 
@@ -301,10 +317,10 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @param mappingUrl  Mapping to be stopped
    * @return
    */
-  def stopMappingExecution(executionId: String, mappingUrl: String): Future[Unit] = {
+  def stopMappingExecution(jobId: String, executionId: String, mappingUrl: String): Future[Unit] = {
     Future {
-      toFhirEngine.runningJobRegistry.stopMappingExecution(executionId, mappingUrl)
-      logger.debug(s"Mapping execution stopped. jobId: $executionId, mappingUrl: $mappingUrl")
+      toFhirEngine.runningJobRegistry.stopMappingExecution(jobId, executionId, mappingUrl)
+      logger.debug(s"Mapping execution stopped. jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl")
     }
   }
 
@@ -315,6 +331,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       toFhirEngine.schemaLoader,
       toFhirEngine.functionLibraries,
       toFhirEngine.sparkSession,
-      mappingErrorHandlingType
+      mappingErrorHandlingType,
+      toFhirEngine.runningJobRegistry
     )
 }

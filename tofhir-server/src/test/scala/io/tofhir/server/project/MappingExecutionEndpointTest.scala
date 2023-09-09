@@ -22,6 +22,8 @@ import java.io.File
 import java.nio.file.Paths
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
+import scala.util.control.Breaks
+import scala.util.control.Breaks.{break, breakable}
 
 class MappingExecutionEndpointTest extends BaseEndpointTest {
   // default timeout is 1 seconds, which is not enough for some tests
@@ -64,10 +66,23 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        // Check the resources created in the file system
-        val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
-        val results = sparkSession.read.text(outputFolder.getPath)
-        results.count() shouldEqual 10
+        var succeed: Boolean = false
+        breakable {
+          // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
+          for (_ <- 1 to 20) {
+            Thread.sleep(500)
+            if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_1"))) {
+              // Check the resources created in the file system
+              val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
+              val results = sparkSession.read.text(outputFolder.getPath)
+              if (results.count() == 10) {
+                succeed = true
+                break
+              }
+            }
+          }
+        }
+        if (!succeed) fail("Could find the expected test output folder")
       }
     }
 
@@ -97,10 +112,23 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        // Check the resources created in the file system
-        val parquetFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_2")).get
-        val results = sparkSession.read.text(parquetFolder.getPath)
-        results.count() shouldEqual 13
+        var succeed: Boolean = false
+        breakable {
+          // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
+          for (_ <- 1 to 20) {
+            Thread.sleep(500)
+            if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_2"))) {
+              // Check the resources created in the file system
+              val parquetFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_2")).get
+              val results = sparkSession.read.text(parquetFolder.getPath)
+              if (results.count() == 13) {
+                succeed = true
+                break
+              }
+            }
+          }
+        }
+        if (!succeed) fail("Could find the expected test output folder")
       }
     }
 

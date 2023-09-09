@@ -1,12 +1,13 @@
 package io.tofhir.engine.data.write
 
-import java.util
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.config.ErrorHandlingType
-import io.tofhir.engine.model.{FhirMappingErrorCodes, FhirMappingException, FhirMappingInvalidResourceException, FhirMappingJobExecution, FhirMappingJobResult, FhirMappingResult}
+import io.tofhir.engine.model._
+import org.apache.spark.SparkException
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
+
+import java.util
 
 object SinkHandler {
   val logger: Logger = Logger(this.getClass)
@@ -42,6 +43,7 @@ object SinkHandler {
         t.getCause match {
           case e:FhirMappingInvalidResourceException =>
             logMappingJobResult(mappingJobExecution,mappingUrl,numOfFhirResources,e.getProblems,mappingErrors,invalidInputs)
+          case _ => // We do not do anything for other types of exceptions
         }
         throw t
       }

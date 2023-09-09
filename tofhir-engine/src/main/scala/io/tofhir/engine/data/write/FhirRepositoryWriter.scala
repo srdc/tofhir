@@ -10,6 +10,7 @@ import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
+import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model._
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
 import org.apache.spark.SparkContext
@@ -27,7 +28,7 @@ import scala.concurrent.{Await, ExecutionContext}
  *
  * @param sinkSettings Settings for the FHIR repository
  */
-class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends BaseFhirWriter(sinkSettings) {
+class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobRegistry: RunningJobRegistry) extends BaseFhirWriter(sinkSettings) {
 
   private val logger: Logger = Logger(this.getClass)
 
@@ -38,7 +39,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    */
   override def write(spark: SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator: CollectionAccumulator[FhirMappingResult]): Unit = {
     logger.debug("Created FHIR resources will be written to the given FHIR repository URL:{}", sinkSettings.fhirRepoUrl)
-
     df
       .foreachPartition { partition: Iterator[FhirMappingResult] =>
         import Execution.actorSystem

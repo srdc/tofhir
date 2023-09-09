@@ -15,47 +15,53 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   implicit val actorSystem: ActorSystem = ActorSystem("toFhirEngineTest")
   implicit val executionContext: ExecutionContext = actorSystem.getDispatcher
-  val runningJobRegistry: RunningJobRegistry = new RunningJobRegistry(mock[SparkSession])
+  val runningTaskRegistry: RunningJobRegistry = new RunningJobRegistry(mock[SparkSession])
 
   "InMemoryExecutionManager" should "cache a StreamingQuery" in {
     val streamingQueryFuture = getMockStreamingQuery()
-    runningJobRegistry.registerStreamingQuery("j", "m", streamingQueryFuture)
+    runningTaskRegistry.registerStreamingQuery("j", "e", "m", streamingQueryFuture)
+
     // The streaming future is resolved inside the listener. 2 seconds waiting time seems safe for runnable to be submitted and
     // future to be resolved. It can be adjusted though.
     Await.result(streamingQueryFuture, 2 seconds)
     // The listener thread initiated by the execution manager calls an asynchronous callback. Below, we wait it to run.
     Thread.sleep(100)
-    runningJobRegistry.getRunningExecutions().size shouldBe 1
+    runningTaskRegistry.getRunningExecutions().size shouldBe 1
   }
 
   "it" should "stop all StreamingQueries associated with a job" in {
     val streamingQueryFuture = getMockStreamingQuery()
     val streamingQueryFuture2 = getMockStreamingQuery()
-    runningJobRegistry.registerStreamingQuery("j", "m2", streamingQueryFuture)
-    runningJobRegistry.registerStreamingQuery("j", "m3", streamingQueryFuture2)
+    runningTaskRegistry.registerStreamingQuery("j", "e", "m2", streamingQueryFuture)
+    runningTaskRegistry.registerStreamingQuery("j", "e", "m3", streamingQueryFuture2)
+
     // The streaming future is resolved inside the listener. 2 seconds waiting time seems safe for runnable to be submitted and
     // future to be resolved. It can be adjusted though.
     val streamingQuery = Await.result(streamingQueryFuture, 2 seconds)
     val streamingQuery2 = Await.result(streamingQueryFuture2, 2 seconds)
+
     // The listener thread initiated by the execution manager calls an asynchronous callback. Below, we wait it to run.
     Thread.sleep(100)
-    runningJobRegistry.stopJobExecution("j")
+
+    runningTaskRegistry.stopJobExecution("j", "e")
     verify(streamingQuery).stop()
     verify(streamingQuery2).stop()
-    runningJobRegistry.getRunningExecutions().size shouldBe 0
+    runningTaskRegistry.getRunningExecutions().size shouldBe 0
   }
 
   "InMemoryExecutionManager" should "stop StreamingQuery associated with a mapping" in {
     val streamingQueryFuture = getMockStreamingQuery()
-    runningJobRegistry.registerStreamingQuery("j", "m", streamingQueryFuture)
+    runningTaskRegistry.registerStreamingQuery("j", "e", "m", streamingQueryFuture)
+
     // The streaming future is resolved inside the listener. 2 seconds waiting time seems safe for runnable to be submitted and
     // future to be resolved. It can be adjusted though.
     val streamingQuery = Await.result(streamingQueryFuture, 2 seconds)
     // The listener thread initiated by the execution manager calls an asynchronous callback. Below, we wait it to run.
     Thread.sleep(100)
-    runningJobRegistry.stopMappingExecution("j", "m")
+
+    runningTaskRegistry.stopMappingExecution("j", "e", "m")
     verify(streamingQuery).stop()
-    runningJobRegistry.getRunningExecutions().size shouldBe 1
+    runningTaskRegistry.getRunningExecutions().size shouldBe 1
   }
 
   private def getMockStreamingQuery(): Future[StreamingQuery] = {

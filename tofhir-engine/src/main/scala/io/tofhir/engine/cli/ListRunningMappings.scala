@@ -6,10 +6,13 @@ package io.tofhir.engine.cli
 class ListRunningMappings extends Command {
   override def execute(args: Seq[String], context: CommandExecutionContext): CommandExecutionContext = {
     context.toFhirEngine.runningJobRegistry.getRunningExecutions() match {
-      case m:Map[String, Seq[String]] if m.isEmpty => println("There is no running task at the moment")
-      case runningMappings => runningMappings.foreach(jobAndMappings => {
-        println(s"Job: ${jobAndMappings._1}")
-        jobAndMappings._2.foreach(mapping => println(s"\t$mapping"))
+      case m if m.isEmpty => println("There is no running task at the moment")
+      case runningMappings => runningMappings.foreach(jobMappings => {
+        println(s"Job: ${jobMappings._1}")
+        jobMappings._2.foreach(executionMappings => {
+          println(s"\tExecution: ${executionMappings._1}")
+          executionMappings._2.foreach(mapping => println(s"\t\t$mapping"))
+        })
       })
     }
     context

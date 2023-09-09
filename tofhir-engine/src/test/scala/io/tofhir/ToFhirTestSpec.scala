@@ -3,6 +3,7 @@ package io.tofhir
 import akka.actor.ActorSystem
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
+import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping.{FhirMappingFolderRepository, IFhirMappingRepository, IMappingContextLoader, MappingContextLoader, SchemaFolderLoader}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -30,6 +31,8 @@ trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspect
     .set("spark.driver.allowMultipleContexts", "false")
     .set("spark.ui.enabled", "false")
   val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+
+  val runningJobRegistry: RunningJobRegistry = new RunningJobRegistry(sparkSession)
 
   implicit val actorSystem: ActorSystem = ActorSystem("toFhirEngineTest")
 }

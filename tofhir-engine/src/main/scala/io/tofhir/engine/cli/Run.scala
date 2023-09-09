@@ -72,14 +72,15 @@ class Run extends Command {
         // Streaming job
       } else {
         val fhirMappingJobManager = getFhirMappingJobManager(context, mappingJob)
+        val mappingJobExecution: FhirMappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings)
         fhirMappingJobManager.startMappingJobStream(
-          mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings),
+          mappingJobExecution = mappingJobExecution,
           sourceSettings = mappingJob.sourceSettings,
           sinkSettings = mappingJob.sinkSettings,
           terminologyServiceSettings = mappingJob.terminologyServiceSettings,
           identityServiceSettings = mappingJob.getIdentityServiceSettings()
         )
-          .foreach(sq => context.toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJob.id, sq._1, sq._2))
+          .foreach(sq => context.toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJob.id, mappingJobExecution.id, sq._1, sq._2))
 
         context
       }
@@ -100,7 +101,8 @@ class Run extends Command {
       context.toFhirEngine.schemaLoader,
       context.toFhirEngine.functionLibraries,
       context.toFhirEngine.sparkSession,
-      mappingJob.mappingErrorHandling
+      mappingJob.mappingErrorHandling,
+      context.toFhirEngine.runningJobRegistry
     )
   }
 
