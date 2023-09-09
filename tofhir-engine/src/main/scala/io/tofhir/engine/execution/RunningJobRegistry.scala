@@ -137,13 +137,21 @@ class RunningJobRegistry(spark: SparkSession) {
     runningTasks.synchronized {
       runningTasks.get(jobId) match {
         case Some(jobMapping) if jobMapping.contains(executionId) && jobMapping(executionId).contains(mappingUrl) =>
-          val removedMappingEntry = jobMapping(executionId).remove(mappingUrl)
-          // Remove the execution mappings completely if it is empty
-          if (jobMapping(executionId).isEmpty) {
-            jobMapping.remove(executionId)
-            // Remove the job mappings completely if it is empty
-            if (runningTasks(jobId).isEmpty) {
-              runningTasks.remove(jobId)
+          var removedMappingEntry: Option[Either[String, StreamingQuery]] = None
+          // If it is a batch job do nothing but warn user about the situation
+          if (jobMapping(executionId)(mappingUrl).isLeft) {
+            logger.warn(s"Execution with $jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl won't be stopped with a specific mapping as this is a batch job." +
+              s"Stop execution by providing only the jobId and executionId")
+
+          } else {
+            removedMappingEntry = jobMapping(executionId).remove(mappingUrl)
+            // Remove the execution mappings completely if it is empty
+            if (jobMapping(executionId).isEmpty) {
+              jobMapping.remove(executionId)
+              // Remove the job mappings completely if it is empty
+              if (runningTasks(jobId).isEmpty) {
+                runningTasks.remove(jobId)
+              }
             }
           }
           removedMappingEntry
