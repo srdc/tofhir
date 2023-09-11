@@ -8,8 +8,10 @@ import org.apache.spark.sql.streaming.StreamingQuery
 
 import java.util.UUID
 import java.util.concurrent.Executors
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.runtime.Nothing$
 import scala.util.{Failure, Success}
 
 /**
@@ -48,6 +50,9 @@ class RunningJobRegistry(spark: SparkSession) {
       // If blocking was set true, we are going to wait for StreamingQuery to terminate
       if (blocking) {
         streamingQuery.awaitTermination()
+        // Remove the mapping execution from the running tasks after the query is terminated
+        removeMappingExecutionFromRunningTasks(jobId, executionId, mappingUrl)
+        () // Return unit
       }
 
       // Use the dedicated ExecutionContext for streaming jobs
@@ -72,6 +77,10 @@ class RunningJobRegistry(spark: SparkSession) {
         getOrinitializeExecutionMappings(jobId, executionId).put(url, Left(jobGroup))
       })
     }
+    // Remove the execution entry when the future is completed
+    jobFuture.onComplete(_ => {
+      removeExecutionFromRunningTasks(jobId, executionId)
+    })
   }
 
   /**
@@ -94,20 +103,7 @@ class RunningJobRegistry(spark: SparkSession) {
    * @param executionId Identifier of the execution to be stopped
    */
   def stopJobExecution(jobId: String, executionId: String): Unit = {
-    runningTasks.synchronized {
-      runningTasks.get(jobId) match {
-        case Some(jobMapping) if jobMapping.contains(executionId) =>
-          val removedExecutionMappingsEntry = jobMapping.remove(executionId)
-          // Remove the job mappings completely if it is empty
-          if (runningTasks(jobId).isEmpty) {
-            runningTasks.remove(jobId)
-          }
-          removedExecutionMappingsEntry
-        case _ => None
-      }
-
-      // Moving Spark-related tasks out of the synchronized block to prevent potential blocking
-    } match {
+    removeExecutionFromRunningTasks(jobId, executionId) match {
       case None => // Nothing to do
       case Some(executionMappings) =>
         executionMappings.head._2 match {
@@ -134,6 +130,48 @@ class RunningJobRegistry(spark: SparkSession) {
    * @param mappingUrl  Url of the mapping
    */
   def stopMappingExecution(jobId: String, executionId: String, mappingUrl: String): Unit = {
+    removeMappingExecutionFromRunningTasks(jobId, executionId, mappingUrl) match {
+      case None => // Nothing to do
+      case Some(result) => result match {
+        case Left(sparkJobGroup) => spark.sparkContext.cancelJobGroup(sparkJobGroup)
+        case Right(streamingQuery) => streamingQuery.stop
+      }
+    }
+  }
+
+  /**
+   * Removes the entry from the running tasks map for the given job and execution. If the removed entry is the last one for the given job,
+   * the complete job entry is also removed.
+   *
+   * @param jobId       Identifier of the job
+   * @param executionId Identifier of the execution
+   * @return Returns the removed mapping entry if at all (executionId -> (mapping url -> (spark job group id | streaming query))), or None
+   */
+  private def removeExecutionFromRunningTasks(jobId: String, executionId: String): Option[mutable.Map[String, Either[String, StreamingQuery]]] = {
+    runningTasks.synchronized {
+      runningTasks.get(jobId) match {
+        case Some(jobMapping) if jobMapping.contains(executionId) =>
+          val removedExecutionMappingsEntry = jobMapping.remove(executionId)
+          // Remove the job mappings completely if it is empty
+          if (runningTasks(jobId).isEmpty) {
+            runningTasks.remove(jobId)
+          }
+          removedExecutionMappingsEntry
+        case _ => None
+      }
+    }
+  }
+
+  /**
+   * Removes the entry from the running tasks map for the given job, execution and mapping. If the removed entry is the last one for the given execution, the execution itself is also removed.
+   * Furthermore, if the execution is the last one for the given job, the job entry is also removed.
+   *
+   * @param jobId       Identifier of the job
+   * @param executionId Identifier of the execution
+   * @param mappingUrl  Url of the mapping
+   * @return Returns the removed mapping entry if at all or None
+   */
+  private def removeMappingExecutionFromRunningTasks(jobId: String, executionId: String, mappingUrl: String): Option[Either[String, StreamingQuery]] = {
     runningTasks.synchronized {
       runningTasks.get(jobId) match {
         case Some(jobMapping) if jobMapping.contains(executionId) && jobMapping(executionId).contains(mappingUrl) =>
@@ -156,12 +194,6 @@ class RunningJobRegistry(spark: SparkSession) {
           }
           removedMappingEntry
         case _ => None
-      }
-    } match {
-      case None => // Nothing to do
-      case Some(result) => result match {
-        case Left(sparkJobGroup) => spark.sparkContext.cancelJobGroup(sparkJobGroup)
-        case Right(streamingQuery) => streamingQuery.stop
       }
     }
   }
