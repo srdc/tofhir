@@ -13,7 +13,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.{ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
+import io.tofhir.server.model.{BadRequest, ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
@@ -24,6 +24,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
 import org.json4s.JsonAST.{JBool, JObject, JValue}
 import org.json4s.jackson.JsonMethods
+import org.json4s.{JArray, JString}
 
 import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -66,6 +67,39 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       case Some(urls) => urls.flatMap(url => mappingJob.mappings.find(p => p.mappingRef.contentEquals(url)))
       case None => mappingJob.mappings
     }
+
+    if(mappingTasks.isEmpty) {
+      throw BadRequest("No mapping task to execute!", "No mapping task to execute!")
+    }
+
+    // all the mappings in mappingTasks should not running, if any of them is running, give already running response
+    val JobExecutionMap = toFhirEngine.runningJobRegistry.getRunningExecutions()
+    val jobExecution = JobExecutionMap.get(jobId)
+    if (jobExecution.isDefined) {
+      val runningMappingUrls = jobExecution.get.flatMap(_._2)
+      val runningMappingUrlsSet = runningMappingUrls.toSet
+      val mappingUrlsSet = mappingTasks.map(_.mappingRef).toSet
+      val intersection = runningMappingUrlsSet.intersect(mappingUrlsSet)
+      if (intersection.nonEmpty) {
+        // create jvalue json response with already running mapping urls as list string in values and execution ids in keys
+        // find execution ids for the intersection mapping urls
+        val executionIds = jobExecution.get
+          .filter(p => p._2.exists(mappingUrl => intersection.contains(mappingUrl)))
+          .map(x => {
+            (x._1, x._2.filter(mappingUrl => intersection.contains(mappingUrl)))
+          })
+        // convert execution ids to json response
+        val jValueResponse = JArray(executionIds.map(x => {
+          JObject(
+            "executionId" -> JString(x._1),
+            "mappingUrls" -> JArray(x._2.map(JString(_)).toList)
+          )
+        }).toList)
+        // use it in the response message
+        throw BadRequest("Mapping tasks are already running!", JsonMethods.pretty(jValueResponse))
+      }
+    }
+
     // create execution
     val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
       mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.mappingErrorHandling))
@@ -314,7 +348,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    */
   def stopJobExecution(jobId: String, executionId: String): Future[Unit] = {
     Future {
-      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, null)) {
+      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, None)) {
         toFhirEngine.runningJobRegistry.stopJobExecution(jobId, executionId)
         logger.debug(s"Job execution stopped. jobId: $jobId, execution: $executionId")
       } else {
