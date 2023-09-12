@@ -8,6 +8,7 @@ import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
@@ -21,7 +22,7 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
-import org.json4s.JsonAST.JValue
+import org.json4s.JsonAST.{JBool, JObject, JValue}
 import org.json4s.jackson.JsonMethods
 
 import java.io.File
@@ -273,8 +274,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             })(RowEncoder(StructType(
               StructField("id", StringType) ::
                 StructField("mappingUrls", ArrayType(StringType)) ::
-                StructField("timestamp", StringType) ::
-                StructField("status", StringType) :: Nil
+                StructField("startTime", StringType) ::
+                StructField("errorStatus", StringType) :: Nil
             )))
             // page size is 10, handle pagination
             val total = executionLogs.count()
@@ -287,10 +288,17 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               val start = (page - 1) * 10
               val end = Math.min(start + 10, total.toInt)
               // sort the executions by latest to oldest
-              val paginatedLogs = executionLogs.sort(executionLogs.col("timestamp").desc).collect().slice(start, end)
+              val paginatedLogs = executionLogs.sort(executionLogs.col("startTime").desc).collect().slice(start, end)
+
+              // Retrieve the running executions for the given job
+              val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)
               (paginatedLogs.map(row => {
-                JsonMethods.parse(row.json)
-              }), total)
+                val rowJson: JObject = JsonMethods.parse(row.json).asInstanceOf[JObject]
+                // Add runningStatus field to the json object. Running status is set to true if the execution id is contained in the job executions
+                JObject(
+                  rowJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains((rowJson \ "id").extract[String])))
+                )
+              }), total.toInt)
             }
           }
         }

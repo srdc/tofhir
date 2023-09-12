@@ -1,6 +1,5 @@
 package io.tofhir.engine.execution
 
-import akka.parboiled2.RuleTrace.Fail
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import org.apache.spark.sql.SparkSession
@@ -11,8 +10,6 @@ import java.util.concurrent.Executors
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.runtime.Nothing$
-import scala.util.{Failure, Success}
 
 /**
  * Execution manager that keeps track of running mapping tasks in-memory
@@ -214,6 +211,16 @@ class RunningJobRegistry(spark: SparkSession) {
     } else {
       false
     }
+  }
+
+  /**
+   * Gets running executions for the given job
+   *
+   * @param jobId Identifier of the job
+   * @return A set of execution ids
+   */
+  def getRunningExecutions(jobId: String): Set[String] = {
+    runningTasks.get(jobId).map(_.keySet).getOrElse(Set.empty).toSet
   }
 
   /**
