@@ -256,8 +256,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             // get execution logs
             val executionLogs = jobRunsGroupedByExecutionId.mapGroups((key, values) => {
               // keeps the rows belonging to this execution
-              val rows = values.toList
-              val count = rows.length
+              val rows: Seq[Row] = values.toSeq
+              // Extract values from the "mappingUrl" column using direct attribute access
+              val mappingUrls = rows.map(_.getAs[String]("mappingUrl"))
               val successCount = rows.count(r => r.get(r.fieldIndex("result")).toString.contentEquals("SUCCESS"))
               // use the timestamp of first one, which is ran first, as timestamp of execution
               val timestamp = rows.head.get(rows.head.fieldIndex("@timestamp")).toString
@@ -265,13 +266,13 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               var status = "SUCCESS"
               if (successCount == 0) {
                 status = "FAILURE"
-              } else if (successCount != count) {
+              } else if (successCount != mappingUrls.length) {
                 status = "PARTIAL_SUCCESS"
               }
-              Row.fromSeq(Seq(key, count, timestamp, status))
+              Row.fromSeq(Seq(key, mappingUrls, timestamp, status))
             })(RowEncoder(StructType(
               StructField("id", StringType) ::
-                StructField("mappingTaskCount", IntegerType) ::
+                StructField("mappingUrls", ArrayType(StringType)) ::
                 StructField("timestamp", StringType) ::
                 StructField("status", StringType) :: Nil
             )))
@@ -305,8 +306,13 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    */
   def stopJobExecution(jobId: String, executionId: String): Future[Unit] = {
     Future {
-      toFhirEngine.runningJobRegistry.stopJobExecution(jobId, executionId)
-      logger.debug(s"Job execution stopped. jobId: $jobId, execution: $executionId")
+      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, null)) {
+        toFhirEngine.runningJobRegistry.stopJobExecution(jobId, executionId)
+        logger.debug(s"Job execution stopped. jobId: $jobId, execution: $executionId")
+      } else {
+        throw ResourceNotFound("Job execution does not exists.", s"A job execution with jobId: $jobId, executionId: $executionId does not exists.")
+      }
+
     }
   }
 
@@ -319,8 +325,12 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    */
   def stopMappingExecution(jobId: String, executionId: String, mappingUrl: String): Future[Unit] = {
     Future {
-      toFhirEngine.runningJobRegistry.stopMappingExecution(jobId, executionId, mappingUrl)
-      logger.debug(s"Mapping execution stopped. jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl")
+      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, Some(mappingUrl))) {
+        toFhirEngine.runningJobRegistry.stopMappingExecution(jobId, executionId, mappingUrl)
+        logger.debug(s"Mapping execution stopped. jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl")
+      } else {
+        throw ResourceNotFound("Mapping execution does not exists.", s"A mapping execution with jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl does not exists.")
+      }
     }
   }
 
