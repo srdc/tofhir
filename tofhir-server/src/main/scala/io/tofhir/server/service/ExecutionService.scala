@@ -18,6 +18,7 @@ import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
+import org.apache.commons.io
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
@@ -27,6 +28,7 @@ import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JString}
 
 import java.io.File
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -55,7 +57,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @param executeJobTask execute job task instance contains mapping urls and error handling type
    * @return
    */
-  def runJob(projectId: String, jobId: String, executeJobTask: Option[ExecuteJobTask]): Future[Unit] = {
+  def runJob(projectId: String, jobId: String, executionId: Option[String], executeJobTask: Option[ExecuteJobTask]): Future[Unit] = {
     if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
       throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
     }
@@ -101,13 +103,20 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     }
 
     // create execution
-    val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
+    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
       mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.mappingErrorHandling))
     val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.mappingErrorHandling)
 
     // Streaming jobs
     val submittedJob = Future {
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
+        // Delete checkpoint directory if set accordingly
+        if (executeJobTask.exists(_.clearCheckpoints)) {
+          mappingTasks.foreach(mapping => {
+            io.FileUtils.deleteDirectory(new File(mappingJobExecution.getCheckpointDirectory(mapping.mappingRef)))
+          })
+        }
+
         fhirMappingJobManager
           .startMappingJobStream(
             mappingJobExecution,
