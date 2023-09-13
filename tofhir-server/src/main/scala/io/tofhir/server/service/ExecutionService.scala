@@ -293,7 +293,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               // keeps the rows belonging to this execution
               val rows: Seq[Row] = values.toSeq
               // Extract values from the "mappingUrl" column using direct attribute access
-              val mappingUrls = rows.map(_.getAs[String]("mappingUrl"))
+              val mappingUrls = rows.map(_.getAs[String]("mappingUrl")).distinct
               val successCount = rows.count(r => r.get(r.fieldIndex("result")).toString.contentEquals("SUCCESS"))
               // use the timestamp of first one, which is ran first, as timestamp of execution
               val timestamp = rows.head.get(rows.head.fieldIndex("@timestamp")).toString
