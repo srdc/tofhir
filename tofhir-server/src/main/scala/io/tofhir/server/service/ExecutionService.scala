@@ -24,6 +24,7 @@ import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
 import org.json4s.JsonAST.{JBool, JObject, JValue}
+import org.json4s.JsonDSL.jobject2assoc
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JString}
 
@@ -98,7 +99,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           )
         }).toList)
         // use it in the response message
-        throw BadRequest("Mapping tasks are already running!", JsonMethods.pretty(jValueResponse))
+        throw BadRequest("Mapping tasks are already running!", JsonMethods.compact(JsonMethods.render(jValueResponse)))
       }
     }
 
@@ -353,6 +354,49 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           }
         }
       case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists")
+    }
+  }
+
+  /**
+   * Returns the execution logs for a specific execution ID.
+   *
+   * @param projectId    project id the job belongs to
+   * @param jobId        job id
+   * @param executionId  execution id
+   * @return the execution summary as a JSON object
+   */
+  def getExecutionById(projectId: String, jobId: String, executionId: String): Future[JObject] = {
+    // Retrieve the job to validate its existence
+    jobRepository.getJob(projectId, jobId).flatMap {
+      case Some(_) =>
+        // Read logs/tofhir-mappings.log file
+        val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
+        // Filter logs by job and execution ID
+        val filteredLogs = dataFrame.filter(s"jobId = '$jobId' and projectId = '$projectId' and executionId = '$executionId'")
+        // Check if any logs exist for the given execution
+        if (filteredLogs.isEmpty) { // execution not found, return response with 404 status code
+          throw ResourceNotFound("Execution does not exists.", s"An execution with id $executionId does not exists.")
+        } else {
+          // Extract values from the "mappingUrl" column using direct attribute access
+          val mappingUrls = filteredLogs.select("mappingUrl").distinct().collect().map(_.getString(0)).toList
+          val successCount = filteredLogs.filter(col("result") === "SUCCESS").count()
+          // Use the timestamp of the first log as the execution timestamp
+          val timestamp = filteredLogs.select("@timestamp").first().getString(0)
+          // Determine the status based on the success count
+          val status = if (successCount == 0) "FAILURE" else if (successCount != mappingUrls.length) "PARTIAL_SUCCESS" else "SUCCESS"
+          // Create a JSON object representing the execution
+          val executionJson = JObject(
+            "id" -> JString(executionId),
+            "mappingUrls" -> JArray(mappingUrls.map(JString)),
+            "startTime" -> JString(timestamp),
+            "errorStatus" -> JString(status)
+          )
+          // Add runningStatus field to the JSON object
+          val updatedExecutionJson = executionJson ~ ("runningStatus" -> JBool(toFhirEngine.runningJobRegistry.getRunningExecutions(jobId).contains(executionId)))
+          Future.successful(updatedExecutionJson)
+        }
+      case None =>
+        throw ResourceNotFound("Mapping job does not exist.", s"A mapping job with id $jobId does not exist")
     }
   }
 
