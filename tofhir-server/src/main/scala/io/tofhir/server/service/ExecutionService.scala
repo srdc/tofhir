@@ -248,9 +248,16 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               updatedMappingTasksLogsMap.getOrElse((mappingTaskLog.getAs[String]("mappingUrl"), mappingTaskLog.getAs[String]("@timestamp")), mappingTaskLog))
 
           }
+
           // return json objects for mapping tasks logs
           mappingTasksLogsData.map(row => {
-            JsonMethods.parse(row.json)
+            val rowJson: JObject = JsonMethods.parse(row.json).asInstanceOf[JObject]
+            // Add runningStatus field to the json object. Running status is set to true if the execution id is contained in the job executions
+            JObject(
+              rowJson.obj :+ ("runningStatus" -> JBool(
+                toFhirEngine.runningJobRegistry.executionExists((rowJson \ "jobId").extract[String], executionId, (rowJson \ "mappingUrl").extractOpt[String])
+              ))
+            )
           })
         }
       }
