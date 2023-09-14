@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_RUN, SEGMENT_TEST}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STOP, SEGMENT_TEST}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest, ToFhirRestCall}
 import io.tofhir.server.service.{ExecutionService, JobService}
@@ -28,21 +28,35 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
       pathEndOrSingleSlash { // Operations on all mapping jobs
         getAllJobs(projectId) ~ createJob(projectId)
       } ~ pathPrefix(Segment) { id: String =>
-        pathEndOrSingleSlash { // Operations on all mapping jobs
+        pathEndOrSingleSlash { // Operations on a single job, jobs/<jobId>
           getJob(projectId, id) ~ updateJob(projectId, id) ~ deleteJob(projectId, id)
-        } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job
+        } ~ pathPrefix(SEGMENT_RUN) { // run a mapping job, jobs/<jobId>/run
           pathEndOrSingleSlash {
             runJob(projectId, id)
           }
-        } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations
+        } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations, jobs/<jobId>/test
           pathEndOrSingleSlash {
             testMappingWithJob(projectId, id)
           }
-        } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions
+        } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, jobs/<jobId>/executions
           pathEndOrSingleSlash {
             getExecutions(projectId, id)
-          } ~ pathPrefix(Segment) { executionId: String => // operations on an execution
-            getExecutionLogs(executionId)
+          } ~ pathPrefix(Segment) { executionId: String => // operations on a single execution, jobs/<jobId>/executions/<executionId>
+            pathEndOrSingleSlash {
+              getExecutionLogs(executionId)
+            } ~ pathPrefix(SEGMENT_STOP) { // jobs/<jobId>/executions/<executionId>/stop
+              pathEndOrSingleSlash {
+                stopJobExecution(id, executionId)
+              }
+            } ~ pathPrefix(SEGMENT_MAPPINGS) { // jobs/<jobId>/executions/<executionId>/mappings
+              pathPrefix(Segment) { mappingUrl: String => // jobs/<jobId>/executions/<executionId>/mappings/<mappingUrl>
+                pathPrefix(SEGMENT_STOP) { // jobs/<jobId>/executions/<executionId>/mappings/<mappingUrl>/stop
+                  pathEndOrSingleSlash {
+                    stopMappingExecution(id, executionId, mappingUrl)
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -150,6 +164,35 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
   }
 
   /**
+   * Route to stop a job (i.e. all the mappings included inside a job)
+   *
+   * @param jobId Identifier of the job
+   * @return
+   */
+  private def stopJobExecution(jobId: String, executionId: String): Route = {
+    delete {
+      complete {
+        executionService.stopJobExecution(jobId, executionId).map(_ => StatusCodes.OK)
+      }
+    }
+  }
+
+  /**
+   * Route to stop an individual mapping task inside a job.
+   *
+   * @param jobId      Identifier of the job containing the mapping.
+   * @param mappingUrl Url of the mapping to be stopped
+   * @return
+   */
+  private def stopMappingExecution(jobId: String, executionId: String, mappingUrl: String): Route = {
+    delete {
+      complete {
+        executionService.stopMappingExecution(jobId, executionId, mappingUrl).map(_ => StatusCodes.OK)
+      }
+    }
+  }
+
+  /**
    * Route to retrieve execution logs i.e. the logs of mapping task which are ran in the execution
    * */
   private def getExecutionLogs(id: String): Route = {
@@ -166,4 +209,6 @@ object JobEndpoint {
   val SEGMENT_RUN = "run"
   val SEGMENT_EXECUTIONS = "executions"
   val SEGMENT_TEST = "test"
+  val SEGMENT_STOP = "stop"
+  val SEGMENT_MAPPINGS = "mappings"
 }

@@ -69,29 +69,44 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
       mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.mappingErrorHandling))
     val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.mappingErrorHandling)
-    if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-      Future { // TODO we lose the ability to stop the streaming job
-        val streamingQuery =
-          fhirMappingJobManager
-            .startMappingJobStream(
-              mappingJobExecution,
-              sourceSettings = mappingJob.sourceSettings,
-              sinkSettings = mappingJob.sinkSettings,
-              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-              identityServiceSettings = mappingJob.getIdentityServiceSettings()
-            )
-        streamingQuery.awaitTermination()
+
+    // Streaming jobs
+    val submittedJob = Future {
+      if (mappingJob.sourceSettings.exists(_._2.asStream)) {
+        fhirMappingJobManager
+          .startMappingJobStream(
+            mappingJobExecution,
+            sourceSettings = mappingJob.sourceSettings,
+            sinkSettings = mappingJob.sinkSettings,
+            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+            identityServiceSettings = mappingJob.getIdentityServiceSettings()
+          )
+          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, mappingJobExecution.id, sq._1, sq._2))
       }
-    } else {
-      fhirMappingJobManager
-        .executeMappingJob(
-          mappingJobExecution = mappingJobExecution,
-          sourceSettings = mappingJob.sourceSettings,
-          sinkSettings = mappingJob.sinkSettings,
-          terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-          identityServiceSettings = mappingJob.getIdentityServiceSettings()
+
+      // Batch jobs
+      else {
+        val executionFuture: Future[Unit] = fhirMappingJobManager
+          .executeMappingJob(
+            mappingJobExecution = mappingJobExecution,
+            sourceSettings = mappingJob.sourceSettings,
+            sinkSettings = mappingJob.sinkSettings,
+            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+            identityServiceSettings = mappingJob.getIdentityServiceSettings()
+          )
+
+        // Register the job to the registry
+        toFhirEngine.runningJobRegistry.registerBatchJob(
+          mappingJobExecution.jobId,
+          mappingJobExecution.id,
+          mappingTasks.map(_.mappingRef),
+          executionFuture,
+          s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
         )
+      }
     }
+    logger.debug(s"Submitted job for project: $projectId, job: $jobId, execution: ${mappingJobExecution.id}")
+    submittedJob
   }
 
   /**
@@ -188,13 +203,14 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               )
             )
 
-            // Build a map for updated mapping tasks logs (mappingUrl -> mappingTasksErrorLogsWithRowErrorLogs)
-            val updatedMappingTasksLogsMap = mappingTasksErrorLogsWithRowErrorLogs.collect().map(updatedJobRunLog =>
-              updatedJobRunLog.getAs[String]("mappingUrl") -> updatedJobRunLog).toMap
+            // Build a map for updated mapping tasks logs (mappingUrl -> mapping logs with errors)
+            val updatedMappingTasksLogsMap = mappingTasksErrorLogsWithRowErrorLogs.collect().map(mappingLogsWithErrors =>
+              (mappingLogsWithErrors.getAs[String]("mappingUrl"), mappingLogsWithErrors.getAs[String]("@timestamp")) -> mappingLogsWithErrors
+            ).toMap
 
-            // Replace mapping tasks logs if it is in the map
-            mappingTasksLogsData = mappingTasksLogsData.map(jobRunLog =>
-              updatedMappingTasksLogsMap.getOrElse(jobRunLog.getAs[String]("mappingUrl"), jobRunLog))
+            // Replace mapping task logs if it is in the map
+            mappingTasksLogsData = mappingTasksLogsData.map(mappingTaskLog =>
+              updatedMappingTasksLogsMap.getOrElse((mappingTaskLog.getAs[String]("mappingUrl"), mappingTaskLog.getAs[String]("@timestamp")), mappingTaskLog))
 
           }
           // return json objects for mapping tasks logs
@@ -240,8 +256,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             // get execution logs
             val executionLogs = jobRunsGroupedByExecutionId.mapGroups((key, values) => {
               // keeps the rows belonging to this execution
-              val rows = values.toList
-              val count = rows.length
+              val rows: Seq[Row] = values.toSeq
+              // Extract values from the "mappingUrl" column using direct attribute access
+              val mappingUrls = rows.map(_.getAs[String]("mappingUrl"))
               val successCount = rows.count(r => r.get(r.fieldIndex("result")).toString.contentEquals("SUCCESS"))
               // use the timestamp of first one, which is ran first, as timestamp of execution
               val timestamp = rows.head.get(rows.head.fieldIndex("@timestamp")).toString
@@ -249,13 +266,13 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               var status = "SUCCESS"
               if (successCount == 0) {
                 status = "FAILURE"
-              } else if (successCount != count) {
+              } else if (successCount != mappingUrls.length) {
                 status = "PARTIAL_SUCCESS"
               }
-              Row.fromSeq(Seq(key, count, timestamp, status))
+              Row.fromSeq(Seq(key, mappingUrls, timestamp, status))
             })(RowEncoder(StructType(
               StructField("id", StringType) ::
-                StructField("mappingTaskCount", IntegerType) ::
+                StructField("mappingUrls", ArrayType(StringType)) ::
                 StructField("timestamp", StringType) ::
                 StructField("status", StringType) :: Nil
             )))
@@ -282,10 +299,41 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   }
 
   /**
-   * Returns FhirMappingJobManager instance for the given mapping error handling type.
-   * @param mappingErrorHandlingType How to handle errors encountered while executing the mapping
-   * @return FhirMappingJobManager
+   * Stops the specified job execution. This means that all running executions regarding the mappings included in this job will be stopped.
+   *
+   * @param jobId Identifier of the job
+   * @return
    */
+  def stopJobExecution(jobId: String, executionId: String): Future[Unit] = {
+    Future {
+      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, null)) {
+        toFhirEngine.runningJobRegistry.stopJobExecution(jobId, executionId)
+        logger.debug(s"Job execution stopped. jobId: $jobId, execution: $executionId")
+      } else {
+        throw ResourceNotFound("Job execution does not exists.", s"A job execution with jobId: $jobId, executionId: $executionId does not exists.")
+      }
+
+    }
+  }
+
+  /**
+   * Stops the execution of the specific mapping task
+   *
+   * @param executionId Execution in which the mapping is run
+   * @param mappingUrl  Mapping to be stopped
+   * @return
+   */
+  def stopMappingExecution(jobId: String, executionId: String, mappingUrl: String): Future[Unit] = {
+    Future {
+      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, Some(mappingUrl))) {
+        toFhirEngine.runningJobRegistry.stopMappingExecution(jobId, executionId, mappingUrl)
+        logger.debug(s"Mapping execution stopped. jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl")
+      } else {
+        throw ResourceNotFound("Mapping execution does not exists.", s"A mapping execution with jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl does not exists.")
+      }
+    }
+  }
+
   private def getFhirMappingJobManager(mappingErrorHandlingType: ErrorHandlingType) =
     new FhirMappingJobManager(
       toFhirEngine.mappingRepo,
@@ -293,6 +341,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       toFhirEngine.schemaLoader,
       toFhirEngine.functionLibraries,
       toFhirEngine.sparkSession,
-      mappingErrorHandlingType
+      mappingErrorHandlingType,
+      toFhirEngine.runningJobRegistry
     )
 }

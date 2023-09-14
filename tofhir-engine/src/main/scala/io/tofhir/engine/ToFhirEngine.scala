@@ -1,7 +1,8 @@
 package io.tofhir.engine
 
-import io.onfhir.path.{FhirPathNavFunctionsFactory, FhirPathUtilFunctionsFactory, FhirPathAggFunctionsFactory, FhirPathTerminologyServiceFunctionsFactory, FhirPathIdentityServiceFunctionsFactory, IFhirPathFunctionLibraryFactory}
+import io.onfhir.path.{FhirPathAggFunctionsFactory, FhirPathIdentityServiceFunctionsFactory, FhirPathNavFunctionsFactory, FhirPathTerminologyServiceFunctionsFactory, FhirPathUtilFunctionsFactory, IFhirPathFunctionLibraryFactory}
 import io.tofhir.engine.config.{ToFhirConfig, ToFhirEngineConfig}
+import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping._
 import io.tofhir.engine.model.EngineInitializationException
 import io.tofhir.engine.util.FileUtils
@@ -41,6 +42,9 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
 
   // Function libraries containing context-independent, built-in libraries and libraries passed externally
   val functionLibraries: Map[String, IFhirPathFunctionLibraryFactory] = initializeFunctionLibraries()
+
+  // Single registry keeping the running jobs
+  val runningJobRegistry: RunningJobRegistry = new RunningJobRegistry(sparkSession)
 
   /**
    * Merges built-in function libraries and external libraries passed in the constructor

@@ -11,8 +11,9 @@ import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
 import java.util.Scanner
+import java.util.concurrent.CompletableFuture
 import scala.annotation.tailrec
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
@@ -67,15 +68,6 @@ object CommandLineInterface {
       val commandName = Try(args.head).getOrElse("")
       val commandArgs = Try(args.tail).getOrElse(Seq.empty[String])
       commandExecutionContext = CommandFactory.apply(commandName).execute(commandArgs, commandExecutionContext)
-      commandExecutionContext.runningStatus.foreach(_._2.onComplete {
-        case Success(_) =>
-          println("Job/Task running completed successfully for the command.")
-          commandExecutionContext = commandExecutionContext.withStatus(Option.empty)
-        case Failure(exception) =>
-          println("Problem during execution of the command!")
-          exception.printStackTrace()
-          commandExecutionContext = commandExecutionContext.withStatus(Option.empty)
-      })
       print("\n$ ")
     }
   }
@@ -105,11 +97,12 @@ object CommandLineInterface {
           toFhirEngine.schemaLoader,
           toFhirEngine.functionLibraries,
           toFhirEngine.sparkSession,
-          mappingJob.mappingErrorHandling
+          mappingJob.mappingErrorHandling,
+          toFhirEngine.runningJobRegistry
         )
       val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings)
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-        val streamingQuery =
+        val streamingQueryInitializationTasks: Seq[Future[Unit]] =
           fhirMappingJobManager
             .startMappingJobStream(
               mappingJobExecution,
@@ -117,7 +110,11 @@ object CommandLineInterface {
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
               identityServiceSettings = mappingJob.getIdentityServiceSettings())
-        streamingQuery.awaitTermination()
+            .map(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.id, mappingJobExecution.jobId, sq._1, sq._2, true))
+            .toSeq
+        // Wait for all Futures (i.e. Streaming Queries) to complete
+        Await.result(Future.sequence(streamingQueryInitializationTasks), Duration.Inf)
+
       } else {
         val f =
           fhirMappingJobManager
@@ -146,6 +143,7 @@ object CommandLineInterface {
           toFhirEngine.functionLibraries,
           toFhirEngine.sparkSession,
           mappingJob.mappingErrorHandling,
+          toFhirEngine.runningJobRegistry,
           Some(mappingJobScheduler)
         )
       fhirMappingJobManager

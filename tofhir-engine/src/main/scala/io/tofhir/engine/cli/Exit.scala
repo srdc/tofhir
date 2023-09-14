@@ -4,7 +4,7 @@ import scala.io.StdIn
 
 class Exit extends Command {
   override def execute(args: Seq[String], context: CommandExecutionContext): CommandExecutionContext = {
-    if(context.runningStatus.isDefined && !context.runningStatus.get._2.isCompleted) {
+    if(context.toFhirEngine.runningJobRegistry.getRunningExecutions().nonEmpty) {
       val line = StdIn.readLine("I am still running a mapping job/task. Do you still want me to exit? (Y/n)\n")
       if (line.equalsIgnoreCase("") || line.equalsIgnoreCase("Y")) {
         System.exit(0)
