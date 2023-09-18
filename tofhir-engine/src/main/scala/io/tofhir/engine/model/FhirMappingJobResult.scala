@@ -22,9 +22,13 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
                                ) {
   final val eventId: String = "MAPPING_JOB_RESULT"
   val result: String = (numOfInvalids + numOfNotMapped + numOfFailedWrites) match {
+    case -3 => "STARTED"
     case 0 => "SUCCESS"
-    case neg if neg < 0 => "FAILURE"
-    case _ => "PARTIAL_SUCCESS"
+    case _ => // Check if it is complete failure or there are some successfully written resources
+      numOfFhirResources match {
+        case 0 => "FAILURE"
+        case _ => "PARTIAL_SUCCESS"
+      }
   }
 
   override def toString: String = {

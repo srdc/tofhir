@@ -311,16 +311,21 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               val rows: Seq[Row] = values.toSeq
               // Extract values from the "mappingUrl" column using direct attribute access
               val mappingUrls = rows.map(_.getAs[String]("mappingUrl")).distinct
-              val successCount = rows.count(r => r.get(r.fieldIndex("result")).toString.contentEquals("SUCCESS"))
               // use the timestamp of first one, which is ran first, as timestamp of execution
               val timestamp = rows.head.get(rows.head.fieldIndex("@timestamp")).toString
               // set the status of execution
-              var status = "SUCCESS"
-              if (successCount == 0) {
-                status = "FAILURE"
-              } else if (successCount != mappingUrls.length) {
-                status = "PARTIAL_SUCCESS"
+              var status = "STARTED"
+              // Check if there is a row with result other than STARTED
+              if (!rows.forall(r => r.get(r.fieldIndex("result")).toString.contentEquals("STARTED"))) {
+                val successCount = rows.count(r => r.get(r.fieldIndex("result")).toString.contentEquals("SUCCESS"))
+                status = "SUCCESS"
+                if (successCount == 0) {
+                  status = "FAILURE"
+                } else if (successCount != mappingUrls.length) {
+                  status = "PARTIAL_SUCCESS"
+                }
               }
+
               Row.fromSeq(Seq(key, mappingUrls, timestamp, status))
             })(RowEncoder(StructType(
               StructField("id", StringType) ::
