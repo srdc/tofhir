@@ -33,7 +33,8 @@ object ToFhirConfig {
       "spark.driver.allowMultipleContexts" -> "false",
       "spark.ui.enabled" -> "false",
       "spark.sql.files.ignoreCorruptFiles" -> "false", //Do not ignore corrupted files (e.g. CSV missing a field from the given schema) as we want to log them
-      "spark.sql.streaming.checkpointLocation" -> "./checkpoint" //Checkpoint directory for streaming
+      "spark.sql.streaming.checkpointLocation" -> "./checkpoint", //Checkpoint directory for streaming
+      "mapreduce.fileoutputcommitter.marksuccessfuljobs" -> "false", //Do not create _SUCCESS file while writing to csv
     )
   /**
    * Create spark configuration from this config

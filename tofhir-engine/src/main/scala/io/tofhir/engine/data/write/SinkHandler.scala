@@ -2,7 +2,6 @@ package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.model._
-import org.apache.spark.SparkException
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
@@ -27,9 +26,6 @@ object SinkHandler {
     val invalidInputs = df.filter(_.error.map(_.code).contains(FhirMappingErrorCodes.INVALID_INPUT))
     val mappingErrors = df.filter(_.error.exists(_.code != FhirMappingErrorCodes.INVALID_INPUT))
     val mappedResults = df.filter(_.mappedResource.isDefined)
-    val numOfInvalids = invalidInputs.count()
-    val numOfNotMapped = mappingErrors.count()
-    val numOfFhirResources = mappedResults.count()
     //Create an accumulator to accumulate the results that cannot be written
     val accumName = s"${mappingJobExecution.jobId}:${mappingUrl.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
     val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
@@ -42,13 +38,15 @@ object SinkHandler {
         // handle the exception caused by invalid mapping results
         t.getCause match {
           case e:FhirMappingInvalidResourceException =>
-            logMappingJobResult(mappingJobExecution,mappingUrl,numOfFhirResources,e.getProblems,mappingErrors,invalidInputs)
+            logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,e.getProblems,mappingErrors,invalidInputs)
+            SparkArchiver.archiveDataSourcesOfFailedMappings(spark, mappingJobExecution, mappingUrl, e.getProblems, mappingErrors, invalidInputs)
           case _ => // We do not do anything for other types of exceptions
         }
         throw t
       }
     }
-    logMappingJobResult(mappingJobExecution,mappingUrl,numOfFhirResources,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
+    logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
+    SparkArchiver.archiveDataSourcesOfFailedMappings(spark, mappingJobExecution, mappingUrl, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
     //Unpersist the data frame
     df.unpersist()
   }
@@ -84,14 +82,14 @@ object SinkHandler {
    *
    * @param mappingJobExecution The mapping job execution
    * @param mappingUrl The url of executed mapping
-   * @param numOfFhirResources The number of written FHIR resources to the configured server
+   * @param fhirResources written FHIR resources to the configured server
    * @param notWrittenResources The FHIR resource errors
    * @param mappingErrors The mapping errors
    * @param invalidInputs The source data errors
    * */
   private def logMappingJobResult(mappingJobExecution:FhirMappingJobExecution,
                                   mappingUrl:Option[String],
-                                  numOfFhirResources:Long,
+                                  fhirResources: Dataset[FhirMappingResult],
                                   notWrittenResources:util.List[FhirMappingResult],
                                   mappingErrors:Dataset[FhirMappingResult],
                                   invalidInputs:Dataset[FhirMappingResult]) = {
@@ -99,6 +97,7 @@ object SinkHandler {
     val numOfInvalids = invalidInputs.count()
     val numOfNotMapped = mappingErrors.count()
     val numOfNotWritten = notWrittenResources.size()
+    val numOfFhirResources = fhirResources.count()
     val numOfWritten = numOfFhirResources - numOfNotWritten
 
     //Log the job result
