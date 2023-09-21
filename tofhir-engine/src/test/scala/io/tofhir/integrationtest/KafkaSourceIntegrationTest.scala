@@ -13,22 +13,24 @@ import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import io.tofhir.engine.util.FhirMappingUtility
+import org.apache.commons.io
 import org.apache.kafka.clients.admin.{AdminClient, AdminClientConfig, NewTopic}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
-import org.apache.spark.sql.streaming.{StreamingQuery, StreamingQueryException}
+import org.apache.spark.sql.streaming.StreamingQuery
 import org.rnorth.ducttape.unreliables.Unreliables
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.utility.DockerImageName
 
+import java.io.File
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.{Collections, Properties, UUID}
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Future}
 import scala.util.Try
 
 class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with BeforeAndAfterAll {
@@ -97,6 +99,14 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   val familyMemberHistoryMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/family-member-history-mapping",
     sourceContext = Map("source" -> KafkaSource(topicName = "familyMembers", groupId = "tofhir", startingOffsets = "earliest"))
+  )
+
+  val fhirMappingJob: FhirMappingJob = FhirMappingJob(
+    name = Some("test-job"),
+    mappings = Seq.empty,
+    sourceSettings = streamingSourceSettings,
+    sinkSettings = fhirSinkSettings,
+    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE)
   )
 
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
@@ -189,11 +199,17 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
 
   it should "consume patients, observations and family member history data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
-    val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, otherObservationMappingTask, familyMemberHistoryMappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
+    val execution: FhirMappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(patientMappingTask, otherObservationMappingTask, familyMemberHistoryMappingTask))
+    val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution =
+      execution,
+      sourceSettings = streamingSourceSettings,
+      sinkSettings = fhirSinkSettings
+    )
     streamingQueryFutures.foreach(sq => {
       val streamingQuery: StreamingQuery = Await.result(sq._2, FiniteDuration.apply(5, TimeUnit.SECONDS)) // First wait for the StreamingQuery to become available
       streamingQuery.awaitTermination(20000L) // Wait for 20 seconds to consume and write to the fhir repo and terminate
       streamingQuery.stop()
+      io.FileUtils.deleteDirectory(new File(execution.getCheckpointDirectory(sq._1))) // Clear checkpoint directory to prevent conflicts with other tests
     })
 
     val searchTest = onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
@@ -238,11 +254,16 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     assume(fhirServerIsAvailable)
     // modify familyMemberHistoryMappingTask to listen to familyMembersCorrupted topic
     val mappingTask = familyMemberHistoryMappingTask.copy(sourceContext = Map("source" -> KafkaSource(topicName = "familyMembersCorrupted", groupId = "tofhir", startingOffsets = "earliest")))
-    val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(mappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
+    val execution: FhirMappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(mappingTask))
+    val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(
+      mappingJobExecution = execution,
+      sourceSettings = streamingSourceSettings,
+      sinkSettings = fhirSinkSettings)
     val streamingQuery = Await.result(streamingQueryFutures.head._2, FiniteDuration(5, TimeUnit.SECONDS))
 
     streamingQuery.awaitTermination(20000L)
     streamingQuery.stop()
+    io.FileUtils.deleteDirectory(new File(execution.getCheckpointDirectory(mappingTask.mappingRef))) // Clear checkpoint directory to prevent conflicts with other tests
   }
 }
 

@@ -4,7 +4,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.config.ErrorHandlingType
-import io.tofhir.engine.model.{CodeSystemFile, ConceptMapFile, FhirMappingJob, FhirSinkSettings, FileSystemSinkSettings, LocalFhirTerminologyServiceSettings, TerminologyServiceSettings}
+import io.tofhir.engine.model.{ArchiveModes, CodeSystemFile, ConceptMapFile, DataProcessingSettings, FhirMappingJob, FhirSinkSettings, FileSystemSinkSettings, LocalFhirTerminologyServiceSettings, TerminologyServiceSettings}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.TerminologySystem
@@ -31,7 +31,8 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
   // Create job for test update on job terminology
   val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
   val terminologyServiceSettings: TerminologyServiceSettings = LocalFhirTerminologyServiceSettings(s"/${TerminologySystemFolderRepository.TERMINOLOGY_SYSTEMS_FOLDER}/${terminologySystem1.id}", codeSystemFiles = Seq.empty, conceptMapFiles = Seq.empty)
-  val jobTest: FhirMappingJob = FhirMappingJob(name = Some("mappingJobTest"), sourceSettings = Map.empty, sinkSettings = sinkSettings, terminologyServiceSettings = Some(terminologyServiceSettings), mappings = Seq.empty, mappingErrorHandling = ErrorHandlingType.CONTINUE)
+  val jobTest: FhirMappingJob = FhirMappingJob(name = Some("mappingJobTest"), sourceSettings = Map.empty, sinkSettings = sinkSettings, terminologyServiceSettings = Some(terminologyServiceSettings), mappings = Seq.empty,
+    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE, saveErroneousRecords = false, archiveMode = ArchiveModes.OFF))
 
   "The terminology service" should {
     "create a terminology system" in {

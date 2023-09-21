@@ -97,7 +97,7 @@ object CommandLineInterface {
           toFhirEngine.schemaLoader,
           toFhirEngine.functionLibraries,
           toFhirEngine.sparkSession,
-          mappingJob.mappingErrorHandling,
+          mappingJob.dataProcessingSettings.mappingErrorHandling,
           toFhirEngine.runningJobRegistry
         )
       val mappingJobExecution = FhirMappingJobExecution(job = mappingJob, mappingTasks = mappingJob.mappings)
@@ -142,7 +142,7 @@ object CommandLineInterface {
           toFhirEngine.schemaLoader,
           toFhirEngine.functionLibraries,
           toFhirEngine.sparkSession,
-          mappingJob.mappingErrorHandling,
+          mappingJob.dataProcessingSettings.mappingErrorHandling,
           toFhirEngine.runningJobRegistry,
           Some(mappingJobScheduler)
         )

@@ -66,7 +66,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   "it" should "register batch jobs" in {
     runningTaskRegistry.registerBatchJob("j4", "e", Seq("m1", "m2"), Future.apply(
-      Thread.sleep(2000)
+      Thread.sleep(1000)
     ), "")
     runningTaskRegistry.getRunningExecutions()("j4").head._2 shouldEqual Seq("m1", "m2")
 
@@ -75,7 +75,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     booleanCapturer.getValue shouldBe true
 
     // Wait for the Future to complete
-    Thread.sleep(2000)
+    Thread.sleep(1500)
 
     // Entry for the job and execution should have removed after the future completes
     runningTaskRegistry.getRunningExecutions().contains("j4") shouldBe false

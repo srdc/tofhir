@@ -26,7 +26,8 @@ class JobEndpointTest extends BaseEndpointTest {
 
   // first job to be created
   val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
-  val job1: FhirMappingJob = FhirMappingJob(name = Some("mappingJob1"), sourceSettings = Map.empty, sinkSettings = sinkSettings, mappings = Seq.empty, mappingErrorHandling = ErrorHandlingType.CONTINUE)
+  val job1: FhirMappingJob = FhirMappingJob(name = Some("mappingJob1"), sourceSettings = Map.empty, sinkSettings = sinkSettings, mappings = Seq.empty,
+    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE, saveErroneousRecords = false, archiveMode = ArchiveModes.OFF))
 
   "The service" should {
 

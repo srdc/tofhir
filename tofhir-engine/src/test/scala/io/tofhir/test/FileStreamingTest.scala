@@ -2,6 +2,7 @@ package io.tofhir.test
 
 import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.tofhir.ToFhirTestSpec
+import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model._
@@ -49,6 +50,15 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     sourceContext = Map("source" -> FileSystemSource(path = "observations_csv", fileFormat = Some("csv"), options = Map("cleanSource" -> "archive", "sourceArchiveDir" -> observationArchiveFolder.getAbsolutePath)))
   )
 
+  //create a fhir mapping job for testing
+  val fhirMappingJob: FhirMappingJob = FhirMappingJob(
+    name = Some("test-streaming-job"),
+    sourceSettings = dataSourceSettings,
+    sinkSettings = fileSinkSettings,
+    mappings = Seq.empty,
+    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE)
+  )
+
   override def beforeAll(): Unit = {
     createStreamingTestFolders()
   }
@@ -80,7 +90,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "other-observations.csv").toFile, FileUtils.getPath(observationWatchFolder.getAbsolutePath, "other-observations.csv").toFile)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling, runningJobRegistry)
-    val streamingQueryFutures = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask)), dataSourceSettings, fileSinkSettings)
+    val streamingQueryFutures = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask), job = fhirMappingJob), dataSourceSettings, fileSinkSettings)
     val streamingQueries = Await.result(Future.sequence(streamingQueryFutures.values), FiniteDuration(5, TimeUnit.SECONDS))
     streamingQueries.foreach(sq => sq.isActive shouldBe true)
 //    streamingQuery.awaitTermination()

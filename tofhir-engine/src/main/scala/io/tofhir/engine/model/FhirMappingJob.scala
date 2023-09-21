@@ -1,6 +1,5 @@
 package io.tofhir.engine.model
 
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import org.json4s.JsonAST.{JObject, JString}
 
 import java.util.UUID
@@ -8,16 +7,16 @@ import java.util.UUID
 /**
  * A mapping job including one or more mapping tasks from a configured data source to a configured sink
  *
- * @param id                          Unique identifier for the mapping job
- * @param sourceSettings              Settings for data source system(s)
- * @param sinkSettings                Settings for sink to write the mapped FHIR resources
- * @param terminologyServiceSettings  Settings for a terminology service that will be used within mappings
- * @param identityServiceSettings     Settings for a external identity service that will be used within mappings
- * @param mappings                    Mapping tasks
- * @param schedulingSettings          Scheduling information for periodic mapping jobs
- * @param mappingErrorHandling        Error handling methodology for mapping execution
- * @param useFhirSinkAsIdentityService  If true it means the FHIR repository to write the mapped resources where the configuration
- *                                      is given in sink settings will be used as identity service (Override identityServiceSettings if given)
+ * @param id                           Unique identifier for the mapping job
+ * @param sourceSettings               Settings for data source system(s)
+ * @param sinkSettings                 Settings for sink to write the mapped FHIR resources
+ * @param terminologyServiceSettings   Settings for a terminology service that will be used within mappings
+ * @param identityServiceSettings      Settings for a external identity service that will be used within mappings
+ * @param mappings                     Mapping tasks
+ * @param schedulingSettings           Scheduling information for periodic mapping jobs
+ * @param dataProcessingSettings       Settings for data processing(e.g.archivemode,errorhandling,etc.)
+ * @param useFhirSinkAsIdentityService If true it means the FHIR repository to write the mapped resources where the configuration
+ * is given in sink settings will be used as identity service (Override identityServiceSettings if given)
  */
 case class FhirMappingJob(id: String = UUID.randomUUID().toString,
                           name: Option[String] = None,
@@ -27,7 +26,7 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
                           identityServiceSettings: Option[IdentityServiceSettings] = None,
                           mappings: Seq[FhirMappingTask],
                           schedulingSettings: Option[SchedulingSettings] = None,
-                          mappingErrorHandling: ErrorHandlingType,
+                          dataProcessingSettings: DataProcessingSettings,
                           useFhirSinkAsIdentityService:Boolean = false
                          ) {
   /**

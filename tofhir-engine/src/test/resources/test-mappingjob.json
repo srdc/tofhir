@@ -33,5 +33,7 @@
       }
     }
   ],
-  "mappingErrorHandling": "halt"
+  "dataProcessingSettings": {
+    "mappingErrorHandling": "halt"
+  }
 }
