@@ -40,6 +40,7 @@ object SinkHandler {
           case e:FhirMappingInvalidResourceException =>
             logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,e.getProblems,mappingErrors,invalidInputs)
             SparkArchiver.archiveDataSourcesOfFailedMappings(spark, mappingJobExecution, mappingUrl, e.getProblems, mappingErrors, invalidInputs)
+            SparkArchiver.processArchiving(df, mappingJobExecution)
           case _ => // We do not do anything for other types of exceptions
         }
         throw t
@@ -47,7 +48,7 @@ object SinkHandler {
     }
     logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
     SparkArchiver.archiveDataSourcesOfFailedMappings(spark, mappingJobExecution, mappingUrl, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
-    SparkArchiver.moveFileToArchive(df, mappingJobExecution)
+    SparkArchiver.processArchiving(df, mappingJobExecution)
     //Unpersist the data frame
     df.unpersist()
   }
@@ -66,7 +67,7 @@ object SinkHandler {
       writeBatch(spark, mappingJobExecution, Some(mappingUrl), dataset, resourceWriter)
     } catch {
       case e: Throwable =>
-        logger.error(s"Streaming batch resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.jobId}, execution: ${mappingJobExecution.id}, mapping: $mappingUrl", e.getMessage)
+        logger.error(s"Streaming batch resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.job.id}, execution: ${mappingJobExecution.id}, mapping: $mappingUrl", e.getMessage)
     }
 
     df

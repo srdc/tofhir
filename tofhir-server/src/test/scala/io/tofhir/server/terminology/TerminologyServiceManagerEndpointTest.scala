@@ -4,7 +4,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.config.ErrorHandlingType
+<<<<<<< HEAD
 import io.tofhir.engine.model.{CodeSystemFile, ConceptMapFile, DataProcessingSettings, FhirMappingJob, FhirSinkSettings, FileSystemSinkSettings, LocalFhirTerminologyServiceSettings, TerminologyServiceSettings}
+=======
+import io.tofhir.engine.model.{ArchiveModes, CodeSystemFile, ConceptMapFile, DataProcessingSettings, FhirMappingJob, FhirSinkSettings, FileSystemSinkSettings, LocalFhirTerminologyServiceSettings, TerminologyServiceSettings}
+>>>>>>> 66c51a2 (:sparkles: feat(FhirMappingJob): add dataProcessingSettings to FhirMappingJob and put mappingErrorHandling, saveErroneousRecords, archiveMode configs in it)
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.TerminologySystem

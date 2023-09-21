@@ -76,7 +76,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     booleanCapturer.getValue shouldBe true
 
     // Wait for the Future to complete
-    Thread.sleep(2000)
+    Thread.sleep(1500)
 
     // Entry for the job and execution should have removed after the future completes
     runningTaskRegistry.getRunningExecutions().contains("j4") shouldBe false

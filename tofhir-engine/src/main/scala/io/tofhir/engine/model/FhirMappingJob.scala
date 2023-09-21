@@ -1,6 +1,5 @@
 package io.tofhir.engine.model
 
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import org.json4s.JsonAST.{JObject, JString}
 
 import java.util.UUID
