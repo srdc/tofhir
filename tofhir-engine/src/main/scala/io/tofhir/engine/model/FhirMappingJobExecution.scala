@@ -10,13 +10,13 @@ import java.util.UUID
  *
  * @param id                   Unique identifier for the execution
  * @param projectId            Unique identifier of project to which mapping job belongs
- * @param jobId                Unique identifier of mapping job
+ * @param job                  Fhir mapping job
  * @param mappingTasks         List of mapping tasks to be executed
  * @param mappingErrorHandling Error handling type for execution process
  */
 case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
                                    projectId: String = "",
-                                   jobId: String = UUID.randomUUID().toString,
+                                   job: FhirMappingJob,
                                    mappingTasks: Seq[FhirMappingTask] = Seq.empty,
                                    mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.CONTINUE
                                   ) {
@@ -27,7 +27,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return Directory path in which the checkpoints will be managed
    */
   def getCheckpointDirectory(mappingUrl: String): String =
-    s"./checkpoint/$jobId/${mappingUrl.hashCode}"
+    s"./checkpoint/${job.id}/${mappingUrl.hashCode}"
 
   /**
    * Creates a error output directory for a mapping execution included in a job and an execution
@@ -39,6 +39,6 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return
    */
   def getErrorOutputDirectory(mappingUrl: String, errorType: String): String =
-    s"${ToFhirConfig.engineConfig.errorFolderPath}/${errorType}/job-$jobId/execution-${id}/${mappingUrl.hashCode}"
+    s"${ToFhirConfig.engineConfig.erroneousRecordsFolder}/${errorType}/job-${job.id}/execution-${id}/${mappingUrl.hashCode}"
 
 }

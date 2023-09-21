@@ -27,7 +27,7 @@ object SinkHandler {
     val mappingErrors = df.filter(_.error.exists(_.code != FhirMappingErrorCodes.INVALID_INPUT))
     val mappedResults = df.filter(_.mappedResource.isDefined)
     //Create an accumulator to accumulate the results that cannot be written
-    val accumName = s"${mappingJobExecution.jobId}:${mappingUrl.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
+    val accumName = s"${mappingJobExecution.job.id}:${mappingUrl.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
     val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
     fhirWriteProblemsAccum.reset()
     //Write the FHIR resources
@@ -47,6 +47,7 @@ object SinkHandler {
     }
     logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
     SparkArchiver.archiveDataSourcesOfFailedMappings(spark, mappingJobExecution, mappingUrl, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
+    SparkArchiver.moveFileToArchive(df, mappingJobExecution)
     //Unpersist the data frame
     df.unpersist()
   }
