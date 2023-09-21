@@ -318,7 +318,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
     val mappingTask = FhirMappingTask("https://aiccelerate.eu/fhir/mappings/specimen-mapping-using-ts", Map("source" -> FileSystemSource("specimen.csv")))
 
-    fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(jobId = "test-task-with-terminology-service",mappingTasks = Seq(mappingTask)), dataSourceSettings, Some(terminologyServiceSettings)) flatMap { result =>
+    fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(mappingTask)), dataSourceSettings, Some(terminologyServiceSettings)) flatMap { result =>
       val resources = result.map(mappingResult => {
         mappingResult.mappedResource should not be None
         val resource = mappingResult.mappedResource.get.parseJson

@@ -32,7 +32,7 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
   }
 
   override def toString: String = {
-    s"toFHIR batch mapping result ($result) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n" +
+    s"toFHIR batch mapping result ($result) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n" +
       (if (result != "FAILURE")
         s"\t# of Invalid Rows: \t$numOfInvalids\n" +
           s"\t# of Not Mapped: \t$numOfNotMapped\n" +
@@ -48,7 +48,7 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
    * @return
    */
   def toLogstashMarker: LogstashMarker = {
-    append("jobId", mappingJobExecution.jobId)
+    append("jobId", mappingJobExecution.job.id)
       .and(append("projectId", mappingJobExecution.projectId)
         .and(append("executionId", mappingJobExecution.id)
           .and(append("mappingUrl", mappingUrl.orElse(null))

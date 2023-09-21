@@ -100,7 +100,7 @@ object CommandLineInterface {
           mappingJob.dataProcessingSettings.mappingErrorHandling,
           toFhirEngine.runningJobRegistry
         )
-      val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings)
+      val mappingJobExecution = FhirMappingJobExecution(job = mappingJob, mappingTasks = mappingJob.mappings)
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
         val streamingQueryInitializationTasks: Seq[Future[Unit]] =
           fhirMappingJobManager
@@ -110,7 +110,7 @@ object CommandLineInterface {
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
               identityServiceSettings = mappingJob.getIdentityServiceSettings())
-            .map(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.id, mappingJobExecution.jobId, sq._1, sq._2, true))
+            .map(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.id, mappingJobExecution.job.id, sq._1, sq._2, true))
             .toSeq
         // Wait for all Futures (i.e. Streaming Queries) to complete
         Await.result(Future.sequence(streamingQueryInitializationTasks), Duration.Inf)
@@ -148,7 +148,7 @@ object CommandLineInterface {
         )
       fhirMappingJobManager
         .scheduleMappingJob(
-          mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, mappingTasks = mappingJob.mappings),
+          mappingJobExecution = FhirMappingJobExecution(job = mappingJob, mappingTasks = mappingJob.mappings),
           sourceSettings = mappingJob.sourceSettings,
           sinkSettings = mappingJob.sinkSettings,
           schedulingSettings = mappingJob.schedulingSettings.get,

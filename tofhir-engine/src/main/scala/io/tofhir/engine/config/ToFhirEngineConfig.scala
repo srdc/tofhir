@@ -49,5 +49,8 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   lazy val toFhirDbFolderPath: String = Try(toFhirEngineConfig.getString("db-path")).getOrElse("tofhir-db")
 
   /** The parent-folder where the data sources of errors received while running mapping are stored. */
-  lazy val errorFolderPath: String = Try(toFhirEngineConfig.getString("error-folder-path")).getOrElse("error-folder-path")
+  lazy val erroneousRecordsFolder: String = Try(toFhirEngineConfig.getString("erroneous-records-folder")).getOrElse("erroneous-records-folder")
+
+  /** Folder path where the archive of the processed source data is stored. */
+  lazy val archiveFolder: String = Try(toFhirEngineConfig.getString("archive-folder")).getOrElse("archive-folder")
 }

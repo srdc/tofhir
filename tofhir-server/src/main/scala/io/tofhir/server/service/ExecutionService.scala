@@ -106,7 +106,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     }
 
     // create execution
-    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
+    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), job = mappingJob, projectId = projectId, mappingTasks = mappingTasks,
       mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.dataProcessingSettings.mappingErrorHandling))
     val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.dataProcessingSettings.mappingErrorHandling)
 
@@ -128,7 +128,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             terminologyServiceSettings = mappingJob.terminologyServiceSettings,
             identityServiceSettings = mappingJob.getIdentityServiceSettings()
           )
-          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, mappingJobExecution.id, sq._1, sq._2))
+          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.job.id, mappingJobExecution.id, sq._1, sq._2))
       }
 
       // Batch jobs
@@ -144,11 +144,11 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
         // Register the job to the registry
         toFhirEngine.runningJobRegistry.registerBatchJob(
-          mappingJobExecution.jobId,
+          mappingJobExecution.job.id,
           mappingJobExecution.id,
           mappingTasks.map(_.mappingRef),
           executionFuture,
-          s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
+          s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
         )
       }
     }
