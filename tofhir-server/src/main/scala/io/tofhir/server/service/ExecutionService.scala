@@ -316,13 +316,25 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               // set the status of execution
               var status = "STARTED"
               // Check if there is a row with result other than STARTED
-              if (!rows.forall(r => r.get(r.fieldIndex("result")).toString.contentEquals("STARTED"))) {
-                val successCount = rows.count(r => r.get(r.fieldIndex("result")).toString.contentEquals("SUCCESS"))
-                status = "SUCCESS"
-                if (successCount == 0) {
-                  status = "FAILURE"
-                } else if (successCount != mappingUrls.length) {
+              val results: Seq[String] = rows.map(row => row.get(row.fieldIndex("result")).toString)
+              if (!results.filterNot(_.contentEquals("STARTED")).isEmpty) {
+                // if there is a row with PARTIAL_SUCCESS, its status is PARTIAL_SUCCESS
+                val partialSuccessCount = results.count(_.contentEquals("PARTIAL_SUCCESS"))
+                if (partialSuccessCount > 0) {
                   status = "PARTIAL_SUCCESS"
+                } else {
+                  // success > 0 and failure = 0 means success
+                  // success > 0 and failure > 0 means partial success
+                  // success = 0 and failure > 0 means failure
+                  val successCount = results.count(_.contentEquals("SUCCESS"))
+                  val failureCount = results.count(_.contentEquals("FAILURE"))
+                  if (successCount > 0 && failureCount == 0) {
+                    status = "SUCCESS"
+                  } else if (successCount > 0 && failureCount > 0) {
+                    status = "PARTIAL_SUCCESS"
+                  } else if (successCount == 0 && failureCount > 0) {
+                    status = "FAILURE"
+                  }
                 }
               }
 
@@ -384,11 +396,32 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         } else {
           // Extract values from the "mappingUrl" column using direct attribute access
           val mappingUrls = filteredLogs.select("mappingUrl").distinct().collect().map(_.getString(0)).toList
-          val successCount = filteredLogs.filter(col("result") === "SUCCESS").count()
           // Use the timestamp of the first log as the execution timestamp
           val timestamp = filteredLogs.select("@timestamp").first().getString(0)
           // Determine the status based on the success count
-          val status = if (successCount == 0) "FAILURE" else if (successCount != mappingUrls.length) "PARTIAL_SUCCESS" else "SUCCESS"
+          val results: Seq[String] = filteredLogs.select("result").collect().map(_.getString(0)).toSeq
+          var status = "STARTED"
+          if (!results.filterNot(_.contentEquals("STARTED")).isEmpty) {
+            // if there is a row with PARTIAL_SUCCESS, its status is PARTIAL_SUCCESS
+            val partialSuccessCount = results.count(_.contentEquals("PARTIAL_SUCCESS"))
+            if (partialSuccessCount > 0) {
+              status = "PARTIAL_SUCCESS"
+            } else {
+              // success > 0 and failure = 0 means success
+              // success > 0 and failure > 0 means partial success
+              // success = 0 and failure > 0 means failure
+              val successCount = results.count(_.contentEquals("SUCCESS"))
+              val failureCount = results.count(_.contentEquals("FAILURE"))
+              if (successCount > 0 && failureCount == 0) {
+                status = "SUCCESS"
+              } else if (successCount > 0 && failureCount > 0) {
+                status = "PARTIAL_SUCCESS"
+              } else if (successCount == 0 && failureCount > 0) {
+                status = "FAILURE"
+              }
+            }
+          }
+
           // Create a JSON object representing the execution
           val executionJson = JObject(
             "id" -> JString(executionId),
