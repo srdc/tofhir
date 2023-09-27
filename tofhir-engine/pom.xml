@@ -262,6 +262,11 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
         </dependency>
+        <!-- Alpakka to parse CSV files -->
+        <dependency>
+            <groupId>com.lightbend.akka</groupId>
+            <artifactId>akka-stream-alpakka-csv_${scala.binary.version}</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

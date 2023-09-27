@@ -1,13 +1,35 @@
 package io.tofhir.engine.util
 
+import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import com.fasterxml.jackson.databind.MappingIterator
 import com.fasterxml.jackson.dataformat.csv.{CsvMapper, CsvSchema}
-import java.io.{File, FileInputStream, InputStreamReader}
+import io.tofhir.engine.Execution.actorSystem
 
+import java.io.{File, FileInputStream, InputStreamReader}
+import java.nio.charset.StandardCharsets
+import scala.concurrent.Future
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.javaapi.CollectionConverters
 
 object CsvUtil {
+
+  /**
+   * Reads the CSV file from the given byteSource and returns a Future Sequence where each element is a
+   * Map[column_name -> value)
+   *
+   * @param byteSource The CSV file
+   * @return
+   */
+  def readFromCSVSource(byteSource: Source[ByteString, Any]): Future[Seq[Map[String, String]]] = {
+    byteSource
+      .via(CsvParsing.lineScanner())
+      .via(CsvToMap.toMapAsStrings(StandardCharsets.UTF_8))
+      .runFold(Seq.empty[Map[String, String]]) {
+        (acc, n) => acc :+ n
+      }
+  }
 
   /**
    * Read the CSV file from the given filePath and return a Sequence where each element is a Map[column_name -> value)

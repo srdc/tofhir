@@ -1,20 +1,22 @@
 package io.tofhir.server.project
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
 import akka.http.scaladsl.testkit.RouteTestTimeout
+import io.onfhir.api.FHIR_FOUNDATION_RESOURCES
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.model.{FhirMapping, FhirMappingSource, SqlSource, SqlSourceSettings}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.InferTask
-import io.tofhir.server.util.TestUtil
+import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
-import java.sql.{Connection, DriverManager, Statement}
 
+import java.io.File
+import java.sql.{Connection, DriverManager, Statement}
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Using}
 import scala.concurrent.duration._
@@ -247,6 +249,28 @@ class SchemaEndpointTest extends BaseEndpointTest {
       Post(s"/tofhir/projects/${projectId}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(schema5))) ~> route ~> check {
         // Expect a conflict status because schema5 has the same url as the schema2
         status shouldEqual StatusCodes.Conflict
+      }
+    }
+
+    "Import REDCap data dictionary file" in {
+      // get file from resources
+      val file: File = FileOperations.getFileIfExists(getClass.getResource("/redcap/instrument.csv").getPath)
+      val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/csv(UTF-8)`, file.toPath)
+      val formData = Multipart.FormData(fileData)
+      // the root URL of the schemas
+      val definitionRootUrl = "http://test-schema"
+      // the identifier of schema to be created. It is the form name given in the instrument.csv
+      val schemaId = "Test"
+
+      Post(s"/tofhir/projects/$projectId/schemas/redcap?rootUrl=$definitionRootUrl", formData.toEntity()) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the schema
+        val schemas: Seq[SchemaDefinition] = JsonMethods.parse(responseAs[String]).extract[Seq[SchemaDefinition]]
+        schemas.size shouldEqual 1
+        val schema = schemas.head
+        schema.url shouldEqual s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId"
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 5
       }
     }
   }
