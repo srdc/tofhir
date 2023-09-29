@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.onfhir.path.FhirPathIdentityServiceFunctionsFactory
 import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
+import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
