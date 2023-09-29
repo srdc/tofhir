@@ -39,6 +39,11 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     sourceContext = Map("source" -> FileSystemSource(path = "patients.csv"))
   )
 
+  val patientMappingTaskWithError: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+    sourceContext = Map("source" -> FileSystemSource(path = "patients-erroneous.csv"))
+  )
+
   val patientMappingTaskWithPreprocess: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
     sourceContext = Map("source" ->
@@ -250,7 +255,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   it should "halt execute the mapping job when encounter with an error" in {
     assume(fhirServerIsAvailable)
 
-    val patientMappingTaskWithError = patientMappingTask.copy(sourceContext = Map("source" -> FileSystemSource(path = "wrong.csv")))
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling, runningJobRegistry)
 
     val future = fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(
@@ -270,7 +274,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   it should "continue execute the mapping job when encounter without an error" in {
     assume(fhirServerIsAvailable)
 
-    val patientMappingTaskWithError = patientMappingTask.copy(sourceContext = Map("source" -> FileSystemSource(path = "wrong.csv")))
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, mappingErrorHandling, runningJobRegistry)
 
     val future = fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(
