@@ -228,6 +228,12 @@
                 <artifactId>akka-stream-alpakka-csv_${scala.binary.version}</artifactId>
                 <version>5.0.0</version>
             </dependency>
+            <!-- For subprocesses-->
+            <dependency>
+                <groupId>com.lihaoyi</groupId>
+                <artifactId>os-lib_${scala.binary.version}</artifactId>
+                <version>0.9.1</version>
+            </dependency>
             <!-- Spark dependencies -->
             <dependency>
                 <groupId>org.apache.spark</groupId>
