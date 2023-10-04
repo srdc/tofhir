@@ -222,12 +222,6 @@
                 <artifactId>json4s-ext_${scala.binary.version}</artifactId>
                 <version>${json4s.version}</version>
             </dependency>
-            <!-- Alpakka to parse CSV files -->
-            <dependency>
-                <groupId>com.lightbend.akka</groupId>
-                <artifactId>akka-stream-alpakka-csv_${scala.binary.version}</artifactId>
-                <version>5.0.0</version>
-            </dependency>
             <!-- For subprocesses-->
             <dependency>
                 <groupId>com.lihaoyi</groupId>
