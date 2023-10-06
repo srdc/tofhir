@@ -1,6 +1,5 @@
 package io.tofhir.server.model
 
-import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 
 /**
@@ -8,4 +7,4 @@ import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
  * @param mappingUrls           mapping urls of the mappingTask's that to be executed
  * @param mappingErrorHandling  error handling type for this execution
  */
-case class ExecuteJobTask(mappingUrls: Option[Seq[String]] = None, mappingErrorHandling: Option[ErrorHandlingType])
+case class ExecuteJobTask(clearCheckpoints: Boolean, mappingUrls: Option[Seq[String]] = None, mappingErrorHandling: Option[ErrorHandlingType])

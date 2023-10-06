@@ -8,23 +8,28 @@ import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.{ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
+import io.tofhir.server.model.{BadRequest, ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
+import org.apache.commons.io
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
-import org.json4s.JsonAST.JValue
+import org.json4s.JsonAST.{JBool, JObject, JValue}
+import org.json4s.JsonDSL.jobject2assoc
 import org.json4s.jackson.JsonMethods
+import org.json4s.{JArray, JString}
 
 import java.io.File
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -53,7 +58,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @param executeJobTask execute job task instance contains mapping urls and error handling type
    * @return
    */
-  def runJob(projectId: String, jobId: String, executeJobTask: Option[ExecuteJobTask]): Future[Unit] = {
+  def runJob(projectId: String, jobId: String, executionId: Option[String], executeJobTask: Option[ExecuteJobTask]): Future[Unit] = {
     if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
       throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
     }
@@ -65,14 +70,54 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       case Some(urls) => urls.flatMap(url => mappingJob.mappings.find(p => p.mappingRef.contentEquals(url)))
       case None => mappingJob.mappings
     }
+
+    if(mappingTasks.isEmpty) {
+      throw BadRequest("No mapping task to execute!", "No mapping task to execute!")
+    }
+
+    // all the mappings in mappingTasks should not running, if any of them is running, give already running response
+    val JobExecutionMap = toFhirEngine.runningJobRegistry.getRunningExecutions()
+    val jobExecution = JobExecutionMap.get(jobId)
+    if (jobExecution.isDefined) {
+      val runningMappingUrls = jobExecution.get.flatMap(_._2)
+      val runningMappingUrlsSet = runningMappingUrls.toSet
+      val mappingUrlsSet = mappingTasks.map(_.mappingRef).toSet
+      val intersection = runningMappingUrlsSet.intersect(mappingUrlsSet)
+      if (intersection.nonEmpty) {
+        // create jvalue json response with already running mapping urls as list string in values and execution ids in keys
+        // find execution ids for the intersection mapping urls
+        val executionIds = jobExecution.get
+          .filter(p => p._2.exists(mappingUrl => intersection.contains(mappingUrl)))
+          .map(x => {
+            (x._1, x._2.filter(mappingUrl => intersection.contains(mappingUrl)))
+          })
+        // convert execution ids to json response
+        val jValueResponse = JArray(executionIds.map(x => {
+          JObject(
+            "executionId" -> JString(x._1),
+            "mappingUrls" -> JArray(x._2.map(JString(_)).toList)
+          )
+        }).toList)
+        // use it in the response message
+        throw BadRequest("Mapping tasks are already running!", JsonMethods.compact(JsonMethods.render(jValueResponse)))
+      }
+    }
+
     // create execution
-    val mappingJobExecution = FhirMappingJobExecution(jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
+    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
       mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.mappingErrorHandling))
     val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.mappingErrorHandling)
 
     // Streaming jobs
     val submittedJob = Future {
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
+        // Delete checkpoint directory if set accordingly
+        if (executeJobTask.exists(_.clearCheckpoints)) {
+          mappingTasks.foreach(mapping => {
+            io.FileUtils.deleteDirectory(new File(mappingJobExecution.getCheckpointDirectory(mapping.mappingRef)))
+          })
+        }
+
         fhirMappingJobManager
           .startMappingJobStream(
             mappingJobExecution,
@@ -213,9 +258,16 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               updatedMappingTasksLogsMap.getOrElse((mappingTaskLog.getAs[String]("mappingUrl"), mappingTaskLog.getAs[String]("@timestamp")), mappingTaskLog))
 
           }
+
           // return json objects for mapping tasks logs
           mappingTasksLogsData.map(row => {
-            JsonMethods.parse(row.json)
+            val rowJson: JObject = JsonMethods.parse(row.json).asInstanceOf[JObject]
+            // Add runningStatus field to the json object. Running status is set to true if the execution id is contained in the job executions
+            JObject(
+              rowJson.obj :+ ("runningStatus" -> JBool(
+                toFhirEngine.runningJobRegistry.executionExists((rowJson \ "jobId").extract[String], executionId, (rowJson \ "mappingUrl").extractOpt[String])
+              ))
+            )
           })
         }
       }
@@ -258,23 +310,28 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               // keeps the rows belonging to this execution
               val rows: Seq[Row] = values.toSeq
               // Extract values from the "mappingUrl" column using direct attribute access
-              val mappingUrls = rows.map(_.getAs[String]("mappingUrl"))
-              val successCount = rows.count(r => r.get(r.fieldIndex("result")).toString.contentEquals("SUCCESS"))
+              val mappingUrls = rows.map(_.getAs[String]("mappingUrl")).distinct
               // use the timestamp of first one, which is ran first, as timestamp of execution
               val timestamp = rows.head.get(rows.head.fieldIndex("@timestamp")).toString
               // set the status of execution
-              var status = "SUCCESS"
-              if (successCount == 0) {
-                status = "FAILURE"
-              } else if (successCount != mappingUrls.length) {
-                status = "PARTIAL_SUCCESS"
+              var status = "STARTED"
+              // Check if there is a row with result other than STARTED
+              if (!rows.forall(r => r.get(r.fieldIndex("result")).toString.contentEquals("STARTED"))) {
+                val successCount = rows.count(r => r.get(r.fieldIndex("result")).toString.contentEquals("SUCCESS"))
+                status = "SUCCESS"
+                if (successCount == 0) {
+                  status = "FAILURE"
+                } else if (successCount != mappingUrls.length) {
+                  status = "PARTIAL_SUCCESS"
+                }
               }
+
               Row.fromSeq(Seq(key, mappingUrls, timestamp, status))
             })(RowEncoder(StructType(
               StructField("id", StringType) ::
                 StructField("mappingUrls", ArrayType(StringType)) ::
-                StructField("timestamp", StringType) ::
-                StructField("status", StringType) :: Nil
+                StructField("startTime", StringType) ::
+                StructField("errorStatus", StringType) :: Nil
             )))
             // page size is 10, handle pagination
             val total = executionLogs.count()
@@ -287,14 +344,64 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               val start = (page - 1) * 10
               val end = Math.min(start + 10, total.toInt)
               // sort the executions by latest to oldest
-              val paginatedLogs = executionLogs.sort(executionLogs.col("timestamp").desc).collect().slice(start, end)
+              val paginatedLogs = executionLogs.sort(executionLogs.col("startTime").desc).collect().slice(start, end)
+
+              // Retrieve the running executions for the given job
+              val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)
               (paginatedLogs.map(row => {
-                JsonMethods.parse(row.json)
-              }), total)
+                val rowJson: JObject = JsonMethods.parse(row.json).asInstanceOf[JObject]
+                // Add runningStatus field to the json object. Running status is set to true if the execution id is contained in the job executions
+                JObject(
+                  rowJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains((rowJson \ "id").extract[String])))
+                )
+              }), total.toInt)
             }
           }
         }
       case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists")
+    }
+  }
+
+  /**
+   * Returns the execution logs for a specific execution ID.
+   *
+   * @param projectId    project id the job belongs to
+   * @param jobId        job id
+   * @param executionId  execution id
+   * @return the execution summary as a JSON object
+   */
+  def getExecutionById(projectId: String, jobId: String, executionId: String): Future[JObject] = {
+    // Retrieve the job to validate its existence
+    jobRepository.getJob(projectId, jobId).flatMap {
+      case Some(_) =>
+        // Read logs/tofhir-mappings.log file
+        val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
+        // Filter logs by job and execution ID
+        val filteredLogs = dataFrame.filter(s"jobId = '$jobId' and projectId = '$projectId' and executionId = '$executionId'")
+        // Check if any logs exist for the given execution
+        if (filteredLogs.isEmpty) { // execution not found, return response with 404 status code
+          throw ResourceNotFound("Execution does not exists.", s"An execution with id $executionId does not exists.")
+        } else {
+          // Extract values from the "mappingUrl" column using direct attribute access
+          val mappingUrls = filteredLogs.select("mappingUrl").distinct().collect().map(_.getString(0)).toList
+          val successCount = filteredLogs.filter(col("result") === "SUCCESS").count()
+          // Use the timestamp of the first log as the execution timestamp
+          val timestamp = filteredLogs.select("@timestamp").first().getString(0)
+          // Determine the status based on the success count
+          val status = if (successCount == 0) "FAILURE" else if (successCount != mappingUrls.length) "PARTIAL_SUCCESS" else "SUCCESS"
+          // Create a JSON object representing the execution
+          val executionJson = JObject(
+            "id" -> JString(executionId),
+            "mappingUrls" -> JArray(mappingUrls.map(JString)),
+            "startTime" -> JString(timestamp),
+            "errorStatus" -> JString(status)
+          )
+          // Add runningStatus field to the JSON object
+          val updatedExecutionJson = executionJson ~ ("runningStatus" -> JBool(toFhirEngine.runningJobRegistry.getRunningExecutions(jobId).contains(executionId)))
+          Future.successful(updatedExecutionJson)
+        }
+      case None =>
+        throw ResourceNotFound("Mapping job does not exist.", s"A mapping job with id $jobId does not exist")
     }
   }
 
@@ -306,7 +413,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    */
   def stopJobExecution(jobId: String, executionId: String): Future[Unit] = {
     Future {
-      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, null)) {
+      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, None)) {
         toFhirEngine.runningJobRegistry.stopJobExecution(jobId, executionId)
         logger.debug(s"Job execution stopped. jobId: $jobId, execution: $executionId")
       } else {

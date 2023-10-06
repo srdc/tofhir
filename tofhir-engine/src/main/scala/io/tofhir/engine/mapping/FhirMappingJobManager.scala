@@ -64,7 +64,10 @@ class FhirMappingJobManager(
 
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
-          readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
+        val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
+        logger.info(jobResult.toLogstashMarker, jobResult.toString)
+
+        readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
             fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
       }.recover {
         // Check whether the job is stopped
@@ -116,7 +119,10 @@ class FhirMappingJobManager(
     val fhirWriter = FhirWriterFactory.apply(sinkSettings, runningJobRegistry)
     mappingJobExecution.mappingTasks
       .map(t => {
-        logger.info(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping url ${t.mappingRef} is started and waiting for the data...")
+        logger.debug(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping url ${t.mappingRef} is started and waiting for the data...")
+        val jobResult = FhirMappingJobResult(mappingJobExecution, Some(t.mappingRef))
+        logger.info(jobResult.toLogstashMarker, jobResult.toString)
+
         // Construct a tuple of (mapping url, Future[StreamingQuery])
         t.mappingRef ->
           readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))

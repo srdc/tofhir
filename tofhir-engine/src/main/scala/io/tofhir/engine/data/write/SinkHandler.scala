@@ -63,27 +63,21 @@ object SinkHandler {
    * @return
    */
   def writeStream(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter, mappingUrl: String): StreamingQuery = {
-    val datasetWrite = (dataset: Dataset[FhirMappingResult], batchN: Long) =>
+    val datasetWrite = (dataset: Dataset[FhirMappingResult], batchN: Long) => try {
       writeBatch(spark, mappingJobExecution, Some(mappingUrl), dataset, resourceWriter)
+    } catch {
+      case e: Throwable =>
+        logger.error(s"Streaming batch resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.jobId}, execution: ${mappingJobExecution.id}, mapping: $mappingUrl", e.getMessage)
+    }
 
     df
       .writeStream
       // We need to provide explicit checkpoints. If not, Spark will use the same checkpoint directory, which mixes up the offsets for different streams.
       // We create a new checkpoint directory per job and per mapping task included in the jobs.
-      .option("checkpointLocation", getCheckpointDirectory(mappingJobExecution.jobId, mappingUrl))
+      .option("checkpointLocation", mappingJobExecution.getCheckpointDirectory(mappingUrl))
       .foreachBatch(datasetWrite)
       .start()
   }
-
-  /**
-   * Creates a checkpoint directory for a mapping included in a job
-   *
-   * @param jobId      Identifier of the job containing the mapping
-   * @param mappingUrl Url of the mapping
-   * @return Directory path in which the checkpoints will be managed
-   */
-  private def getCheckpointDirectory(jobId: String, mappingUrl: String): String =
-    s"./checkpoint/$jobId/${mappingUrl.hashCode}"
 
   /**
    * Logs mapping job results including the problems regarding to source data, mapping and generated FHIR resources.

@@ -19,4 +19,13 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
                                    jobId: String = UUID.randomUUID().toString,
                                    mappingTasks: Seq[FhirMappingTask] = Seq.empty,
                                    mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.CONTINUE
-                                  )
+                                  ) {
+  /**
+   * Creates a checkpoint directory for a mapping included in a job
+   *
+   * @param mappingUrl Url of the mapping
+   * @return Directory path in which the checkpoints will be managed
+   */
+  def getCheckpointDirectory(mappingUrl: String): String =
+    s"./checkpoint/$jobId/${mappingUrl.hashCode}"
+}

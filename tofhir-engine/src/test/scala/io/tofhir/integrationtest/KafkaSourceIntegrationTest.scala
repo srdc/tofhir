@@ -215,7 +215,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     Await.result(searchTest, FiniteDuration(60, TimeUnit.SECONDS))
   }
 
-  it should "should throw an exception when it encounters a corrupted topic message" in {
+  it should "should not throw an exception when it encounters a corrupted topic message" in {
     // publish a corrupted message to the familyMembersCorrupted topic
     val topicName = "familyMembersCorrupted"
     val topics = Collections.singletonList(new NewTopic(topicName, 1, 1.toShort))
@@ -238,13 +238,11 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     assume(fhirServerIsAvailable)
     // modify familyMemberHistoryMappingTask to listen to familyMembersCorrupted topic
     val mappingTask = familyMemberHistoryMappingTask.copy(sourceContext = Map("source" -> KafkaSource(topicName = "familyMembersCorrupted", groupId = "tofhir", startingOffsets = "earliest")))
-    assertThrows[StreamingQueryException] {
-      val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(mappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
-      val streamingQuery = Await.result(streamingQueryFutures.head._2, FiniteDuration(5, TimeUnit.SECONDS))
+    val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(mappingTask)), sourceSettings = streamingSourceSettings, sinkSettings = fhirSinkSettings)
+    val streamingQuery = Await.result(streamingQueryFutures.head._2, FiniteDuration(5, TimeUnit.SECONDS))
 
-      streamingQuery.awaitTermination(20000L) //wait for 20 seconds to consume and write to the fhir repo and terminate
-      streamingQuery.stop()
-    }
+    streamingQuery.awaitTermination(20000L)
+    streamingQuery.stop()
   }
 }
 

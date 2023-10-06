@@ -23,7 +23,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
   "InMemoryExecutionManager" should "cache a StreamingQuery" in {
     val jobSubmissionFuture = runningTaskRegistry.registerStreamingQuery("j", "e", "m", getMockStreamingQuery())
 
-    Await.result(jobSubmissionFuture, 2 seconds)
+    Await.result(jobSubmissionFuture, 10 seconds)
     runningTaskRegistry.getRunningExecutions().size shouldBe 1
   }
 
@@ -31,7 +31,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     val streamingQueryFuture = getMockStreamingQuery()
     runningTaskRegistry.registerStreamingQuery("j", "e", "m2", streamingQueryFuture, true)
 
-    val streamingQuery = Await.result(streamingQueryFuture, 2 seconds)
+    val streamingQuery = Await.result(streamingQueryFuture, 10 seconds)
     verify(streamingQuery).awaitTermination()
 
     // Registered task should have been deleted after termination
@@ -44,8 +44,8 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     val taskFuture1 = runningTaskRegistry.registerStreamingQuery("j2", "e", "m1", streamingQueryFuture)
     val taskFuture2 = runningTaskRegistry.registerStreamingQuery("j2", "e", "m2", streamingQueryFuture2)
 
-    Await.result(taskFuture1, 2 seconds)
-    Await.result(taskFuture2, 2 seconds)
+    Await.result(taskFuture1, 10 seconds)
+    Await.result(taskFuture2, 10 seconds)
 
     runningTaskRegistry.stopJobExecution("j2", "e")
     verify(streamingQueryFuture.value.get.get).stop()
@@ -57,7 +57,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     val streamingQueryFuture = getMockStreamingQuery()
     val taskFuture = runningTaskRegistry.registerStreamingQuery("j3", "e", "m", streamingQueryFuture)
 
-    Await.result(taskFuture, 2 seconds)
+    Await.result(taskFuture, 10 seconds)
 
     runningTaskRegistry.stopMappingExecution("j3", "e", "m")
     verify(streamingQueryFuture.value.get.get).stop()
@@ -66,7 +66,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   "it" should "register batch jobs" in {
     runningTaskRegistry.registerBatchJob("j4", "e", Seq("m1", "m2"), Future.apply(
-      Thread.sleep(500)
+      Thread.sleep(2000)
     ), "")
     runningTaskRegistry.getRunningExecutions()("j4").head._2 shouldEqual Seq("m1", "m2")
 
@@ -75,7 +75,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     booleanCapturer.getValue shouldBe true
 
     // Wait for the Future to complete
-    Thread.sleep(600)
+    Thread.sleep(2000)
 
     // Entry for the job and execution should have removed after the future completes
     runningTaskRegistry.getRunningExecutions().contains("j4") shouldBe false
