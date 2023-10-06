@@ -63,8 +63,12 @@ object SinkHandler {
    * @return
    */
   def writeStream(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter, mappingUrl: String): StreamingQuery = {
-    val datasetWrite = (dataset: Dataset[FhirMappingResult], batchN: Long) =>
+    val datasetWrite = (dataset: Dataset[FhirMappingResult], batchN: Long) => try {
       writeBatch(spark, mappingJobExecution, Some(mappingUrl), dataset, resourceWriter)
+    } catch {
+      case e: Throwable =>
+        logger.error(s"Streaming batch resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.jobId}, execution: ${mappingJobExecution.id}, mapping: $mappingUrl", e.getMessage)
+    }
 
     df
       .writeStream
