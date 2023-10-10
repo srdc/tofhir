@@ -196,7 +196,7 @@ class FhirMappingJobManager(
     val mappingJobExecution = FhirMappingJobExecution(job = job, mappingTasks = tasks)
     executeMappingJob(mappingJobExecution, sourceSettings, sinkSettings, terminologyServiceSettings, identityServiceSettings, Some(timeRange))
       .map(_ => {
-        val writer = new FileWriter(s"${mappingJobScheduler.get.folderUri.getPath}/$job.txt", true)
+        val writer = new FileWriter(s"${mappingJobScheduler.get.folderUri.getPath}/${job.id}.txt", true)
         try writer.write(timeRange._2.toString + "\n") finally writer.close() //write last sync time to the file
       })
   }

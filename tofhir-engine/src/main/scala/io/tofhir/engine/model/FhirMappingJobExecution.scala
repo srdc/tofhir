@@ -32,7 +32,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
 
   /**
    * Creates a error output directory for a mapping execution included in a job and an execution
-   * error-folder-path\<error-type>\job-<jobId>\execution-<executionId>\<hashedMappingUrl>\<random-generated-name-by-spark>.csv
+   * error-folder-path\<error-type>\job-<jobId>\execution-<executionId>\<mappingUrl>\<random-generated-name-by-spark>.csv
    * e.g. error-folder-path\invalid_input\job-d13b5044-f05c-4698-86c2-d83b3c5083f8\execution-59733de5-1c92-4741-b032-6e9e13ee4550\-521848504\part-00000-1d7d9467-0195-4d28-964d-89171727fa41-c000.csv
    *
    * @param mappingUrl

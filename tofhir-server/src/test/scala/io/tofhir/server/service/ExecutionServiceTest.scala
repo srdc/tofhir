@@ -36,7 +36,7 @@ class ExecutionServiceTest extends AnyWordSpec with Matchers {
   val mappingJobRepository: JobFolderRepository = getMockMappingJobRepository
 
   // the execution service instance for the test
-  val executionService: ExecutionService = new ExecutionService(mappingJobRepository, mappingRepository, schemaRepository)
+  val executionService: ExecutionService = new ExecutionService(mappingJobRepository, mappingRepository, schemaRepository, "")
 
   "The Execution Service" should {
     "should clear checkpoint directory" in {
