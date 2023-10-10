@@ -1,6 +1,7 @@
-package io.tofhir.engine.execution
+package io.tofhir.test.engine.execution
 
 import akka.actor.ActorSystem
+import io.tofhir.engine.execution.RunningJobRegistry
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.StreamingQuery
