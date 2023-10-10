@@ -14,9 +14,32 @@ import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util
 
 /**
- * Spark archiver for writing data sources of failed mappings to configured folder
+ * Handler for post mapping processing. Spark is used to process the data sources.
  */
-object SparkArchiver {
+object PostMappingHandler {
+
+  /**
+   * Starting point, two functionalities are implemented:
+   * 1. Save erroneous data sources row by row based on error types (e.g. invalid input, mapping error, invalid resource)
+   * 2. Archive data sources as a whole based on archiving mode (off, archive, delete)
+   * @param spark
+   * @param df
+   * @param mappingJobExecution
+   * @param mappingUrl
+   * @param notWrittenResources
+   * @param mappingErrors
+   * @param invalidInputs
+   */
+  def saveErroneousRecordsAndArchiveDataSource(spark: SparkSession,
+                                               df: Dataset[FhirMappingResult],
+                                               mappingJobExecution: FhirMappingJobExecution,
+                                               mappingUrl: Option[String],
+                                               notWrittenResources: util.List[FhirMappingResult],
+                                               mappingErrors: Dataset[FhirMappingResult],
+                                               invalidInputs: Dataset[FhirMappingResult]): Unit = {
+    saveErroneousRecords(spark, mappingJobExecution, mappingUrl, notWrittenResources, mappingErrors, invalidInputs)
+    archiveDataSource(df, mappingJobExecution)
+  }
 
   /**
    * Archive data sources row by row based on error types (e.g. invalid input, mapping error, invalid resource) to configured folder
@@ -28,39 +51,40 @@ object SparkArchiver {
    * @param mappingErrors       data sources that got error because of the mapping definition
    * @param invalidInputs       data sources that got error because of invalid input
    */
-  def archiveDataSourcesOfFailedMappings(spark: SparkSession,
-                                         mappingJobExecution: FhirMappingJobExecution,
-                                         mappingUrl: Option[String],
-                                         notWrittenResources: util.List[FhirMappingResult],
-                                         mappingErrors: Dataset[FhirMappingResult],
-                                         invalidInputs: Dataset[FhirMappingResult]): Unit = {
+  def saveErroneousRecords(spark: SparkSession,
+                           mappingJobExecution: FhirMappingJobExecution,
+                           mappingUrl: Option[String],
+                           notWrittenResources: util.List[FhirMappingResult],
+                           mappingErrors: Dataset[FhirMappingResult],
+                           invalidInputs: Dataset[FhirMappingResult]): Unit = {
     if (mappingJobExecution.job.dataProcessingSettings.saveErroneousRecords) {
       if (!invalidInputs.isEmpty) {
-        this.writeDatasetToConfiguredFolder(mappingJobExecution, invalidInputs, mappingUrl.get, FhirMappingErrorCodes.INVALID_INPUT)
+        this.writeErroneousDataset(mappingJobExecution, invalidInputs, mappingUrl.get, FhirMappingErrorCodes.INVALID_INPUT)
       }
       if (!mappingErrors.isEmpty) {
-        this.writeDatasetToConfiguredFolder(mappingJobExecution, mappingErrors, mappingUrl.get, FhirMappingErrorCodes.MAPPING_ERROR)
+        this.writeErroneousDataset(mappingJobExecution, mappingErrors, mappingUrl.get, FhirMappingErrorCodes.MAPPING_ERROR)
       }
       if (!notWrittenResources.isEmpty) {
         import spark.implicits._
         val notWrittenResourcesDs = spark.createDataset[FhirMappingResult](notWrittenResources)
-        this.writeDatasetToConfiguredFolder(mappingJobExecution, notWrittenResourcesDs, mappingUrl.get, FhirMappingErrorCodes.INVALID_RESOURCE)
+        this.writeErroneousDataset(mappingJobExecution, notWrittenResourcesDs, mappingUrl.get, FhirMappingErrorCodes.INVALID_RESOURCE)
       }
     }
   }
 
   /**
-   * Writes the dataset to the configured folder
+   * Writes the dataset to the errorOutputDirectory. Directory structure:
+   * error-folder-path\<error-type>\job-<jobId>\execution-<executionId>\<mappingUrl>\<random-generated-name-by-spark>.csv
    *
    * @param mappingJobExecution job execution to get output directory of data sources with errors
    * @param dataset             filtered dataset of data sources with errors to write to configured folder
    * @param mappingUrl          to create directory for each mapping url within the job execution
    * @param errorType           one of invalid_input, mapping_error, invalid_resource
    */
-  private def writeDatasetToConfiguredFolder(mappingJobExecution: FhirMappingJobExecution,
-                                             dataset: Dataset[FhirMappingResult],
-                                             mappingUrl: String,
-                                             errorType: String): Unit = {
+  private def writeErroneousDataset(mappingJobExecution: FhirMappingJobExecution,
+                                    dataset: Dataset[FhirMappingResult],
+                                    mappingUrl: String,
+                                    errorType: String): Unit = {
     val outputPath = mappingJobExecution.getErrorOutputDirectory(mappingUrl, errorType)
     val schema = schema_of_json(dataset.collect().head.source.get)
 
@@ -80,11 +104,12 @@ object SparkArchiver {
   }
 
   /**
-   * Move file type data sources to archive folder
+   * Start archiving operation for the given job execution and dataset
+   * Archiving is only applied if data source type is file system and archive mode is not off
    * @param df
    * @param mappingJobExecution
    */
-  def processArchiving(df: Dataset[FhirMappingResult], mappingJobExecution: FhirMappingJobExecution): Unit = {
+  private def archiveDataSource(df: Dataset[FhirMappingResult], mappingJobExecution: FhirMappingJobExecution): Unit = {
     // check if archive mode is enabled for that job
     mappingJobExecution.job.dataProcessingSettings.archiveMode match {
       case ArchiveModes.OFF => // do nothing
@@ -98,6 +123,9 @@ object SparkArchiver {
 
   /**
    * Apply archiving for file type data sources e.g. move to archive folder, delete from source folder
+   * Dataset structure is different for streaming and batch jobs, so we need to handle them differently
+   * Streaming: input file path for each row is included in the dataframe, so we can group by filename and move/delete them
+   * Batch: input file path is not included in the dataframe, so we need to get it from the job execution and move/delete them
    * @param df
    * @param mappingJobExecution
    */
@@ -106,27 +134,30 @@ object SparkArchiver {
     // get data folder path from data source settings
     val dataFolderPath = fileSystemSourceSettings.dataFolderPath
     if (fileSystemSourceSettings.asStream) {
-      // get file names from df by grouping by path
+      // get schema from first row to be used for json parsing of 'source' column in df
       val schema = schema_of_json(df.collect().head.source.get)
-      // uri paths are included in the dataframes for the streaming jobs, get by grouping by filename
-      val absoluteFilePaths = df
+      // uri paths of input source files are included in the dataframes for the streaming jobs, get by grouping by filename
+      df
+        // go one level deeper in the df
         .withColumn("jsonData", from_json(col("source"), schema))
         .select("jsonData.*")
-        .groupBy(col("filename")).count().collect().map(x => x.getString(0))
-      // create path object for each file paths e.g. file:///C:/dev/be/data-integration-suite/test-data/streaming-folder/patients/patients-invalid-input.csv
-      val absolutePaths = absoluteFilePaths.map(x => Paths.get(new URI(x)))
-      // create archive path
-      absolutePaths.foreach(absolutePath => {
-        // create a relative path to the context path of the engine for that file
-        val relativeFilePath = FileUtils.getPath("").toAbsolutePath.relativize(absolutePath)
-        this.processArchiveMode(mappingJobExecution, relativeFilePath)
-      })
+        // group by filename to get unique filenames
+        .groupBy(col("filename"))
+        .agg(col("filename"))
+        // for each filename, process file operations
+        .foreach(x => {
+          val absoluteFilePaths = x.getString(0)
+          // create path object for each file path
+          val absolutePath = Paths.get(new URI(absoluteFilePaths))
+          // create a relative path to the context path of the engine for that file
+          val relativeFilePath = FileUtils.getPath("").toAbsolutePath.relativize(absolutePath)
+          this.processFileOperationsByArchiveMode(mappingJobExecution, relativeFilePath)
+        })
     } else {
       // find specific file path by matching mapping urls in the job and df
-      df.select("mappingUrl")
-        .groupBy(col("mappingUrl")).count().collect().map(x => x.getString(0))
-        .foreach((mappingUrl: String) => {
-          // find file name by mapping url
+      df.groupBy("mappingUrl").agg(col("mappingUrl")) // df has multiple rows with same mapping urls, group by to get distinct mapping urls
+        .foreach { row =>
+          val mappingUrl = row.getString(0)
           val paths = mappingJobExecution.job.mappings.find(x => x.mappingRef == mappingUrl).get.sourceContext.map(fhirMappingSourceContextMap => {
             fhirMappingSourceContextMap._2 match {
               case fileSystemSource: FileSystemSource => fileSystemSource.path
@@ -134,18 +165,20 @@ object SparkArchiver {
           })
           paths.foreach(relativePath => {
             val relativeFilePath = Paths.get(dataFolderPath, relativePath)
-            this.processArchiveMode(mappingJobExecution, relativeFilePath)
+            this.processFileOperationsByArchiveMode(mappingJobExecution, relativeFilePath)
           })
-        })
+        }
     }
   }
 
   /**
-   * Process archive mode according to the job settings
+   * Process file operations by archive mode of execution
+   * If archive mode is delete, delete file from source folder
+   * If archive mode is archive, move file to path
    * @param mappingJobExecution
    * @param relativeFilePath
    */
-  private def processArchiveMode(mappingJobExecution: FhirMappingJobExecution, relativeFilePath: Path): Unit = {
+  private def processFileOperationsByArchiveMode(mappingJobExecution: FhirMappingJobExecution, relativeFilePath: Path): Unit = {
     mappingJobExecution.job.dataProcessingSettings.archiveMode match {
       case ArchiveModes.DELETE => this.deleteSourceFile(relativeFilePath)
       case ArchiveModes.ARCHIVE =>

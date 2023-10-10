@@ -313,31 +313,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               val mappingUrls = rows.map(_.getAs[String]("mappingUrl")).distinct
               // use the timestamp of first one, which is ran first, as timestamp of execution
               val timestamp = rows.head.get(rows.head.fieldIndex("@timestamp")).toString
-              // set the status of execution
-              var status = "STARTED"
               // Check if there is a row with result other than STARTED
               val results: Seq[String] = rows.map(row => row.get(row.fieldIndex("result")).toString)
-              if (!results.filterNot(_.contentEquals("STARTED")).isEmpty) {
-                // if there is a row with PARTIAL_SUCCESS, its status is PARTIAL_SUCCESS
-                val partialSuccessCount = results.count(_.contentEquals("PARTIAL_SUCCESS"))
-                if (partialSuccessCount > 0) {
-                  status = "PARTIAL_SUCCESS"
-                } else {
-                  // success > 0 and failure = 0 means success
-                  // success > 0 and failure > 0 means partial success
-                  // success = 0 and failure > 0 means failure
-                  val successCount = results.count(_.contentEquals("SUCCESS"))
-                  val failureCount = results.count(_.contentEquals("FAILURE"))
-                  if (successCount > 0 && failureCount == 0) {
-                    status = "SUCCESS"
-                  } else if (successCount > 0 && failureCount > 0) {
-                    status = "PARTIAL_SUCCESS"
-                  } else if (successCount == 0 && failureCount > 0) {
-                    status = "FAILURE"
-                  }
-                }
-              }
-
+              val status: String = ExecutionService.getErrorStatusOfExecution(results)
               Row.fromSeq(Seq(key, mappingUrls, timestamp, status))
             })(RowEncoder(StructType(
               StructField("id", StringType) ::
@@ -400,28 +378,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           val timestamp = filteredLogs.select("@timestamp").first().getString(0)
           // Determine the status based on the success count
           val results: Seq[String] = filteredLogs.select("result").collect().map(_.getString(0)).toSeq
-          var status = "STARTED"
-          if (!results.filterNot(_.contentEquals("STARTED")).isEmpty) {
-            // if there is a row with PARTIAL_SUCCESS, its status is PARTIAL_SUCCESS
-            val partialSuccessCount = results.count(_.contentEquals("PARTIAL_SUCCESS"))
-            if (partialSuccessCount > 0) {
-              status = "PARTIAL_SUCCESS"
-            } else {
-              // success > 0 and failure = 0 means success
-              // success > 0 and failure > 0 means partial success
-              // success = 0 and failure > 0 means failure
-              val successCount = results.count(_.contentEquals("SUCCESS"))
-              val failureCount = results.count(_.contentEquals("FAILURE"))
-              if (successCount > 0 && failureCount == 0) {
-                status = "SUCCESS"
-              } else if (successCount > 0 && failureCount > 0) {
-                status = "PARTIAL_SUCCESS"
-              } else if (successCount == 0 && failureCount > 0) {
-                status = "FAILURE"
-              }
-            }
-          }
-
+          val status: String = ExecutionService.getErrorStatusOfExecution(results)
           // Create a JSON object representing the execution
           val executionJson = JObject(
             "id" -> JString(executionId),
@@ -484,4 +441,38 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       mappingErrorHandlingType,
       toFhirEngine.runningJobRegistry
     )
+
 }
+
+object ExecutionService {
+
+  /**
+   * Determines the error status of the execution based on the results of the mapping tasks.
+   * @param results
+   * @return
+   */
+  private def getErrorStatusOfExecution(results: Seq[String]): String = {
+    if (results.exists(_ == "PARTIAL_SUCCESS")) {
+      "PARTIAL_SUCCESS"
+    } else {
+      // success > 0 and failure = 0 means success
+      // success > 0 and failure > 0 means partial success
+      // success = 0 and failure > 0 means failure
+      // success = 0 and failure = 0 means started
+      val successCount = results.count(_ == "SUCCESS")
+      val failureCount = results.count(_ == "FAILURE")
+      if (successCount > 0 && failureCount == 0) {
+        "SUCCESS"
+      } else if (successCount > 0 && failureCount > 0) {
+        "PARTIAL_SUCCESS"
+      } else if (failureCount > 0) {
+        "FAILURE"
+      } else {
+        "STARTED"
+      }
+    }
+  }
+}
+
+
+
