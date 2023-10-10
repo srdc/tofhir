@@ -14,15 +14,15 @@ import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.{ResourceFilter, TestResourceCreationRequest}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.apache.spark.sql.SparkSession
+import org.json4s.JsonAST.{JString, JValue}
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
-import org.json4s.{JArray, JObject}
+import org.json4s._
 
 import java.io.File
 import java.nio.file.Paths
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
-import scala.util.control.Breaks
 import scala.util.control.Breaks.{break, breakable}
 
 class MappingExecutionEndpointTest extends BaseEndpointTest {
@@ -84,6 +84,54 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
           }
         }
         if (!succeed) fail("Could find the expected test output folder")
+      }
+    }
+
+    "rerun a job including a mapping" in {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions?page=1") ~> route ~> check {
+        // Get id of previous execution
+
+        val jValue = JsonMethods.parse(responseAs[String])
+
+        // Define a custom extractor to extract "id" values
+        object IdExtractor {
+          def unapply(json: JValue): Option[String] = {
+            json \ "id" match {
+              case JString(id) => Some(id)
+              case _ => None
+            }
+          }
+        }
+
+        // Extract the first "id" value using pattern matching
+        val firstId: Option[String] = jValue.children.collectFirst {
+          case IdExtractor(id) => id
+        }
+
+        if(firstId.isEmpty) fail("Could not get id of previous execution")
+
+        // Rerun the previous job
+        Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+          status shouldEqual StatusCodes.OK
+
+          var succeed: Boolean = false
+          breakable {
+            // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
+            for (_ <- 1 to 20) {
+              Thread.sleep(500)
+              if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_1"))) {
+                // Check the resources created in the file system
+                val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
+                val results = sparkSession.read.text(outputFolder.getPath)
+                if (results.count() == 10) {
+                  succeed = true
+                  break
+                }
+              }
+            }
+          }
+          if (!succeed) fail("Could find the expected test output folder")
+        }
       }
     }
 
