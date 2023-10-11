@@ -14,10 +14,9 @@ import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.{ResourceFilter, TestResourceCreationRequest}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.apache.spark.sql.SparkSession
-import org.json4s.JsonAST.{JString, JValue}
+import org.json4s._
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
-import org.json4s._
 
 import java.io.File
 import java.nio.file.Paths
@@ -95,20 +94,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
 
         val jValue = JsonMethods.parse(responseAs[String])
 
-        // Define a custom extractor to extract "id" values
-        object IdExtractor {
-          def unapply(json: JValue): Option[String] = {
-            json \ "id" match {
-              case JString(id) => Some(id)
-              case _ => None
-            }
-          }
-        }
-
-        // Extract the first "id" value using pattern matching
-        firstId = jValue.children.collectFirst {
-          case IdExtractor(id) => id
-        }
+        firstId = (jValue.asInstanceOf[JArray].arr.head.asInstanceOf[JObject] \ "id").extractOpt[String]
       }
 
       // Rerun the previous job
