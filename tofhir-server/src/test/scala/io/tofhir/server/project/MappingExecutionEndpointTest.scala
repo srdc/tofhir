@@ -88,6 +88,9 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     }
 
     "rerun a job including a mapping" in {
+
+      var firstId: Option[String] = Option.empty
+
       Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions?page=1") ~> route ~> check {
         // Get id of previous execution
 
@@ -104,34 +107,32 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         }
 
         // Extract the first "id" value using pattern matching
-        val firstId: Option[String] = jValue.children.collectFirst {
+        firstId = jValue.children.collectFirst {
           case IdExtractor(id) => id
         }
+      }
 
-        if(firstId.isEmpty) fail("Could not get id of previous execution")
+      // Rerun the previous job
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
 
-        // Rerun the previous job
-        Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
-          status shouldEqual StatusCodes.OK
-
-          var succeed: Boolean = false
-          breakable {
-            // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
-            for (_ <- 1 to 20) {
-              Thread.sleep(500)
-              if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_1"))) {
-                // Check the resources created in the file system
-                val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
-                val results = sparkSession.read.text(outputFolder.getPath)
-                if (results.count() == 10) {
-                  succeed = true
-                  break
-                }
+        var succeed: Boolean = false
+        breakable {
+          // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
+          for (_ <- 1 to 20) {
+            Thread.sleep(500)
+            if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_1"))) {
+              // Check the resources created in the file system
+              val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
+              val results = sparkSession.read.text(outputFolder.getPath)
+              if (results.count() == 20) {
+                succeed = true
+                break
               }
             }
           }
-          if (!succeed) fail("Could find the expected test output folder")
         }
+        if (!succeed) fail("Could find the expected test output folder")
       }
     }
 
