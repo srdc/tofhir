@@ -5,6 +5,9 @@ import io.tofhir.engine.model.ArchiveModes.ArchiveModes
 
 /**
  * Archive mode types to specify what to do with data source after mapping execution
+ * off - do nothing
+ * delete - delete the data source after mapping execution
+ * archive - archive the data source after mapping execution
  */
 object ArchiveModes extends Enumeration {
   type ArchiveModes = String

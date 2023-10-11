@@ -86,7 +86,7 @@ object PostMappingHandler {
                                     mappingUrl: String,
                                     errorType: String): Unit = {
     val outputPath = mappingJobExecution.getErrorOutputDirectory(mappingUrl, errorType)
-    val schema = schema_of_json(dataset.collect().head.source.get)
+    val schema = schema_of_json(dataset.rdd.takeSample(withReplacement = false, num = 1).head.source.get)
 
     dataset
       .withColumn("jsonData", from_json(col("source"), schema))
@@ -134,8 +134,8 @@ object PostMappingHandler {
     // get data folder path from data source settings
     val dataFolderPath = fileSystemSourceSettings.dataFolderPath
     if (fileSystemSourceSettings.asStream) {
-      // get schema from first row to be used for json parsing of 'source' column in df
-      val schema = schema_of_json(df.collect().head.source.get)
+      // get schema from sample row to be used for json parsing of 'source' column in df
+      val schema = schema_of_json(df.rdd.takeSample(withReplacement = false, num = 1).head.source.get)
       // uri paths of input source files are included in the dataframes for the streaming jobs, get by grouping by filename
       df
         // go one level deeper in the df
