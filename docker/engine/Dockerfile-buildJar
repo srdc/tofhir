@@ -19,7 +19,7 @@ WORKDIR $TOFHIR_HOME
 
 COPY --from=builder $TOFHIR_HOME/tofhir-engine/target/tofhir-standalone.jar .
 
-COPY docker/docker-entrypoint.sh .
+COPY docker/engine/docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
