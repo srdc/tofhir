@@ -1,0 +1,29 @@
+version: '3.9'
+services:
+  tofhir-server:
+    image: srdc/tofhir-server:latest
+    container_name: tofhir
+    hostname: tofhir
+    environment:
+      - FHIR_REPO_URL=http://onfhir:8080/fhir
+      - APP_CONF_FILE=/tofhir/conf/application.conf
+    ports:
+      - "8085:8085"
+    networks:
+      - tofhir-network
+    volumes:
+      - './data-ingestion-suite:/tofhir/conf'
+      - './tofhir-docker-logs:/tofhir/logs'
+  tofhir-web:
+    image: srdc/tofhir-web:latest
+    container_name: tofhir-web
+    ports:
+      - "8082:80"
+    networks:
+      - tofhir-network
+networks:
+  tofhir-network:
+    name: onfhir-network
+    external: true
+volumes:
+  fhirdb: {}
