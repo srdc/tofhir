@@ -66,7 +66,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   "it" should "register batch jobs" in {
     runningTaskRegistry.registerBatchJob("j4", "e", Seq("m1", "m2"), Future.apply(
-      Thread.sleep(2000)
+      Thread.sleep(1000)
     ), "")
     runningTaskRegistry.getRunningExecutions()("j4").head._2 shouldEqual Seq("m1", "m2")
 

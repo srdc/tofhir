@@ -8,9 +8,9 @@ import io.tofhir.server.service.terminology.codesystem.{CodeSystemRepository, IC
 
 import scala.concurrent.Future
 
-class CodeSystemService extends LazyLogging {
+class CodeSystemService(terminologySystemFolderPath: String) extends LazyLogging {
 
-  private val codeSystemRepository: ICodeSystemRepository = new CodeSystemRepository()
+  private val codeSystemRepository: ICodeSystemRepository = new CodeSystemRepository(terminologySystemFolderPath)
 
   /**
    * Get all code systems for a terminology

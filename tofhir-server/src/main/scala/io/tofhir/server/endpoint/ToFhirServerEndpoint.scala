@@ -28,7 +28,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val schemaRepository: SchemaFolderRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository)
   val mappingJobRepository: JobFolderRepository = new JobFolderRepository(toFhirEngineConfig.jobRepositoryFolderPath, projectRepository)
   val mappingContextRepository: MappingContextFolderRepository = new MappingContextFolderRepository(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectRepository)
-  val terminologySystemFolderRepository: TerminologySystemFolderRepository = new TerminologySystemFolderRepository(toFhirEngineConfig)
+  val terminologySystemFolderRepository: TerminologySystemFolderRepository = new TerminologySystemFolderRepository(toFhirEngineConfig.terminologySystemFolderPath)
   // Initialize the projects by reading the resources available in the file system
   new FolderDBInitializer(toFhirEngineConfig, schemaRepository, mappingRepository, mappingJobRepository, projectRepository, mappingContextRepository).init()
 
