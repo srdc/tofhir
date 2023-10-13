@@ -179,7 +179,9 @@ Example of a Mapping Job definition file with csv source type:
     "fhirRepoUrl": "http://localhost:8081/fhir",
     "errorHandling": "continue"
   },
-  "mappingErrorHandling": "continue",
+  "dataProcessingSettings": {
+    "mappingErrorHandling": "continue"
+  },
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",

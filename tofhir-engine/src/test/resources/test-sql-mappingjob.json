@@ -15,7 +15,9 @@
     "fhirRepoUrl": "http://localhost:8081/fhir",
     "errorHandling": "halt"
   },
-  "mappingErrorHandling": "halt",
+  "dataProcessingSettings": {
+    "mappingErrorHandling": "halt"
+  },
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/care-site-sql-mapping",
