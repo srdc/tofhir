@@ -8,9 +8,9 @@ import io.tofhir.server.service.terminology.conceptmap.{ConceptMapRepository, IC
 
 import scala.concurrent.Future
 
-class ConceptMapService extends LazyLogging {
+class ConceptMapService(terminologySystemFolderPath: String) extends LazyLogging {
 
-  private val conceptMapRepository: IConceptMapRepository = new ConceptMapRepository()
+  private val conceptMapRepository: IConceptMapRepository = new ConceptMapRepository(terminologySystemFolderPath)
 
   /**
    * Get all ConceptMaps for a terminology

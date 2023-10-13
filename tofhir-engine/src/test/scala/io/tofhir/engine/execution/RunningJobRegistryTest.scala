@@ -29,9 +29,10 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   "it" should "cache a StreamingQuery in blocking mode" in {
     val streamingQueryFuture = getMockStreamingQuery()
-    runningTaskRegistry.registerStreamingQuery("j", "e", "m2", streamingQueryFuture, true)
+    val jobSubmissionFuture = runningTaskRegistry.registerStreamingQuery("j", "e", "m2", streamingQueryFuture, true)
 
-    val streamingQuery = Await.result(streamingQueryFuture, 10 seconds)
+    Await.result(jobSubmissionFuture, 2 seconds)
+    val streamingQuery = Await.result(streamingQueryFuture, 2 seconds)
     verify(streamingQuery).awaitTermination()
 
     // Registered task should have been deleted after termination
@@ -66,7 +67,7 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   "it" should "register batch jobs" in {
     runningTaskRegistry.registerBatchJob("j4", "e", Seq("m1", "m2"), Future.apply(
-      Thread.sleep(2000)
+      Thread.sleep(1000)
     ), "")
     runningTaskRegistry.getRunningExecutions()("j4").head._2 shouldEqual Seq("m1", "m2")
 

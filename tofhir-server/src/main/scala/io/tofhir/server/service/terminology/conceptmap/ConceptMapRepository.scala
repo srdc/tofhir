@@ -7,14 +7,14 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.TerminologySystem.TerminologyConceptMap
 import io.tofhir.server.model._
-import io.tofhir.server.service.terminology.TerminologySystemFolderRepository.{TERMINOLOGY_SYSTEMS_FOLDER, TERMINOLOGY_SYSTEMS_JSON}
+import io.tofhir.server.service.terminology.TerminologySystemFolderRepository.getTerminologySystemsJsonPath
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.Serialization.writePretty
 
 import java.io.FileWriter
 import scala.concurrent.Future
 
-class ConceptMapRepository extends IConceptMapRepository {
+class ConceptMapRepository(terminologySystemFolderPath: String) extends IConceptMapRepository {
 
   /**
    * Retrieve the concept maps within a terminology
@@ -22,7 +22,7 @@ class ConceptMapRepository extends IConceptMapRepository {
    */
   override def getConceptMaps(terminologyId: String): Future[Seq[TerminologyConceptMap]] = {
     Future {
-      val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
       val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
       localTerminology.find(_.id == terminologyId).map(_.conceptMaps).getOrElse(Seq.empty)
     }
@@ -35,7 +35,7 @@ class ConceptMapRepository extends IConceptMapRepository {
    */
   override def createConceptMap(terminologyId: String, conceptMap: TerminologyConceptMap): Future[TerminologyConceptMap] = {
     Future {
-      val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
       val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
       // check if concept map id exists
       localTerminology.find(_.id == terminologyId) match {
@@ -56,7 +56,7 @@ class ConceptMapRepository extends IConceptMapRepository {
             writer.close()
           }
           // create concept map file
-          val conceptMapFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologyId, conceptMap.id).toFile
+          val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMap.id).toFile
           conceptMapFile.createNewFile()
           conceptMap
 
@@ -75,7 +75,7 @@ class ConceptMapRepository extends IConceptMapRepository {
    */
   override def getConceptMap(terminologyId: String, conceptMapId: String): Future[Option[TerminologyConceptMap]] = {
     Future {
-      val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
       val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
       localTerminology.find(_.id == terminologyId).flatMap(_.conceptMaps.find(_.id == conceptMapId))
     }
@@ -95,7 +95,7 @@ class ConceptMapRepository extends IConceptMapRepository {
       if (conceptMap.id != conceptMapId) {
         throw BadRequest("Concept map id does not match.", s"Concept map id ${conceptMap.id} does not match $conceptMapId.")
       }
-      val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
       val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
       // check if concept map id exists in json file
       localTerminology.find(_.id == terminologyId) match {
@@ -133,7 +133,7 @@ class ConceptMapRepository extends IConceptMapRepository {
    */
   override def removeConceptMap(terminologyId: String, conceptMapId: String): Future[Unit] = {
     Future {
-      val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
       val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
 
       localTerminology.find(_.id == terminologyId) match {
@@ -155,7 +155,7 @@ class ConceptMapRepository extends IConceptMapRepository {
             writer.close()
           }
           // remove concept map file
-          val conceptMapFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologyId, conceptMapId).toFile
+          val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMapId).toFile
           conceptMapFile.delete()
         case None =>
           throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
@@ -173,7 +173,7 @@ class ConceptMapRepository extends IConceptMapRepository {
    */
   override def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any]): Future[Unit] = {
     //check if concept map id exists in json file
-    val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
     val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
     localTerminology.find(_.id == terminologyId) match {
       case Some(t) =>
@@ -181,7 +181,7 @@ class ConceptMapRepository extends IConceptMapRepository {
           throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
         }
         // save concept map file
-        val conceptMapFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologyId, conceptMapId).toFile
+        val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMapId).toFile
         FileOperations.saveFileContent(conceptMapFile, content)
       case None =>
         throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
@@ -198,7 +198,7 @@ class ConceptMapRepository extends IConceptMapRepository {
   override def getConceptMapContent(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]] = {
     Future {
       // check if concept map id exists in json file
-      val localTerminologyFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_JSON).toFile
+      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
       val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
 
       localTerminology.find(_.id == terminologyId) match {
@@ -207,7 +207,7 @@ class ConceptMapRepository extends IConceptMapRepository {
             throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
           }
           // get concept map file
-          val conceptMapFile = FileUtils.getPath(TERMINOLOGY_SYSTEMS_FOLDER, terminologyId, conceptMapId)
+          val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMapId)
           FileIO.fromPath(conceptMapFile)
         case None =>
           throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
