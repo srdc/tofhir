@@ -48,7 +48,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     sourceContext = Map("source" -> FileSystemSource(path = "patients.csv")),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/patient-mapping.json").getPath)))
   )
-  val job: FhirMappingJob = FhirMappingJob(id = job1Id, name = Some("mappingJob"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = Seq(patientMappingTask), mappingErrorHandling = ErrorHandlingType.CONTINUE)
+  val job: FhirMappingJob = FhirMappingJob(id = job1Id, name = Some("mappingJob"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = Seq(patientMappingTask), dataProcessingSettings = DataProcessingSettings())
 
   "The service" should {
     "run a job including a mapping" in {
@@ -133,7 +133,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     }
 
     sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job2", Some(SinkFileFormats.NDJSON))
-    val job2: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = Seq(patientMappingTask), mappingErrorHandling = ErrorHandlingType.CONTINUE)
+    val job2: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = Seq(patientMappingTask), dataProcessingSettings = DataProcessingSettings())
 
     "execute a mapping that is included in the mapping task" in {
       // create the job

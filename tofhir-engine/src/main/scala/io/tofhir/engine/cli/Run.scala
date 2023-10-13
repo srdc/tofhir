@@ -105,7 +105,7 @@ class Run extends Command {
       context.toFhirEngine.schemaLoader,
       context.toFhirEngine.functionLibraries,
       context.toFhirEngine.sparkSession,
-      mappingJob.mappingErrorHandling,
+      mappingJob.dataProcessingSettings.mappingErrorHandling,
       context.toFhirEngine.runningJobRegistry
     )
   }
