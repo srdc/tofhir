@@ -39,14 +39,14 @@ object SinkHandler {
         t.getCause match {
           case e:FhirMappingInvalidResourceException =>
             logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,e.getProblems,mappingErrors,invalidInputs)
-            PostMappingHandler.saveErroneousRecordsAndArchiveDataSource(spark, df, mappingJobExecution, mappingUrl, e.getProblems, mappingErrors, invalidInputs)
+            PostMappingHandler.saveErroneousRecords(spark, mappingJobExecution, mappingUrl, e.getProblems, mappingErrors, invalidInputs)
           case _ => // We do not do anything for other types of exceptions
         }
         throw t
       }
     }
     logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
-    PostMappingHandler.saveErroneousRecordsAndArchiveDataSource(spark, df, mappingJobExecution, mappingUrl, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
+    PostMappingHandler.saveErroneousRecords(spark, mappingJobExecution, mappingUrl, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
     //Unpersist the data frame
     df.unpersist()
   }
