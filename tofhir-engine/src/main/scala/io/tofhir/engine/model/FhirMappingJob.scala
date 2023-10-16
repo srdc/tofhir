@@ -26,7 +26,7 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
                           identityServiceSettings: Option[IdentityServiceSettings] = None,
                           mappings: Seq[FhirMappingTask],
                           schedulingSettings: Option[SchedulingSettings] = None,
-                          dataProcessingSettings: DataProcessingSettings,
+                          dataProcessingSettings: DataProcessingSettings = DataProcessingSettings(),
                           useFhirSinkAsIdentityService:Boolean = false
                          ) {
   /**

@@ -30,9 +30,7 @@ class Run extends Command {
                     identityServiceSettings = mappingJob.getIdentityServiceSettings()
                   )
               context.toFhirEngine.runningJobRegistry.registerBatchJob(
-                mappingJobExecution.job.id,
-                mappingJobExecution.id,
-                mappingJobExecution.mappingTasks.map(_.mappingRef),
+                mappingJobExecution,
                 f,
                 s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
               )
@@ -65,9 +63,7 @@ class Run extends Command {
                       identityServiceSettings = mappingJob.getIdentityServiceSettings()
                     )
                 context.toFhirEngine.runningJobRegistry.registerBatchJob(
-                  mappingJobExecution.job.id,
-                  mappingJobExecution.id,
-                  mappingJobExecution.mappingTasks.map(_.mappingRef),
+                  mappingJobExecution,
                   f,
                   s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
                 )
@@ -85,7 +81,7 @@ class Run extends Command {
           terminologyServiceSettings = mappingJob.terminologyServiceSettings,
           identityServiceSettings = mappingJob.getIdentityServiceSettings()
         )
-          .foreach(sq => context.toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJob.id, mappingJobExecution.id, sq._1, sq._2))
+          .foreach(sq => context.toFhirEngine.runningJobRegistry.registerStreamingQuery(sq._2))
       }
     }
     context

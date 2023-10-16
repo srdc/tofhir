@@ -2,6 +2,7 @@ package io.tofhir.engine.model
 
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
+import org.apache.spark.sql.streaming.StreamingQuery
 
 import java.util.UUID
 import java.util.regex.Pattern
@@ -9,18 +10,48 @@ import java.util.regex.Pattern
 /**
  * Represents the execution of mapping tasks included in a mapping job.
  *
- * @param id                   Unique identifier for the execution
- * @param projectId            Unique identifier of project to which mapping job belongs
- * @param job                  Fhir mapping job
- * @param mappingTasks         List of mapping tasks to be executed
- * @param mappingErrorHandling Error handling type for execution process
+ * @param id                         Unique identifier for the execution
+ * @param projectId                  Unique identifier of project to which mapping job belongs
+ * @param job                        Fhir mapping job
+ * @param mappingTasks               List of mapping tasks to be executed (as a subset of the mapping tasks defined in the job)
+ * @param mappingErrorHandling       Error handling type for execution process
+ * @param jobGroupIdOrStreamingQuery Keeps Spark job group id for batch jobs and StreamingQuery for streaming jobs
  */
 case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
                                    projectId: String = "",
                                    job: FhirMappingJob,
                                    mappingTasks: Seq[FhirMappingTask] = Seq.empty,
-                                   mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.CONTINUE
+                                   mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.CONTINUE,
+                                   jobGroupIdOrStreamingQuery: Option[Either[String, StreamingQuery]] = None
                                   ) {
+
+  /**
+   * Returns the [[StreamingQuery]] from this execution, if any. It throws a [[IllegalStateException]], if the query is not available.
+   * @return
+   */
+  def getStreamingQuery(): StreamingQuery = {
+    jobGroupIdOrStreamingQuery match {
+      case Some(value) => value match {
+        case Right(query) => query
+        case Left(_) => throw new IllegalStateException("Trying to access StreamingQuery, but job group id exists instead")
+      }
+      case None => throw new IllegalStateException("Trying to access StreamingQuery, but it does not exist")
+    }
+  }
+
+  /**
+   * Returns the Spark job group if from this execution, if any. It throws a [[IllegalStateException]], if the job id is not available.
+   * @return
+   */
+  def getJobGroupId(): String = {
+    jobGroupIdOrStreamingQuery match {
+      case Some(value) => value match {
+        case Right(_) => throw new IllegalStateException("Trying to access StreamingQuery, but streaming query exists instead")
+        case Left(jobGroupId) => jobGroupId
+      }
+      case None => throw new IllegalStateException("Trying to access job group id, but it does not exist")
+    }
+  }
   /**
    * Creates a checkpoint directory for a mapping included in a job
    *

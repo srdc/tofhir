@@ -128,7 +128,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             terminologyServiceSettings = mappingJob.terminologyServiceSettings,
             identityServiceSettings = mappingJob.getIdentityServiceSettings()
           )
-          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.job.id, mappingJobExecution.id, sq._1, sq._2))
+          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(sq._2))
       }
 
       // Batch jobs
@@ -144,9 +144,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
         // Register the job to the registry
         toFhirEngine.runningJobRegistry.registerBatchJob(
-          mappingJobExecution.job.id,
-          mappingJobExecution.id,
-          mappingTasks.map(_.mappingRef),
+          mappingJobExecution,
           executionFuture,
           s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
         )

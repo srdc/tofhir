@@ -108,14 +108,14 @@ class FhirMappingJobManager(
    * @param sinkSettings               FHIR sink settings (can be a FHIR repository, file system, kafka)
    * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
    * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
-   * @return A map of (mapping url -> streaming query futures).
+   * @return A map of (mapping url -> mapping execution futures).
    */
   override def startMappingJobStream(mappingJobExecution: FhirMappingJobExecution,
                                      sourceSettings: Map[String, DataSourceSettings],
                                      sinkSettings: FhirSinkSettings,
                                      terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                      identityServiceSettings: Option[IdentityServiceSettings] = None,
-                                    ): Map[String, Future[StreamingQuery]] = {
+                                    ): Map[String, Future[FhirMappingJobExecution]] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings, runningJobRegistry)
     mappingJobExecution.mappingTasks
       .map(t => {
@@ -127,7 +127,8 @@ class FhirMappingJobManager(
         t.mappingRef ->
           readSourceAndExecuteTask(mappingJobExecution.job.id, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
             .map(ts => {
-              SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
+              val streamingQuery: StreamingQuery = SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
+              mappingJobExecution.copy(mappingTasks = Seq(t), jobGroupIdOrStreamingQuery = Some(Right(streamingQuery)))
             })
       })
       .toMap
