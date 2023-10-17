@@ -116,6 +116,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         throw AlreadyExists("Schema already exists.", s"A schema definition with id ${schemaDefinition.id} already exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
       }
 
+      // Check if the url already exists
+      val schemaUrls: Map[String, String] = schemaDefinitions.values.flatMap(_.values).map(schema => schema.url -> schema.name).toMap
+      if (schemaUrls.contains(schemaDefinition.url)) {
+        throw AlreadyExists("Schema already exists.", s"A schema definition with url ${schemaDefinition.url} already exists. Check the schema '${schemaUrls(schemaDefinition.url)}'")
+      }
+
       // Write to the repository as a new file
       getFileForSchema(projectId, schemaDefinition).map(newFile => {
         val fw = new FileWriter(newFile)

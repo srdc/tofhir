@@ -71,6 +71,9 @@ class SchemaEndpointTest extends BaseEndpointTest {
         sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = None, definition = None, comment = None, elements = None)
     )
   ))
+  // fifth schema with the same url as the second schema, to be rejected
+  val schema5: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", `type` = "ty5", name = "name5", rootDefinition = None, fieldDefinitions = None)
+
 
   // mapping using schema2
   val mapping: FhirMapping = FhirMapping(id = "mapping", url = "http://example.com/mapping", name = "mapping", source = Seq(FhirMappingSource(alias="test",url = "https://example.com/fhir/StructureDefinition/schema2")), context = Map.empty, mapping = Seq.empty)
@@ -237,6 +240,13 @@ class SchemaEndpointTest extends BaseEndpointTest {
         fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual "date"
         fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual "dateTime"
         fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual "string"
+      }
+    }
+
+    "Cannot create a schema having the same url as another schema" in {
+      Post(s"/tofhir/projects/${projectId}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(schema5))) ~> route ~> check {
+        // Expect a conflict status because schema5 has the same url as the schema2
+        status shouldEqual StatusCodes.Conflict
       }
     }
   }
