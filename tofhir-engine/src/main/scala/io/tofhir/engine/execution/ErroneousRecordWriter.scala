@@ -1,6 +1,6 @@
-package io.tofhir.engine.data.write
+package io.tofhir.engine.execution
 
-import io.tofhir.engine.model._
+import io.tofhir.engine.model.{FhirMappingErrorCodes, FhirMappingJobExecution, FhirMappingResult}
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import org.apache.hadoop.fs.FileUtil
 import org.apache.spark.sql.functions.{col, from_json, schema_of_json}
@@ -12,7 +12,7 @@ import java.util
 /**
  * Handler for post mapping processing. Spark is used to process the data sources.
  */
-object PostMappingHandler {
+object ErroneousRecordWriter {
 
   /**
    * Archive data sources row by row based on error types (e.g. invalid input, mapping error, invalid resource) to configured folder

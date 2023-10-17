@@ -243,6 +243,15 @@ class RunningJobRegistry(spark: SparkSession) {
   }
 
   /**
+   * Returns [[FhirMappingJobExecution]]s for all the running executions
+   *
+   * @return
+   */
+  def getRunningExecutionsWithCompleteMetadata(): Seq[FhirMappingJobExecution] = {
+    runningTasks.flatMap(_._2.flatMap(_._2.values)).toSeq
+  }
+
+  /**
    * Sets the Spark's job group for the active thread.
    *
    * @param description Description for the job group
