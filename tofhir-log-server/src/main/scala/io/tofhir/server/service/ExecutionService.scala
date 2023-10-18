@@ -113,21 +113,6 @@ class ExecutionService() extends LazyLogging {
     // retrieve the job to validate its existence
     Future {
       // read logs/tofhir-mappings.log file
-
-      println("Started execution extraction")
-
-      val sparkStatus = SparkConfig.sparkSession.sparkContext.statusTracker
-      sparkStatus.getActiveJobIds().map{id =>
-        println(s"Job id: $id, Execution status: ${sparkStatus.getJobInfo(id).get.status()}")
-      }
-      val sparkContext = SparkConfig.sparkSession.sparkContext.getAllPools
-      sparkContext.map{ pool =>
-        pool.getSortedTaskSetQueue.map{task =>
-          println(s"Task name: ${task.name}, Num Task: ${task.numTasks}")
-        }
-        println(s"Pool Name: ${pool.name}, Running Tasks: ${pool.runningTasks}, IsSchedulable: ${pool.isSchedulable}, Scheduling mode: ${pool.schedulingMode}")
-      }
-      println(s"Active jobs: ${sparkStatus.getActiveJobIds().mkString("Array(", ", ", ")")}")
       val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
       // handle the case where no job has been run yet which makes the data frame empty
       if (dataFrame.isEmpty) {
@@ -139,7 +124,6 @@ class ExecutionService() extends LazyLogging {
         if (jobRuns.isEmpty) {
           (Seq.empty, 0)
         } else {
-          println("Continue execution extraction")
           // group logs by execution id
           val jobRunsGroupedByExecutionId = jobRuns.groupByKey(row => row.get(row.fieldIndex("executionId")).toString)(Encoders.STRING)
           // get execution logs
@@ -216,9 +200,7 @@ class ExecutionService() extends LazyLogging {
           "startTime" -> JString(timestamp),
           "errorStatus" -> JString(status)
         )
-        // Add runningStatus field to the JSON object
-        val updatedExecutionJson = executionJson
-        updatedExecutionJson
+        executionJson
       }
     }
   }

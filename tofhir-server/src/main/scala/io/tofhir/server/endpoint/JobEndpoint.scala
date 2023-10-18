@@ -46,7 +46,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
               getExecutionById(projectId, jobId, executionId)
             } ~ pathPrefix(SEGMENT_LOGS) { // logs on a single execution, jobs/<jobId>/executions/<executionId>/logs
               pathEndOrSingleSlash {
-                getExecutionLogs(executionId)
+                getExecutionLogs(projectId, jobId, executionId)
               }
             } ~ pathPrefix(SEGMENT_RUN) { // jobs/<jobId>/executions/<executionId>/run
               pathEndOrSingleSlash {
@@ -237,10 +237,10 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
   /**
    * Route to retrieve execution logs i.e. the logs of mapping task which are ran in the execution
    * */
-  private def getExecutionLogs(id: String): Route = {
+  private def getExecutionLogs(projectId: String, jobId: String, executionId: String): Route = {
     get {
       complete {
-        executionService.getExecutionLogs(id)
+        executionService.getExecutionLogs(projectId: String, jobId: String, executionId: String)
       }
     }
   }
