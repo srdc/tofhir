@@ -11,6 +11,10 @@ if [ ! -z "$FHIR_REPO_URL" ]; then
     JAVA_CMD+="-Dfhir.definitions-fhir-endpoint=$FHIR_REPO_URL "
 fi
 
+if [ ! -z "$LOG_SERVER_BASE_URL" ]; then
+    JAVA_CMD+="-webserver.log-server-base-url=$LOG_SERVER_BASE_URL "
+fi
+
 # Finally, tell which jar to run
 JAVA_CMD+="/tofhir/tofhir-server-standalone.jar"
 

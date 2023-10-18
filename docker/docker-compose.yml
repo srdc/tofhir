@@ -1,10 +1,24 @@
 version: '3.9'
 services:
+  tofhir-log-server:
+    image: srdc/tofhir-log-server:latest
+    container_name: tofhir-log
+    hostname: tofhir-log
+    environment:
+      - APP_CONF_FILE=/tofhir/conf/log-service.conf
+    ports:
+      - "8086:8086"
+    networks:
+      - tofhir-network
+    volumes:
+      - './data-ingestion-suite:/tofhir/conf'
+      - './tofhir-docker-logs:/tofhir/logs'
   tofhir-server:
     image: srdc/tofhir-server:latest
     container_name: tofhir
     hostname: tofhir
     environment:
+      - LOG_SERVER_BASE_URL=http://tofhir-log:8086
       - FHIR_REPO_URL=http://onfhir:8080/fhir
       - APP_CONF_FILE=/tofhir/conf/application.conf
     ports:
