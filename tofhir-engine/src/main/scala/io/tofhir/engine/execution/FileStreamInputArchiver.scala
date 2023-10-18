@@ -74,22 +74,25 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
 
 object FileStreamInputArchiver {
   def applyArchivingOnBatchJob(execution: FhirMappingJobExecution): Unit = {
-    val fileSystemSourceSettings = execution.job.sourceSettings.head._2.asInstanceOf[FileSystemSourceSettings]
-    // get data folder path from data source settings
-    val dataFolderPath = fileSystemSourceSettings.dataFolderPath
+    val archiveMode: ArchiveModes = execution.job.dataProcessingSettings.archiveMode
+    if (archiveMode != ArchiveModes.OFF) {
+      val fileSystemSourceSettings = execution.job.sourceSettings.head._2.asInstanceOf[FileSystemSourceSettings]
+      // get data folder path from data source settings
+      val dataFolderPath = fileSystemSourceSettings.dataFolderPath
 
-    val paths: Seq[String] = execution.job.mappings.flatMap(mapping => {
-      mapping.sourceContext.flatMap(fhirMappingSourceContextMap => {
-        fhirMappingSourceContextMap._2 match {
-          case fileSystemSource: FileSystemSource => Some(fileSystemSource.path)
-          case _ => None
-        }
+      val paths: Seq[String] = execution.job.mappings.flatMap(mapping => {
+        mapping.sourceContext.flatMap(fhirMappingSourceContextMap => {
+          fhirMappingSourceContextMap._2 match {
+            case fileSystemSource: FileSystemSource => Some(fileSystemSource.path)
+            case _ => None
+          }
+        })
       })
-    })
-    paths.foreach(relativePath => {
-      val file = Paths.get(dataFolderPath, relativePath).toFile
-      moveSourceFileToArchive(file)
-    })
+      paths.foreach(relativePath => {
+        val file = Paths.get(dataFolderPath, relativePath).toFile
+        processArchiveMode(file, archiveMode)
+      })
+    }
   }
 
   /**
