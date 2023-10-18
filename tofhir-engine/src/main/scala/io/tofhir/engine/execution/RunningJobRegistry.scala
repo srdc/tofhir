@@ -41,22 +41,20 @@ class RunningJobRegistry(spark: SparkSession) {
       val executionId: String = execution.id
 
       // Multiple threads can update the global task map. So, updates are synchronized.
-      runningTasks.synchronized {
+      val updatedExecution = runningTasks.synchronized {
         // Update the execution map
         val executionMap: collection.mutable.Map[String, FhirMappingJobExecution] = runningTasks.getOrElseUpdate(jobId, collection.mutable.Map[String, FhirMappingJobExecution]())
-        executionMap.get(executionId) match {
-          case None => executionMap.put(executionId, execution.copy(jobGroupIdOrStreamingQuery = Some(Right(collection.mutable.Map(mappingUrl -> streamingQuery)))))
-          case Some(execution) =>
-            executionMap.put(
-              executionId,
-              execution.copy(jobGroupIdOrStreamingQuery = Some(Right(execution.getStreamingQueryMap() + (mappingUrl -> streamingQuery))))
-            )
+        val updatedExecution: FhirMappingJobExecution = executionMap.get(executionId) match {
+          case None => execution.copy(jobGroupIdOrStreamingQuery = Some(Right(collection.mutable.Map(mappingUrl -> streamingQuery))))
+          case Some(execution) => execution.copy(jobGroupIdOrStreamingQuery = Some(Right(execution.getStreamingQueryMap() + (mappingUrl -> streamingQuery))))
         }
+        executionMap.put(executionId, updatedExecution)
+        updatedExecution
       }
 
       // If blocking was set true, we are going to wait for StreamingQuery to terminate
       if (blocking) {
-        execution.getStreamingQuery(mappingUrl).awaitTermination()
+        updatedExecution.getStreamingQuery(mappingUrl).awaitTermination()
         // Remove the mapping execution from the running tasks after the query is terminated
         removeMappingExecutionFromRunningTasks(jobId, executionId, mappingUrl)
         () // Return unit
@@ -88,7 +86,7 @@ class RunningJobRegistry(spark: SparkSession) {
     // Remove the execution entry when the future is completed
     jobFuture.onComplete(_ => {
       // Run archiving manually for the batch job manually
-      // TODO
+      FileStreamInputArchiver.applyArchivingOnBatchJob(execution)
       removeExecutionFromRunningTasks(jobId, executionId)
     })
   }
@@ -175,7 +173,7 @@ class RunningJobRegistry(spark: SparkSession) {
           val execution: FhirMappingJobExecution = jobMapping(executionId)
           var removedMappingEntry: Option[Either[String, StreamingQuery]] = None
           // If it is a batch job do nothing but warn user about the situation
-          if (execution.isStreaming()) {
+          if (!execution.isStreaming()) {
             logger.warn(s"Execution with $jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl won't be stopped with a specific mapping as this is a batch job." +
               s"Stop execution by providing only the jobId and executionId")
 

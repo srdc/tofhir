@@ -1,8 +1,9 @@
 package io.tofhir.engine.execution
 
 import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.execution.FileStreamInputArchiver._
 import io.tofhir.engine.model.ArchiveModes.ArchiveModes
-import io.tofhir.engine.model.{ArchiveModes, FhirMappingJobExecution, FileSystemSource}
+import io.tofhir.engine.model.{ArchiveModes, FhirMappingJobExecution, FileSystemSource, FileSystemSourceSettings}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import org.json4s.jackson.JsonMethods
@@ -34,28 +35,7 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
 
   def startStreamingArchiveTask(): Unit = {
     val timer: Timer = new Timer()
-    timer.schedule(new StreamingArchiverTask(processedOffsets, runningJobRegistry), 0, 5000)
-  }
-}
-
-/**
- * Task to apply archiving
- *
- * @param offsets            Last processed offsets for executions
- * @param runningJobRegistry Running job registry
- */
-class StreamingArchiverTask(offsets: scala.collection.concurrent.Map[String, Int], runningJobRegistry: RunningJobRegistry) extends TimerTask {
-  override def run(): Unit = {
-    // Get executions with streaming queries and apply
-    val executions = runningJobRegistry.getRunningExecutionsWithCompleteMetadata()
-      .filter(execution => execution.isStreaming())
-    executions.foreach(execution => {
-      if (execution.isStreaming()) {
-        execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
-          applyArchiving(execution, mappingUrl)
-        })
-      }
-    })
+    timer.schedule(new StreamingArchiverTask(this, runningJobRegistry), 0, 5000)
   }
 
   /**
@@ -63,7 +43,7 @@ class StreamingArchiverTask(offsets: scala.collection.concurrent.Map[String, Int
    *
    * @param taskExecution
    */
-  private def applyArchiving(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
+  def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
     // Get the commit file directory for this execution
     val checkPointDirectory: String = taskExecution.getCheckpointDirectory(mappingUrl)
     val commitFileDirectory: File = Paths.get(checkPointDirectory, "commits").toFile
@@ -71,7 +51,7 @@ class StreamingArchiverTask(offsets: scala.collection.concurrent.Map[String, Int
     // There won't be any file during the initialization or after checkpoints are cleared
     if (commitFileDirectory.listFiles().nonEmpty) {
       // Apply archiving for the files as of the last processed offset until the last unprocessed offset
-      val lastProcessedOffset: Int = offsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
+      val lastProcessedOffset: Int = processedOffsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
       val lastOffsetSet: Int = getLastCommitOffset(commitFileDirectory)
       val archiveMode: ArchiveModes = taskExecution.job.dataProcessingSettings.archiveMode
 
@@ -83,10 +63,33 @@ class StreamingArchiverTask(offsets: scala.collection.concurrent.Map[String, Int
             inputFiles.foreach(inputFile => {
               processArchiveMode(inputFile, archiveMode)
             })
-            offsets.put(getOffsetKey(taskExecution.id, mappingUrl), sourceFileName)
+            processedOffsets.put(getOffsetKey(taskExecution.id, mappingUrl), sourceFileName)
           }
         })
     }
+  }
+
+
+}
+
+object FileStreamInputArchiver {
+  def applyArchivingOnBatchJob(execution: FhirMappingJobExecution): Unit = {
+    val fileSystemSourceSettings = execution.job.sourceSettings.head._2.asInstanceOf[FileSystemSourceSettings]
+    // get data folder path from data source settings
+    val dataFolderPath = fileSystemSourceSettings.dataFolderPath
+
+    val paths: Seq[String] = execution.job.mappings.flatMap(mapping => {
+      mapping.sourceContext.flatMap(fhirMappingSourceContextMap => {
+        fhirMappingSourceContextMap._2 match {
+          case fileSystemSource: FileSystemSource => Some(fileSystemSource.path)
+          case _ => None
+        }
+      })
+    })
+    paths.foreach(relativePath => {
+      val file = Paths.get(dataFolderPath, relativePath).toFile
+      moveSourceFileToArchive(file)
+    })
   }
 
   /**
@@ -103,26 +106,10 @@ class StreamingArchiverTask(offsets: scala.collection.concurrent.Map[String, Int
     }
   }
 
-  /**
-   * Move file from given path to given archive path
-   *
-   * @param file
-   */
-  private def moveSourceFileToArchive(file: File): Unit = {
-    // Find the relative path between the workspace folder and the file to be archived
-    val relPath = FileUtils.getPath("").toAbsolutePath.relativize(file.toPath)
-    // The relative path is appended to the base archive folder so that the path of the original input file is preserved
-    val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
-    val archiveFile: File = new File(finalArchivePath.toString)
-
-    // create parent directories if not exists
-    archiveFile.getParentFile.mkdirs()
-    // move file to archive folder
-    Files.move(file.toPath, archiveFile.toPath)
-  }
 
   /**
    * Parses the source file corresponding to the commit number. Returns the
+   *
    * @param sourceFile The source file contains the names of the input files
    * @return
    */
@@ -164,4 +151,45 @@ class StreamingArchiverTask(offsets: scala.collection.concurrent.Map[String, Int
   def getOffsetKey(executionId: String, mappingUrl: String): String = {
     (executionId + mappingUrl).hashCode.toString
   }
+
+  /**
+   * Move file from given path to given archive path
+   *
+   * @param file
+   */
+  def moveSourceFileToArchive(file: File): Unit = {
+    // Find the relative path between the workspace folder and the file to be archived
+    val relPath = FileUtils.getPath("").toAbsolutePath.relativize(file.toPath)
+    // The relative path is appended to the base archive folder so that the path of the original input file is preserved
+    val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
+    val archiveFile: File = new File(finalArchivePath.toString)
+
+    // create parent directories if not exists
+    archiveFile.getParentFile.mkdirs()
+    // move file to archive folder
+    Files.move(file.toPath, archiveFile.toPath)
+  }
+}
+
+/**
+ * Task to apply archiving
+ *
+ * @param offsets            Last processed offsets for executions
+ * @param runningJobRegistry Running job registry
+ */
+class StreamingArchiverTask(archiver: FileStreamInputArchiver, runningJobRegistry: RunningJobRegistry) extends TimerTask {
+  override def run(): Unit = {
+    // Get executions with streaming queries and apply
+    val executions = runningJobRegistry.getRunningExecutionsWithCompleteMetadata()
+      .filter(execution => execution.isStreaming())
+    executions.foreach(execution => {
+      if (execution.isStreaming()) {
+        execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
+          archiver.applyArchivingOnStreamingJob(execution, mappingUrl)
+        })
+      }
+    })
+  }
+
+
 }

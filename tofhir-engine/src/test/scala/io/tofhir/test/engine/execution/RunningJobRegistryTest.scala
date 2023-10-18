@@ -2,7 +2,7 @@ package io.tofhir.test.engine.execution
 
 import akka.actor.ActorSystem
 import io.tofhir.engine.execution.RunningJobRegistry
-import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingTask}
+import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirMappingTask, FileSystemSourceSettings}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.StreamingQuery
@@ -45,17 +45,17 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
   "it" should "stop all StreamingQueries associated with a job" in {
     val input1 = getTestInput("j2", "e", Seq("m1"))
     val input2 = getTestInput("j2", "e", Seq("m2"))
-    val executionFuture = input1._3
-    val executionFuture2 = input2._3
-    val taskFuture1 = runningTaskRegistry.registerStreamingQuery(input1._1, input1._2.head, executionFuture)
-    val taskFuture2 = runningTaskRegistry.registerStreamingQuery(input2._1, input2._2.head, executionFuture2)
+    val streamingQueryFuture = input1._3
+    val streamingQueryFuture2 = input2._3
+    val taskFuture1 = runningTaskRegistry.registerStreamingQuery(input1._1, input1._2.head, streamingQueryFuture)
+    val taskFuture2 = runningTaskRegistry.registerStreamingQuery(input2._1, input2._2.head, streamingQueryFuture2)
 
     Await.result(taskFuture1, 10 seconds)
     Await.result(taskFuture2, 10 seconds)
 
     runningTaskRegistry.stopJobExecution("j2", "e")
-    verify(executionFuture.value.get.get).stop()
-    verify(executionFuture2.value.get.get).stop()
+    verify(streamingQueryFuture.value.get.get).stop()
+    verify(streamingQueryFuture2.value.get.get).stop()
     runningTaskRegistry.getRunningExecutions().contains("j2") shouldBe false
   }
 
@@ -70,8 +70,26 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     runningTaskRegistry.getRunningExecutions().contains("j3") shouldBe false
   }
 
+  "it" should "stop single StreamingQueries associated with a job" in {
+    val input1 = getTestInput("j4", "e", Seq("m1"))
+    val input2 = getTestInput("j4", "e", Seq("m2"))
+    val streamingQueryFuture = input1._3
+    val streamingQueryFuture2 = input2._3
+    val taskFuture1 = runningTaskRegistry.registerStreamingQuery(input1._1, input1._2.head, streamingQueryFuture)
+    val taskFuture2 = runningTaskRegistry.registerStreamingQuery(input2._1, input2._2.head, streamingQueryFuture2)
+
+    Await.result(taskFuture1, 10 seconds)
+    Await.result(taskFuture2, 10 seconds)
+
+    runningTaskRegistry.stopMappingExecution("j4", "e", "m1")
+    verify(streamingQueryFuture.value.get.get).stop()
+    val runningMappingUrls: Seq[String] = runningTaskRegistry.getRunningExecutions()("j4").find(_._1.equals("e")).get._2
+    runningMappingUrls.length === 1
+    runningMappingUrls.head === "m2"
+  }
+
   "it" should "register batch jobs" in {
-    val input = getTestInput("j4", "e", Seq("m1", "m2"))
+    val input = getTestInput("j4", "e", Seq("m1", "m2"), false)
     runningTaskRegistry.registerBatchJob(input._1, Future.apply(
       Thread.sleep(1000)
     ), "")
@@ -88,11 +106,11 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     runningTaskRegistry.getRunningExecutions().contains("j4") shouldBe false
   }
 
-  private def getTestInput(jobId: String, executionId: String, mappingUrls: Seq[String]): (FhirMappingJobExecution, Seq[String], Future[StreamingQuery]) = {
+  private def getTestInput(jobId: String, executionId: String, mappingUrls: Seq[String], isStream: Boolean = true): (FhirMappingJobExecution, Seq[String], Future[StreamingQuery]) = {
     (
       FhirMappingJobExecution(
         id = executionId,
-        job = FhirMappingJob(id = jobId, sourceSettings = Map.empty, sinkSettings = null, mappings = Seq.empty),
+        job = FhirMappingJob(id = jobId, sourceSettings = Map("s" -> FileSystemSourceSettings("n", "s", "d", isStream)), sinkSettings = null, mappings = Seq.empty),
         mappingTasks = mappingUrls.map(url => FhirMappingTask(url, Map.empty))
       ),
       mappingUrls,
