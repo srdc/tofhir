@@ -1,6 +1,7 @@
 package io.tofhir.engine.execution
 
 import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.execution.FileStreamInputArchiver.getOffsetKey
 import io.tofhir.engine.model.ArchiveModes.ArchiveModes
 import io.tofhir.engine.model.{ArchiveModes, FhirMappingJobExecution}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -28,7 +29,7 @@ import scala.jdk.CollectionConverters._
  * @param runningJobRegistry Running job registry. It is used to fetch the list of active executions.
  */
 class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
-  // Keeps the last processed offsets for each FhirMappingExecution. The offsets correspond to the names of commit files.
+  // Keeps the last processed offsets for each streaming mapping task. The offsets correspond to the names of commit files.
   // Spark creates commit files with names as increasing numbers e.g. 0,1,2,...
   val processedOffsets: scala.collection.concurrent.Map[String, Int] = new ConcurrentHashMap[String, Int]().asScala
 
@@ -48,9 +49,13 @@ class ProcessorTask(offsets: scala.collection.concurrent.Map[String, Int], runni
   override def run(): Unit = {
     // Get executions with streaming queries and apply
     val executions = runningJobRegistry.getRunningExecutionsWithCompleteMetadata()
-      .filter(execution => execution.jobGroupIdOrStreamingQuery.get.isRight)
+      .filter(execution => execution.isStreaming())
     executions.foreach(execution => {
-      applyArchiving(execution)
+      if (execution.isStreaming()) {
+        execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
+          applyArchiving(execution, mappingUrl)
+        })
+      }
     })
   }
 
@@ -59,15 +64,15 @@ class ProcessorTask(offsets: scala.collection.concurrent.Map[String, Int], runni
    *
    * @param taskExecution
    */
-  private def applyArchiving(taskExecution: FhirMappingJobExecution): Unit = {
+  private def applyArchiving(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
     // Get the commit file directory for this execution
-    val checkPointDirectory: String = taskExecution.getCheckpointDirectory(taskExecution.mappingTasks.head.mappingRef)
+    val checkPointDirectory: String = taskExecution.getCheckpointDirectory(mappingUrl)
     val commitFileDirectory: File = Paths.get(checkPointDirectory, "commits").toFile
 
     // There won't be any file during the initialization or after checkpoints are cleared
     if (commitFileDirectory.listFiles().nonEmpty) {
       // Apply archiving for the files as of the last processed offset until the last unprocessed offset
-      val lastProcessedOffset: Int = offsets.getOrElseUpdate(taskExecution.id, -1)
+      val lastProcessedOffset: Int = offsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
       val lastOffsetSet: Int = getLastCommitOffset(commitFileDirectory)
       val archiveMode: ArchiveModes = taskExecution.job.dataProcessingSettings.archiveMode
 
@@ -79,7 +84,7 @@ class ProcessorTask(offsets: scala.collection.concurrent.Map[String, Int], runni
             inputFiles.foreach(inputFile => {
               processArchiveMode(inputFile, archiveMode)
             })
-            offsets.put(taskExecution.id, sourceFileName)
+            offsets.put(getOffsetKey(taskExecution.id, mappingUrl), sourceFileName)
           }
         })
     }
@@ -155,5 +160,9 @@ class ProcessorTask(offsets: scala.collection.concurrent.Map[String, Int], runni
       .filter(file => file.isFile && !file.getName.contains("."))
       .map(file => file.getName.toInt)
       .max
+  }
+
+  def getOffsetKey(executionId: String, mappingUrl: String): String = {
+    (executionId + mappingUrl).hashCode.toString
   }
 }

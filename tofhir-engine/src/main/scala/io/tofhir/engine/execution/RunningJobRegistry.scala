@@ -87,6 +87,8 @@ class RunningJobRegistry(spark: SparkSession) {
     }
     // Remove the execution entry when the future is completed
     jobFuture.onComplete(_ => {
+      // Run archiving manually for the batch job manually
+      // TODO
       removeExecutionFromRunningTasks(jobId, executionId)
     })
   }
