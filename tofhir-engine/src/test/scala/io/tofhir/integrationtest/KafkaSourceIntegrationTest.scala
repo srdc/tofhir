@@ -200,13 +200,13 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   it should "consume patients, observations and family member history data and map and write to the fhir repository" in {
     assume(fhirServerIsAvailable)
     val execution: FhirMappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(patientMappingTask, otherObservationMappingTask, familyMemberHistoryMappingTask))
-    val executionFutures: Map[String, Future[FhirMappingJobExecution]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution =
+    val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution =
       execution,
       sourceSettings = streamingSourceSettings,
       sinkSettings = fhirSinkSettings
     )
-    executionFutures.foreach(sq => {
-      val streamingQuery: StreamingQuery = Await.result(sq._2, FiniteDuration.apply(5, TimeUnit.SECONDS)).getStreamingQuery() // First wait for the StreamingQuery to become available
+    streamingQueryFutures.foreach(sq => {
+      val streamingQuery: StreamingQuery = Await.result(sq._2, FiniteDuration.apply(5, TimeUnit.SECONDS)) // First wait for the StreamingQuery to become available
       streamingQuery.awaitTermination(20000L) // Wait for 20 seconds to consume and write to the fhir repo and terminate
       streamingQuery.stop()
       io.FileUtils.deleteDirectory(new File(execution.getCheckpointDirectory(sq._1))) // Clear checkpoint directory to prevent conflicts with other tests
@@ -255,11 +255,11 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     // modify familyMemberHistoryMappingTask to listen to familyMembersCorrupted topic
     val mappingTask = familyMemberHistoryMappingTask.copy(sourceContext = Map("source" -> KafkaSource(topicName = "familyMembersCorrupted", groupId = "tofhir", startingOffsets = "earliest")))
     val execution: FhirMappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(mappingTask))
-    val executionFutures: Map[String, Future[FhirMappingJobExecution]] = fhirMappingJobManager.startMappingJobStream(
+    val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(
       mappingJobExecution = execution,
       sourceSettings = streamingSourceSettings,
       sinkSettings = fhirSinkSettings)
-    val streamingQuery = Await.result(executionFutures.head._2, FiniteDuration(5, TimeUnit.SECONDS)).getStreamingQuery()
+    val streamingQuery = Await.result(streamingQueryFutures.head._2, FiniteDuration(5, TimeUnit.SECONDS))
 
     streamingQuery.awaitTermination(20000L)
     streamingQuery.stop()

@@ -22,20 +22,39 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
                                    job: FhirMappingJob,
                                    mappingTasks: Seq[FhirMappingTask] = Seq.empty,
                                    mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.CONTINUE,
-                                   jobGroupIdOrStreamingQuery: Option[Either[String, StreamingQuery]] = None
+                                   jobGroupIdOrStreamingQuery: Option[Either[String, collection.mutable.Map[String, StreamingQuery]]] = None
                                   ) {
+
+  /**
+   * Returns whether the execution is streaming or not
+   * @return
+   */
+  def isStreaming(): Boolean = {
+    job.sourceSettings.exists(source => source._2.asStream)
+  }
+
+  /**
+   * Returns the map of streaming queries i.e. map of (mapping url -> streaming query)
+   * @return
+   */
+  def getStreamingQueryMap(): collection.mutable.Map[String, StreamingQuery] = {
+    jobGroupIdOrStreamingQuery match {
+      case Some(value) => value match {
+        case Right(queryMap) => queryMap
+        case Left(_) => throw new IllegalStateException("Trying to access StreamingQuery map, but job group id exists instead")
+      }
+      case None => throw new IllegalStateException("Trying to access StreamingQuery map, but it does not exist")
+    }
+  }
 
   /**
    * Returns the [[StreamingQuery]] from this execution, if any. It throws a [[IllegalStateException]], if the query is not available.
    * @return
    */
-  def getStreamingQuery(): StreamingQuery = {
-    jobGroupIdOrStreamingQuery match {
-      case Some(value) => value match {
-        case Right(query) => query
-        case Left(_) => throw new IllegalStateException("Trying to access StreamingQuery, but job group id exists instead")
-      }
-      case None => throw new IllegalStateException("Trying to access StreamingQuery, but it does not exist")
+  def getStreamingQuery(mappingUrl: String): StreamingQuery = {
+    getStreamingQueryMap().get(mappingUrl) match {
+      case Some(query) => query
+      case None => throw new IllegalStateException(s"Trying to access StreamingQuery, but none exists for the given mapping url: $mappingUrl")
     }
   }
 
@@ -52,6 +71,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
       case None => throw new IllegalStateException("Trying to access job group id, but it does not exist")
     }
   }
+
   /**
    * Creates a checkpoint directory for a mapping included in a job
    *

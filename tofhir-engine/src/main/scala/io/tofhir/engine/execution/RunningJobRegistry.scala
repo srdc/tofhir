@@ -8,7 +8,6 @@ import org.apache.spark.sql.streaming.StreamingQuery
 
 import java.util.UUID
 import java.util.concurrent.Executors
-import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -16,9 +15,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
  * Execution manager that keeps track of running mapping tasks in-memory
  */
 class RunningJobRegistry(spark: SparkSession) {
-  // Keeps active executions in the form of: jobId -> (executionId -> (mappingUrl -> execution))
-  private val runningTasks: collection.mutable.Map[String, collection.mutable.Map[String, collection.mutable.Map[String, FhirMappingJobExecution]]] =
-    collection.mutable.Map[String, collection.mutable.Map[String, collection.mutable.Map[String, FhirMappingJobExecution]]]()
+  // Keeps active executions in the form of: jobId -> (executionId -> execution)
+  private val runningTasks: collection.mutable.Map[String, collection.mutable.Map[String, FhirMappingJobExecution]] =
+    collection.mutable.Map[String, collection.mutable.Map[String, FhirMappingJobExecution]]()
 
   // Dedicated execution context for blocking streaming jobs
   private val streamingTaskExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
@@ -28,27 +27,36 @@ class RunningJobRegistry(spark: SparkSession) {
   /**
    * Caches a [[FhirMappingJobExecution]] for an individual mapping task
    *
-   * @param executionFuture Future for the [[FhirMappingJobExecution]], including the [[StreamingQuery]]
-   * @param blocking        Whether the call will wait or not for the StreamingQuery, passed inside the execution
+   * @param execution            Execution containing the mapping tasks
+   * @param mappingUrl           Specific url which the [[StreamingQuery]] is associated to
+   * @param streamingQueryFuture Future for the [[StreamingQuery]]
+   * @param blocking             Whether the call will wait or not for the StreamingQuery, passed inside the execution
    * @return
    */
-  def registerStreamingQuery(executionFuture: Future[FhirMappingJobExecution], blocking: Boolean = false): Future[Unit] = {
+  def registerStreamingQuery(execution: FhirMappingJobExecution, mappingUrl: String, streamingQueryFuture: Future[StreamingQuery], blocking: Boolean = false): Future[Unit] = {
     Future {
       // Wait for the initial Future to be resolved
-      val execution: FhirMappingJobExecution = Await.result(executionFuture, Duration.Inf)
+      val streamingQuery: StreamingQuery = Await.result(streamingQueryFuture, Duration.Inf)
       val jobId: String = execution.job.id
       val executionId: String = execution.id
-      val mappingUrl: String = execution.mappingTasks.head.mappingRef
 
       // Multiple threads can update the global task map. So, updates are synchronized.
       runningTasks.synchronized {
         // Update the execution map
-        getOrinitializeExecutionMappings(jobId, executionId).put(mappingUrl, execution)
+        val executionMap: collection.mutable.Map[String, FhirMappingJobExecution] = runningTasks.getOrElseUpdate(jobId, collection.mutable.Map[String, FhirMappingJobExecution]())
+        executionMap.get(mappingUrl) match {
+          case None => executionMap.put(mappingUrl, execution.copy(jobGroupIdOrStreamingQuery = Some(Right(collection.mutable.Map(mappingUrl -> streamingQuery)))))
+          case Some(execution) =>
+            executionMap.put(
+              mappingUrl,
+              execution.copy(jobGroupIdOrStreamingQuery = Some(Right(execution.getStreamingQueryMap() + (mappingUrl -> streamingQuery))))
+            )
+        }
       }
 
       // If blocking was set true, we are going to wait for StreamingQuery to terminate
       if (blocking) {
-        execution.getStreamingQuery().awaitTermination()
+        execution.getStreamingQuery(mappingUrl).awaitTermination()
         // Remove the mapping execution from the running tasks after the query is terminated
         removeMappingExecutionFromRunningTasks(jobId, executionId, mappingUrl)
         () // Return unit
@@ -73,28 +81,14 @@ class RunningJobRegistry(spark: SparkSession) {
     val executionId: String = executionWithJobGroupId.id
 
     runningTasks.synchronized {
-      // Each mapping task is added to the running task map. This allows us to query running status of individual mappings
-      executionWithJobGroupId.mappingTasks.foreach(task => {
-        getOrinitializeExecutionMappings(jobId, executionId).put(task.mappingRef, executionWithJobGroupId)
-      })
+      runningTasks
+        .getOrElseUpdate(jobId, collection.mutable.Map[String, FhirMappingJobExecution]())
+        .put(executionId, executionWithJobGroupId)
     }
     // Remove the execution entry when the future is completed
     jobFuture.onComplete(_ => {
       removeExecutionFromRunningTasks(jobId, executionId)
     })
-  }
-
-  /**
-   * Utility method to initialize the nested execution map for the given job and execution.
-   *
-   * @param jobId
-   * @param executionId
-   * @return The execution mappings i.e. (mapping url -> (spark job group id | streaming query))
-   */
-  private def getOrinitializeExecutionMappings(jobId: String, executionId: String): collection.mutable.Map[String, FhirMappingJobExecution] = {
-    runningTasks
-      .getOrElseUpdate(jobId, collection.mutable.Map[String, collection.mutable.Map[String, FhirMappingJobExecution]]())
-      .getOrElseUpdate(executionId, collection.mutable.Map[String, FhirMappingJobExecution]())
   }
 
   /**
@@ -106,18 +100,18 @@ class RunningJobRegistry(spark: SparkSession) {
   def stopJobExecution(jobId: String, executionId: String): Unit = {
     removeExecutionFromRunningTasks(jobId, executionId) match {
       case None => // Nothing to do
-      case Some(executionMappings) =>
-        executionMappings.head._2.jobGroupIdOrStreamingQuery.get match {
+      case Some(execution) =>
+        execution.jobGroupIdOrStreamingQuery.get match {
           // For batch jobs, we cancel the job group.
           case Left(sparkJobGroup) =>
             spark.sparkContext.cancelJobGroup(sparkJobGroup)
             logger.debug(s"Canceled Spark job group with id: $sparkJobGroup")
 
           // For streaming jobs, we terminate the streaming queries one by one
-          case Right(_) =>
-            executionMappings.foreach(value => {
-              value._2.getStreamingQuery().stop()
-              logger.debug(s"Stopped streaming query for mapping: ${value._1}")
+          case Right(queryMap) =>
+            queryMap.foreach(queryEntry => {
+              queryEntry._2.stop()
+              logger.debug(s"Stopped streaming query for mapping: ${queryEntry._1}")
             })
         }
     }
@@ -146,18 +140,18 @@ class RunningJobRegistry(spark: SparkSession) {
    *
    * @param jobId       Identifier of the job
    * @param executionId Identifier of the execution
-   * @return Returns the removed mapping entry if at all (executionId -> (mapping url -> (spark job group id | streaming query))), or None
+   * @return Returns the removed mapping entry if at all (executionId -> execution), or None
    */
-  private def removeExecutionFromRunningTasks(jobId: String, executionId: String): Option[mutable.Map[String, FhirMappingJobExecution]] = {
+  private def removeExecutionFromRunningTasks(jobId: String, executionId: String): Option[FhirMappingJobExecution] = {
     runningTasks.synchronized {
       runningTasks.get(jobId) match {
         case Some(jobMapping) if jobMapping.contains(executionId) =>
-          val removedExecutionMappingsEntry = jobMapping.remove(executionId)
+          val removedExecutionEntry = jobMapping.remove(executionId)
           // Remove the job mappings completely if it is empty
           if (runningTasks(jobId).isEmpty) {
             runningTasks.remove(jobId)
           }
-          removedExecutionMappingsEntry
+          removedExecutionEntry
         case _ => None
       }
     }
@@ -175,25 +169,29 @@ class RunningJobRegistry(spark: SparkSession) {
   private def removeMappingExecutionFromRunningTasks(jobId: String, executionId: String, mappingUrl: String): Option[Either[String, StreamingQuery]] = {
     runningTasks.synchronized {
       runningTasks.get(jobId) match {
-        case Some(jobMapping) if jobMapping.contains(executionId) && jobMapping(executionId).contains(mappingUrl) =>
-          var removedMappingEntry: Option[FhirMappingJobExecution] = None
+        case Some(jobMapping) if jobMapping.contains(executionId) =>
+          val execution: FhirMappingJobExecution = jobMapping(executionId)
+          var removedMappingEntry: Option[Either[String, StreamingQuery]] = None
           // If it is a batch job do nothing but warn user about the situation
-          if (jobMapping(executionId)(mappingUrl).jobGroupIdOrStreamingQuery.get.isLeft) {
+          if (execution.isStreaming()) {
             logger.warn(s"Execution with $jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl won't be stopped with a specific mapping as this is a batch job." +
               s"Stop execution by providing only the jobId and executionId")
 
+            // Streaming query
           } else {
-            removedMappingEntry = jobMapping(executionId).remove(mappingUrl)
-            // Remove the execution mappings completely if it is empty
-            if (jobMapping(executionId).isEmpty) {
-              jobMapping.remove(executionId)
-              // Remove the job mappings completely if it is empty
-              if (runningTasks(jobId).isEmpty) {
-                runningTasks.remove(jobId)
+            if (execution.getStreamingQueryMap().contains(mappingUrl)) {
+              removedMappingEntry = Some(Right(execution.getStreamingQueryMap().remove(mappingUrl).get))
+              // Remove the execution mappings completely if it is empty
+              if(execution.getStreamingQueryMap().isEmpty) {
+                jobMapping.remove(executionId)
+                // Remove the job mappings completely if it is empty
+                if (runningTasks(jobId).isEmpty) {
+                  runningTasks.remove(jobId)
+                }
               }
             }
           }
-          removedMappingEntry.map(_.jobGroupIdOrStreamingQuery.get)
+          removedMappingEntry
         case _ => None
       }
     }
@@ -211,7 +209,7 @@ class RunningJobRegistry(spark: SparkSession) {
     if (runningTasks.contains(jobId) && runningTasks(jobId).contains(executionId)) {
       mappingUrl match {
         case None => true // We know we have an execution at this point
-        case Some(url) => runningTasks(jobId)(executionId).contains(url)
+        case Some(url) => runningTasks(jobId)(executionId).getStreamingQueryMap().contains(url)
       }
     } else {
       false
@@ -236,8 +234,8 @@ class RunningJobRegistry(spark: SparkSession) {
   def getRunningExecutions(): Map[String, Seq[(String, Seq[String])]] = {
       runningTasks.map(entry =>
         entry._1 -> // jobId
-          entry._2 // a map in the form of (executionId -> (mapping url -> (streaming query | spark job group id )))
-            .map(executionMappings => (executionMappings._1, executionMappings._2.keys.toSeq)) // (executionId -> sequence of mapping urls)
+          entry._2 // a map in the form of (executionId -> FhirMappingJobExecution)
+            .map(executionMappings => (executionMappings._1, executionMappings._2.mappingTasks.map(_.mappingRef))) // (executionId -> sequence of mapping urls)
             .toSeq
       ).toMap
   }
@@ -248,7 +246,9 @@ class RunningJobRegistry(spark: SparkSession) {
    * @return
    */
   def getRunningExecutionsWithCompleteMetadata(): Seq[FhirMappingJobExecution] = {
-    runningTasks.flatMap(_._2.flatMap(_._2.values)).toSeq
+    runningTasks
+      .flatMap(_._2.values) // concatenate executions of all jobs
+      .toSeq
   }
 
   /**

@@ -81,7 +81,7 @@ class Run extends Command {
           terminologyServiceSettings = mappingJob.terminologyServiceSettings,
           identityServiceSettings = mappingJob.getIdentityServiceSettings()
         )
-          .foreach(sq => context.toFhirEngine.runningJobRegistry.registerStreamingQuery(sq._2))
+          .foreach(sq => context.toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution, sq._1, sq._2))
       }
     }
     context

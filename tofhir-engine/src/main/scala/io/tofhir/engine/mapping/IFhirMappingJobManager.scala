@@ -38,14 +38,14 @@ trait IFhirMappingJobManager {
    * @param sinkSettings               FHIR sink settings (can be a FHIR repository, file system, kafka)
    * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
    * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
-   * @return A map of (mapping url -> mapping execution futures).
+   * @return A map of (mapping url -> streaming query futures).
    */
   def startMappingJobStream(mappingJobExecution:FhirMappingJobExecution,
                             sourceSettings: Map[String, DataSourceSettings],
                             sinkSettings: FhirSinkSettings,
                             terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                             identityServiceSettings: Option[IdentityServiceSettings] = None,
-                           ): Map[String, Future[FhirMappingJobExecution]]
+                           ): Map[String, Future[StreamingQuery]]
 
   /**
    * Schedule to execute the given mapping job with given cron expression and write the resulting FHIR resources to the given sink

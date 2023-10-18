@@ -23,18 +23,19 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
   val runningTaskRegistry: RunningJobRegistry = new RunningJobRegistry(mockSparkSession)
 
   "InMemoryExecutionManager" should "cache a StreamingQuery" in {
-    val jobSubmissionFuture = runningTaskRegistry.registerStreamingQuery(getMockExecution("j", "e", Seq("m")))
+    val input = getTestInput("j", "e", Seq("m"))
+    val jobSubmissionFuture = runningTaskRegistry.registerStreamingQuery(input._1, input._2.head, input._3)
 
     Await.result(jobSubmissionFuture, 10 seconds)
     runningTaskRegistry.getRunningExecutions().size shouldBe 1
   }
 
   "it" should "cache a StreamingQuery in blocking mode" in {
-    val executionFuture = getMockExecution("j", "e", Seq("m2"))
-    val jobSubmissionFuture = runningTaskRegistry.registerStreamingQuery(executionFuture, true)
+    val input = getTestInput("j", "e", Seq("m2"))
+    val jobSubmissionFuture = runningTaskRegistry.registerStreamingQuery(input._1, input._2.head, input._3, true)
 
     Await.result(jobSubmissionFuture, 2 seconds)
-    val streamingQuery = Await.result(executionFuture, 2 seconds).getStreamingQuery()
+    val streamingQuery = Await.result(input._3, 2 seconds)
     verify(streamingQuery).awaitTermination()
 
     // Registered task should have been deleted after termination
@@ -42,33 +43,36 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
   }
 
   "it" should "stop all StreamingQueries associated with a job" in {
-    val executionFuture = getMockExecution("j2", "e", Seq("m1"))
-    val executionFuture2 = getMockExecution("j2", "e", Seq("m2"))
-    val taskFuture1 = runningTaskRegistry.registerStreamingQuery(executionFuture)
-    val taskFuture2 = runningTaskRegistry.registerStreamingQuery(executionFuture2)
+    val input1 = getTestInput("j2", "e", Seq("m1"))
+    val input2 = getTestInput("j2", "e", Seq("m2"))
+    val executionFuture = input1._3
+    val executionFuture2 = input2._3
+    val taskFuture1 = runningTaskRegistry.registerStreamingQuery(input1._1, input1._2.head, executionFuture)
+    val taskFuture2 = runningTaskRegistry.registerStreamingQuery(input2._1, input2._2.head, executionFuture2)
 
     Await.result(taskFuture1, 10 seconds)
     Await.result(taskFuture2, 10 seconds)
 
     runningTaskRegistry.stopJobExecution("j2", "e")
-    verify(executionFuture.value.get.get).getStreamingQuery().stop()
-    verify(executionFuture2.value.get.get).getStreamingQuery().stop()
+    verify(executionFuture.value.get.get).stop()
+    verify(executionFuture2.value.get.get).stop()
     runningTaskRegistry.getRunningExecutions().contains("j2") shouldBe false
   }
 
   "it" should "stop StreamingQuery associated with a mapping" in {
-    val executionFuture = getMockExecution("j3", "e", Seq("m"))
-    val taskFuture = runningTaskRegistry.registerStreamingQuery(executionFuture)
+    val input = getTestInput("j3", "e", Seq("m"))
+    val taskFuture = runningTaskRegistry.registerStreamingQuery(input._1, input._2.head, input._3)
 
     Await.result(taskFuture, 10 seconds)
 
     runningTaskRegistry.stopMappingExecution("j3", "e", "m")
-    verify(executionFuture.value.get.get).getStreamingQuery().stop()
+    verify(input._3.value.get.get).stop()
     runningTaskRegistry.getRunningExecutions().contains("j3") shouldBe false
   }
 
   "it" should "register batch jobs" in {
-    runningTaskRegistry.registerBatchJob(Await.result(getMockExecution("j4", "e", Seq("m1", "m2")), 1 seconds), Future.apply(
+    val input = getTestInput("j4", "e", Seq("m1", "m2"))
+    runningTaskRegistry.registerBatchJob(input._1, Future.apply(
       Thread.sleep(1000)
     ), "")
     runningTaskRegistry.getRunningExecutions()("j4").head._2 shouldEqual Seq("m1", "m2")
@@ -84,13 +88,18 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     runningTaskRegistry.getRunningExecutions().contains("j4") shouldBe false
   }
 
-  private def getMockExecution(jobId: String, executionId: String, mappingUrls: Seq[String]): Future[FhirMappingJobExecution] = {
-    Future.apply(FhirMappingJobExecution(
-      id = executionId,
-      job = FhirMappingJob(id = jobId, sourceSettings = Map.empty, sinkSettings = null, mappings = Seq.empty),
-      mappingTasks = mappingUrls.map(url => FhirMappingTask(url, Map.empty)),
-      jobGroupIdOrStreamingQuery = Some(Right(mock[StreamingQuery]))
-    ))
+  private def getTestInput(jobId: String, executionId: String, mappingUrls: Seq[String]): (FhirMappingJobExecution, Seq[String], Future[StreamingQuery]) = {
+    (
+      FhirMappingJobExecution(
+        id = executionId,
+        job = FhirMappingJob(id = jobId, sourceSettings = Map.empty, sinkSettings = null, mappings = Seq.empty),
+        mappingTasks = mappingUrls.map(url => FhirMappingTask(url, Map.empty))
+      ),
+      mappingUrls,
+      Future.apply(
+        mock[StreamingQuery]
+      )
+    )
   }
 
   private def getMockSparkSession(): SparkSession = {
