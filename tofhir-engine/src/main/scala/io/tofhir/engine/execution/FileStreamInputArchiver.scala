@@ -1,9 +1,8 @@
 package io.tofhir.engine.execution
 
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.execution.FileStreamInputArchiver.getOffsetKey
 import io.tofhir.engine.model.ArchiveModes.ArchiveModes
-import io.tofhir.engine.model.{ArchiveModes, FhirMappingJobExecution}
+import io.tofhir.engine.model.{ArchiveModes, FhirMappingJobExecution, FileSystemSource}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import org.json4s.jackson.JsonMethods
@@ -33,9 +32,9 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
   // Spark creates commit files with names as increasing numbers e.g. 0,1,2,...
   val processedOffsets: scala.collection.concurrent.Map[String, Int] = new ConcurrentHashMap[String, Int]().asScala
 
-  def startProcessorTask(): Unit = {
+  def startStreamingArchiveTask(): Unit = {
     val timer: Timer = new Timer()
-    timer.schedule(new ProcessorTask(processedOffsets, runningJobRegistry), 0, 5000)
+    timer.schedule(new StreamingArchiverTask(processedOffsets, runningJobRegistry), 0, 5000)
   }
 }
 
@@ -45,7 +44,7 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
  * @param offsets            Last processed offsets for executions
  * @param runningJobRegistry Running job registry
  */
-class ProcessorTask(offsets: scala.collection.concurrent.Map[String, Int], runningJobRegistry: RunningJobRegistry) extends TimerTask {
+class StreamingArchiverTask(offsets: scala.collection.concurrent.Map[String, Int], runningJobRegistry: RunningJobRegistry) extends TimerTask {
   override def run(): Unit = {
     // Get executions with streaming queries and apply
     val executions = runningJobRegistry.getRunningExecutionsWithCompleteMetadata()

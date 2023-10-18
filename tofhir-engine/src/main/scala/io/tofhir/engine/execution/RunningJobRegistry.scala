@@ -44,11 +44,11 @@ class RunningJobRegistry(spark: SparkSession) {
       runningTasks.synchronized {
         // Update the execution map
         val executionMap: collection.mutable.Map[String, FhirMappingJobExecution] = runningTasks.getOrElseUpdate(jobId, collection.mutable.Map[String, FhirMappingJobExecution]())
-        executionMap.get(mappingUrl) match {
-          case None => executionMap.put(mappingUrl, execution.copy(jobGroupIdOrStreamingQuery = Some(Right(collection.mutable.Map(mappingUrl -> streamingQuery)))))
+        executionMap.get(executionId) match {
+          case None => executionMap.put(executionId, execution.copy(jobGroupIdOrStreamingQuery = Some(Right(collection.mutable.Map(mappingUrl -> streamingQuery)))))
           case Some(execution) =>
             executionMap.put(
-              mappingUrl,
+              executionId,
               execution.copy(jobGroupIdOrStreamingQuery = Some(Right(execution.getStreamingQueryMap() + (mappingUrl -> streamingQuery))))
             )
         }

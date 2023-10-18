@@ -49,7 +49,7 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
 
   // Archiver for deleting or archiving the files processed
   val fileStreamInputArchiver: FileStreamInputArchiver = new FileStreamInputArchiver(runningJobRegistry)
-  fileStreamInputArchiver.startProcessorTask()
+  fileStreamInputArchiver.startStreamingArchiveTask()
 
   /**
    * Merges built-in function libraries and external libraries passed in the constructor
