@@ -69,7 +69,15 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
     }
   }
 
-
+  /**
+   * Resets the offset to -1 for the given execution and mapping url so that the archiving starts from scratch
+   *
+   * @param execution
+   * @param mappingUrl
+   */
+  def resetOffset(execution: FhirMappingJobExecution, mappingUrl: String): Unit = {
+    processedOffsets.put(getOffsetKey(execution.id, mappingUrl), -1)
+  }
 }
 
 object FileStreamInputArchiver {
@@ -151,7 +159,14 @@ object FileStreamInputArchiver {
       .max
   }
 
-  def getOffsetKey(executionId: String, mappingUrl: String): String = {
+  /**
+   * Computes hash code of the concatenation of the execution id and the mapping url
+   *
+   * @param executionId
+   * @param mappingUrl
+   * @return
+   */
+  private def getOffsetKey(executionId: String, mappingUrl: String): String = {
     (executionId + mappingUrl).hashCode.toString
   }
 
@@ -160,7 +175,7 @@ object FileStreamInputArchiver {
    *
    * @param file
    */
-  def moveSourceFileToArchive(file: File): Unit = {
+  private def moveSourceFileToArchive(file: File): Unit = {
     // Find the relative path between the workspace folder and the file to be archived
     val relPath = FileUtils.getPath("").toAbsolutePath.relativize(file.toPath)
     // The relative path is appended to the base archive folder so that the path of the original input file is preserved
@@ -175,10 +190,10 @@ object FileStreamInputArchiver {
 }
 
 /**
- * Task to apply archiving
+ * Task to run periodically. It fetches the running executions and applies archiving for each
  *
- * @param offsets            Last processed offsets for executions
- * @param runningJobRegistry Running job registry
+ * @param archiver           Archiver to apply the archiving
+ * @param runningJobRegistry Running job registry to fetch the running executions
  */
 class StreamingArchiverTask(archiver: FileStreamInputArchiver, runningJobRegistry: RunningJobRegistry) extends TimerTask {
   override def run(): Unit = {

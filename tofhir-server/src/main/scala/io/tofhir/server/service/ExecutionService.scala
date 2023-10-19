@@ -116,6 +116,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         // Delete checkpoint directory if set accordingly
         if (executeJobTask.exists(_.clearCheckpoints)) {
           mappingTasks.foreach(mapping => {
+            // Reset the archiving offset so that the archiving starts from scratch
+            toFhirEngine.fileStreamInputArchiver.resetOffset(mappingJobExecution, mapping.mappingRef)
             io.FileUtils.deleteDirectory(new File(mappingJobExecution.getCheckpointDirectory(mapping.mappingRef)))
           })
         }

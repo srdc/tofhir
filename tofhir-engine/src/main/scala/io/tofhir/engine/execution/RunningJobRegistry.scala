@@ -209,7 +209,15 @@ class RunningJobRegistry(spark: SparkSession) {
     if (runningTasks.contains(jobId) && runningTasks(jobId).contains(executionId)) {
       mappingUrl match {
         case None => true // We know we have an execution at this point
-        case Some(url) => runningTasks(jobId)(executionId).getStreamingQueryMap().contains(url)
+        case Some(url) =>
+          // For streaming jobs, we check whether there is a streaming query for the given mapping
+          if (runningTasks(jobId)(executionId).isStreaming()) {
+            runningTasks(jobId)(executionId).getStreamingQueryMap().contains(url)
+
+            // For batch jobs, we don't differentiate mapping tasks. So, returning true directly (which indicates that the job execution is in progress)
+          } else {
+            true
+          }
       }
     } else {
       false
