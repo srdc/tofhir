@@ -24,7 +24,8 @@ object ToFhirConfig {
   lazy val sparkAppName: String = Try(sparkConfig.getString("app.name")).getOrElse("AICCELERATE Data Integration Suite")
   /** Master url of the Spark cluster */
   lazy val sparkMaster: String = Try(sparkConfig.getString("master")).getOrElse("local[4]")
-
+  /** Directory to keep Spark's checkpoints created  */
+  lazy val sparkCheckpointDirectory: String = Try(sparkConfig.getString("checkpoint-dir")).getOrElse("checkpoint")
   /**
    * Default configurations for spark
    */

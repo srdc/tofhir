@@ -79,7 +79,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return Directory path in which the checkpoints will be managed
    */
   def getCheckpointDirectory(mappingUrl: String): String =
-    s"./checkpoint/${job.id}/${mappingUrl.hashCode}"
+    s"./${ToFhirConfig.sparkCheckpointDirectory}/${job.id}/${mappingUrl.hashCode}"
 
   /**
    * Creates a error output directory for a mapping execution included in a job and an execution

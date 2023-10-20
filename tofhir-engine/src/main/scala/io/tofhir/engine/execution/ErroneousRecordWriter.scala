@@ -10,7 +10,7 @@ import java.io.File
 import java.util
 
 /**
- * Handler for post mapping processing. Spark is used to process the data sources.
+ * This class persists [[FhirMappingResult]]s that produced some error during the mapping process.
  */
 object ErroneousRecordWriter {
 

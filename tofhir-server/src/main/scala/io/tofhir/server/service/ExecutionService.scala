@@ -374,35 +374,4 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
 }
 
-object ExecutionService {
-
-  /**
-   * Determines the error status of the execution based on the results of the mapping tasks.
-   * @param results
-   * @return
-   */
-  private def getErrorStatusOfExecution(results: Seq[String]): String = {
-    if (results.exists(_ == "PARTIAL_SUCCESS")) {
-      "PARTIAL_SUCCESS"
-    } else {
-      // success > 0 and failure = 0 means success
-      // success > 0 and failure > 0 means partial success
-      // success = 0 and failure > 0 means failure
-      // success = 0 and failure = 0 means started
-      val successCount = results.count(_ == "SUCCESS")
-      val failureCount = results.count(_ == "FAILURE")
-      if (successCount > 0 && failureCount == 0) {
-        "SUCCESS"
-      } else if (successCount > 0 && failureCount > 0) {
-        "PARTIAL_SUCCESS"
-      } else if (failureCount > 0) {
-        "FAILURE"
-      } else {
-        "STARTED"
-      }
-    }
-  }
-}
-
-
 

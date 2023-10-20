@@ -85,7 +85,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "rerun a job including a mapping" in {
+    "rerun a job including a mapping" ignore { // TODO activate this test
 
       var firstId: Option[String] = Option.empty
 

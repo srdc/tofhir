@@ -36,7 +36,7 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
 
   def startStreamingArchiveTask(): Unit = {
     val timer: Timer = new Timer()
-    timer.schedule(new StreamingArchiverTask(this, runningJobRegistry), 0, 5000)
+    timer.schedule(new StreamingArchiverTask(this, runningJobRegistry), 0, ToFhirConfig.engineConfig.streamArchivingFrequency)
   }
 
   /**
