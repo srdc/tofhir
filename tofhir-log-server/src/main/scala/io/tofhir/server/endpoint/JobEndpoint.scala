@@ -37,7 +37,6 @@ class JobEndpoint() extends LazyLogging {
     }
   }
 
-
   /**
    * Route to get executions of a mapping job
    * */
@@ -59,6 +58,7 @@ class JobEndpoint() extends LazyLogging {
 
   /**
    * Route to get execution logs of a mapping job execution
+   *
    * @param projectId
    * @param jobId
    * @param executionId

@@ -92,7 +92,7 @@
                                 </filter>
                             </filters>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <finalName>tofhir-standalone</finalName>
+                            <finalName>tofhir-engine-standalone</finalName>
                             <transformers>
                                 <!-- add Main-Class to manifest file -->
                                 <transformer

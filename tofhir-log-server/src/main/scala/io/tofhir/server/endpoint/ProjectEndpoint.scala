@@ -15,12 +15,11 @@ class ProjectEndpoint() extends LazyLogging {
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_PROJECTS) {
-      pathPrefix(Segment) { projectId: String =>
-          {
-            request.projectId = Some(projectId)
-            jobEndpoint.route(request)
-          }
-        }
+      pathPrefix(Segment) { projectId: String => {
+        request.projectId = Some(projectId)
+        jobEndpoint.route(request)
+      }
+      }
     }
   }
 }

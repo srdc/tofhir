@@ -27,6 +27,7 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
 
   //Spark configurations
   private val sparkConf: SparkConf = ToFhirConfig.createSparkConf
+
   val engineConfig: ToFhirEngineConfig = ToFhirConfig.engineConfig
 
   val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()

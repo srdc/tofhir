@@ -1,14 +1,11 @@
 FROM openjdk:11-jre-slim
 
-# Create folders
-RUN mkdir -p /tofhir
-WORKDIR /tofhir
+ENV TOFHIR_HOME /usr/local/tofhir
+RUN mkdir -p "$TOFHIR_HOME"
+WORKDIR $TOFHIR_HOME
 
-# Add Files
 COPY ./tofhir-server/target/tofhir-server-standalone.jar .
 COPY ./docker/server/docker-entrypoint.sh .
-COPY ./tofhir-server/src/main/resources/logback.xml .
+RUN chmod +x docker-entrypoint.sh
 
-RUN chmod +x /tofhir/docker-entrypoint.sh
-
-ENTRYPOINT ["/tofhir/docker-entrypoint.sh"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{HttpMethod, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{RejectionHandler, Route}
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.server.config.WebServerConfig
+import io.tofhir.server.config.{LogServiceConfig, WebServerConfig}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.server.model.ToFhirRestCall
@@ -21,7 +21,7 @@ import java.util.UUID
  * Encapsulates all services and directives
  * Main Endpoint for toFHIR server
  */
-class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig) extends ICORSHandler with IErrorHandler {
+class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig, logServiceConfig: LogServiceConfig) extends ICORSHandler with IErrorHandler {
 
   val projectRepository: ProjectFolderRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
   val mappingRepository: ProjectMappingFolderRepository = new ProjectMappingFolderRepository(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
@@ -32,7 +32,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   // Initialize the projects by reading the resources available in the file system
   new FolderDBInitializer(toFhirEngineConfig, schemaRepository, mappingRepository, mappingJobRepository, projectRepository, mappingContextRepository).init()
 
-  val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository)
+  val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository, logServiceConfig.logServiceEndpoint)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint()
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, mappingJobRepository, toFhirEngineConfig)

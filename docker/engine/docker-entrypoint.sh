@@ -37,7 +37,7 @@ if [ ! -z "$FHIR_BATCH_SIZE" ]; then
   JAVA_CMD+="-Dtofhir.fhir-writer.batch-group-size=$FHIR_BATCH_SIZE "
 fi
 if [ ! -z "$DB_PATH" ]; then
-  JAVA_CMD+="-Dtofhir.db=$DB_PATH "
+  JAVA_CMD+="-Dtofhir.db-path=$DB_PATH "
 fi
 
 # Delay the execution for this amount of seconds
@@ -46,6 +46,6 @@ if [ ! -z "$DELAY_EXECUTION" ]; then
 fi
 
 # Finally, tell which jar to run
-JAVA_CMD+="tofhir-standalone.jar"
+JAVA_CMD+="tofhir-engine-standalone.jar"
 
 eval $JAVA_CMD "$@"

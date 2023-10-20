@@ -17,10 +17,10 @@ import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 
-class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
+class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository, logServiceEndpoint: String) extends LazyLogging {
 
   val service: JobService = new JobService(jobRepository)
-  val executionService: ExecutionService = new ExecutionService(jobRepository, mappingRepository, schemaRepository)
+  val executionService: ExecutionService = new ExecutionService(jobRepository, mappingRepository, schemaRepository, logServiceEndpoint)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_JOB) {

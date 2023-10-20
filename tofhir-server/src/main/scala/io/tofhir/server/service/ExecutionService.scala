@@ -1,12 +1,12 @@
 package io.tofhir.server.service
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.common.util.CustomMappingFunctionsFactory
 import io.tofhir.engine.ToFhirEngine
+import io.tofhir.engine.Execution
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
@@ -15,12 +15,12 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
+import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.model.{BadRequest, ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
-import io.tofhir.server.interceptor.ICORSHandler
 import org.apache.commons.io
 import org.json4s.JsonAST.{JBool, JObject, JValue}
 import org.json4s.JsonDSL.jobject2assoc
@@ -30,7 +30,7 @@ import org.json4s.{JArray, JString}
 import java.io.File
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
  * Service to handle all execution related operations
@@ -39,8 +39,9 @@ import scala.concurrent.{Await, ExecutionContextExecutor, Future}
  * @param jobRepository
  * @param mappingRepository
  * @param schemaRepository
+ * @param logServiceEndpoint
  */
-class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
+class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository, logServiceEndpoint: String) extends LazyLogging {
 
   val externalMappingFunctions: Map[String, IFhirPathFunctionLibraryFactory] = Map(
     "rxn" -> new RxNormApiFunctionLibraryFactory("https://rxnav.nlm.nih.gov", 2),
@@ -48,10 +49,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   )
   val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository), externalMappingFunctions)
 
-  implicit val system: ActorSystem = ActorSystem("akka-http-client")
-  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  import Execution.actorSystem
+  implicit val ec: ExecutionContext = actorSystem.dispatcher
 
-  val logServerBaseUrl: String = system.settings.config.getConfig("webserver").getString("log-server-base-url")
   /**
    * Run the job for the given execute job tasks
    *
@@ -73,7 +73,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       case None => mappingJob.mappings
     }
 
-    if(mappingTasks.isEmpty) {
+    if (mappingTasks.isEmpty) {
       throw BadRequest("No mapping task to execute!", "No mapping task to execute!")
     }
 
@@ -205,7 +205,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     Future {
       val request = HttpRequest(
         method = HttpMethods.GET,
-        uri = s"$logServerBaseUrl/tofhir/projects/$projectId/jobs/$jobId/executions/$executionId/logs"
+        uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions/$executionId/logs"
       )
 
       val responseFuture: Future[HttpResponse] = Http().singleRequest(request)
@@ -215,14 +215,15 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         responseFuture
           .flatMap { resp => {
             resp.entity.toStrict(timeout)
-          }}
+          }
+          }
           .map { strictEntity => strictEntity.data.utf8String },
         timeout
       )
 
       val mappingTasksLogsResponse: Seq[JValue] = JsonMethods.parse(responseAsString).extract[Seq[JValue]]
 
-      mappingTasksLogsResponse.map(logResponse =>{
+      mappingTasksLogsResponse.map(logResponse => {
         val logResponseObject: JObject = logResponse.asInstanceOf[JObject]
 
         JObject(
@@ -253,7 +254,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         val page = queryParams.getOrElse("page", "1").toInt
         val request = HttpRequest(
           method = HttpMethods.GET,
-          uri = s"$logServerBaseUrl/tofhir/projects/$projectId/jobs/$jobId/executions?page=$page"
+          uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions?page=$page"
         )
 
         val responseFuture: Future[HttpResponse] = Http().singleRequest(request)
@@ -264,7 +265,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             .flatMap { resp => {
               countHeader = resp.headers.find(_.name == ICORSHandler.X_TOTAL_COUNT_HEADER).map(_.value).get.toInt
               resp.entity.toStrict(timeout)
-            }}
+            }
+            }
             .map { strictEntity => strictEntity.data.utf8String },
           timeout
         )
@@ -272,11 +274,10 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         val paginatedLogsResponse: Seq[JValue] = JsonMethods.parse(responseAsString).extract[Seq[JValue]]
 
 
-
         // Retrieve the running executions for the given job
         val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)
 
-        val ret = paginatedLogsResponse.map(log =>{
+        val ret = paginatedLogsResponse.map(log => {
           val logJson: JObject = log.asInstanceOf[JObject]
           JObject(
             logJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains((logJson \ "id").extract[String])))
@@ -291,9 +292,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   /**
    * Returns the execution logs for a specific execution ID.
    *
-   * @param projectId    project id the job belongs to
-   * @param jobId        job id
-   * @param executionId  execution id
+   * @param projectId   project id the job belongs to
+   * @param jobId       job id
+   * @param executionId execution id
    * @return the execution summary as a JSON object
    */
   def getExecutionById(projectId: String, jobId: String, executionId: String): Future[JObject] = {
@@ -302,14 +303,14 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       case Some(_) =>
         val request = HttpRequest(
           method = HttpMethods.GET,
-          uri = s"$logServerBaseUrl/tofhir/projects/$projectId/jobs/$jobId/executions/$executionId/logs"
+          uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions/$executionId/logs"
         )
 
         val responseFuture: Future[HttpResponse] = Http().singleRequest(request)
         val timeout = 20000.millis
         val responseAsString = Await.result(
           responseFuture
-            .flatMap { resp => resp.entity.toStrict(timeout)}
+            .flatMap { resp => resp.entity.toStrict(timeout) }
             .map { strictEntity => strictEntity.data.utf8String },
           timeout
         )
