@@ -10,7 +10,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>tofhir-engine_2.13</artifactId>
+    <artifactId>tofhir-log-server_2.13</artifactId>
     <packaging>jar</packaging>
 
     <build>
@@ -20,28 +20,6 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <phase>install</phase>
-                            <goals>
-                                <goal>run</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                <configuration>
-                    <launchers>
-                        <!-- Run io.onfhir.path.validation.ValidateFhirPathFunctionLibraries to validate that each
-                         FhirPath function is annotated with io.onfhir.path.annotation.FhirPathFunction -->
-                        <launcher>
-                            <id>validateFhirPathFunctionLibraries</id>
-                            <mainClass>io.onfhir.path.validation.ValidateFhirPathFunctionLibraries</mainClass>
-                            <!-- List of packages which include the FhirPath function libraries -->
-                            <args>
-                                <arg>io.tofhir.engine.mapping</arg>
-                            </args>
-                        </launcher>
-                    </launchers>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -50,25 +28,6 @@
             <plugin>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <membersOnlySuites>io.tofhir.test, io.tofhir.engine.execution</membersOnlySuites>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>integration-test</id>
-                        <phase>integration-test</phase>
-                        <goals><goal>test</goal></goals>
-                        <configuration>
-                            <membersOnlySuites>io.tofhir.integrationtest</membersOnlySuites>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -92,12 +51,12 @@
                                 </filter>
                             </filters>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <finalName>tofhir-engine-standalone</finalName>
+                            <finalName>tofhir-log-server-standalone</finalName>
                             <transformers>
                                 <!-- add Main-Class to manifest file -->
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.tofhir.engine.Boot</mainClass>
+                                    <mainClass>io.tofhir.server.Boot</mainClass>
                                 </transformer>
 
                                 <!-- Append reference.conf to jar configurations for Akka to run -->
@@ -130,6 +89,7 @@
             <groupId>com.typesafe.scala-logging</groupId>
             <artifactId>scala-logging_${scala.binary.version}</artifactId>
         </dependency>
+
         <!-- Logback dependencies -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -144,44 +104,14 @@
             <artifactId>logback-access</artifactId>
         </dependency>
         <dependency>
-            <groupId>net.logstash.logback</groupId>
-            <artifactId>logstash-logback-encoder</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
 
-        <!-- onFHIR dependencies -->
+        <!-- Application Configuration -->
         <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-expression_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-template-engine_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-path_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-client_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-r4_${scala.binary.version}</artifactId>
-        </dependency>
-
-        <!-- toFHIR dependencies -->
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>tofhir-common</artifactId>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
         </dependency>
 
         <!-- JSON4S -->
@@ -193,33 +123,51 @@
             <groupId>org.json4s</groupId>
             <artifactId>json4s-ext_${scala.binary.version}</artifactId>
         </dependency>
-        <!-- Spark dependencies -->
+
+        <!-- Akka HTTP Suite -->
         <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http-core_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http-caching_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor-typed_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream-typed_${scala.binary.version}</artifactId>
         </dependency>
 
+        <!-- onFHIR Dependencies -->
         <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_${scala.binary.version}</artifactId>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-config_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-server-r4_${scala.binary.version}</artifactId>
         </dependency>
 
-        <!-- Application Configuration -->
+        <!-- toFHIR dependencies -->
         <dependency>
-            <groupId>com.typesafe</groupId>
-            <artifactId>config</artifactId>
+            <groupId>io.onfhir</groupId>
+            <artifactId>tofhir-engine_2.13</artifactId>
         </dependency>
-
-        <!-- For csv parsing -->
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-csv</artifactId>
+            <groupId>io.onfhir</groupId>
+            <artifactId>tofhir-common</artifactId>
         </dependency>
-
-        <!-- Postgres driver for Spark Read JDBC -->
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
+            <groupId>io.onfhir</groupId>
+            <artifactId>tofhir-rxnorm_2.13</artifactId>
         </dependency>
 
         <!-- For Unit testing -->
@@ -228,39 +176,30 @@
             <artifactId>scalatest_${scala.binary.version}</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- For database testing -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-scala_2.13</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- cron4j -->
+        <!-- Testkit for Akka Stream-->
         <dependency>
-            <groupId>it.sauronsoftware.cron4j</groupId>
-            <artifactId>cron4j</artifactId>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream-testkit_${scala.binary.version}</artifactId>
+            <version>${akka.version}</version>
         </dependency>
-        <!-- streaming -->
+        <!-- Testkit for Akka Http-->
         <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql-kafka-0-10_2.13</artifactId>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http-testkit_${scala.binary.version}</artifactId>
+            <version>${akka-http.version}</version>
         </dependency>
+
+        <!-- For database testing -->
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>kafka</artifactId>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
             <scope>test</scope>
-        </dependency>
-        <!-- Reflection -->
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
         </dependency>
     </dependencies>
 

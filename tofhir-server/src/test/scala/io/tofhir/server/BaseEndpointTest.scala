@@ -6,11 +6,10 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.config.WebServerConfig
+import io.tofhir.server.config.{LogServiceConfig, WebServerConfig}
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.Project
-import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
@@ -24,6 +23,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
   val webServerConfig = new WebServerConfig(system.settings.config.getConfig("webserver"))
   val fhirDefinitionsConfig = new FhirDefinitionsConfig(system.settings.config.getConfig("fhir"))
+  val logServiceConfig = new LogServiceConfig(system.settings.config.getConfig("log-service"))
   // route endpoint
   var route: Route = _
 
@@ -63,7 +63,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     FileUtils.getPath(fhirDefinitionsConfig.codesystemsPath.get).toFile.mkdirs()
     FileUtils.getPath(fhirDefinitionsConfig.valuesetsPath.get).toFile.mkdirs()
     // initialize endpoint and route
-    val endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig)
+    val endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, logServiceConfig)
     route = endpoint.toFHIRRoute
   }
 

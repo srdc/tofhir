@@ -57,6 +57,7 @@
     <modules>
         <module>tofhir-engine</module>
         <module>tofhir-server</module>
+        <module>tofhir-log-server</module>
         <module>tofhir-common</module>
         <module>tofhir-rxnorm</module>
     </modules>
@@ -354,6 +355,11 @@
             <dependency>
                 <groupId>io.onfhir</groupId>
                 <artifactId>tofhir-server-common_2.13</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>tofhir-log-server-common_2.13</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -20,24 +20,15 @@ if [ ! -z "$SPARK_MASTER" ]; then
   JAVA_CMD+="-Dspark.master=$SPARK_MASTER "
 fi
 
-# Configure toFHIR mapping-related paths
-if [ ! -z "$CONTEXT_PATH" ]; then
-  JAVA_CMD+="-Dtofhir.context-path=$CONTEXT_PATH "
+# Configure tofhir-server web server
+if [ ! -z "$WEBSERVER_HOST" ]; then
+  JAVA_CMD+="-Dwebserver.host=$WEBSERVER_HOST "
 fi
-if [ ! -z "$MAPPINGS_FOLDER" ]; then
-  JAVA_CMD+="-Dtofhir.mappings.repository.folder-path=$MAPPINGS_FOLDER "
+if [ ! -z "$WEBSERVER_PORT" ]; then
+  JAVA_CMD+="-Dwebserver.port=$WEBSERVER_PORT "
 fi
-if [ ! -z "$SCHEMAS_FOLDER" ]; then
-  JAVA_CMD+="-Dtofhir.mappings.schemas.repository.folder-path=$SCHEMAS_FOLDER "
-fi
-if [ ! -z "$MAPPING_JOB" ]; then
-  JAVA_CMD+="-Dtofhir.mapping-jobs.initial-job-file-path=$MAPPING_JOB "
-fi
-if [ ! -z "$FHIR_BATCH_SIZE" ]; then
-  JAVA_CMD+="-Dtofhir.fhir-writer.batch-group-size=$FHIR_BATCH_SIZE "
-fi
-if [ ! -z "$DB_PATH" ]; then
-  JAVA_CMD+="-Dtofhir.db=$DB_PATH "
+if [ ! -z "$WEBSERVER_BASEURI" ]; then
+  JAVA_CMD+="-Dwebserver.base-uri=$WEBSERVER_BASEURI "
 fi
 
 # Delay the execution for this amount of seconds
@@ -46,6 +37,6 @@ if [ ! -z "$DELAY_EXECUTION" ]; then
 fi
 
 # Finally, tell which jar to run
-JAVA_CMD+="tofhir-standalone.jar"
+JAVA_CMD+="tofhir-log-server-standalone.jar"
 
 eval $JAVA_CMD "$@"
