@@ -1,5 +1,6 @@
 package io.tofhir.engine.execution
 
+import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.execution.FileStreamInputArchiver._
 import io.tofhir.engine.model.ArchiveModes.ArchiveModes
@@ -81,25 +82,35 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
 }
 
 object FileStreamInputArchiver {
-  def applyArchivingOnBatchJob(execution: FhirMappingJobExecution): Unit = {
-    val archiveMode: ArchiveModes = execution.job.dataProcessingSettings.archiveMode
-    if (archiveMode != ArchiveModes.OFF) {
-      val fileSystemSourceSettings = execution.job.sourceSettings.head._2.asInstanceOf[FileSystemSourceSettings]
-      // get data folder path from data source settings
-      val dataFolderPath = fileSystemSourceSettings.dataFolderPath
+  private val logger: Logger = Logger(this.getClass)
 
-      val paths: Seq[String] = execution.job.mappings.flatMap(mapping => {
-        mapping.sourceContext.flatMap(fhirMappingSourceContextMap => {
-          fhirMappingSourceContextMap._2 match {
-            case fileSystemSource: FileSystemSource => Some(fileSystemSource.path)
-            case _ => None
-          }
+  def applyArchivingOnBatchJob(execution: FhirMappingJobExecution): Unit = {
+    var paths: Seq[String] = Seq.empty
+    // Putting the archiving logic for the batch file inside within a try block so that it would not affect the caller in case of any exception.
+    // That means archiving works in best-effort mode.
+    try {
+      val archiveMode: ArchiveModes = execution.job.dataProcessingSettings.archiveMode
+      if (archiveMode != ArchiveModes.OFF) {
+        val fileSystemSourceSettings = execution.job.sourceSettings.head._2.asInstanceOf[FileSystemSourceSettings]
+        // get data folder path from data source settings
+        val dataFolderPath = fileSystemSourceSettings.dataFolderPath
+
+        // Get paths of the input files referred by the mapping tasks
+        paths = execution.mappingTasks.flatMap(mapping => {
+          mapping.sourceContext.flatMap(fhirMappingSourceContextMap => {
+            fhirMappingSourceContextMap._2 match {
+              case fileSystemSource: FileSystemSource => Some(fileSystemSource.path)
+              case _ => None
+            }
+          })
         })
-      })
-      paths.foreach(relativePath => {
-        val file = Paths.get(dataFolderPath, relativePath).toFile
-        processArchiveMode(file, archiveMode)
-      })
+        paths.foreach(relativePath => {
+          val file = Paths.get(dataFolderPath, relativePath).toFile
+          processArchiveMode(file.getAbsoluteFile, archiveMode)
+        })
+      }
+    } catch {
+      case t:Throwable => logger.warn(s"Failed to apply archiving for job: ${execution.job.id}, execution: ${execution.id}")
     }
   }
 
@@ -112,8 +123,10 @@ object FileStreamInputArchiver {
   private def processArchiveMode(inputFile: File, archiveMode: ArchiveModes): Unit = {
     if (archiveMode == ArchiveModes.DELETE) {
       inputFile.delete()
+      logger.info(s"Deleted input file successfully: ${inputFile.getAbsoluteFile}")
     } else {
       moveSourceFileToArchive(inputFile)
+      logger.info(s"Archived input file successfully: ${inputFile.getAbsoluteFile}")
     }
   }
 
@@ -171,32 +184,41 @@ object FileStreamInputArchiver {
   }
 
   /**
-   * Move file from given path to given archive path
+   * Move file from given path to given archive path.
    *
-   * @param file
+   * @param file File with absolute path
    */
   private def moveSourceFileToArchive(file: File): Unit = {
-    // Find the relative path between the workspace folder and the file to be archived
-    val relPath = FileUtils.getPath("").toAbsolutePath.relativize(file.toPath)
-    // The relative path is appended to the base archive folder so that the path of the original input file is preserved
-    val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
-    val archiveFile: File = new File(finalArchivePath.toString)
+    try {
+      // Find the relative path between the workspace folder and the file to be archived
+      val relPath = FileUtils.getPath("").toAbsolutePath.relativize(file.toPath)
+      // The relative path is appended to the base archive folder so that the path of the original input file is preserved
+      val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
+      val archiveFile: File = new File(finalArchivePath.toString)
 
-    // create parent directories if not exists
-    archiveFile.getParentFile.mkdirs()
+      // create parent directories if not exists
+      archiveFile.getParentFile.mkdirs()
 
-    // Check if the parent folder already contains a file with the same name. Delete, if yes
-    val parentDirectory: File = archiveFile.getParentFile
-    parentDirectory.listFiles().find(f => f.getName.contentEquals(archiveFile.getName)) match {
-      case None =>
-      case Some(file) => file.delete()
-    }
+      // Check if the parent folder already contains a file with the same name. Delete, if yes
+      val parentDirectory: File = archiveFile.getParentFile
+      parentDirectory.listFiles().find(f => f.getName.contentEquals(archiveFile.getName)) match {
+        case None =>
+        case Some(file) =>
+          file.delete()
+          logger.debug(s"File with the same name exists in the archive, deleting it. File: ${file.getAbsoluteFile}")
+      }
 
-    // We need to check whether the input file still exists.
-    // It might not exist in the following scenario: It has already been archived, the system is restarted and archiving starts from offset 0 and
-    // tries to rearchive the file.
-    if (!archiveFile.exists()) {
-      Files.move(file.toPath, archiveFile.toPath)
+      // We need to check whether the input file still exists.
+      // It might not exist in the following scenario: It has already been archived, the system is restarted and archiving starts from offset 0 and
+      // tries to rearchive the file.
+      if (file.exists()) {
+        Files.move(file.toPath, archiveFile.toPath)
+      } else {
+        logger.debug(s"File to archive does not exist. File: ${file.getAbsoluteFile}")
+      }
+
+    } catch {
+      case t: Throwable => logger.warn(s"Failed to archive the file: ${file.getAbsolutePath}", t.getMessage)
     }
   }
 }
