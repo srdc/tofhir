@@ -1,8 +1,8 @@
 package io.tofhir.engine
 
-import io.onfhir.path.{FhirPathAggFunctionsFactory, FhirPathIdentityServiceFunctionsFactory, FhirPathNavFunctionsFactory, FhirPathTerminologyServiceFunctionsFactory, FhirPathUtilFunctionsFactory, IFhirPathFunctionLibraryFactory}
+import io.onfhir.path._
 import io.tofhir.engine.config.{ToFhirConfig, ToFhirEngineConfig}
-import io.tofhir.engine.execution.RunningJobRegistry
+import io.tofhir.engine.execution.{FileStreamInputArchiver, RunningJobRegistry}
 import io.tofhir.engine.mapping._
 import io.tofhir.engine.model.EngineInitializationException
 import io.tofhir.engine.util.FileUtils
@@ -46,6 +46,10 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
 
   // Single registry keeping the running jobs
   val runningJobRegistry: RunningJobRegistry = new RunningJobRegistry(sparkSession)
+
+  // Archiver for deleting or archiving the files processed
+  val fileStreamInputArchiver: FileStreamInputArchiver = new FileStreamInputArchiver(runningJobRegistry)
+  fileStreamInputArchiver.startStreamingArchiveTask()
 
   /**
    * Merges built-in function libraries and external libraries passed in the constructor

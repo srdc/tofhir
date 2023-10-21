@@ -1,6 +1,5 @@
 package io.tofhir.engine.model
 
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import org.json4s.JsonAST.{JObject, JString}
 
 import java.util.UUID
@@ -27,7 +26,7 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
                           identityServiceSettings: Option[IdentityServiceSettings] = None,
                           mappings: Seq[FhirMappingTask],
                           schedulingSettings: Option[SchedulingSettings] = None,
-                          dataProcessingSettings: DataProcessingSettings,
+                          dataProcessingSettings: DataProcessingSettings = DataProcessingSettings(),
                           useFhirSinkAsIdentityService:Boolean = false
                          ) {
   /**

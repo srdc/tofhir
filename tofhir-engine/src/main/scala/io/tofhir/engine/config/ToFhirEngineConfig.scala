@@ -47,4 +47,13 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
 
   /** Path to the folder which acts as the folder database of toFHIR*/
   lazy val toFhirDbFolderPath: String = Try(toFhirEngineConfig.getString("db-path")).getOrElse("tofhir-db")
+
+  /** The parent-folder where the data sources of errors received while running mapping are stored. */
+  lazy val erroneousRecordsFolder: String = Try(toFhirEngineConfig.getString("archiving.erroneous-records-folder")).getOrElse("erroneous-records-folder")
+
+  /** Folder path where the archive of the processed source data is stored. */
+  lazy val archiveFolder: String = Try(toFhirEngineConfig.getString("archiving.archive-folder")).getOrElse("archive-folder")
+
+  /** Period (in milliseconds) to run archiving task for file streaming jobs */
+  lazy val streamArchivingFrequency: Int = Try(toFhirEngineConfig.getInt("archiving.stream-archiving-frequency")).toOption.getOrElse(5000)
 }

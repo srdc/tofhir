@@ -1,12 +1,9 @@
 package io.tofhir.server.service
 
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.common.util.CustomMappingFunctionsFactory
-import io.tofhir.engine.ToFhirEngine
-import io.tofhir.engine.Execution
+import io.tofhir.engine.{Execution, ToFhirEngine}
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
@@ -15,12 +12,11 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
-import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.model.{BadRequest, ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
-import io.tofhir.server.util.DataFrameUtil
+import io.tofhir.server.util.{DataFrameUtil, LogServiceClient}
 import org.apache.commons.io
 import org.json4s.JsonAST.{JBool, JObject, JValue}
 import org.json4s.JsonDSL.jobject2assoc
@@ -29,8 +25,7 @@ import org.json4s.{JArray, JString}
 
 import java.io.File
 import java.util.UUID
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Service to handle all execution related operations
@@ -47,7 +42,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     "rxn" -> new RxNormApiFunctionLibraryFactory("https://rxnav.nlm.nih.gov", 2),
     "cst" -> new CustomMappingFunctionsFactory()
   )
+  // TODO do not define engine and client as a global variable inside the class. (Testing becomes impossible)
   val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository), externalMappingFunctions)
+  val logServiceClient = new LogServiceClient(logServiceEndpoint)
 
   import Execution.actorSystem
   implicit val ec: ExecutionContext = actorSystem.dispatcher
@@ -106,7 +103,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     }
 
     // create execution
-    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), jobId = mappingJob.id, projectId = projectId, mappingTasks = mappingTasks,
+    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), job = mappingJob, projectId = projectId, mappingTasks = mappingTasks,
       mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.dataProcessingSettings.mappingErrorHandling))
     val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.dataProcessingSettings.mappingErrorHandling)
 
@@ -116,6 +113,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         // Delete checkpoint directory if set accordingly
         if (executeJobTask.exists(_.clearCheckpoints)) {
           mappingTasks.foreach(mapping => {
+            // Reset the archiving offset so that the archiving starts from scratch
+            toFhirEngine.fileStreamInputArchiver.resetOffset(mappingJobExecution, mapping.mappingRef)
             io.FileUtils.deleteDirectory(new File(mappingJobExecution.getCheckpointDirectory(mapping.mappingRef)))
           })
         }
@@ -128,7 +127,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
             terminologyServiceSettings = mappingJob.terminologyServiceSettings,
             identityServiceSettings = mappingJob.getIdentityServiceSettings()
           )
-          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution.jobId, mappingJobExecution.id, sq._1, sq._2))
+          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution, sq._1, sq._2))
       }
 
       // Batch jobs
@@ -144,11 +143,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
         // Register the job to the registry
         toFhirEngine.runningJobRegistry.registerBatchJob(
-          mappingJobExecution.jobId,
-          mappingJobExecution.id,
-          mappingTasks.map(_.mappingRef),
+          mappingJobExecution,
           executionFuture,
-          s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
+          s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
         )
       }
     }
@@ -202,36 +199,17 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @return the logs of mapping tasks
    * */
   def getExecutionLogs(projectId: String, jobId: String, executionId: String): Future[Seq[JValue]] = {
-    Future {
-      val request = HttpRequest(
-        method = HttpMethods.GET,
-        uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions/$executionId/logs"
-      )
+    logServiceClient.getExecutionLogs(projectId, jobId, executionId)
+      .map(mappingTasksLogsResponse => {
+        mappingTasksLogsResponse.map(logResponse => {
+          val logResponseObject: JObject = logResponse.asInstanceOf[JObject]
 
-      val responseFuture: Future[HttpResponse] = Http().singleRequest(request)
-      val timeout = 20000.millis
-      var countHeader: Int = 0
-      val responseAsString = Await.result(
-        responseFuture
-          .flatMap { resp => {
-            resp.entity.toStrict(timeout)
-          }
-          }
-          .map { strictEntity => strictEntity.data.utf8String },
-        timeout
-      )
-
-      val mappingTasksLogsResponse: Seq[JValue] = JsonMethods.parse(responseAsString).extract[Seq[JValue]]
-
-      mappingTasksLogsResponse.map(logResponse => {
-        val logResponseObject: JObject = logResponse.asInstanceOf[JObject]
-
-        JObject(
-          logResponseObject.obj :+ ("runningStatus" -> JBool(
-            toFhirEngine.runningJobRegistry.executionExists((logResponseObject \ "jobId").extract[String], executionId, (logResponseObject \ "mappingUrl").extractOpt[String])
-          )))
+          JObject(
+            logResponseObject.obj :+ ("runningStatus" -> JBool(
+              toFhirEngine.runningJobRegistry.executionExists((logResponseObject \ "jobId").extract[String], executionId, (logResponseObject \ "mappingUrl").extractOpt[String])
+            )))
+        })
       })
-    }
   }
 
   /**
@@ -249,41 +227,21 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    */
   def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long)] = {
     // retrieve the job to validate its existence
-    jobRepository.getJob(projectId, jobId).map {
+    jobRepository.getJob(projectId, jobId).flatMap {
       case Some(_) =>
         val page = queryParams.getOrElse("page", "1").toInt
-        val request = HttpRequest(
-          method = HttpMethods.GET,
-          uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions?page=$page"
-        )
+        logServiceClient.getExecutions(projectId, jobId, page).map(paginatedLogsResponse => {
+          // Retrieve the running executions for the given job
+          val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)
 
-        val responseFuture: Future[HttpResponse] = Http().singleRequest(request)
-        val timeout = 20000.millis
-        var countHeader: Int = 0
-        val responseAsString = Await.result(
-          responseFuture
-            .flatMap { resp => {
-              countHeader = resp.headers.find(_.name == ICORSHandler.X_TOTAL_COUNT_HEADER).map(_.value).get.toInt
-              resp.entity.toStrict(timeout)
-            }
-            }
-            .map { strictEntity => strictEntity.data.utf8String },
-          timeout
-        )
-
-        val paginatedLogsResponse: Seq[JValue] = JsonMethods.parse(responseAsString).extract[Seq[JValue]]
-
-
-        // Retrieve the running executions for the given job
-        val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)
-
-        val ret = paginatedLogsResponse.map(log => {
-          val logJson: JObject = log.asInstanceOf[JObject]
-          JObject(
-            logJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains((logJson \ "id").extract[String])))
-          )
+          val ret = paginatedLogsResponse._1.map(log => {
+            val logJson: JObject = log.asInstanceOf[JObject]
+            JObject(
+              logJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains((logJson \ "id").extract[String])))
+            )
+          })
+          (ret, paginatedLogsResponse._2)
         })
-        (ret, countHeader)
 
       case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists")
     }
@@ -301,25 +259,11 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     // Retrieve the job to validate its existence
     jobRepository.getJob(projectId, jobId).flatMap {
       case Some(_) =>
-        val request = HttpRequest(
-          method = HttpMethods.GET,
-          uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions/$executionId/logs"
-        )
-
-        val responseFuture: Future[HttpResponse] = Http().singleRequest(request)
-        val timeout = 20000.millis
-        val responseAsString = Await.result(
-          responseFuture
-            .flatMap { resp => resp.entity.toStrict(timeout) }
-            .map { strictEntity => strictEntity.data.utf8String },
-          timeout
-        )
-
-        val executionJson: JObject = JsonMethods.parse(responseAsString).extract[Seq[JObject]].head
-
-        // Add runningStatus field to the JSON object
-        val updatedExecutionJson = executionJson ~ ("runningStatus" -> JBool(toFhirEngine.runningJobRegistry.getRunningExecutions(jobId).contains(executionId)))
-        Future.successful(updatedExecutionJson)
+        // Get
+        logServiceClient.getExecutionById(projectId, jobId, executionId).map(executionJson=> {
+          // Add runningStatus field to the JSON object
+          executionJson ~ ("runningStatus" -> JBool(toFhirEngine.runningJobRegistry.getRunningExecutions(jobId).contains(executionId)))
+        })
       case None =>
         throw ResourceNotFound("Mapping job does not exist.", s"A mapping job with id $jobId does not exist")
     }
@@ -371,4 +315,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       mappingErrorHandlingType,
       toFhirEngine.runningJobRegistry
     )
+
 }
+
+

@@ -14,15 +14,14 @@ import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.{ResourceFilter, TestResourceCreationRequest}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.apache.spark.sql.SparkSession
+import org.json4s._
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
-import org.json4s.{JArray, JObject}
 
 import java.io.File
 import java.nio.file.Paths
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
-import scala.util.control.Breaks
 import scala.util.control.Breaks.{break, breakable}
 
 class MappingExecutionEndpointTest extends BaseEndpointTest {
@@ -76,6 +75,42 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
               val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
               val results = sparkSession.read.text(outputFolder.getPath)
               if (results.count() == 10) {
+                succeed = true
+                break
+              }
+            }
+          }
+        }
+        if (!succeed) fail("Could find the expected test output folder")
+      }
+    }
+
+    "rerun a job including a mapping" ignore { // TODO activate this test
+
+      var firstId: Option[String] = Option.empty
+
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions?page=1") ~> route ~> check {
+        // Get id of previous execution
+
+        val jValue = JsonMethods.parse(responseAs[String])
+
+        firstId = (jValue.asInstanceOf[JArray].arr.head.asInstanceOf[JObject] \ "id").extractOpt[String]
+      }
+
+      // Rerun the previous job
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+
+        var succeed: Boolean = false
+        breakable {
+          // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
+          for (_ <- 1 to 20) {
+            Thread.sleep(500)
+            if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_1"))) {
+              // Check the resources created in the file system
+              val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
+              val results = sparkSession.read.text(outputFolder.getPath)
+              if (results.count() == 20) {
                 succeed = true
                 break
               }
