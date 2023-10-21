@@ -2,6 +2,7 @@ package io.tofhir.engine.model
 
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
+import io.tofhir.engine.util.FileUtils
 import org.apache.spark.sql.streaming.StreamingQuery
 
 import java.util.UUID
@@ -79,7 +80,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return Directory path in which the checkpoints will be managed
    */
   def getCheckpointDirectory(mappingUrl: String): String =
-    s"./${ToFhirConfig.sparkCheckpointDirectory}/${job.id}/${mappingUrl.hashCode}"
+    s"${FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, job.id, mappingUrl.hashCode.toString).toString}"
 
   /**
    * Creates a error output directory for a mapping execution included in a job and an execution

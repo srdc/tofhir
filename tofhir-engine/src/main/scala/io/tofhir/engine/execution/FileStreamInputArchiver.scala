@@ -10,6 +10,7 @@ import io.tofhir.engine.util.FileUtils
 import org.json4s.jackson.JsonMethods
 
 import java.io.File
+import java.net.URL
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Timer, TimerTask}
@@ -49,8 +50,8 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
     val checkPointDirectory: String = taskExecution.getCheckpointDirectory(mappingUrl)
     val commitFileDirectory: File = Paths.get(checkPointDirectory, "commits").toFile
 
-    // There won't be any file during the initialization or after checkpoints are cleared
-    if (commitFileDirectory.listFiles().nonEmpty) {
+    // There won't be any file (with name as an integer) during the initialization or after checkpoints are cleared
+    if (commitFileDirectory.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {
       // Apply archiving for the files as of the last processed offset until the last unprocessed offset
       val lastProcessedOffset: Int = processedOffsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
       val lastOffsetSet: Int = getLastCommitOffset(commitFileDirectory)
@@ -126,7 +127,6 @@ object FileStreamInputArchiver {
       logger.info(s"Deleted input file successfully: ${inputFile.getAbsoluteFile}")
     } else {
       moveSourceFileToArchive(inputFile)
-      logger.info(s"Archived input file successfully: ${inputFile.getAbsoluteFile}")
     }
   }
 
@@ -147,7 +147,7 @@ object FileStreamInputArchiver {
         try {
           // Source name is specified in the "path" field of a json object
           val path: String = (JsonMethods.parse(line) \ "path").extract[String]
-          Some(new File(path.substring("file:///".length)))
+          Some(Paths.get(new URL(path).toURI).toFile)
 
         } catch {
           case _: Throwable => None
@@ -213,12 +213,13 @@ object FileStreamInputArchiver {
       // tries to rearchive the file.
       if (file.exists()) {
         Files.move(file.toPath, archiveFile.toPath)
+        logger.info(s"Archived file: ${file.getAbsolutePath}")
       } else {
         logger.debug(s"File to archive does not exist. File: ${file.getAbsoluteFile}")
       }
 
     } catch {
-      case t: Throwable => logger.warn(s"Failed to archive the file: ${file.getAbsolutePath}", t.getMessage)
+      case t: Throwable => logger.warn(s"Failed to archive the file: ${file.getAbsolutePath}. Reason: ${t.getMessage}", t)
     }
   }
 }

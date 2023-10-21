@@ -115,7 +115,10 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           mappingTasks.foreach(mapping => {
             // Reset the archiving offset so that the archiving starts from scratch
             toFhirEngine.fileStreamInputArchiver.resetOffset(mappingJobExecution, mapping.mappingRef)
-            io.FileUtils.deleteDirectory(new File(mappingJobExecution.getCheckpointDirectory(mapping.mappingRef)))
+
+            val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(mapping.mappingRef))
+            io.FileUtils.deleteDirectory(checkpointDirectory)
+            logger.debug(s"Deleted checkpoint directory for jobId: ${mappingJobExecution.job.id}, executionId: ${mappingJobExecution.id}, mappingUrl: ${mapping.mappingRef}, path: ${checkpointDirectory.getAbsolutePath}")
           })
         }
 
@@ -201,6 +204,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   def getExecutionLogs(projectId: String, jobId: String, executionId: String): Future[Seq[JValue]] = {
     logServiceClient.getExecutionLogs(projectId, jobId, executionId)
       .map(mappingTasksLogsResponse => {
+        logger.debug(s"Retrieved execution logs for projectId: $projectId, jobId: $jobId, executionId: $executionId")
         mappingTasksLogsResponse.map(logResponse => {
           val logResponseObject: JObject = logResponse.asInstanceOf[JObject]
 
@@ -231,6 +235,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       case Some(_) =>
         val page = queryParams.getOrElse("page", "1").toInt
         logServiceClient.getExecutions(projectId, jobId, page).map(paginatedLogsResponse => {
+          logger.debug(s"Retrieved executions for projectId: $projectId, jobId: $jobId, page: $page")
           // Retrieve the running executions for the given job
           val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)
 
@@ -261,6 +266,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       case Some(_) =>
         // Get
         logServiceClient.getExecutionById(projectId, jobId, executionId).map(executionJson=> {
+          logger.debug(s"Retrieved execution for projectId: $projectId, jobId: $jobId, executionId: $executionId")
           // Add runningStatus field to the JSON object
           executionJson ~ ("runningStatus" -> JBool(toFhirEngine.runningJobRegistry.getRunningExecutions(jobId).contains(executionId)))
         })
