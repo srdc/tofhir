@@ -1,6 +1,7 @@
 package io.tofhir.engine.config
 
 import com.typesafe.config.Config
+import io.tofhir.engine.util.FileUtils
 import org.apache.spark.SparkConf
 
 import scala.jdk.CollectionConverters._
@@ -25,7 +26,7 @@ object ToFhirConfig {
   /** Master url of the Spark cluster */
   lazy val sparkMaster: String = Try(sparkConfig.getString("master")).getOrElse("local[4]")
   /** Directory to keep Spark's checkpoints created  */
-  lazy val sparkCheckpointDirectory: String = Try(sparkConfig.getString("checkpoint-dir")).getOrElse("checkpoint")
+  lazy val sparkCheckpointDirectory: String = FileUtils.getPath(engineConfig.contextPath, Try(sparkConfig.getString("checkpoint-dir")).getOrElse("checkpoint")).toString
   /**
    * Default configurations for spark
    */
@@ -34,7 +35,7 @@ object ToFhirConfig {
       "spark.driver.allowMultipleContexts" -> "false",
       "spark.ui.enabled" -> "false",
       "spark.sql.files.ignoreCorruptFiles" -> "false", //Do not ignore corrupted files (e.g. CSV missing a field from the given schema) as we want to log them
-      "spark.sql.streaming.checkpointLocation" -> "./checkpoint", //Checkpoint directory for streaming
+      "spark.sql.streaming.checkpointLocation" -> sparkCheckpointDirectory, //Checkpoint directory for streaming
       "mapreduce.fileoutputcommitter.marksuccessfuljobs" -> "false", //Do not create _SUCCESS file while writing to csv
     )
   /**

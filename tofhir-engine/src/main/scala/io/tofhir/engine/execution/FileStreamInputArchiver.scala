@@ -48,19 +48,22 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
   def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
     // Get the commit file directory for this execution
     val checkPointDirectory: String = taskExecution.getCheckpointDirectory(mappingUrl)
-    val commitFileDirectory: File = Paths.get(checkPointDirectory, "commits").toFile
+    val commitFile: Option[File] = FileUtils.findFileByName(checkPointDirectory, "commits")
+
+    // Get the sources file directory for this execution
+    val sourcesDirectory: String = FileUtils.getPath(checkPointDirectory, "sources", "0").toString
 
     // There won't be any file (with name as an integer) during the initialization or after checkpoints are cleared
-    if (commitFileDirectory.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {
+    if (commitFile.isDefined && commitFile.get.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {
       // Apply archiving for the files as of the last processed offset until the last unprocessed offset
       val lastProcessedOffset: Int = processedOffsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
-      val lastOffsetSet: Int = getLastCommitOffset(commitFileDirectory)
+      val lastOffsetSet: Int = getLastCommitOffset(commitFile.get)
       val archiveMode: ArchiveModes = taskExecution.job.dataProcessingSettings.archiveMode
 
       Range.inclusive(lastProcessedOffset + 1, lastOffsetSet) // +1 for skipping the last processed offset
         .foreach(sourceFileName => {
           // Extract the actual input files
-          val inputFiles: Seq[File] = getInputFiles(Paths.get(checkPointDirectory, "sources", "0", sourceFileName.toString).toFile)
+          val inputFiles: Seq[File] = getInputFiles(FileUtils.getPath(sourcesDirectory, sourceFileName.toString).toFile)
           if (inputFiles.nonEmpty) {
             inputFiles.foreach(inputFile => {
               processArchiveMode(inputFile, archiveMode)
@@ -94,7 +97,7 @@ object FileStreamInputArchiver {
       if (archiveMode != ArchiveModes.OFF) {
         val fileSystemSourceSettings = execution.job.sourceSettings.head._2.asInstanceOf[FileSystemSourceSettings]
         // get data folder path from data source settings
-        val dataFolderPath = fileSystemSourceSettings.dataFolderPath
+        val dataFolderPath = FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, fileSystemSourceSettings.dataFolderPath).toString
 
         // Get paths of the input files referred by the mapping tasks
         paths = execution.mappingTasks.flatMap(mapping => {
@@ -106,7 +109,7 @@ object FileStreamInputArchiver {
           })
         })
         paths.foreach(relativePath => {
-          val file = Paths.get(dataFolderPath, relativePath).toFile
+          val file = FileUtils.getPath(dataFolderPath, relativePath).toFile
           processArchiveMode(file.getAbsoluteFile, archiveMode)
         })
       }
@@ -147,7 +150,7 @@ object FileStreamInputArchiver {
         try {
           // Source name is specified in the "path" field of a json object
           val path: String = (JsonMethods.parse(line) \ "path").extract[String]
-          Some(Paths.get(new URL(path).toURI).toFile)
+          Some(FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, path).toFile)
 
         } catch {
           case _: Throwable => None
