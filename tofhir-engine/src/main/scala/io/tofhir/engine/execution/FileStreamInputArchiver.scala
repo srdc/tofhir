@@ -48,16 +48,16 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
   def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
     // Get the commit file directory for this execution
     val checkPointDirectory: String = taskExecution.getCheckpointDirectory(mappingUrl)
-    val commitFile: Option[File] = FileUtils.findFileByName(checkPointDirectory, "commits")
+    val commitFile: File = FileUtils.getPath(checkPointDirectory, "commits").toFile
 
     // Get the sources file directory for this execution
     val sourcesDirectory: String = FileUtils.getPath(checkPointDirectory, "sources", "0").toString
 
     // There won't be any file (with name as an integer) during the initialization or after checkpoints are cleared
-    if (commitFile.isDefined && commitFile.get.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {
+    if (commitFile.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {
       // Apply archiving for the files as of the last processed offset until the last unprocessed offset
       val lastProcessedOffset: Int = processedOffsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
-      val lastOffsetSet: Int = getLastCommitOffset(commitFile.get)
+      val lastOffsetSet: Int = getLastCommitOffset(commitFile)
       val archiveMode: ArchiveModes = taskExecution.job.dataProcessingSettings.archiveMode
 
       Range.inclusive(lastProcessedOffset + 1, lastOffsetSet) // +1 for skipping the last processed offset

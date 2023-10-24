@@ -40,7 +40,7 @@ object FileUtils {
    */
   def findFileByName(repoPath: String, name: String): Option[File] = {
     val repoFile = FileUtils.getPath(repoPath).toFile
-    val allFiles = IOUtil.getFilesFromFolder(repoFile, withExtension = Option.empty, recursively = Some(false))
+    val allFiles = IOUtil.getFilesFromFolder(repoFile, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
     val filteredFiles = allFiles.filter(f => {
       f.getName
         .toLowerCase.equals(name.toLowerCase)
