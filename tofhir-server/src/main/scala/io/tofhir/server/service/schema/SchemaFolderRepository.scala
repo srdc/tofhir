@@ -282,6 +282,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     if (!folder.exists()) {
       folder.mkdirs()
     }
+    if(folder.listFiles().filter(_.isDirectory).toSeq.isEmpty){
+      throw new RuntimeException("There is no project folder for schema in the repository")
+    }
     folder.listFiles().foreach(projectFolder => {
       var files = Seq.empty[File]
       try {
