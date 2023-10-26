@@ -11,13 +11,13 @@
 
     <!-- Send messages to a file at "***.log" -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/tofhir-server.log</file>
+        <file>logs/tofhir-log-server.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
         </encoder>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <FileNamePattern>logs/tofhir-server.%i.log.zip</FileNamePattern>
+            <FileNamePattern>logs/tofhir-log-server.%i.log.zip</FileNamePattern>
             <MinIndex>1</MinIndex>
             <MaxIndex>10</MaxIndex>
         </rollingPolicy>
@@ -28,51 +28,16 @@
     </appender>
 
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="FILE" />
-    </appender>
-
-    <appender name="FILE-AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/tofhir-mappings.log</file>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <includeMdc>false</includeMdc>
-            <fieldNames>
-                <thread>[ignore]</thread>
-                <version>[ignore]</version>
-                <loggerName>[ignore]</loggerName>
-                <levelValue>[ignore]</levelValue>
-            </fieldNames>
-        </encoder>
-
-        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <FileNamePattern>logs/tofhir-mappings.%i.log.zip</FileNamePattern>
-            <MinIndex>1</MinIndex>
-            <MaxIndex>10</MaxIndex>
-        </rollingPolicy>
-
-        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <MaxFileSize>10MB</MaxFileSize>
-        </triggeringPolicy>
-    </appender>
-
-    <appender name="ASYNC-AUDIT" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="FILE-AUDIT" />
+        <appender-ref ref="FILE"/>
     </appender>
 
     <!-- By default, the level of the root level is set to ERROR -->
     <root level="ERROR">
-        <appender-ref ref="ASYNC" />
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="ASYNC"/>
+        <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="io.tofhir.engine.data.write.SinkHandler" level="INFO">
-        <appender-ref ref="ASYNC-AUDIT" />
-    </logger>
-
-    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager" level="INFO">
-        <appender-ref ref="ASYNC-AUDIT" />
-    </logger>
-
     <!-- Give me DEBUG level logs from io.tofhir package because the default is set to ERROR at root (above) -->
-    <logger name ="io.tofhir" level="DEBUG" />
+    <logger name="io.tofhir" level="DEBUG"/>
 
 </configuration>
