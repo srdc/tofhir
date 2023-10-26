@@ -72,6 +72,14 @@
         <appender-ref ref="ASYNC-AUDIT" />
     </logger>
 
+    <logger name="io.tofhir.engine.data.write.SinkHandler" level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager" level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
     <!-- Give me DEBUG level logs from io.tofhir package because the default is set to ERROR at root (above) -->
     <logger name ="io.tofhir" level="DEBUG" />
 

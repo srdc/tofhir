@@ -51,6 +51,7 @@ class RunningJobRegistry(spark: SparkSession) {
         executionMap.put(executionId, updatedExecution)
         updatedExecution
       }
+      logger.debug(s"Streaming query for execution: $executionId, mappingUrl: $mappingUrl has been registered")
 
       // If blocking was set true, we are going to wait for StreamingQuery to terminate
       if (blocking) {
@@ -82,6 +83,8 @@ class RunningJobRegistry(spark: SparkSession) {
       runningTasks
         .getOrElseUpdate(jobId, collection.mutable.Map[String, FhirMappingJobExecution]())
         .put(executionId, executionWithJobGroupId)
+
+      logger.debug(s"Batch job for execution: $executionId has been registered with spark job group id: $jobGroup")
     }
     // Remove the execution entry when the future is completed
     jobFuture.onComplete(_ => {
