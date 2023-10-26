@@ -2,7 +2,7 @@ package io.tofhir.test.engine.execution
 
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.execution.{FileStreamInputArchiver, RunningJobRegistry}
-import io.tofhir.engine.model.{ArchiveModes, DataProcessingSettings, FhirMappingJob, FhirMappingJobExecution}
+import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
 import org.mockito.MockitoSugar._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -61,14 +61,69 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     // The relative path is appended to the base archive folder so that the path of the original input file is preserved
     val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
 
+    // Check whether archiving file does not exist and csv file exists
+    finalArchivePath.toFile.exists() shouldBe false
+    testCsvFile.exists() shouldBe true
+
     // Call archiving function
     fileStreamInputArchiver.applyArchivingOnStreamingJob(mockTaskExecution, mappingUrl)
 
-    // Check whether archiving files exist
+    // Check whether archiving file exists and csv file is moved
     finalArchivePath.toFile.exists() shouldBe true
     testCsvFile.exists() shouldBe false
+
     // Clean test directory
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath("test-archiver").toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder).toFile)
+  }
+
+  "FileStreamInputArchiver" should "apply archiving for a batch job" in{
+    // Create a mock execution
+    val mockTaskExecution = mock[FhirMappingJobExecution]
+    val mockJob = mock[FhirMappingJob]
+    val mockDataProcessingSettings = mock[DataProcessingSettings]
+    val mockFileSystemSourceSettings = mock[FileSystemSourceSettings]
+    val mockFileSystemSource = mock[FileSystemSource]
+    val mockMappingTask = mock[FhirMappingTask]
+    val sourceFolderPath = "test-archiver-batch"
+    val inputFilePath = "test-input-file"
+    val jobId = "mocked_job_id"
+    when(mockTaskExecution.id).thenReturn(jobId)
+    when(mockTaskExecution.job).thenReturn(mockJob)
+    when(mockTaskExecution.mappingTasks).thenReturn(Seq(mockMappingTask))
+    when(mockJob.dataProcessingSettings).thenReturn(mockDataProcessingSettings)
+    when(mockDataProcessingSettings.archiveMode).thenReturn(ArchiveModes.ARCHIVE)
+    when(mockJob.sourceSettings).thenReturn(Map(("_"->mockFileSystemSourceSettings)))
+    when(mockFileSystemSourceSettings.dataFolderPath).thenReturn(sourceFolderPath)
+    when(mockMappingTask.sourceContext).thenReturn(Map(("_" -> mockFileSystemSource)))
+    when(mockFileSystemSource.path).thenReturn(inputFilePath)
+
+    // Create a test input file
+    val inputFile = FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, sourceFolderPath, inputFilePath).toFile
+    inputFile.getParentFile.mkdirs()
+    // Write test to input file
+    val inputWriter = new PrintWriter(inputFile)
+    inputWriter.write("test")
+    inputWriter.close()
+
+    // Find the relative path between the workspace folder and the file to be archived
+    val relPath = FileUtils.getPath("").toAbsolutePath.relativize(inputFile.toPath.toAbsolutePath)
+    // The relative path is appended to the base archive folder so that the path of the original input file is preserved
+    val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
+
+    // Check whether archiving file does not exist and input file exists
+    finalArchivePath.toFile.exists() shouldBe false
+    inputFile.exists() shouldBe true
+
+    //Call archiving function
+    FileStreamInputArchiver.applyArchivingOnBatchJob(mockTaskExecution)
+
+    // Check whether archiving file exists and input file is moved
+    finalArchivePath.toFile.exists() shouldBe true
+    inputFile.exists() shouldBe false
+
+    // Clean test directories
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, sourceFolderPath).toFile)
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder).toFile)
   }
 }
