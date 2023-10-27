@@ -58,6 +58,9 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
     // Find the relative path between the workspace folder and the file to be archived
     val relPath = FileUtils.getPath("").toAbsolutePath.relativize(FileUtils.getPath("test-archiver", "test.csv").toAbsolutePath)
+    val expectedRelPath = FileUtils.getPath("test-archiver", "test.csv")
+    // validate relPath
+    relPath shouldBe expectedRelPath
     // The relative path is appended to the base archive folder so that the path of the original input file is preserved
     val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
 
@@ -108,6 +111,9 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
     // Find the relative path between the workspace folder and the file to be archived
     val relPath = FileUtils.getPath("").toAbsolutePath.relativize(inputFile.toPath.toAbsolutePath)
+    val expectedRelPath = inputFile.toPath
+    // validate relPath
+    relPath shouldBe expectedRelPath
     // The relative path is appended to the base archive folder so that the path of the original input file is preserved
     val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
 
