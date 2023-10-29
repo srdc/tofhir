@@ -10,7 +10,7 @@ import io.tofhir.server.endpoint.ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.TerminologySystem.TerminologyConceptMap
-import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.service.ConceptMapService
 
 class ConceptMapEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
@@ -61,7 +61,9 @@ class ConceptMapEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLog
       complete {
         service.getConceptMap(terminologyId, conceptMapId) map {
           case Some(conceptMap) => StatusCodes.OK -> conceptMap
-          case None => StatusCodes.NotFound -> s"Concept map  with id $conceptMapId not found"
+          case None => StatusCodes.NotFound -> {
+            throw ResourceNotFound("Concept map not found", s"Concept map  with id $conceptMapId not found")
+          }
         }
       }
     }

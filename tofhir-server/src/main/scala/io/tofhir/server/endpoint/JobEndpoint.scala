@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STOP, SEGMENT_TEST, SEGMENT_LOGS}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest, ToFhirRestCall}
+import io.tofhir.server.model.{ExecuteJobTask, ResourceNotFound, RowSelectionOrder, TestResourceCreationRequest, ToFhirRestCall}
 import io.tofhir.server.service.{ExecutionService, JobService}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -96,7 +96,9 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
       complete {
         service.getJob(projectId, id) map {
           case Some(mappingJob) => StatusCodes.OK -> mappingJob
-          case None => StatusCodes.NotFound -> s"Mapping with name $id not found"
+          case None => StatusCodes.NotFound -> {
+            throw ResourceNotFound("Job not found", s"Mapping job with name $id not found")
+          }
         }
       }
     }

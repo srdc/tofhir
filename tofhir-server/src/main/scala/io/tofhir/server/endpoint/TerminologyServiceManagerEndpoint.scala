@@ -8,7 +8,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{TerminologySystem, ToFhirRestCall}
+import io.tofhir.server.model.{ResourceNotFound, TerminologySystem, ToFhirRestCall}
 import io.tofhir.server.service.TerminologySystemService
 import io.tofhir.server.service.job.JobFolderRepository
 import io.tofhir.server.service.terminology.ITerminologySystemRepository
@@ -35,7 +35,9 @@ class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminolog
             val terminologyExists: Future[Option[TerminologySystem]] = terminologySystemService.getTerminologySystem(terminologySystemId)
             onSuccess(terminologyExists) {
               case None => complete {
-                StatusCodes.NotFound -> s"TerminologySystem with id $terminologySystemId not found"
+                StatusCodes.NotFound -> {
+                  throw ResourceNotFound("Terminology system not found", s"TerminologySystem with id $terminologySystemId not found")
+                }
               }
               case Some(_) => {
                 request.terminologyId = Some(terminologySystemId)
@@ -88,7 +90,9 @@ class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminolog
       complete {
         terminologySystemService.getTerminologySystem(terminologySystemId) map {
           case Some(terminologySystem) => StatusCodes.OK -> terminologySystem
-          case None => StatusCodes.NotFound -> s"TerminologySystem with id $terminologySystemId not found."
+          case None => StatusCodes.NotFound -> {
+            throw ResourceNotFound("Terminology system not found", s"TerminologySystem with id $terminologySystemId not found.")
+          }
         }
       }
     }

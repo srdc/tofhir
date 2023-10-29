@@ -10,7 +10,7 @@ import io.tofhir.server.endpoint.CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
-import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.service.CodeSystemService
 
 class CodeSystemEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
@@ -61,7 +61,9 @@ class CodeSystemEndpoint(toFhirEngineConfig: ToFhirEngineConfig) extends LazyLog
       complete {
         service.getCodeSystem(terminologyId, codeSystemId) map {
           case Some(codeSystem) => StatusCodes.OK -> codeSystem
-          case None => StatusCodes.NotFound -> s"Concept map  with id $codeSystemId not found"
+          case None => StatusCodes.NotFound -> {
+            throw ResourceNotFound("Code system not found", s"Code system with id $codeSystemId not found")
+          }
         }
       }
     }
