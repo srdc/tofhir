@@ -75,4 +75,7 @@
     <!-- Give me DEBUG level logs from io.tofhir package because the default is set to ERROR at root (above) -->
     <logger name ="io.tofhir" level="DEBUG" />
 
+    <!-- Show WARN level logs from org.apache.spark package to see anything going wrong -->
+    <logger name="org.apache.spark" level="WARN" />
+
 </configuration>
