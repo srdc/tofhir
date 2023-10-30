@@ -7,9 +7,9 @@ import io.tofhir.engine.util.FileUtils
 import org.mockito.MockitoSugar._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import scala.reflect.runtime.universe._
 
 import java.io.{File, PrintWriter}
+import scala.reflect.runtime.universe._
 
 class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
@@ -241,6 +241,42 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     result.size shouldBe 2
     result.head.getName shouldBe "test.csv"
     result.last.getName shouldBe "test2.csv"
+
+    // Clean test directory
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath("test-archiver").toFile)
+  }
+
+  "FileStreamInputArchiver" should "get last commit offset" in {
+
+    val mappingUrl = "mocked_mapping_url"
+    val jobId = "mocked_job_id_4"
+
+    // Create a source file to refer location of test.csv
+    val commitFile = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commit", "0", "0").toFile
+    val commitFile2 = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commit", "0", "1").toFile
+    val commitDirectory = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commit", "0").toFile
+    // Ensure the parent directories exist, if not, create them
+    commitFile.getParentFile.mkdirs()
+    commitFile2.getParentFile.mkdirs()
+
+    // Create commit files
+    val commitWriter = new PrintWriter(commitFile)
+    commitWriter.write("test")
+    commitWriter.close()
+    val commitWriter2 = new PrintWriter(commitFile2)
+    commitWriter2.write("test")
+    commitWriter2.close()
+
+    // Access getLastCommitOffset method of FileStreamInputArchiver using reflection
+    val FileStreamInputArchiverInstance = FileStreamInputArchiver
+    val methodSymbol = typeOf[FileStreamInputArchiver.type].decl(TermName("getLastCommitOffset")).asMethod
+    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(FileStreamInputArchiverInstance)
+    val getLastCommitOffsetMethod = methodMirror.reflectMethod(methodSymbol)
+
+    // Call reflected getLastCommitOffset function
+    val result: Int = getLastCommitOffsetMethod(commitDirectory).asInstanceOf[Int]
+    // Check whether result is as expected
+    result shouldBe 1
 
     // Clean test directory
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath("test-archiver").toFile)
