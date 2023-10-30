@@ -7,6 +7,7 @@ import io.tofhir.engine.util.FileUtils
 import org.mockito.MockitoSugar._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.reflect.runtime.universe._
 
 import java.io.{File, PrintWriter}
 
@@ -205,6 +206,44 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     // Test whether source directory is right
     testExecution.getSourceDirectory(mappingUrl) shouldBe
       FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "sources", "0").toString
+  }
+
+  "FileStreamInputArchiver" should "get input files" in {
+
+    val mappingUrl = "mocked_mapping_url"
+    val jobId = "mocked_job_id_3"
+
+    // Create a source file to refer location of test.csv
+    val sourceFile = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "sources", "0", "0").toFile
+    // Path of test.csv and test2.csv
+    val testCsvFile = FileUtils.getPath("test-archiver", "test.csv").toFile
+    val test2CsvFile = FileUtils.getPath("test-archiver", "test2.csv").toFile
+    // Ensure the parent directories exist, if not, create them
+    sourceFile.getParentFile.mkdirs()
+    testCsvFile.getParentFile.mkdirs()
+    test2CsvFile.getParentFile.mkdirs()
+    // Write path of test.csv and test2.csv to the source file
+    val sourceWriter = new PrintWriter(sourceFile)
+    sourceWriter.write(s"{\"path\":\"${testCsvFile.getAbsolutePath.replace("\\", "\\\\")}\"}\n")
+    sourceWriter.write(s"{\"path\":\"${test2CsvFile.getAbsolutePath.replace("\\", "\\\\")}\"}\n")
+    sourceWriter.close()
+
+    // Access getInputFile method of FileStreamInputArchiver using reflection
+    val FileStreamInputArchiverInstance = FileStreamInputArchiver
+    val methodSymbol = typeOf[FileStreamInputArchiver.type].decl(TermName("getInputFiles")).asMethod
+    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(FileStreamInputArchiverInstance)
+    val getInputFilesMethod = methodMirror.reflectMethod(methodSymbol)
+
+    // Call reflected getInputFile function
+    val result: Seq[File] = getInputFilesMethod(sourceFile).asInstanceOf[Seq[File]]
+
+    // Check whether result is as expected
+    result.size shouldBe 2
+    result.head.getName shouldBe "test.csv"
+    result.last.getName shouldBe "test2.csv"
+
+    // Clean test directory
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath("test-archiver").toFile)
   }
 
   /**
