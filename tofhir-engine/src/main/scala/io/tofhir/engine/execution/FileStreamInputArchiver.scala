@@ -47,11 +47,10 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
    */
   def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
     // Get the commit file directory for this execution
-    val checkPointDirectory: String = taskExecution.getCheckpointDirectory(mappingUrl)
-    val commitDirectory: File = FileUtils.getPath(checkPointDirectory, "commits").toFile
+    val commitDirectory: File = FileUtils.getPath(taskExecution.getCommitDirectory(mappingUrl)).toFile
 
     // Get the sources file directory for this execution
-    val sourcesDirectory: String = FileUtils.getPath(checkPointDirectory, "sources", "0").toString
+    val sourcesDirectory: String = taskExecution.getSourceDirectory(mappingUrl)
 
     // There won't be any file (with name as an integer) during the initialization or after checkpoints are cleared
     if (commitDirectory.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {

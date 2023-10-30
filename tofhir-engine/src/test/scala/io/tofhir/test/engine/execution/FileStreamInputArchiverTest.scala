@@ -27,8 +27,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     when(mockTaskExecution.job).thenReturn(mockJob)
     when(mockJob.dataProcessingSettings).thenReturn(mockDataProcessingSettings)
     when(mockDataProcessingSettings.archiveMode).thenReturn(ArchiveModes.ARCHIVE)
-    when(mockTaskExecution.getCheckpointDirectory(mappingUrl)).thenReturn(
-      FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString).toString)
+    when(mockTaskExecution.getCommitDirectory(mappingUrl)).thenReturn(
+      FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commits").toString)
+    when(mockTaskExecution.getSourceDirectory(mappingUrl)).thenReturn(
+      FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "sources", "0").toString)
 
 
     // Create a source file to refer location of test.csv
@@ -92,8 +94,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     when(mockTaskExecution.job).thenReturn(mockJob)
     when(mockJob.dataProcessingSettings).thenReturn(mockDataProcessingSettings)
     when(mockDataProcessingSettings.archiveMode).thenReturn(ArchiveModes.DELETE)
-    when(mockTaskExecution.getCheckpointDirectory(mappingUrl)).thenReturn(
-      FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString).toString)
+    when(mockTaskExecution.getCommitDirectory(mappingUrl)).thenReturn(
+      FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commits").toString)
+    when(mockTaskExecution.getSourceDirectory(mappingUrl)).thenReturn(
+      FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "sources", "0").toString)
 
 
     // Create a source file to refer location of test.csv
@@ -227,5 +231,35 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
     // Clean test directories
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, sourceFolderPath).toFile)
+  }
+
+  "FileStreamInputArchiver" should "get commit file" in {
+    // Create a mock job
+    val mockJob = mock[FhirMappingJob]
+    val mappingUrl = "mocked_mapping_url"
+    val jobId = "mocked_job_id"
+    when(mockJob.id).thenReturn(jobId)
+
+    // Create an execution
+    val testExecution = FhirMappingJobExecution(job = mockJob)
+
+    // Test whether commit directory is right
+    testExecution.getCommitDirectory(mappingUrl) shouldBe
+      FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "commits").toString
+  }
+
+  "FileStreamInputArchiver" should "get source file" in {
+    // Create a mock job
+    val mockJob = mock[FhirMappingJob]
+    val mappingUrl = "mocked_mapping_url"
+    val jobId = "mocked_job_id"
+    when(mockJob.id).thenReturn(jobId)
+
+    // Create an execution
+    val testExecution = FhirMappingJobExecution(job = mockJob)
+
+    // Test whether source directory is right
+    testExecution.getSourceDirectory(mappingUrl) shouldBe
+      FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "sources", "0").toString
   }
 }
