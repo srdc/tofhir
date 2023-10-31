@@ -47,7 +47,13 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     sourceContext = Map("source" -> FileSystemSource(path = "patients.csv")),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/patient-mapping.json").getPath)))
   )
-  val job: FhirMappingJob = FhirMappingJob(id = job1Id, name = Some("mappingJob"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = Seq(patientMappingTask), dataProcessingSettings = DataProcessingSettings())
+  val job: FhirMappingJob = FhirMappingJob(
+    id = job1Id,
+    name = Some("mappingJob"),
+    sourceSettings = dataSourceSettings,
+    sinkSettings = sinkSettings,
+    mappings = Seq(patientMappingTask),
+    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE, saveErroneousRecords = true, archiveMode = ArchiveModes.OFF))
 
   "The service" should {
     "run a job including a mapping" in {
@@ -65,23 +71,16 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        var succeed: Boolean = false
-        breakable {
-          // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
-          for (_ <- 1 to 20) {
-            Thread.sleep(500)
-            if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_1"))) {
-              // Check the resources created in the file system
-              val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
-              val results = sparkSession.read.text(outputFolder.getPath)
-              if (results.count() == 10) {
-                succeed = true
-                break
-              }
-            }
+        // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
+        val succeed = waitForCondition(10) {
+          fsSinkFolder.listFiles.exists(_.getName.contains("job1_1")) && {
+            // Check the resources created in the file system
+            val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
+            val results = sparkSession.read.text(outputFolder.getPath)
+            results.count() == 10
           }
         }
-        if (!succeed) fail("Could find the expected test output folder")
+        if (!succeed) fail("Could not find the expected test output folder")
       }
     }
 
@@ -101,23 +100,16 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        var succeed: Boolean = false
-        breakable {
-          // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
-          for (_ <- 1 to 20) {
-            Thread.sleep(500)
-            if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_1"))) {
-              // Check the resources created in the file system
-              val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
-              val results = sparkSession.read.text(outputFolder.getPath)
-              if (results.count() == 20) {
-                succeed = true
-                break
-              }
-            }
+        // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
+        val succeed = waitForCondition(10) {
+          fsSinkFolder.listFiles.exists(_.getName.contains("job1_1")) && {
+            // Check the resources created in the file system
+            val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
+            val results = sparkSession.read.text(outputFolder.getPath)
+            results.count() == 20
           }
         }
-        if (!succeed) fail("Could find the expected test output folder")
+        if (!succeed) fail("Could not find the expected test output folder")
       }
     }
 
@@ -153,23 +145,31 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        var succeed: Boolean = false
-        breakable {
-          // Mappings run asynchronously. Wait at most 5 seconds for mappings to complete.
-          for (_ <- 1 to 20) {
-            Thread.sleep(500)
-            if (fsSinkFolder.listFiles.exists(_.getName.contains("job1_2"))) {
-              // Check the resources created in the file system
-              val parquetFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_2")).get
-              val results = sparkSession.read.text(parquetFolder.getPath)
-              if (results.count() == 13) {
-                succeed = true
-                break
-              }
+        // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
+        val succeed1 = waitForCondition(10) {
+          fsSinkFolder.listFiles.exists(_.getName.contains("job1_2")) && {
+            // Check the resources created in the file system
+            val parquetFolder = fsSinkFolder.listFiles.find(_.getName.contains("job1_2")).get
+            val results = sparkSession.read.text(parquetFolder.getPath)
+            results.count() == 13
+          }
+        }
+        if (!succeed1) fail("Could not find the expected test output folder")
+
+
+        // test if erroneous records are written to error folder
+        val succeed2 = waitForCondition(10) {
+          val erroneousRecordsFolder = FileUtils.getPath(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
+          erroneousRecordsFolder.toFile.exists() && {
+            val jobFolder = FileUtils.getPath(erroneousRecordsFolder.toString, s"job-${job.id}").toFile
+            val csvFile = jobFolder.listFiles().head.listFiles().head.listFiles().head
+            csvFile.exists() && {
+              val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.getPath)
+              csvFileContent.count() == 1
             }
           }
         }
-        if (!succeed) fail("Could find the expected test output folder")
+        if (!succeed2) fail("Could not find the expected erroneous records folder")
       }
     }
 
@@ -348,11 +348,32 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   }
 
   /**
+   * Define a function to wait for a condition with a timeout
+   * @param timeoutSeconds timeout in seconds to wait for the condition
+   * @param condition condition to be checked
+   * @return
+   */
+  private def waitForCondition(timeoutSeconds: Int)(condition: => Boolean): Boolean = {
+    var success = false
+    breakable {
+      for (_ <- 1 to timeoutSeconds) { // Sleep 1000ms up to `timeoutSeconds` times
+        Thread.sleep(1000)
+        if (condition) {
+          success = true
+          break
+        }
+      }
+    }
+    success
+  }
+
+  /**
    * Creates a project to be used in the tests
    * */
   override def beforeAll(): Unit = {
     super.beforeAll()
     org.apache.commons.io.FileUtils.deleteDirectory(new File(fsSinkFolderName))
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.erroneousRecordsFolder).toFile)
     fsSinkFolder.mkdirs()
     this.createProject(Some("deadbeef-dead-dead-dead-deaddeafbeef"))
   }
@@ -360,5 +381,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   override def afterAll(): Unit = {
     super.afterAll()
     org.apache.commons.io.FileUtils.deleteDirectory(fsSinkFolder)
+    // delete erroneous folder
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.erroneousRecordsFolder).toFile)
   }
 }
