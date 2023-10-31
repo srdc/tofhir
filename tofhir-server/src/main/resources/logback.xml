@@ -38,6 +38,9 @@
 
     <appender name="FILE-AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FOLDER}/tofhir-mappings.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <includeMdc>false</includeMdc>
             <fieldNames>
@@ -69,20 +72,14 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="io.tofhir.engine.data.write.SinkHandler" level="INFO">
+    <!-- Loggers inherit appender-refs from the ancestors unless the additivity is set to false -->
+    <!-- So, the loggers below will inherit the appender-refs from the root logger -->
+    <logger name="io.tofhir.engine.data.write.SinkHandler">
         <appender-ref ref="ASYNC-AUDIT" />
     </logger>
 
-    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager" level="INFO">
+    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager">
         <appender-ref ref="ASYNC-AUDIT" />
-    </logger>
-
-    <logger name="io.tofhir.engine.data.write.SinkHandler" level="DEBUG">
-        <appender-ref ref="STDOUT" />
-    </logger>
-
-    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager" level="DEBUG">
-        <appender-ref ref="STDOUT" />
     </logger>
 
     <!-- Give me DEBUG level logs from io.tofhir package because the default is set to ERROR at root (above) -->
