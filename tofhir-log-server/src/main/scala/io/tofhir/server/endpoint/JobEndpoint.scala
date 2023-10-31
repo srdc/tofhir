@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_PROJECTS}
 import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -17,22 +17,26 @@ class JobEndpoint() extends LazyLogging {
   val executionService: ExecutionService = new ExecutionService()
 
   def route(request: ToFhirRestCall): Route = {
-    pathPrefix(SEGMENT_JOB) {
-      val projectId: String = request.projectId.get
-      pathPrefix(Segment) { jobId: String =>
-        pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, jobs/<jobId>/executions
-          pathEndOrSingleSlash {
-            getExecutions(projectId, jobId)
-          } ~ pathPrefix(Segment) { executionId: String => // operations on a single execution, jobs/<jobId>/executions/<executionId>
-            pathEndOrSingleSlash {
-              getExecutionById(projectId, jobId, executionId)
-            } ~ pathPrefix(SEGMENT_LOGS) { // logs on a single execution, jobs/<jobId>/executions/<executionId>/logs
+    pathPrefix(SEGMENT_PROJECTS) {
+      pathPrefix(Segment) { projectId: String => {
+        pathPrefix(SEGMENT_JOB) {
+          pathPrefix(Segment) { jobId: String =>
+            pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, jobs/<jobId>/executions
               pathEndOrSingleSlash {
-                getExecutionLogs(executionId)
+                getExecutions(projectId, jobId)
+              } ~ pathPrefix(Segment) { executionId: String => // operations on a single execution, jobs/<jobId>/executions/<executionId>
+                pathEndOrSingleSlash {
+                  getExecutionById(projectId, jobId, executionId)
+                } ~ pathPrefix(SEGMENT_LOGS) { // logs on a single execution, jobs/<jobId>/executions/<executionId>/logs
+                  pathEndOrSingleSlash {
+                    getExecutionLogs(executionId)
+                  }
+                }
               }
             }
           }
         }
+      }
       }
     }
   }
@@ -85,6 +89,7 @@ class JobEndpoint() extends LazyLogging {
 }
 
 object JobEndpoint {
+  val SEGMENT_PROJECTS = "projects"
   val SEGMENT_JOB = "jobs"
   val SEGMENT_EXECUTIONS = "executions"
   val SEGMENT_LOGS = "logs"
