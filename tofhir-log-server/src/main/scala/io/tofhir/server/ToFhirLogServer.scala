@@ -1,14 +1,14 @@
 package io.tofhir.server
 
 import io.tofhir.server.config.WebServerConfig
-import io.tofhir.server.endpoint.ToFhirServerEndpoint
+import io.tofhir.server.endpoint.ExecutionEndpoint
 
-object ToFhirServer {
+object ToFhirLogServer {
   def start(): Unit = {
     import io.tofhir.engine.Execution.actorSystem
 
     val webServerConfig = new WebServerConfig(actorSystem.settings.config.getConfig("webserver"))
-    val endpoint = new ToFhirServerEndpoint(webServerConfig)
+    val endpoint = new ExecutionEndpoint(webServerConfig)
 
     ToFhirHttpServer.start(endpoint.toFHIRRoute, webServerConfig)
   }
