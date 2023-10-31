@@ -15,7 +15,7 @@ import java.util.UUID
  */
 class ToFhirServerEndpoint(webServerConfig: WebServerConfig) extends ICORSHandler with IErrorHandler {
 
-  val projectEndpoint = new ProjectEndpoint()
+  val jobEndpoint: JobEndpoint = new JobEndpoint()
 
 
   lazy val toFHIRRoute: Route =
@@ -28,7 +28,7 @@ class ToFhirServerEndpoint(webServerConfig: WebServerConfig) extends ICORSHandle
                 val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
                 handleRejections(RejectionHandler.default) { // Default rejection handling
                   handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                    projectEndpoint.route(restCall)
+                    jobEndpoint.route(restCall)
                   }
                 }
               }
