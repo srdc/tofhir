@@ -1,6 +1,7 @@
 package io.tofhir.test.engine.execution
 
 import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.execution.FileStreamInputArchiver.getOffsetKey
 import io.tofhir.engine.execution.{FileStreamInputArchiver, RunningJobRegistry}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
@@ -280,6 +281,35 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
     // Clean test directory
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath("test-archiver").toFile)
+  }
+
+  "FileStreamInputArchiver" should "get last proccessed offset" in {
+
+    val mappingUrl = "mocked_mapping_url"
+    val jobId = "mocked_job_id_5"
+
+    // Get map of processed offset
+    val processedOffsetMap = fileStreamInputArchiver.processedOffsets
+
+    // Access getOffsetKey method of FileStreamInputArchiver using reflection
+    val FileStreamInputArchiverInstance = FileStreamInputArchiver
+    val methodSymbol = typeOf[FileStreamInputArchiver.type].decl(TermName("getOffsetKey")).asMethod
+    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(FileStreamInputArchiverInstance)
+    val getOffsetKeyMethod = methodMirror.reflectMethod(methodSymbol)
+
+    // Call reflected getOffsetKey function
+    val  lastProccessedOffset = processedOffsetMap.getOrElseUpdate(getOffsetKeyMethod(jobId, mappingUrl).asInstanceOf[String], -1)
+    // Check whether lastProccessedOffset is as expected
+    lastProccessedOffset shouldBe -1
+
+    // Update lastProccessedOffset
+    processedOffsetMap.put(getOffsetKeyMethod(jobId, mappingUrl).asInstanceOf[String], 2)
+
+    // Call reflected getOffsetKey function
+    val newLastProccessedOffset = processedOffsetMap.getOrElseUpdate(getOffsetKeyMethod(jobId, mappingUrl).asInstanceOf[String], -1)
+
+    // Check whether lastProccessedOffset is updated
+    newLastProccessedOffset shouldBe 2
   }
 
   /**
