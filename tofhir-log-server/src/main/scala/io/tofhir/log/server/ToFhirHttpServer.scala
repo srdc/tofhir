@@ -1,11 +1,11 @@
-package io.tofhir.server
+package io.tofhir.log.server
 
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.config.WebServerConfig
+import io.tofhir.log.server.config.WebServerConfig
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, FiniteDuration}

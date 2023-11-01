@@ -1,14 +1,14 @@
-package io.tofhir.server.endpoint
+package io.tofhir.log.server.endpoint
 
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.tofhir.server.model.Json4sSupport._
+import io.tofhir.log.server.model.Json4sSupport._
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.config.WebServerConfig
-import io.tofhir.server.endpoint.ExecutionEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_PROJECTS}
-import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
-import io.tofhir.server.service.ExecutionService
+import io.tofhir.log.server.config.WebServerConfig
+import io.tofhir.log.server.interceptor.{ICORSHandler, IErrorHandler}
+import io.tofhir.log.server.service.ExecutionService
+import ExecutionEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_PROJECTS}
 
 class ExecutionEndpoint(webServerConfig: WebServerConfig) extends ICORSHandler with IErrorHandler with LazyLogging {
 

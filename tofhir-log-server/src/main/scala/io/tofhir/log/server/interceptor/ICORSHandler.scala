@@ -1,10 +1,9 @@
-package io.tofhir.server.interceptor
+package io.tofhir.log.server.interceptor
 
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{HttpMethods, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.Directives.{complete, options}
-import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.server.{Directive0, Directives, Route}
 
 /**

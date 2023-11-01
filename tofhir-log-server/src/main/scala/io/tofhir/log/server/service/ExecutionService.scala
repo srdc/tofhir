@@ -1,8 +1,8 @@
-package io.tofhir.server.service
+package io.tofhir.log.server.service
 
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.ResourceNotFound
+import io.tofhir.log.server.config.SparkConfig
+import io.tofhir.log.server.model.ResourceNotFound
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._

@@ -1,4 +1,4 @@
-package io.tofhir.server.model
+package io.tofhir.log.server.model
 
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.MediaTypes.`application/json`

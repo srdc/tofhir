@@ -1,4 +1,4 @@
-package io.tofhir.server.model
+package io.tofhir.log.server.model
 
 import io.tofhir.engine.model.FhirMappingError
 

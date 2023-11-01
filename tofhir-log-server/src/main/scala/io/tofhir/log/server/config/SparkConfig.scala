@@ -1,4 +1,4 @@
-package io.tofhir.server.config
+package io.tofhir.log.server.config
 
 import com.typesafe.config.Config
 import org.apache.spark.SparkConf
@@ -12,6 +12,7 @@ import scala.util.Try
 object SparkConfig {
 
   import io.tofhir.engine.Execution.actorSystem
+
   protected lazy val config: Config = actorSystem.settings.config
 
   /**
