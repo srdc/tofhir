@@ -37,7 +37,8 @@ object FhirMappingJobFormatter {
           //Terminology setvices
           classOf[LocalFhirTerminologyServiceSettings]
         ))) +
-      new EnumNameSerializer(ErrorHandlingType)
+      new EnumNameSerializer(ErrorHandlingType) +
+      KafkaSourceSettingsSerializers.KafkaSourceSettingsSerializer
 
 
   /**
