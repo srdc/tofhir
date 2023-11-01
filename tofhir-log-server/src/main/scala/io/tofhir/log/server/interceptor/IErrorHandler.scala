@@ -1,8 +1,8 @@
-package io.tofhir.server.interceptor
+package io.tofhir.log.server.interceptor
 
 import akka.http.scaladsl.server.{Directives, ExceptionHandler}
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.model.{InternalError, ToFhirError, ToFhirRestCall}
+import io.tofhir.log.server.model.{InternalError, ToFhirError, ToFhirRestCall}
 
 trait IErrorHandler extends LazyLogging {
 
