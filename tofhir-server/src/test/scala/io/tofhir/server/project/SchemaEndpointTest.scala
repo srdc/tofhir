@@ -274,6 +274,84 @@ class SchemaEndpointTest extends BaseEndpointTest {
         fieldDefinitions.size shouldEqual 5
       }
     }
+
+    "Try to infer a schema with wrong databaseUrl" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source", SqlSourceSettings(
+          name = "test-db-source",
+          sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
+          databaseUrl = "Wrong Database Url",
+          username = "",
+          password = ""
+        ))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/ResourceNotFound")
+        response should include("Database not found")
+      }
+    }
+
+    "Try to infer a schema with wrong user information" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source", SqlSourceSettings(
+          name = "test-db-source",
+          sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
+          databaseUrl = DATABASE_URL,
+          username = "Wrong username",
+          password = ""
+        ))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.Unauthorized
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/UserUnauthorized")
+        response should include("Wrong user name or password")
+      }
+    }
+
+    "Try to infer a schema with wrong table name" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source",
+        SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
+        sourceContext = SqlSource(query = Some("WRONG"))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+        val response = responseAs[String]
+        response should include("https://tofhir.io/errors/ResourceNotFound")
+        response should include("Table \"WRONG\" not found")
+      }
+    }
+
+    "Try to infer a schema with wrong column name" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source",
+        SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
+        sourceContext = SqlSource(query = Some("select WRONG from death"))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+        val response = responseAs[String]
+        response should include("https://tofhir.io/errors/InternalError")
+        response should include("Column \"WRONG\" not found")
+      }
+    }
+
+    "Try to infer a schema with wrong query string" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source",
+        SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
+        sourceContext = SqlSource(query = Some("Select * from death"), preprocessSql = Some("Wrong query string"))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+        val response = responseAs[String]
+        response should include("https://tofhir.io/errors/InternalError")
+        response should include("Syntax error")
+      }
+    }
   }
 
   /**

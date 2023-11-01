@@ -29,7 +29,7 @@ object CustomRejectionHandler {
       .handle {
         case MalformedRequestContentRejection(message, cause) =>
           println(cause)
-          complete(StatusCodes.BadRequest -> BadRequest(cause.toString, message).toString)
+          complete(StatusCodes.BadRequest -> BadRequest("Necessary field(s) is missing", message).toString)
       }
 
       /**

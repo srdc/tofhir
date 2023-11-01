@@ -113,4 +113,46 @@ class ProjectEndpointTest extends BaseEndpointTest {
       }
     }
   }
+
+  "General rejections" should {
+
+    "Try to create a project without application/json content type" in {
+      // Send a POST request without changing the contentType to application/json
+      Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(writePretty(project1))) ~> route ~> check {
+        status shouldEqual StatusCodes.UnsupportedMediaType
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/UnsupportedMediaType")
+      }
+    }
+
+    "Try to create a project with missing URL which is a necessary field" in {
+      // Send a POST request with a project without URL
+      val projectWithoutUrl = Map("name" -> "example3",
+                                  "description" -> Some("example project"))
+      Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectWithoutUrl))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/BadRequest")
+        response should include("Detail: No usable value for url")
+      }
+    }
+
+    "Try to use an http method that is not applicable on the URL" in {
+      // Send a PUT request to projects which is not applicable
+      Put(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
+        status shouldEqual StatusCodes.MethodNotAllowed
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/MethodForbidden")
+      }
+    }
+
+    "Try to POST a project to a wrong URL" in {
+      // Send a POST request to an invalid URL
+      Post(s"/${webServerConfig.baseUri}/invalidURL", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/ResourceNotFound")
+      }
+    }
+  }
 }
