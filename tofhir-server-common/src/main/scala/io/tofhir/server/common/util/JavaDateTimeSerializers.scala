@@ -1,4 +1,4 @@
-package io.tofhir.server.util
+package io.tofhir.server.common.util
 
 import org.json4s.CustomSerializer
 import org.json4s.JsonAST.{JNull, JString}

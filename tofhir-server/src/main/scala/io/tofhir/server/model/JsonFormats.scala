@@ -1,6 +1,6 @@
 package io.tofhir.server.model
 
-import io.tofhir.server.util.JavaDateTimeSerializers
+import io.tofhir.server.common.util.JavaDateTimeSerializers
 import org.json4s.jackson.Serialization
 import org.json4s.{Formats, NoTypeHints}
 
