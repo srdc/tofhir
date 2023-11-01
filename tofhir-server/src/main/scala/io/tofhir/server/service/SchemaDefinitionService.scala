@@ -7,8 +7,10 @@ import io.tofhir.server.config.SparkConfig
 import io.tofhir.server.model.{BadRequest, InferTask, InternalError, ResourceNotFound, UserUnauthorized}
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
+import io.tofhir.engine.model.{FileSystemSource, FileSystemSourceSettings, SqlSourceSettings}
 import io.tofhir.server.service.mapping.IMappingRepository
 
+import java.sql.SQLException
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import akka.stream.scaladsl.Source
@@ -105,41 +107,66 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
         inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
     } catch {
       case e: Throwable =>
+        println(e.getClass)
+        val errorClass = e.getClass
         val errorMessage: String = e.getMessage
+
+        // This error is thrown if the extension of the file is not expected
+        if(errorClass == classOf[scala.NotImplementedError]){
+          val filePath = inferTask.sourceContext.asInstanceOf[FileSystemSource].path;
+          throw BadRequest("Unsupported file", s" The file ${filePath} is not supported. Correct the extension of the file.")
+        }
+
         // Gives the error if path of the source file is wrong
-        if (errorMessage.startsWith("[PATH_NOT_FOUND]")) {
-          throw ResourceNotFound("Path not found", errorMessage.substring(errorMessage.indexOf("Path")))
+        else if (errorClass == classOf[org.apache.spark.sql.AnalysisException]) {
+          val dataFolderPath: String = inferTask.sourceSettings("source").asInstanceOf[FileSystemSourceSettings].dataFolderPath
+          throw ResourceNotFound("Path not found", s"The file to be inferred cannot be found in the path: ${dataFolderPath}")
         }
-        // There is no distinct message for the case that user does not exists. Both wrong password and wrong username gives:
-        // "FATAL: password authentication failed for user [typed username]"
-        else if(errorMessage.startsWith("FATAL: password")){
-          throw UserUnauthorized("Authentication failed", "Connection cannot be established because password or username is wrong.")
+
+        // Syntax errors in preprocess SQL field in front-end
+        else if (errorClass == classOf[org.apache.spark.sql.catalyst.parser.ParseException]) {
+          // Capitalize and replace("\n", " ") is needed to read the message in the front-end properly
+          throw InternalError("Preprocess SQL syntax error", errorMessage.capitalize.replace("\n", " "))
         }
-        // Gives the error when database URL is wrong
-        else if(errorMessage.startsWith("Fatal: database")){
-          throw ResourceNotFound("Database not found", errorMessage.substring(errorMessage.indexOf("database")).capitalize)
+
+        /**
+         * If the error is an instance of SQL error handle it by its SQLState
+         * Reference: https://www.ibm.com/docs/en/i/7.4?topic=codes-listing-sqlstate-values
+         */
+        else if(classOf[java.sql.SQLException].isAssignableFrom(errorClass)){
+          val SQLError: SQLException = e.asInstanceOf[SQLException]
+          val SQLState = SQLError.getSQLState
+          val databaseURL: String = inferTask.sourceSettings("source").asInstanceOf[SqlSourceSettings].databaseUrl
+
+          // There is no distinct message for the case that user does not exists. Both wrong password and wrong username gives:
+          // SqlSate: 28*** (Ex: in PostgreSQL: 28P01)
+          if(SQLState.startsWith("28")) {
+            throw UserUnauthorized("Authentication failed", "Wrong user name or password, connection cannot be established.")
+          }
+
+          // Wrong database URL
+          // SQLState: 08*** (Ex: in PostgreSQL: 08001)
+          else if(SQLState.startsWith("08")){
+            throw ResourceNotFound("Database not found", s"Connection cannot be establish with: ${databaseURL}")
+          }
+
+          // Database url and authorization information is true but catalog not found
+          // SQLState: 3D*** (Ex: in PostgreSQL: 3D000)
+          else if(SQLState.startsWith("3D")){
+            val UrlParts = databaseURL.split("/")
+            val catalogName = UrlParts.last
+            throw ResourceNotFound("Database not found", s"${catalogName} is not found in the given database.")
+          }
+
+          // Syntax error in query, table name
+          // SqlState: 42*** (Ex: in PostgreSQL: 42P01)
+          else if (SQLState.startsWith("42")) {
+            throw InternalError("Erroneous query", errorMessage.capitalize)
+          }
         }
-        // Gives this error when format of the database URL is wrong.
-        // Ex: jdbc:postgresql://localhost:5432schemaTest instead of jdbc:postgresql://localhost:5432/schemaTest
-        else if(errorMessage.startsWith("No suitable driver")){
-          throw ResourceNotFound("Database not found", "Some field(s) is missing in the database URL")
-        }
-        // Wrong relation name in table name or in query fields
-        else if(errorMessage.startsWith("ERROR: relation")){
-          throw ResourceNotFound("Relation not found", errorMessage.substring(errorMessage.indexOf("relation")).capitalize)
-        }
-        // Errors related to query string
-        else if(errorMessage.startsWith("ERROR:")){
-          // Remove 'ERROR: ' from the beginning and capitalize, replace("\n", " ") is needed to read the message in the front-end properly
-          throw InternalError("Erroneous query", errorMessage.substring(7).capitalize.replace("\n", " "))
-        }
-        // Syntax errors that occurs when query and preprocess Sql used together
-        else if(errorMessage.contains("[PARSE_SYNTAX_ERROR]")){
-          throw InternalError("Erroneous query", errorMessage.substring(errorMessage.indexOf("Syntax error")).capitalize.replace("\n", " "))
-        }
-        else {
-          throw InternalError("Source cannot be read", errorMessage)
-        }
+
+        // If error is not handled by any if statement
+        throw InternalError("Source cannot be read", errorMessage.capitalize.replace("\n", " "))
     }
     // Default name for undefined information
     val defaultName: String = "unnamed"
