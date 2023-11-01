@@ -12,8 +12,8 @@ services:
       - './tofhir-docker-logs:/usr/local/tofhir/logs'
   tofhir-server:
     image: srdc/tofhir-server:latest
-    container_name: tofhir
-    hostname: tofhir
+    container_name: tofhir-server
+    hostname: tofhir-server
     environment:
       - LOG_SERVICE_ENDPOINT=http://tofhir-log-server:8086/tofhir-logs
       - FHIR_DEFINITIONS_ENDPOINT=http://onfhir:8080/fhir
@@ -31,7 +31,7 @@ services:
     image: srdc/tofhir-web:latest
     container_name: tofhir-web
     ports:
-      - "8082:80"
+      - "8087:80"
     networks:
       - tofhir-network
 networks:

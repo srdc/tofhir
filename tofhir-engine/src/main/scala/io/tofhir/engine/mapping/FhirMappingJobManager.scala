@@ -11,7 +11,7 @@ import io.tofhir.engine.model._
 import org.apache.spark.SparkException
 import org.apache.spark.sql.functions.{collect_list, struct}
 import org.apache.spark.sql.streaming.StreamingQuery
-import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession}
 
 import java.io.{File, FileNotFoundException, FileWriter}
 import java.net.URI
@@ -126,9 +126,19 @@ class FhirMappingJobManager(
         // Construct a tuple of (mapping url, Future[StreamingQuery])
         t.mappingRef ->
           readSourceAndExecuteTask(mappingJobExecution.job.id, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
+            .recover {
+              case e: Throwable =>
+                logger.error(s"Failed to read and execute mapping task! job: ${mappingJobExecution.job.id}, execution: ${mappingJobExecution.id}, mappingUrl: ${t.mappingRef}\n${e.getMessage}", e)
+                throw e
+            }
             .map(ts => {
               SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
             })
+            .recover {
+              case e: Throwable =>
+                logger.error(s"Failed to initiate streaming query! job: ${mappingJobExecution.job.id}, execution: ${mappingJobExecution.id}, mappingUrl: ${t.mappingRef}\n${e.getMessage}", e)
+                throw e
+            }
       })
       .toMap
   }

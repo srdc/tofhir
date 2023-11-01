@@ -152,7 +152,6 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         )
       }
     }
-    logger.debug(s"Submitted job for project: $projectId, job: $jobId, execution: ${mappingJobExecution.id}")
     submittedJob
   }
 

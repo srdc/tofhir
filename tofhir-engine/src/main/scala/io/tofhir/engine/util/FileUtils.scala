@@ -23,15 +23,17 @@ object FileUtils {
         Paths.get(path).normalize().toString,
         paths.map(p => Paths.get(p).normalize().toString): _*
       )
-    val resultingPath = if (givenPath.isAbsolute) givenPath
-    else Paths.get(
-      ToFhirConfig.engineConfig.contextPath,
-      givenPath.toString)
+    val resultingPath =
+      if (givenPath.isAbsolute) givenPath
+      else Paths.get(
+        ToFhirConfig.engineConfig.contextPath,
+        givenPath.toString)
     resultingPath.normalize()
   }
 
   /**
    * Find the file within the given directory by its type.
+   *
    * @param repoPath
    * @param name
    * @return

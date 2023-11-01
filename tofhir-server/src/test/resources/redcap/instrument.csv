@@ -1,0 +1,7 @@
+"Variable / Field Name","Form Name","Section Header","Field Type","Field Label","Choices, Calculations, OR Slider Labels","Field Note","Text Validation Type OR Show Slider Number","Text Validation Min","Text Validation Max",Identifier?,"Branching Logic (Show field only if...)","Required Field?","Custom Alignment","Question Number (surveys only)","Matrix Group Name","Matrix Ranking?","Field Annotation"
+record_id,test,,text,"Record ID",,,,,,,,,,,,,
+name,test,"1. General",text,"1.1 Name",,"Name",,,,,,,,,,,
+gender,test,,dropdown,"2.Gender","male, Male | female, Female","Enter your gender",,,,y,,y,,,,,
+age,test,,checkbox,"3.Age Category","baby, Baby | young, Young | adult, Adult | old, Old",,,,,,,,,,,,
+explanation,test,,descriptive,"The following question is not mandatory:",,,,,,,,,,,,,
+children,test,,radio,"How many children do you have ?","zero, 0 | one, 1 | two, 2 | more_than_two More than 2",,,,,,,,,,,,

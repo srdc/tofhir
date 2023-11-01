@@ -11,6 +11,9 @@ import io.tofhir.server.service.mapping.IMappingRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import io.tofhir.engine.util.{CsvUtil, RedCapUtil}
 
 class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
@@ -112,5 +115,24 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
       SchemaDefinition(url = defaultName, `type` = defaultName, name = defaultName, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))
     }
     Future.apply(Some(unnamedSchema))
+  }
+
+  /**
+   * Imports a REDCap Data Dictionary file to create new schemas for the forms defined in the given file.
+   *
+   * @param projectId  project id for which the schemas will be created
+   * @param byteSource the REDCap Data Dictionary File
+   * @param rootUrl    the root URL of the schemas to be created
+   * @return
+   */
+  def importREDCapDataDictionary(projectId: String, byteSource: Source[ByteString, Any], rootUrl: String): Future[Seq[SchemaDefinition]] = {
+    // read the file
+    val content: Future[Seq[Map[String, String]]] = CsvUtil.readFromCSVSource(byteSource)
+    content.flatMap(rows => {
+      // extract schema definitions
+      val definitions: Seq[SchemaDefinition] = RedCapUtil.extractSchemasAsSchemaDefinitions(rows, rootUrl)
+      // save each schema
+      Future.sequence(definitions.map(definition => schemaRepository.saveSchema(projectId, definition)))
+    })
   }
 }

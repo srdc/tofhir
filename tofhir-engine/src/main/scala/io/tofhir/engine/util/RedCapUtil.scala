@@ -17,6 +17,19 @@ object RedCapUtil {
    * @return the list of schemas extracted from REDCap data dictionary
    * */
   def extractSchemas(content: Seq[Map[String, String]], definitionRootUrl: String): Seq[Resource] = {
+    val schemaDefinitions: Seq[SchemaDefinition] = extractSchemasAsSchemaDefinitions(content, definitionRootUrl)
+    // convert it to FHIR Resources
+    schemaDefinitions.map(definition =>  SchemaUtil.convertToStructureDefinitionResource(definition))
+  }
+
+  /**
+   * Extracts Schema Definitions from the given REDCap data dictionary file.
+   *
+   * @param content           The content of a REDCap data dictionary file
+   * @param definitionRootUrl The definition root url for the newly created schemas
+   * @return the list of schemas extracted from REDCap data dictionary
+   * */
+  def extractSchemasAsSchemaDefinitions(content: Seq[Map[String, String]], definitionRootUrl: String): Seq[SchemaDefinition] = {
     // find forms
     val forms: Map[String, Seq[Map[String, String]]] = content.groupBy(row => row(RedCapDataDictionaryColumns.FORM_NAME))
     // create a schema for each form
@@ -66,14 +79,12 @@ object RedCapUtil {
           )
         }
       })
-      val definition = SchemaDefinition(id = schemaId,
+      SchemaDefinition(id = schemaId,
         url = s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId",
         `type` = schemaId,
         name = schemaName,
         rootDefinition = None,
         fieldDefinitions = Some(definitions))
-      // convert it to FHIR Resource
-      SchemaUtil.convertToStructureDefinitionResource(definition)
     }).toSeq
   }
 

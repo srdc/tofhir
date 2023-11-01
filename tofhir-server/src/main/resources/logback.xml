@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
+    <!-- Path to folder which keeps the logs -->
+    <property name="LOG_FOLDER" value="logs"/>
+    <!-- Stop output INFO at start -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
     <!-- Send messages to System.out -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- By default, encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
@@ -11,13 +16,13 @@
 
     <!-- Send messages to a file at "***.log" -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/tofhir-server.log</file>
+        <file>${LOG_FOLDER}/tofhir-server.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
         </encoder>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <FileNamePattern>logs/tofhir-server.%i.log.zip</FileNamePattern>
+            <FileNamePattern>${LOG_FOLDER}/tofhir-server.%i.log.zip</FileNamePattern>
             <MinIndex>1</MinIndex>
             <MaxIndex>10</MaxIndex>
         </rollingPolicy>
@@ -32,7 +37,10 @@
     </appender>
 
     <appender name="FILE-AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/tofhir-mappings.log</file>
+        <file>${LOG_FOLDER}/tofhir-mappings.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <includeMdc>false</includeMdc>
             <fieldNames>
@@ -44,7 +52,7 @@
         </encoder>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <FileNamePattern>logs/tofhir-mappings.%i.log.zip</FileNamePattern>
+            <FileNamePattern>${LOG_FOLDER}/tofhir-mappings.%i.log.zip</FileNamePattern>
             <MinIndex>1</MinIndex>
             <MaxIndex>10</MaxIndex>
         </rollingPolicy>
@@ -64,11 +72,13 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="io.tofhir.engine.data.write.SinkHandler" level="INFO">
+    <!-- Loggers inherit appender-refs from the ancestors unless the additivity is set to false -->
+    <!-- So, the loggers below will inherit the appender-refs from the root logger -->
+    <logger name="io.tofhir.engine.data.write.SinkHandler">
         <appender-ref ref="ASYNC-AUDIT" />
     </logger>
 
-    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager" level="INFO">
+    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager">
         <appender-ref ref="ASYNC-AUDIT" />
     </logger>
 

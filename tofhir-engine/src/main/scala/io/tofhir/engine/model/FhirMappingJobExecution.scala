@@ -92,7 +92,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return
    */
   def getErrorOutputDirectory(mappingUrl: String, errorType: String): String =
-    s"${ToFhirConfig.engineConfig.erroneousRecordsFolder}/${errorType}/job-${job.id}/execution-${id}/${this.convertUrlToAlphaNumeric(mappingUrl)}"
+    s"${FileUtils.getPath(ToFhirConfig.engineConfig.erroneousRecordsFolder, errorType, "job-" + job.id, "execution-" + id, this.convertUrlToAlphaNumeric(mappingUrl))}"
 
 
   /**

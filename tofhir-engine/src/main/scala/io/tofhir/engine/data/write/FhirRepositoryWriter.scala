@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.FHIR_INTERACTIONS
 import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionRequestBuilder, FhirClientException}
-import io.onfhir.api.model.FHIRResponse
+import io.onfhir.api.model.OutcomeIssue
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.util.JsonFormatter._
@@ -13,7 +13,6 @@ import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model._
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
-import org.apache.spark.SparkContext
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 import org.json4s.jackson.{JsonMethods, Serialization}
@@ -116,7 +115,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
           }
       }
     // add 'return=minimal' header if asked
-    if(sinkSettings.returnMinimal)
+    if (sinkSettings.returnMinimal)
       batchRequest = batchRequest.returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder]
     batchRequest
   }
@@ -137,6 +136,47 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
     try {
       Some(Await.result(batchRequest.executeAndReturnBundle(), FiniteDuration(20, TimeUnit.SECONDS)))
     } catch {
+      case fce: FhirClientException =>
+        if (fce.serverResponse.isDefined && fce.serverResponse.get.outcomeIssues.nonEmpty) {
+          // Firely returns HTTP 400 which causes a FhirClientException in case any of the records in the batch request raises an error.
+          // This is a contradiction with the FHIR standard. The standard says:
+          //  "When processing the batch, the HTTP response code is 200 OK
+          //    if the batch was processed correctly, regardless of the success of the operations within the Batch."
+          // For this reason, we will handle a kind of "checkResults" (see the function below) at this point for Firely.
+
+          val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} returned validation errors for batch interaction while writing the resources!"
+          if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
+            logger.error(msg, fce)
+            throw FhirMappingException(msg, fce)
+          } else {
+            zipWithEntryIndex(fce.serverResponse.get.outcomeIssues).map {
+              case (index, outcomeIssue) =>
+                mappingResults.apply(index)._2.copy(
+                  error = Some(FhirMappingError( //Set the error
+                    code = FhirMappingErrorCodes.INVALID_RESOURCE,
+                    description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
+                    expression = Some(Serialization.write(outcomeIssue))
+                  )))
+            }.foreach(failedResult => problemsAccumulator.add(failedResult))
+            None
+          }
+        } else {
+          val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} returned an unidentified error while writing the resources!"
+          if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
+            logger.error(msg, fce)
+            throw FhirMappingException(msg, fce)
+          } else {
+            mappingResults
+              .map(_._2)
+              .map(mr =>
+                mr.copy(error = Some(FhirMappingError( //Set the error
+                  code = FhirMappingErrorCodes.SERVICE_PROBLEM,
+                  description = msg
+                )))
+              ).foreach(failedResult => problemsAccumulator.add(failedResult))
+            None
+          }
+        }
       case tout: TimeoutException =>
         val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} timeout for batch interaction while writing the resources!"
         if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
@@ -150,28 +190,13 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
                 code = FhirMappingErrorCodes.FHIR_API_TIMEOUT,
                 description = msg
               )))
-            )
-            .foreach(failedResult =>
-              problemsAccumulator.add(failedResult)
-            )
+            ).foreach(failedResult => problemsAccumulator.add(failedResult))
           None
         }
       case e: Throwable =>
-        val msg = "!!!There is an error while writing resources to the FHIR Repository."
-        logger.error(msg, e)
-        // special handling for some errors
-        e match {
-          // log the server response for FhirClientException
-          case fce: FhirClientException if fce.serverResponse.isDefined =>
-            val serverResponse: FHIRResponse = fce.serverResponse.get
-            var ecfMsg = s"FHIR Repository responds with status code ${serverResponse.httpStatus}"
-            // extend error message with response body if available
-            if(serverResponse.responseBody.isDefined)
-              ecfMsg = ecfMsg.concat(s" and body ${serverResponse.responseBody.get.toJson}")
-            logger.error(ecfMsg)
-          case _ => ()
-        }
+        val msg = "UNEXPECTED!!! There is an unidentified error while writing resources to the FHIR Repository."
         if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
+          logger.error(msg, e)
           throw FhirMappingException(msg, e)
         } else {
           mappingResults
@@ -181,12 +206,34 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
                 code = FhirMappingErrorCodes.SERVICE_PROBLEM,
                 description = msg + " " + e.getMessage
               )))
-            ).foreach(failedResult =>
-            problemsAccumulator.add(failedResult)
-          )
+            ).foreach(failedResult => problemsAccumulator.add(failedResult))
           None
         }
     }
+  }
+
+  private def zipWithEntryIndex(outcomeIssues: Seq[OutcomeIssue]): Seq[(Int, OutcomeIssue)] = {
+    outcomeIssues.map(issue => {
+      if (issue.expression.isEmpty) {
+        // If Firely does not return an expression for the OutcomeIssue, I cannot find for which FhirMappingResult this issue is raised!!!
+        logger.error(s"Firely did not return an expression indicating the location of the OutcomeIssue: ${Serialization.write(issue)}")
+      }
+      if (issue.expression.size > 1) {
+        logger.warn(s"There are more than one expression describing the location of the OutcomeIssue. I will continue with the first expression: ${issue.expression.head}")
+      }
+      val matchResult = "^Bundle\\.entry\\[(\\d+)\\]".r.findFirstMatchIn(issue.expression.head)
+
+      val resourceEntryIndex = // Find the index of the resource so that I can find it in the mappingResults.
+        "^Bundle\\.entry\\[(\\d+)\\]".r
+          .findFirstMatchIn(issue.expression.head) match {
+          case Some(matched) => Some(matched.group(1).toInt)
+          case None => None
+        }
+      if (resourceEntryIndex.isEmpty) {
+        logger.error(s"Entry index cannot be extracted from the expression given in the OutcomeIssue: ${Serialization.write(issue)}")
+      }
+      resourceEntryIndex.get -> issue
+    })
   }
 
   /**
@@ -198,7 +245,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
    * @param problemsAccumulator Spark accumulator for errors
    * @param onFhirClient        Client for FHIR API
    * @param retry               The number of retry for persistence
-   *
    * @throws FhirMappingInvalidResourceException when there are some invalid mapping results
    *                                             i.e. they are not valid FHIR resources or do not conform to the indicated profiles
    */
@@ -212,34 +258,32 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
     //Find real errors
     val nonTransientErrors = getNonTransientErrorUUIDs(mappingResultMap, responseBundle)
     val transientErrors = responseBundle.getUUIDsOfTransientErrors()
-    if(nonTransientErrors.nonEmpty || retry == 4){
-        val msg =
-          s"!!!There is an error while writing resources to the FHIR Repository.\n" +
-            s"\tRepository URL: ${sinkSettings.fhirRepoUrl}\n" +
-            s"\tBundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
-            s"\tBundle response: ${responseBundle.bundle.toJson}"
+    if (nonTransientErrors.nonEmpty || retry == 4) {
+      val msg =
+        s"!!!There is an error while writing resources to the FHIR Repository.\n" +
+          s"\tRepository URL: ${sinkSettings.fhirRepoUrl}\n" +
+          s"\tBundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
+          s"\tBundle response: ${responseBundle.bundle.toJson}"
 
-        responseBundle
-          .responses
-          .filter(_._2.isError)
-          .map(response =>
-            mappingResultMap(response._1.get) //Find the mapping result
-              .copy(error = Some(FhirMappingError( //Set the error
-                code = FhirMappingErrorCodes.INVALID_RESOURCE,
-                description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
-                expression = Some(Serialization.write(response._2.outcomeIssues))
-              )))
-          ).foreach(failedResult =>
-          problemsAccumulator.add(failedResult)
-        )
+      responseBundle
+        .responses
+        .filter(_._2.isError)
+        .map(response =>
+          mappingResultMap(response._1.get) //Find the mapping result
+            .copy(error = Some(FhirMappingError( //Set the error
+              code = FhirMappingErrorCodes.INVALID_RESOURCE,
+              description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
+              expression = Some(Serialization.write(response._2.outcomeIssues))
+            )))
+        ).foreach(failedResult => problemsAccumulator.add(failedResult))
 
-        if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
-          // Spark will automatically log the msg of exception
-          throw FhirMappingInvalidResourceException(msg, problemsAccumulator.value)
-        } else {
-          logger.error(msg)
-        }
-    } else if(transientErrors.nonEmpty) {
+      if (sinkSettings.errorHandling.isEmpty || sinkSettings.errorHandling.get == ErrorHandlingType.HALT) {
+        // Spark will automatically log the msg of exception
+        throw FhirMappingInvalidResourceException(msg, problemsAccumulator.value)
+      } else {
+        logger.error(msg)
+      }
+    } else if (transientErrors.nonEmpty) {
       //Otherwise (having 409 Conflicts), retry the failed ones
       retryRequestsWithTransientError(mappingResultMap, responseBundle, problemsAccumulator, onFhirClient, retry)
     } else {
@@ -254,17 +298,17 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
    * @param responseBundle   FHIR batch response bundle
    * @return
    */
-  private def getNonTransientErrorUUIDs(mappingResultMap: Map[String, FhirMappingResult], responseBundle: FHIRTransactionBatchBundle):Seq[String] = {
-      responseBundle
-        .responses
-        .filter(r =>
-          r._2.isNonTransientError && //If this is a non-transient error, except the Conditional patch not found case, which we skip the update
-            !(
-              r._2.httpStatus.intValue() == HttpStatus.SC_NOT_FOUND &&
+  private def getNonTransientErrorUUIDs(mappingResultMap: Map[String, FhirMappingResult], responseBundle: FHIRTransactionBatchBundle): Seq[String] = {
+    responseBundle
+      .responses
+      .filter(r =>
+        r._2.isNonTransientError && //If this is a non-transient error, except the Conditional patch not found case, which we skip the update
+          !(
+            r._2.httpStatus.intValue() == HttpStatus.SC_NOT_FOUND &&
               mappingResultMap(r._1.get).fhirInteraction.exists(fint => fint.`type` == FHIR_INTERACTIONS.PATCH && fint.condition.nonEmpty)
             )
-        )
-        .map(_._1.get)
+      )
+      .map(_._1.get)
   }
 
   /**

@@ -44,8 +44,14 @@ fi
 if [ ! -z "$FHIR_DEFINITIONS_ENDPOINT" ]; then
   JAVA_CMD+="-Dfhir.definitions-fhir-endpoint=$FHIR_DEFINITIONS_ENDPOINT "
 fi
-if [ ! -z "$FHIR_DEFINITIONS_ROOT_URL" ]; then
-  JAVA_CMD+="-Dfhir.definitions-root-urls=$FHIR_DEFINITIONS_ROOT_URL "
+if [ ! -z "$FHIR_DEFINITIONS_ROOT_URL_0" ]; then
+  JAVA_CMD+="-Dfhir.definitions-root-urls.0=$FHIR_DEFINITIONS_ROOT_URL "
+fi
+if [ ! -z "$FHIR_DEFINITIONS_ROOT_URL_1" ]; then
+  JAVA_CMD+="-Dfhir.definitions-root-urls.1=$FHIR_DEFINITIONS_ROOT_URL "
+fi
+if [ ! -z "$FHIR_DEFINITIONS_ROOT_URL_2" ]; then
+  JAVA_CMD+="-Dfhir.definitions-root-urls.2=$FHIR_DEFINITIONS_ROOT_URL "
 fi
 if [ ! -z "$FHIR_DEFINITIONS_PROFILES_PATH" ]; then
   JAVA_CMD+="-Dfhir.profiles-path=$FHIR_DEFINITIONS_ROOT_URL "

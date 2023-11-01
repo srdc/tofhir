@@ -222,6 +222,12 @@
                 <artifactId>json4s-ext_${scala.binary.version}</artifactId>
                 <version>${json4s.version}</version>
             </dependency>
+            <!-- For subprocesses-->
+            <dependency>
+                <groupId>com.lihaoyi</groupId>
+                <artifactId>os-lib_${scala.binary.version}</artifactId>
+                <version>0.9.1</version>
+            </dependency>
             <!-- Spark dependencies -->
             <dependency>
                 <groupId>org.apache.spark</groupId>

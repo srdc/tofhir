@@ -6,12 +6,13 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_INFER, SEGMENT_SCHEMAS}
+import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{InferTask, ToFhirRestCall}
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.endpoint.MappingContextEndpoint.ATTACHMENT
 import io.tofhir.server.service.mapping.IMappingRepository
 
 class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
@@ -30,6 +31,8 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
         }
       } ~ pathPrefix(SEGMENT_INFER) { // infer a schema
         inferSchema()
+      } ~ pathPrefix(SEGMENT_REDCAP) { // import a REDCap data dictionary file
+        importREDCapDataDictionary(projectId)
       } ~ pathPrefix(Segment) { id: String => // Operations on a single schema identified by its id
         getSchema(projectId, id) ~ updateSchema(projectId, id) ~ deleteSchema(projectId, id)
       }
@@ -112,10 +115,28 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
       }
     }
   }
+
+  /**
+   * Route to import a REDCap data dictionary file which will be used to create schemas.
+   * */
+  private def importREDCapDataDictionary(projectId: String): Route = {
+    post {
+      fileUpload(ATTACHMENT) {
+        case (_, byteSource) =>
+          parameters("rootUrl") { rootUrl =>
+            complete {
+              service.importREDCapDataDictionary(projectId, byteSource, rootUrl)
+            }
+          }
+
+      }
+    }
+  }
 }
 
 object SchemaDefinitionEndpoint {
   val SEGMENT_SCHEMAS = "schemas"
   val SEGMENT_INFER = "infer"
+  val SEGMENT_REDCAP = "redcap"
 }
 

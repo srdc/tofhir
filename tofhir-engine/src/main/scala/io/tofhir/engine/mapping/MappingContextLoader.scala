@@ -60,7 +60,7 @@ class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extend
      else
       filePath
     Future {
-      CsvUtil.readFromCSVAndReturnWithColumnNames(path)
+      CsvUtil.readFromCSVAndReturnWithColumnNames(FileUtils.getPath(path).toString)
     }
   }
 
