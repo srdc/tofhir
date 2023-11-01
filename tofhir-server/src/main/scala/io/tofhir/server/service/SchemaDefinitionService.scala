@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.{BadRequest, InferTask, ResourceNotFound}
+import io.tofhir.server.model.{BadRequest, InferTask, InternalError, ResourceNotFound, UserUnauthorized}
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
 import io.tofhir.server.service.mapping.IMappingRepository
@@ -100,8 +100,47 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    */
   def inferSchema(inferTask: InferTask): Future[Option[SchemaDefinition]] = {
     // Execute SQL and get the dataFrame
-    val dataFrame = SourceHandler.readSource(inferTask.name, SparkConfig.sparkSession,
-      inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
+    val dataFrame = try {
+      SourceHandler.readSource(inferTask.name, SparkConfig.sparkSession,
+        inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
+    } catch {
+      case e: Throwable =>
+        val errorMessage: String = e.getMessage
+        // Gives the error if path of the source file is wrong
+        if (errorMessage.startsWith("[PATH_NOT_FOUND]")) {
+          throw ResourceNotFound("Path not found", errorMessage.substring(errorMessage.indexOf("Path")))
+        }
+        // There is no distinct message for the case that user does not exists. Both wrong password and wrong username gives:
+        // "FATAL: password authentication failed for user [typed username]"
+        else if(errorMessage.startsWith("FATAL: password")){
+          throw UserUnauthorized("Authentication failed", "Connection cannot be established because password or username is wrong.")
+        }
+        // Gives the error when database URL is wrong
+        else if(errorMessage.startsWith("Fatal: database")){
+          throw ResourceNotFound("Database not found", errorMessage.substring(errorMessage.indexOf("database")).capitalize)
+        }
+        // Gives this error when format of the database URL is wrong.
+        // Ex: jdbc:postgresql://localhost:5432schemaTest instead of jdbc:postgresql://localhost:5432/schemaTest
+        else if(errorMessage.startsWith("No suitable driver")){
+          throw ResourceNotFound("Database not found", "Some field(s) is missing in the database URL")
+        }
+        // Wrong relation name in table name or in query fields
+        else if(errorMessage.startsWith("ERROR: relation")){
+          throw ResourceNotFound("Relation not found", errorMessage.substring(errorMessage.indexOf("relation")).capitalize)
+        }
+        // Errors related to query string
+        else if(errorMessage.startsWith("ERROR:")){
+          // Remove 'ERROR: ' from the beginning and capitalize, replace("\n", " ") is needed to read the message in the front-end properly
+          throw InternalError("Erroneous query", errorMessage.substring(7).capitalize.replace("\n", " "))
+        }
+        // Syntax errors that occurs when query and preprocess Sql used together
+        else if(errorMessage.contains("[PARSE_SYNTAX_ERROR]")){
+          throw InternalError("Erroneous query", errorMessage.substring(errorMessage.indexOf("Syntax error")).capitalize.replace("\n", " "))
+        }
+        else {
+          throw InternalError("Source cannot be read", errorMessage)
+        }
+    }
     // Default name for undefined information
     val defaultName: String = "unnamed"
     // Create unnamed Schema definition by infer the schema from DataFrame

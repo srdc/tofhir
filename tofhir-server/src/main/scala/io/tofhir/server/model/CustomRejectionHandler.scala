@@ -14,7 +14,7 @@ object CustomRejectionHandler {
 
       /**
        * Handles the cases type of the request data is wrong. Ex: String instead of a terminology system model.
-       * supportedTypes is not worked in the tested cases, it only included 'application/json'
+       * supportedTypes is not worked properly in the tested cases, it only included 'application/json'
        */
       .handle {
         case UnsupportedRequestContentTypeRejection(supportedTypes) =>
