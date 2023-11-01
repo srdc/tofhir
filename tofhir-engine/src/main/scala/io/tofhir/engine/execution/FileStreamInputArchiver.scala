@@ -232,9 +232,10 @@ object FileStreamInputArchiver {
  */
 class StreamingArchiverTask(archiver: FileStreamInputArchiver, runningJobRegistry: RunningJobRegistry) extends TimerTask {
   override def run(): Unit = {
-    // Get executions with streaming queries and apply
+    // Get executions with streaming queries and file system sources and apply
     val executions = runningJobRegistry.getRunningExecutionsWithCompleteMetadata()
       .filter(execution => execution.isStreaming())
+      .filter(execution => execution.job.sourceSettings.head._2.isInstanceOf[FileSystemSourceSettings])
     executions.foreach(execution => {
       if (execution.isStreaming()) {
         execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
