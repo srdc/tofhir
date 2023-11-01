@@ -1,7 +1,8 @@
 package io.tofhir.server
 
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.server.config.{LogServiceConfig, WebServerConfig}
+import io.tofhir.server.config.LogServiceConfig
+import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 

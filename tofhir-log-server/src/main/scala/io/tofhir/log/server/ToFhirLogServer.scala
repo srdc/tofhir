@@ -1,7 +1,7 @@
 package io.tofhir.log.server
 
-import io.tofhir.log.server.config.WebServerConfig
 import io.tofhir.log.server.endpoint.ExecutionEndpoint
+import io.tofhir.server.common.config.WebServerConfig
 
 object ToFhirLogServer {
   def start(): Unit = {

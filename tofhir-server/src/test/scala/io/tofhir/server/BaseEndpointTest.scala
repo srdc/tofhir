@@ -6,7 +6,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.config.{LogServiceConfig, WebServerConfig}
+import io.tofhir.server.config.LogServiceConfig
+import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.Project
