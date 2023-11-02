@@ -5,7 +5,8 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.endpoint.RedCapIntegrationModuleEndpoint.SEGMENT_REDCAP
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{RedCapConfig, ToFhirRestCall}
+import io.tofhir.server.model.RedCapConfig
+import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.service.RedCapIntegrationModuleService
 
 class RedCapIntegrationModuleEndpoint() extends LazyLogging {

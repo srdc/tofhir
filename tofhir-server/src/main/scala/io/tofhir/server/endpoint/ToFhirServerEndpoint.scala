@@ -9,7 +9,7 @@ import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.interceptor.IErrorHandler
 import io.tofhir.server.common.interceptor.ICORSHandler
-import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.service.job.JobFolderRepository
 import io.tofhir.server.service.mapping.ProjectMappingFolderRepository
 import io.tofhir.server.service.mappingcontext.MappingContextFolderRepository

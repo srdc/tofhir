@@ -6,9 +6,10 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
+import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{TerminologySystem, ToFhirRestCall}
+import io.tofhir.server.model.TerminologySystem
 import io.tofhir.server.service.TerminologySystemService
 import io.tofhir.server.service.job.JobFolderRepository
 import io.tofhir.server.service.terminology.ITerminologySystemRepository
