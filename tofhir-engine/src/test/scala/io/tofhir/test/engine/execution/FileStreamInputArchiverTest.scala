@@ -39,7 +39,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   "FileStreamInputArchiver" should "apply archiving for a streaming job" in {
 
     // Initialize spark files for this test
-    val testCsvFile: File = initializeSparkFiles(jobId, mappingUrl)
+    val testCsvFile: File = SparkUtil.initializeSparkFiles(jobId, mappingUrl)
 
     // Find the relative path between the workspace folder and the file to be archived
     val relPath = FileUtils.getPath("").toAbsolutePath.relativize(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toAbsolutePath)
@@ -68,7 +68,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   "FileStreamInputArchiver" should "apply deletion for a streaming job" in {
 
     // Initialize spark files for this test
-    val testCsvFile: File = initializeSparkFiles(jobId2, mappingUrl)
+    val testCsvFile: File = SparkUtil.initializeSparkFiles(jobId2, mappingUrl)
 
     // Check whether csv file exists
     testCsvFile.exists() shouldBe true
@@ -136,7 +136,8 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     val jobId = "mocked_job_id_3"
 
     // Create a source file to refer location of test.csv
-    val sourceFile = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "sources", "0", "0").toFile
+    val sourceFile = SparkUtil.getSourceFile(jobId, mappingUrl, "0")
+
     // Path of test.csv and test2.csv
     val testCsvFile = FileUtils.getPath("test-archiver", "test.csv").toFile
     val test2CsvFile = FileUtils.getPath("test-archiver", "test2.csv").toFile
@@ -146,8 +147,8 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     test2CsvFile.getParentFile.mkdirs()
     // Write path of test.csv and test2.csv to the source file
     val sourceWriter = new PrintWriter(sourceFile)
-    sourceWriter.write(s"{\"path\":\"${testCsvFile.getAbsolutePath.replace("\\", "\\\\")}\"}\n")
-    sourceWriter.write(s"{\"path\":\"${test2CsvFile.getAbsolutePath.replace("\\", "\\\\")}\"}\n")
+    SparkUtil.writeToSourceFile(sourceWriter, testCsvFile)
+    SparkUtil.writeToSourceFile(sourceWriter, test2CsvFile)
     sourceWriter.close()
 
     // Access getInputFile method of FileStreamInputArchiver using reflection
@@ -174,8 +175,8 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     val jobId = "mocked_job_id_4"
 
     // Create a source file to refer location of test.csv
-    val commitFile = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commit", "0", "0").toFile
-    val commitFile2 = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commit", "0", "1").toFile
+    val commitFile = SparkUtil.getCommitFile(jobId, mappingUrl, "0")
+    val commitFile2 = SparkUtil.getCommitFile(jobId, mappingUrl, "1")
     val commitDirectory = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commit", "0").toFile
     // Ensure the parent directories exist, if not, create them
     commitFile.getParentFile.mkdirs()
@@ -231,41 +232,6 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
     // Check whether lastProccessedOffset is updated
     newLastProccessedOffset shouldBe 2
-  }
-
-  /**
-   * Initialize needed spark files.
-   * @param jobId Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @return Return test csv file
-   */
-  private def initializeSparkFiles(jobId: String, mappingUrl: String): File = {
-    // Create a source file to refer location of test.csv
-    val sourceFile = FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "sources", "0", "0").toFile
-    // Path of test.csv
-    val testCsvFile = FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toFile
-    // Ensure the parent directories exist, if not, create them
-    sourceFile.getParentFile.mkdirs()
-    testCsvFile.getParentFile.mkdirs()
-    // Write path of test.csv to the source file
-    val sourceWriter = new PrintWriter(sourceFile)
-    sourceWriter.write(s"{\"path\":\"${testCsvFile.getAbsolutePath.replace("\\", "\\\\")}\"}")
-    sourceWriter.close()
-
-    // Create a test csv
-    val testCsvWriter = new PrintWriter(testCsvFile)
-    testCsvWriter.write("testColumn1,testColumn2,testColumn3,testColumn4,testColumn5\ntestRow1,testRow2,testRow3,testRow4,testRow5")
-    testCsvWriter.close()
-
-    // Create a commit file inorder to start range function in applyArchivingOnStreamingJob
-    val commitFile = FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "commits", "0").toFile
-    // Ensure the parent directories exist, if not, create them
-    commitFile.getParentFile.mkdirs()
-    val commitWriter = new PrintWriter(commitFile)
-    commitWriter.write("v1\n{\"nextBatchWatermarkMs\":0}")
-    commitWriter.close()
-
-    testCsvFile
   }
 
   /**
