@@ -177,7 +177,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     // Create a source file to refer location of test.csv
     val commitFile = SparkUtil.getCommitFileFromTestArchiver(jobId, mappingUrl, "0")
     val commitFile2 = SparkUtil.getCommitFileFromTestArchiver(jobId, mappingUrl, "1")
-    val commitDirectory = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commit", "0").toFile
+    val commitDirectory = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commits", "0").toFile
     // Ensure the parent directories exist, if not, create them
     commitFile.getParentFile.mkdirs()
     commitFile2.getParentFile.mkdirs()
@@ -277,7 +277,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     testCsvWriter.close()
 
     // Create a commit file inorder to start range function in applyArchivingOnStreamingJob
-    val commitFile = FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "commits", "0").toFile
+    val commitFile = SparkUtil.getCommitFileFromSparkArchiver(jobId, mappingUrl, "0")
     // Ensure the parent directories exist, if not, create them
     commitFile.getParentFile.mkdirs()
     val commitWriter = new PrintWriter(commitFile)

@@ -37,7 +37,18 @@ object SparkUtil {
    * @return Return commit file
    */
   def getCommitFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commit", "0", fileName).toFile
+    FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commits", "0", fileName).toFile
+  }
+
+  /**
+   * Get commit file from spark directory.
+   * @param jobId Job id of the execution.
+   * @param mappingUrl Selected mapping url.
+   * @param fileName commit file name
+   * @return Return commit file
+   */
+  def getCommitFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+    FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "commits", fileName).toFile
   }
 
   /**
