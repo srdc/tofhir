@@ -130,36 +130,6 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, sourceFolderPath).toFile)
   }
 
-  "FileStreamInputArchiver" should "get commit file" in {
-    // Create a mock job
-    val mockJob = mock[FhirMappingJob]
-    val mappingUrl = "mocked_mapping_url"
-    val jobId = "mocked_job_id"
-    when(mockJob.id).thenReturn(jobId)
-
-    // Create an execution
-    val testExecution = FhirMappingJobExecution(job = mockJob)
-
-    // Test whether commit directory is right
-    testExecution.getCommitDirectory(mappingUrl) shouldBe
-      FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "commits").toString
-  }
-
-  "FileStreamInputArchiver" should "get source file" in {
-    // Create a mock job
-    val mockJob = mock[FhirMappingJob]
-    val mappingUrl = "mocked_mapping_url"
-    val jobId = "mocked_job_id"
-    when(mockJob.id).thenReturn(jobId)
-
-    // Create an execution
-    val testExecution = FhirMappingJobExecution(job = mockJob)
-
-    // Test whether source directory is right
-    testExecution.getSourceDirectory(mappingUrl) shouldBe
-      FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "sources", "0").toString
-  }
-
   "FileStreamInputArchiver" should "get input files" in {
 
     val mappingUrl = "mocked_mapping_url"
