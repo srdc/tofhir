@@ -52,4 +52,12 @@ trait IJobRepository {
    * @return
    */
   def deleteJob(projectId: String, id: String): Future[Unit]
+
+  /**
+   * Retrieves the jobs referencing the given mapping in their definitions.
+   * @param projectId identifier of project whose jobs will be checked
+   * @param mappingUrl the url of mapping
+   * @return the jobs referencing the given mapping in their definitions
+   */
+  def getJobsReferencingMapping(projectId: String, mappingUrl: String): Future[Seq[FhirMappingJob]]
 }

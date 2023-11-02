@@ -10,11 +10,12 @@ import io.tofhir.server.endpoint.MappingEndpoint.SEGMENT_MAPPINGS
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.MappingService
+import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 
-class MappingEndpoint(mappingRepository: IMappingRepository) extends LazyLogging {
+class MappingEndpoint(mappingRepository: IMappingRepository, jobRepository: IJobRepository) extends LazyLogging {
 
-  val service: MappingService = new MappingService(mappingRepository)
+  val service: MappingService = new MappingService(mappingRepository, jobRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_MAPPINGS) {
