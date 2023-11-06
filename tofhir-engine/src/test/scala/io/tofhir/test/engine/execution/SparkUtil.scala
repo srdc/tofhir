@@ -1,60 +1,43 @@
 package io.tofhir.test.engine.execution
 
-import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.util.FileUtils
-
 import java.io.{File, PrintWriter}
+import java.nio.file.{Path, Paths}
 
+/**
+ * Utility class that is mainly used to access and modify checkpoint-related files managed by Spark. This class serves for the purpose of being the
+ * single point where Spark-related logic is implemented.
+ */
 object SparkUtil {
 
   /**
-   * Get source file from test-archiver directory.
-   * @param jobId Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @param fileName source file name
-   * @return Return source file
+   * Gets the source file keeping the names of the input files. This file is managed by Spark inside the checkpoint directory.
+   * The current implementation of Spark adds a root folder with name "0", keeping the other source files.
+   *
+   * @param sourceDirectory Root source directory created by Spark. This directory is supposed to keep job and task-specific source files.
+   * @param sourceFileName  Actual file that is contained the source directory
+   * @return
    */
-  def getSourceFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "sources", "0", fileName).toFile
+  def getSourceFile(sourceDirectory: Path, sourceFileName: String): File = {
+    Paths.get(sourceDirectory.toString, "sources", "0", sourceFileName).toFile
   }
 
   /**
-   * Get source file from spark directory.
-   * @param jobId Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @param fileName source file name
-   * @return Return source file
+   * Gets the commit file corresponding to the sources. This file is managed by Spark inside the checkpoint directory.
+   *
+   * @param commitDirectory Root commit directory created by Spark. This directory is supposed to keep job and task-specific commit files.
+   * @param commitFileName  Actual file that is contained the commit directory
+   * @return
    */
-  def getSourceFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "sources", "0", fileName).toFile
+  def getCommitFile(commitDirectory: Path, commitFileName: String): File = {
+    Paths.get(commitDirectory.toString, "commits", commitFileName).toFile
   }
 
-  /**
-   * Get commit file from test-archiver directory.
-   * @param jobId Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @param fileName commit file name
-   * @return Return commit file
-   */
-  def getCommitFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commits", "0", fileName).toFile
-  }
-
-  /**
-   * Get commit file from spark directory.
-   * @param jobId Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @param fileName commit file name
-   * @return Return commit file
-   */
-  def getCommitFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString, "commits", fileName).toFile
-  }
 
   /**
    * Write csv path to source file
+   *
    * @param sourceWriter Writer for source file
-   * @param testCsvFile Selected csv file
+   * @param testCsvFile  Selected csv file
    */
   def writeToSourceFile(sourceWriter: PrintWriter, testCsvFile: File): Unit = {
     sourceWriter.write(s"{\"path\":\"${testCsvFile.getAbsolutePath.replace("\\", "\\\\")}\"}\n")

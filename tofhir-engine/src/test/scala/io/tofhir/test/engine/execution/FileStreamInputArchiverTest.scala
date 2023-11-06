@@ -136,7 +136,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     val jobId = "mocked_job_id_3"
 
     // Create a source file to refer location of test.csv
-    val sourceFile = SparkUtil.getSourceFileFromTestArchiver(jobId, mappingUrl, "0")
+    val sourceFile = getSourceFileFromTestArchiver(jobId, mappingUrl, "0")
 
     // Path of test.csv and test2.csv
     val testCsvFile = FileUtils.getPath("test-archiver", "test.csv").toFile
@@ -175,8 +175,8 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     val jobId = "mocked_job_id_4"
 
     // Create a source file to refer location of test.csv
-    val commitFile = SparkUtil.getCommitFileFromTestArchiver(jobId, mappingUrl, "0")
-    val commitFile2 = SparkUtil.getCommitFileFromTestArchiver(jobId, mappingUrl, "1")
+    val commitFile = getCommitFileFromTestArchiver(jobId, mappingUrl, "0")
+    val commitFile2 = getCommitFileFromTestArchiver(jobId, mappingUrl, "1")
     val commitDirectory = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commits", "0").toFile
     // Ensure the parent directories exist, if not, create them
     commitFile.getParentFile.mkdirs()
@@ -260,7 +260,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
    */
   private def initializeSparkFiles(jobId: String, mappingUrl: String): File = {
     // Create a source file to refer location of test.csv
-    val sourceFile = SparkUtil.getSourceFileFromSparkArchiver(jobId, mappingUrl, "0")
+    val sourceFile = getSourceFileFromSparkArchiver(jobId, mappingUrl, "0")
     // Path of test.csv
     val testCsvFile = FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toFile
     // Ensure the parent directories exist, if not, create them
@@ -277,7 +277,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     testCsvWriter.close()
 
     // Create a commit file inorder to start range function in applyArchivingOnStreamingJob
-    val commitFile = SparkUtil.getCommitFileFromSparkArchiver(jobId, mappingUrl, "0")
+    val commitFile = getCommitFileFromSparkArchiver(jobId, mappingUrl, "0")
     // Ensure the parent directories exist, if not, create them
     commitFile.getParentFile.mkdirs()
     val commitWriter = new PrintWriter(commitFile)
@@ -285,5 +285,53 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     commitWriter.close()
 
     testCsvFile
+  }
+
+  /**
+   * Get source file from test-archiver directory.
+   *
+   * @param jobId      Job id of the execution.
+   * @param mappingUrl Selected mapping url.
+   * @param fileName   source file name
+   * @return Return source file
+   */
+  def getSourceFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+    SparkUtil.getSourceFile(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString), fileName)
+  }
+
+  /**
+   * Get source file from spark directory.
+   *
+   * @param jobId      Job id of the execution.
+   * @param mappingUrl Selected mapping url.
+   * @param fileName   source file name
+   * @return Return source file
+   */
+  def getSourceFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+    SparkUtil.getSourceFile(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString), fileName)
+  }
+
+  /**
+   * Get commit file from test-archiver directory.
+   *
+   * @param jobId      Job id of the execution.
+   * @param mappingUrl Selected mapping url.
+   * @param fileName   commit file name
+   * @return Return commit file
+   */
+  def getCommitFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+    SparkUtil.getCommitFile(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString), fileName)
+  }
+
+  /**
+   * Get commit file from spark directory.
+   *
+   * @param jobId      Job id of the execution.
+   * @param mappingUrl Selected mapping url.
+   * @param fileName   commit file name
+   * @return Return commit file
+   */
+  def getCommitFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+    SparkUtil.getCommitFile(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString), fileName)
   }
 }
