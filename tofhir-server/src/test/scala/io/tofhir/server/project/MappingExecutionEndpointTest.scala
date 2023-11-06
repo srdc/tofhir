@@ -121,7 +121,13 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "run a job with mappings and schemas that are created after the server is up" in {
+    /**
+     * This test ensures that mapping resources (i.e. mapping definitions, context maps, etc.) becomes available to execute even if they are created
+     * after the server is up.
+     *
+     * Furthermore, the test also validates whether erroneous records are
+     */
+    "run a job with a mapping and context map that are created after the server is up" in {
       // Create context map for the global project
       createContextMapAndVerify("other-observation-concept-map.csv", "other-observation-concept-map.csv")
 
