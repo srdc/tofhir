@@ -3,12 +3,13 @@ package io.tofhir.test.engine.execution
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.execution.{FileStreamInputArchiver, RunningJobRegistry}
 import io.tofhir.engine.model._
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.{FileUtils, SparkUtil}
 import org.mockito.MockitoSugar._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.io.{File, PrintWriter}
+import java.nio.file.Paths
 import scala.reflect.runtime.universe._
 
 class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
@@ -177,7 +178,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     // Create a source file to refer location of test.csv
     val commitFile = getCommitFileFromTestArchiver(jobId, mappingUrl, "0")
     val commitFile2 = getCommitFileFromTestArchiver(jobId, mappingUrl, "1")
-    val commitDirectory = FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString, "commits", "0").toFile
+    val commitDirectory = new File(SparkUtil.getCommitDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString)))
     // Ensure the parent directories exist, if not, create them
     commitFile.getParentFile.mkdirs()
     commitFile2.getParentFile.mkdirs()
@@ -296,7 +297,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
    * @return Return source file
    */
   def getSourceFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    SparkUtil.getSourceFile(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString), fileName)
+    Paths.get(
+      SparkUtil.getSourceDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString)),
+      fileName
+    ).toFile
   }
 
   /**
@@ -308,7 +312,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
    * @return Return source file
    */
   def getSourceFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    SparkUtil.getSourceFile(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString), fileName)
+    Paths.get(
+      SparkUtil.getSourceDirectoryPath(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString)),
+      fileName
+    ).toFile
   }
 
   /**
@@ -320,7 +327,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
    * @return Return commit file
    */
   def getCommitFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    SparkUtil.getCommitFile(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString), fileName)
+    Paths.get(
+      SparkUtil.getCommitDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString)),
+      fileName
+    ).toFile
   }
 
   /**
@@ -332,6 +342,9 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
    * @return Return commit file
    */
   def getCommitFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
-    SparkUtil.getCommitFile(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString), fileName)
+    Paths.get(
+      SparkUtil.getCommitDirectoryPath(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString)),
+      fileName
+    ).toFile
   }
 }

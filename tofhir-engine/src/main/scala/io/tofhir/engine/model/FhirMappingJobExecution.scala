@@ -2,7 +2,7 @@ package io.tofhir.engine.model
 
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.{FileUtils, SparkUtil}
 import org.apache.spark.sql.streaming.StreamingQuery
 
 import java.util.UUID
@@ -88,8 +88,9 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @param mappingUrl Url of the mapping
    * @return Directory path in which the commits will be managed
    */
-  def getCommitDirectory(mappingUrl: String): String =
-    s"${FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, job.id, mappingUrl.hashCode.toString, "commits").toString}"
+  def getCommitDirectory(mappingUrl: String): String = {
+    SparkUtil.getCommitDirectoryPath(FileUtils.getPath(getCheckpointDirectory(mappingUrl)))
+  }
 
   /**
    * Creates a source directory for a mapping included in a job
@@ -97,8 +98,9 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @param mappingUrl Url of the mapping
    * @return Directory path in which the sources will be managed
    */
-  def getSourceDirectory(mappingUrl: String): String =
-    s"${FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, job.id, mappingUrl.hashCode.toString, "sources", "0").toString}"
+  def getSourceDirectory(mappingUrl: String): String = {
+    SparkUtil.getSourceDirectoryPath(FileUtils.getPath(getCheckpointDirectory(mappingUrl)))
+  }
 
   /**
    * Creates a error output directory for a mapping execution included in a job and an execution
