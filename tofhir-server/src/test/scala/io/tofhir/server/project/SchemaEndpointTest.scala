@@ -315,9 +315,9 @@ class SchemaEndpointTest extends BaseEndpointTest {
         sourceContext = SqlSource(query = Some("Select * from death"), preprocessSql = Some("Wrong query string"))
       )
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
-        status shouldEqual StatusCodes.InternalServerError
+        status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("https://tofhir.io/errors/InternalError")
+        response should include("https://tofhir.io/errors/BadRequest")
         response should include("Title: Preprocess SQL syntax error")
       }
     }
@@ -354,7 +354,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.NotFound
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/ResourceNotFound")
-        response should include("Detail: Connection cannot be establish with: WRONG DATABASE URL")
+        response should include("Detail: Connection cannot be established with: WRONG DATABASE URL")
       }
     }
 
@@ -365,9 +365,9 @@ class SchemaEndpointTest extends BaseEndpointTest {
         sourceContext = SqlSource(query = Some("WRONG"))
       )
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
-        status shouldEqual StatusCodes.InternalServerError
+        status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("https://tofhir.io/errors/InternalError")
+        response should include("https://tofhir.io/errors/BadRequest")
         response should include("Title: Erroneous query")
       }
     }
@@ -379,9 +379,9 @@ class SchemaEndpointTest extends BaseEndpointTest {
         sourceContext = SqlSource(query = Some("select WRONG from death"))
       )
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
-        status shouldEqual StatusCodes.InternalServerError
+        status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("https://tofhir.io/errors/InternalError")
+        response should include("https://tofhir.io/errors/BadRequest")
         response should include("Column \"WRONG\" not found")
       }
     }

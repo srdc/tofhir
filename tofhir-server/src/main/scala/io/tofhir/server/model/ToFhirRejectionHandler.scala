@@ -2,9 +2,9 @@ package io.tofhir.server.model
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection
-import akka.http.scaladsl.server.{MethodRejection, RejectionHandler, UnsupportedRequestContentTypeRejection}
+import akka.http.scaladsl.server.{MethodRejection, RejectionHandler, UnsupportedRequestContentTypeRejection, Rejection}
 
-object CustomRejectionHandler {
+object ToFhirRejectionHandler {
 
   /**
    * Custom rejection handler to send proper error message to front-end on rejections.
@@ -28,7 +28,6 @@ object CustomRejectionHandler {
        */
       .handle {
         case MalformedRequestContentRejection(message, cause) =>
-          println(cause)
           complete(StatusCodes.BadRequest -> BadRequest("Necessary field(s) is missing", message).toString)
       }
 
@@ -46,7 +45,17 @@ object CustomRejectionHandler {
        * This case has a special representation as handleNotFound
        */
       .handleNotFound {
-        complete(StatusCodes.NotFound -> ResourceNotFound("Url not found", "URL of the request does not exists in this API.").toString)
+        extractUri { requestUrl  =>
+          complete(StatusCodes.NotFound -> ResourceNotFound("Url not found", s"${requestUrl} does not exist in this API.").toString)
+        }
+      }
+
+      /**
+       * Handle the rest of the possible rejection types. Send the name of the rejections.
+       */
+      .handleAll[Rejection] { rejections =>
+        val rejectionMessages = rejections.map(_.toString).mkString(", ")
+        complete(StatusCodes.BadRequest -> BadRequest("Request rejected.", s"Rejections: ${rejectionMessages}"))
       }
       .result()
 

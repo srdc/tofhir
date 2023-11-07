@@ -114,7 +114,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
     }
   }
 
-  "General rejections" should {
+  "Projects rejected by ToFhirRejectionHandler" should {
 
     "Try to create a project without application/json content type" in {
       // Send a POST request without changing the contentType to application/json
@@ -152,6 +152,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.NotFound
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/ResourceNotFound")
+        response should include(s"/${webServerConfig.baseUri}/invalidURL does not exist")
       }
     }
   }

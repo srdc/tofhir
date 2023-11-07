@@ -7,7 +7,7 @@ import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.config.{LogServiceConfig, WebServerConfig}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.interceptor.{ICORSHandler, IErrorHandler}
-import io.tofhir.server.model.{CustomRejectionHandler, ToFhirRestCall}
+import io.tofhir.server.model.{ToFhirRejectionHandler, ToFhirRestCall}
 import io.tofhir.server.service.job.JobFolderRepository
 import io.tofhir.server.service.mapping.ProjectMappingFolderRepository
 import io.tofhir.server.service.mappingcontext.MappingContextFolderRepository
@@ -38,7 +38,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, mappingJobRepository, toFhirEngineConfig)
   val redCapIntegrationModuleEndpoint = new RedCapIntegrationModuleEndpoint()
   // Custom rejection handler to send proper messages to user
-  val customRejectionHandler: RejectionHandler = CustomRejectionHandler.getRejectionHandler();
+  val toFhirRejectionHandler: RejectionHandler = ToFhirRejectionHandler.getRejectionHandler();
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {
@@ -48,7 +48,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
             extractRequestEntity { requestEntity =>
               optionalHeaderValueByName("X-Correlation-Id") { correlationId =>
                 val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
-                handleRejections(customRejectionHandler) {
+                handleRejections(toFhirRejectionHandler) {
                   handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
                     terminologyServiceManagerEndpoint.route(restCall) ~ projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall) ~ fhirPathFunctionsEndpoint.route(restCall) ~ redCapIntegrationModuleEndpoint.route(restCall)
                   }

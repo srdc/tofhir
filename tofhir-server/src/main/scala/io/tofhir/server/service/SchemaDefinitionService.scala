@@ -107,7 +107,6 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
         inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
     } catch {
       case e: Throwable =>
-        println(e.getClass)
         val errorClass = e.getClass
         val errorMessage: String = e.getMessage
 
@@ -126,7 +125,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
         // Syntax errors in preprocess SQL field in front-end
         else if (errorClass == classOf[org.apache.spark.sql.catalyst.parser.ParseException]) {
           // Capitalize and replace("\n", " ") is needed to read the message in the front-end properly
-          throw InternalError("Preprocess SQL syntax error", errorMessage.capitalize.replace("\n", " "))
+          throw BadRequest("Preprocess SQL syntax error", errorMessage.capitalize.replace("\n", " "))
         }
 
         /**
@@ -134,34 +133,34 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
          * Reference: https://www.ibm.com/docs/en/i/7.4?topic=codes-listing-sqlstate-values
          */
         else if(classOf[java.sql.SQLException].isAssignableFrom(errorClass)){
-          val SQLError: SQLException = e.asInstanceOf[SQLException]
-          val SQLState = SQLError.getSQLState
-          val databaseURL: String = inferTask.sourceSettings("source").asInstanceOf[SqlSourceSettings].databaseUrl
+          val sqlError: SQLException = e.asInstanceOf[SQLException]
+          val sqlState = sqlError.getSQLState
+          val databaseUrl: String = inferTask.sourceSettings("source").asInstanceOf[SqlSourceSettings].databaseUrl
 
           // There is no distinct message for the case that user does not exists. Both wrong password and wrong username gives:
           // SqlSate: 28*** (Ex: in PostgreSQL: 28P01)
-          if(SQLState.startsWith("28")) {
+          if(sqlState.startsWith("28")) {
             throw UserUnauthorized("Authentication failed", "Wrong user name or password, connection cannot be established.")
           }
 
           // Wrong database URL
-          // SQLState: 08*** (Ex: in PostgreSQL: 08001)
-          else if(SQLState.startsWith("08")){
-            throw ResourceNotFound("Database not found", s"Connection cannot be establish with: ${databaseURL}")
+          // sqlState: 08*** (Ex: in PostgreSQL: 08001)
+          else if(sqlState.startsWith("08")){
+            throw ResourceNotFound("Database not found", s"Connection cannot be established with: ${databaseUrl}")
           }
 
           // Database url and authorization information is true but catalog not found
-          // SQLState: 3D*** (Ex: in PostgreSQL: 3D000)
-          else if(SQLState.startsWith("3D")){
-            val UrlParts = databaseURL.split("/")
-            val catalogName = UrlParts.last
+          // sqlState: 3D*** (Ex: in PostgreSQL: 3D000)
+          else if(sqlState.startsWith("3D")){
+            val urlParts = databaseUrl.split("/")
+            val catalogName = urlParts.last
             throw ResourceNotFound("Database not found", s"${catalogName} is not found in the given database.")
           }
 
           // Syntax error in query, table name
           // SqlState: 42*** (Ex: in PostgreSQL: 42P01)
-          else if (SQLState.startsWith("42")) {
-            throw InternalError("Erroneous query", errorMessage.capitalize)
+          else if (sqlState.startsWith("42")) {
+            throw BadRequest("Erroneous query", errorMessage.capitalize)
           }
         }
 
