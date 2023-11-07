@@ -25,7 +25,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
      * @param accumulatingTypeUrls          Data types throughout the recursive chain so that recursion can stop if a loop over the data types exists.
      * @return
      */
-    def simplifier(profileUrl: Option[String], parentPath: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: Set[String]): Seq[SimpleStructureDefinition] = {
+    def simplifier(profileUrl: Option[String], parentPath: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: Seq[String]): Seq[SimpleStructureDefinition] = {
 
       /**
        * Helper function to create a single SimpleStructureDefinition for a slice of a field (e.g., valueQuantity under value[x])
@@ -42,7 +42,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
        */
       def createDefinitionWithElements(fieldName: String, sliceName: String, parentPath: Option[String], profileUrlForDataType: Option[String],
                                        restrictionsOnSlicesOfField: Seq[(String, ElementRestrictions)], restrictionsOnChildrenOfField: Seq[(String, ElementRestrictions)],
-                                       accumulatingTypeUrls: Set[String], dataTypeWithProfiles: Option[DataTypeWithProfiles] = None): SimpleStructureDefinition = {
+                                       accumulatingTypeUrls: Seq[String], dataTypeWithProfiles: Option[DataTypeWithProfiles] = None): SimpleStructureDefinition = {
         // Partition the restriction into 2: (i) directly on that field (e.g., value[x]:valueQuantity) and (ii) on the children (e.g., value[x]:valueQuantity.system)
         val (restrictionsOnSliceField, restrictionsOnChildrenOfSlices) = restrictionsOnSlicesOfField.partition(_._1 == s"$fieldName:$sliceName")
         val typeRestrictionForThisTypeField = dataTypeWithProfiles.map(dt =>
@@ -74,7 +74,12 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       }
 
       // Start of the simplifier method
-      if (profileUrl.isDefined && accumulatingTypeUrls.contains(profileUrl.get)) {
+      if (profileUrl.isDefined &&
+        // Stop the recursion if the profile is already visited twice (to avoid infinite recursion)
+        (accumulatingTypeUrls.count(_ == profileUrl.get) >= 2 ||
+        // The following is a hack to decrease the size of the SimpleStructureDefinition because Identifier type occurs in many places in the FHIR spec.
+        // If more examples like this are found, either we should find a better way to stop the recursion or we should add them here
+        (profileUrl.get == "http://hl7.org/fhir/StructureDefinition/Identifier") && accumulatingTypeUrls.count(_ == profileUrl.get) >= 1)) {
         // Stop the recursion here because we are entering into a recursive type chain (e.g., Identifier -> Reference -> Identifier)
         Seq.empty[SimpleStructureDefinition]
       } else {
@@ -165,7 +170,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       profileUrl = Some(profileUrl),
       parentPath = if (withResourceTypeInPaths) fhirConfig.findResourceType(profileUrl) else Option.empty[String],
       restrictionsFromParentElement = Seq.empty[(String, ElementRestrictions)],
-      accumulatingTypeUrls = Set.empty[String])
+      accumulatingTypeUrls = Seq.empty[String])
 
     // Handle the content references to populate them.
     populateContentReferences(simplifiedElementsOfProfile, simplifiedElementsOfProfile)
