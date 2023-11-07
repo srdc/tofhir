@@ -206,16 +206,20 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    * @return
    */
   override def deleteSchema(projectId: String, id: String): Future[Unit] = {
+    if (!schemaDefinitions(projectId).contains(id)) {
+      throw ResourceNotFound("Schema does not exists.", s"A schema with id $id does not exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+
     Future {
       // Update cache
       val schema: SchemaDefinition = schemaDefinitions(projectId)(id)
+      // delete schema file from repository
+      getFileForSchema(projectId, schema).map(file => {
+        file.delete()
+      })
+      
       schemaDefinitions(projectId).remove(id)
       baseFhirConfig.profileRestrictions -= schema.url
-
-      val fileName = getFileName(id)
-      val file = FileUtils.findFileByName(schemaRepositoryFolderPath, fileName)
-      file.get.delete()
-
       // Update project
       projectFolderRepository.deleteSchema(projectId, schema.id)
     }

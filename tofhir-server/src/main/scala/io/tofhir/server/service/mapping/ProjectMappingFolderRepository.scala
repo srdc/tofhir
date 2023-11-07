@@ -142,14 +142,18 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
     if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
       throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
     }
-    // delete the mapping from the repository
-    getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
-      file.delete()
+
+    Future {
+      // delete the mapping from the repository
+      getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
+        file.delete()
+      })
+
       // delete the mapping from the map
       mappingDefinitions(projectId).remove(id)
       // delete the mapping from projects json file
       projectFolderRepository.deleteMapping(projectId, id)
-    })
+    }
   }
 
   /**

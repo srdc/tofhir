@@ -83,14 +83,18 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
     if (!mappingContextExists(projectId, id)) {
       throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
-    // delete the mapping context from the repository
-    getFileForMappingContext(projectId, id).map(file => {
-      file.delete()
+
+    Future {
+      // delete the mapping context from the repository
+      getFileForMappingContext(projectId, id).map(file => {
+        file.delete()
+      })
+
       // delete the mapping context from the in-memory map
       mappingContextDefinitions(projectId) = mappingContextDefinitions(projectId).filterNot(_ == id)
       // update the projects metadata json file
       projectFolderRepository.deleteMappingContext(projectId, id)
-    })
+    }
   }
 
   /**

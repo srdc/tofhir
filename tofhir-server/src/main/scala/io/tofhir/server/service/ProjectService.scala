@@ -2,13 +2,21 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.{BadRequest, Project, ProjectEditableFields}
+import io.tofhir.server.service.job.IJobRepository
+import io.tofhir.server.service.mapping.IMappingRepository
+import io.tofhir.server.service.mappingcontext.IMappingContextRepository
 import io.tofhir.server.service.project.IProjectRepository
+import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JObject
 import org.json4s.JsonAST.JString
 
 import scala.concurrent.Future
 
-class ProjectService(projectRepository: IProjectRepository) extends LazyLogging {
+class ProjectService(projectRepository: IProjectRepository,
+                     jobRepository: IJobRepository,
+                     mappingRepository: IMappingRepository,
+                     mappingContextRepository: IMappingContextRepository,
+                     schemaRepository: ISchemaRepository) extends LazyLogging {
 
   /**
    * Retrieve all Projects
@@ -65,6 +73,23 @@ class ProjectService(projectRepository: IProjectRepository) extends LazyLogging 
    * @return
    */
   def removeProject(id: String): Future[Unit] = {
+    val jobIds: Seq[String] = projectRepository.getJobIds(id)
+    jobIds.foreach( jobId => {
+      jobRepository.deleteJob(id, jobId)
+    })
+    val mappingIds: Seq[String] = projectRepository.getMappingIds(id)
+    mappingIds.foreach(mappingId => {
+      mappingRepository.deleteMapping(id, mappingId)
+    })
+    val mappingContextIds: Seq[String] = projectRepository.getMappingContextIds(id)
+    mappingContextIds.foreach(mappingContextId => {
+      mappingContextRepository.deleteMappingContext(id, mappingContextId)
+    })
+    val schemaIds: Seq[String] = projectRepository.getSchemaIds(id)
+    schemaIds.foreach(schemaId => {
+      schemaRepository.deleteSchema(id, schemaId)
+    })
+
     projectRepository.removeProject(id)
   }
 

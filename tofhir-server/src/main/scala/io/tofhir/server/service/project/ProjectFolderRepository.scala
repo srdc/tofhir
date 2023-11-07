@@ -108,7 +108,6 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
       updatedProject
     }
   }
-
   /**
    * Delete the project from the repository.
    *
@@ -167,10 +166,13 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param schemaId
    */
   def deleteSchema(projectId: String, schemaId: String): Unit = {
-    val project: Project = projects(projectId)
-    projects.put(projectId, project.copy(schemas = project.schemas.filterNot(s => s.id.equals(schemaId))))
-
-    updateProjectsMetadata()
+    val project: Option[Project] = projects.get(projectId)
+    project match {
+      case Some(project) =>
+        projects.put(projectId, project.copy(schemas = project.schemas.filterNot(s => s.id.equals(schemaId))))
+        updateProjectsMetadata()
+      case None => // Do nothing if project is deleted before the schema
+    }
   }
 
   /**
@@ -204,10 +206,13 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param mappingId Mapping id to be deleted
    */
   def deleteMapping(projectId: String, mappingId: String): Unit = {
-    val project: Project = projects(projectId)
-    projects.put(projectId, project.copy(mappings = project.mappings.filterNot(m => m.id.equals(mappingId))))
-
-    updateProjectsMetadata()
+    val project: Option[Project] = projects.get(projectId)
+    project match {
+      case Some(project) =>
+        projects.put(projectId, project.copy(mappings = project.mappings.filterNot(m => m.id.equals(mappingId))))
+        updateProjectsMetadata()
+      case None => // Do nothing if project is deleted before the mapping
+    }
   }
 
   /**
@@ -241,10 +246,13 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param jobId
    */
   def deleteJob(projectId: String, jobId: String): Unit = {
-    val project: Project = projects(projectId)
-    projects.put(projectId, project.copy(mappingJobs = project.mappingJobs.filterNot(j => j.id.equals(jobId))))
-
-    updateProjectsMetadata()
+    val project: Option[Project] = projects.get(projectId)
+    project match {
+      case Some(project) =>
+        projects.put(projectId, project.copy(mappingJobs = project.mappingJobs.filterNot(j => j.id.equals(jobId))))
+        updateProjectsMetadata()
+      case None => // Do nothing if project is deleted before the job
+    }
   }
 
   /**
@@ -265,10 +273,13 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param mappingContextId Mapping context id to be deleted
    */
   def deleteMappingContext(projectId: String, mappingContextId: String): Unit = {
-    val project: Project = projects(projectId)
-    projects.put(projectId, project.copy(mappingContexts = project.mappingContexts.filterNot(m => m.equals(mappingContextId))))
-
-    updateProjectsMetadata()
+    val project: Option[Project] = projects.get(projectId)
+    project match {
+      case Some(project) =>
+        projects.put(projectId, project.copy(mappingContexts = project.mappingContexts.filterNot(m => m.equals(mappingContextId))))
+        updateProjectsMetadata()
+      case None => // Do nothing if project is deleted before the mapping context
+    }
   }
 
   /**
@@ -295,6 +306,66 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    */
   private def projectComparisonFunc(p1: Project, p2: Project): Boolean = {
     p1.name.compareTo(p2.name) < 0
+  }
+
+  /**
+   * Returns IDs of jobs under the project
+   *
+   * @param id id of the project
+   * @return
+   */
+  override def getJobIds(id: String): Seq[String] = {
+    val projectData: Option[Project] = projects.get(id)
+    val fhirMappingJobIds: Seq[String] = projectData.flatMap { project =>
+      Some(project.mappingJobs.map(_.id))
+    }.getOrElse(Seq.empty)
+
+    fhirMappingJobIds
+  }
+
+  /**
+   * Returns IDs of mappings under the project
+   *
+   * @param id id of the project
+   * @return
+   */
+  override def getMappingIds(id: String): Seq[String] = {
+    val projectData: Option[Project] = projects.get(id)
+    val fhirMappingIds: Seq[String] = projectData.flatMap { project =>
+      Some(project.mappings.map(_.id))
+    }.getOrElse(Seq.empty)
+
+    fhirMappingIds
+  }
+
+  /**
+   * Returns IDs of mapping contexts under the project
+   *
+   * @param id id of the project
+   * @return
+   */
+  override def getMappingContextIds(id: String): Seq[String] = {
+    val projectData: Option[Project] = projects.get(id)
+    val mappingContextIds: Seq[String] = projectData.flatMap { project =>
+      Some(project.mappingContexts)
+    }.getOrElse(Seq.empty)
+
+    mappingContextIds
+  }
+
+  /**
+   * Returns IDs of schemas under the project
+   *
+   * @param id id of the project
+   * @return
+   */
+  override def getSchemaIds(id: String): Seq[String] = {
+    val projectData: Option[Project] = projects.get(id)
+    val schemaIds: Seq[String] = projectData.flatMap { project =>
+      Some(project.schemas.map(_.id))
+    }.getOrElse(Seq.empty)
+
+    schemaIds
   }
 }
 

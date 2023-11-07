@@ -28,7 +28,7 @@ class ProjectEndpoint(schemaRepository: ISchemaRepository,
                       projectRepository: IProjectRepository,
                       logServiceEndpoint: String) extends LazyLogging {
 
-  val service: ProjectService = new ProjectService(projectRepository)
+  val service: ProjectService = new ProjectService(projectRepository, jobRepository, mappingRepository, mappingContextRepository, schemaRepository)
   val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(schemaRepository, mappingRepository)
   val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository, jobRepository)
   val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository, mappingRepository, schemaRepository, logServiceEndpoint)
