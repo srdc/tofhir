@@ -16,8 +16,9 @@ object KafkaSourceSettingsSerializers {
       val name = (json \ "name").extractOrElse("Unknown")
       val sourceUri = (json \ "sourceUri").extractOrElse("Unknown")
       val bootstrapServers = (json \ "bootstrapServers").extractOrElse("Unknown")
+      val asRedCap = (json \ "asRedCap").extractOrElse(false)
 
-      KafkaSourceSettings(name, sourceUri, bootstrapServers)
+      KafkaSourceSettings(name, sourceUri, bootstrapServers,asRedCap)
   },
   {
     // serialize
@@ -27,6 +28,7 @@ object KafkaSourceSettingsSerializers {
         "sourceUri" -> JString(settings.sourceUri),
         "bootstrapServers" -> JString(settings.bootstrapServers),
         "asStream" -> JBool(settings.asStream),
+        "asRedCap" -> JBool(settings.asRedCap),
         "jsonClass" -> JString("KafkaSourceSettings")
       )
   }
