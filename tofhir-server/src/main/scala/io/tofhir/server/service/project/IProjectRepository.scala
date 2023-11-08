@@ -44,12 +44,18 @@ trait IProjectRepository {
   def updateProject(id: String, patch: JObject): Future[Project]
 
   /**
-   * Delete the project from the repository.
+   * Delete the project folders
    *
    * @param id id of the project
    * @return
    */
-  def removeProject(id: String): Future[Unit]
+  def removeProjectFolders(id: String): Future[Unit]
+
+  /**
+   * Delete the project from cache and update meta data
+   * @param id id of the project
+   */
+  def removeProjectFromCache(id:String): Unit
 
   /**
    * Returns IDs of jobs under a project

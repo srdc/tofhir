@@ -74,23 +74,28 @@ class ProjectService(projectRepository: IProjectRepository,
    */
   def removeProject(id: String): Future[Unit] = {
     val jobIds: Seq[String] = projectRepository.getJobIds(id)
-    jobIds.foreach( jobId => {
+    val mappingIds: Seq[String] = projectRepository.getMappingIds(id)
+    val mappingContextIds: Seq[String] = projectRepository.getMappingContextIds(id)
+    val schemaIds: Seq[String] = projectRepository.getSchemaIds(id)
+
+    // First delete project from cache asynchronously
+    projectRepository.removeProjectFromCache(id)
+
+    jobIds.foreach(jobId => {
       jobRepository.deleteJob(id, jobId)
     })
-    val mappingIds: Seq[String] = projectRepository.getMappingIds(id)
     mappingIds.foreach(mappingId => {
       mappingRepository.deleteMapping(id, mappingId)
     })
-    val mappingContextIds: Seq[String] = projectRepository.getMappingContextIds(id)
     mappingContextIds.foreach(mappingContextId => {
       mappingContextRepository.deleteMappingContext(id, mappingContextId)
     })
-    val schemaIds: Seq[String] = projectRepository.getSchemaIds(id)
     schemaIds.foreach(schemaId => {
       schemaRepository.deleteSchema(id, schemaId)
     })
 
-    projectRepository.removeProject(id)
+    // Delete the folders parallel with other removals
+    projectRepository.removeProjectFolders(id)
   }
 
   /**
