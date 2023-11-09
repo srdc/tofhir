@@ -14,7 +14,6 @@ object ToFhirRejectionHandler {
 
       /**
        * Handles the cases type of the request data is wrong. Ex: String instead of a terminology system model.
-       * supportedTypes is not worked properly in the tested cases, it only included 'application/json'
        */
       .handle {
         case UnsupportedRequestContentTypeRejection(supportedTypes) =>
@@ -28,7 +27,7 @@ object ToFhirRejectionHandler {
        */
       .handle {
         case MalformedRequestContentRejection(message, cause) =>
-          complete(StatusCodes.BadRequest -> BadRequest("Necessary field(s) is missing", message).toString)
+          complete(StatusCodes.BadRequest -> BadRequest("Malformed request content", message).toString)
       }
 
       /**
@@ -55,7 +54,7 @@ object ToFhirRejectionHandler {
        */
       .handleAll[Rejection] { rejections =>
         val rejectionMessages = rejections.map(_.toString).mkString(", ")
-        complete(StatusCodes.BadRequest -> BadRequest("Request rejected.", s"Rejections: ${rejectionMessages}"))
+        complete(StatusCodes.BadRequest -> BadRequest("Request rejected.", s"Rejection reason: $rejectionMessages"))
       }
       .result()
 

@@ -78,7 +78,7 @@ case class MethodForbidden(title: String, detail: String) extends ToFhirError {
   val statusCode = 405
 }
 
-case class UserUnauthorized(title: String, detail: String) extends ToFhirError {
+case class Unauthorized(title: String, detail: String) extends ToFhirError {
   val statusCode = 401
 }
 

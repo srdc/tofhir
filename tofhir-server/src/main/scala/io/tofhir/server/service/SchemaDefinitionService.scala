@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.{BadRequest, InferTask, InternalError, ResourceNotFound, UserUnauthorized}
+import io.tofhir.server.model.{BadRequest, InferTask, InternalError, ResourceNotFound, Unauthorized}
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
 import io.tofhir.engine.model.{FileSystemSource, FileSystemSourceSettings, SqlSourceSettings}
@@ -140,7 +140,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
           // There is no distinct message for the case that user does not exists. Both wrong password and wrong username gives:
           // SqlSate: 28*** (Ex: in PostgreSQL: 28P01)
           if(sqlState.startsWith("28")) {
-            throw UserUnauthorized("Authentication failed", "Wrong user name or password, connection cannot be established.")
+            throw Unauthorized("Authentication failed", "Wrong user name or password, connection cannot be established.")
           }
 
           // Wrong database URL

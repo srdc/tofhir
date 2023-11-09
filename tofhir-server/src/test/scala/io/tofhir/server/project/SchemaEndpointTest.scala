@@ -335,7 +335,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.Unauthorized
         val response = responseAs[String]
-        response should include("Type: https://tofhir.io/errors/UserUnauthorized")
+        response should include("Type: https://tofhir.io/errors/Unauthorized")
         response should include("Detail: Wrong user name or password")
       }
     }
