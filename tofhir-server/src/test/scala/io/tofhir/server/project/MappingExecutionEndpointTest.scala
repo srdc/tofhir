@@ -72,7 +72,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
-        val succeed = waitForCondition(10) {
+        val success = waitForCondition(10) {
           fsSinkFolder.listFiles.exists(_.getName.contains("job1_1")) && {
             // Check the resources created in the file system
             val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
@@ -80,7 +80,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
             results.count() == 10
           }
         }
-        if (!succeed) fail("Could not find the expected test output folder")
+        if (!success) fail("Failed to find expected number of results. Either the results are not available or the number of results does not match")
       }
     }
 
@@ -101,7 +101,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
-        val succeed = waitForCondition(10) {
+        val success = waitForCondition(10) {
           fsSinkFolder.listFiles.exists(_.getName.contains("job1_1")) && {
             // Check the resources created in the file system
             val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
@@ -109,7 +109,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
             results.count() == 20
           }
         }
-        if (!succeed) fail("Could not find the expected test output folder")
+        if (!success) fail("Failed to find expected number of results. Either the results are not available or the number of results does not match")
       }
     }
 
@@ -117,7 +117,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
      * This test ensures that mapping resources (i.e. mapping definitions, context maps, etc.) becomes available to execute even if they are created
      * after the server is up.
      *
-     * Furthermore, the test also validates whether erroneous records are
+     * Furthermore, the test also validates whether erroneous records are created appropriately
      */
     "run a job with a mapping and context map that are created after the server is up" in {
       // Create context map for the global project
@@ -146,7 +146,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
-        val succeed1 = waitForCondition(10) {
+        var success = waitForCondition(10) {
           fsSinkFolder.listFiles.exists(_.getName.contains("job1_2")) && {
             // Check the resources created in the file system
             val parquetFolder = fsSinkFolder.listFiles.find(_.getName.contains("job1_2")).get
@@ -154,11 +154,11 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
             results.count() == 13
           }
         }
-        if (!succeed1) fail("Could not find the expected test output folder")
+        if (!success) fail("Failed to find expected number of results. Either the results are not available or the number of results does not match")
 
 
         // test if erroneous records are written to error folder
-        val succeed2 = waitForCondition(10) {
+        success = waitForCondition(10) {
           val erroneousRecordsFolder = FileUtils.getPath(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
           erroneousRecordsFolder.toFile.exists() && {
             val jobFolder = FileUtils.getPath(erroneousRecordsFolder.toString, s"job-${job.id}").toFile
@@ -169,7 +169,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
             }
           }
         }
-        if (!succeed2) fail("Could not find the expected erroneous records folder")
+        if (!success) fail("Failed to find expected number of erroneous records. Either the erroneous record file is not available or the number of records does not match")
       }
     }
 
@@ -209,8 +209,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
     }
 
-
-    "execute a mapping within a job without passing the mapping inside the request" in {
+    "execute a mapping within a job without passing the mapping in the mapping task" in {
       // create the mapping that will be tested
       createMappingAndVerify("patient-mapping2.json", 2)
 
@@ -229,8 +228,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     }
 
     /**
-     * This test aims to test a mapping, which contains a reference to a concept map, can be executed when a mapping is created after the server is up.
-     * The following activitites are performed in the test:
+     * This test aims to test a mapping, containing a reference to a concept map, can be executed when a mapping is created after the server is up.
+     * The following activities are performed in the test:
      * 1) Source schema is created
      * 2) The mapping is created
      * 3) Mapping is run via the test endpoint
