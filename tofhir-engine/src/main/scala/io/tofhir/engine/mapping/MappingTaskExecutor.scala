@@ -1,7 +1,9 @@
 package io.tofhir.engine.mapping
 
 import com.typesafe.scalalogging.Logger
+import io.onfhir.api.client.FhirClientException
 import io.onfhir.expression.FhirExpressionException
+import io.onfhir.path.FhirPathException
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.common.util.ExceptionUtil
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
@@ -207,6 +209,17 @@ object MappingTaskExecutor {
       } catch {
         // Exception in expression evaluation
         case FhirMappingException(mappingExpr, t: FhirExpressionException) =>
+          // if we make use of Identity Service functions such as idxs:resolveIdentifier in the mapping expression,
+          // we get a FhirClientException when it cannot connect to Identity Service. In this case, we need to include
+          // response body and status in the error description
+          var errorDescription = t.msg + t.t.map(_.getMessage).map(" " + _).getOrElse("")
+          if(t.t.nonEmpty && t.t.get.isInstanceOf[FhirPathException] && t.t.get.asInstanceOf[FhirPathException].getCause.isInstanceOf[FhirClientException]){
+            val innerException = t.t.get.asInstanceOf[FhirPathException].getCause.asInstanceOf[FhirClientException]
+            if(innerException.serverResponse.nonEmpty){
+              val serverResponse = innerException.serverResponse.get
+              errorDescription = errorDescription + s" Status Code: ${serverResponse.httpStatus}${serverResponse.responseBody.map(s" Response Body: " + _).getOrElse("")}"
+            }
+          }
           val fmr = FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingUrl = fhirMappingService.mappingUrl,
@@ -215,7 +228,7 @@ object MappingTaskExecutor {
             source = Some(jo.toJson),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
-              description = t.msg + t.t.map(_.getMessage).map(" " + _).getOrElse(""),
+              description = errorDescription,
               expression = t.expression
             )),
             executionId = executionId)
