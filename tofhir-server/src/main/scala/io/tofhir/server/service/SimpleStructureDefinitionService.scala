@@ -91,6 +91,10 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
             // But, filter out extension, modifierExtension and id fields if they come from Element and BackboneElement profiles. Otherwise the SimpleStructureDefinition becomes huge!
             if (pr.url.endsWith("Element") || pr.url.endsWith("BackboneElement"))
               pr.elementRestrictions.filterNot(er => er._1 == "extension" || er._1 == "modifierExtension" || er._1 == "id")
+            // remove the extensions coming from DomainResource. SimpleStructureDefinition will include "extension" element
+            // iff the profile has some slices for it.
+            else if (pr.url.endsWith("DomainResource"))
+              pr.elementRestrictions.filterNot(er => er._1 == "extension")
             else
               pr.elementRestrictions
           }
