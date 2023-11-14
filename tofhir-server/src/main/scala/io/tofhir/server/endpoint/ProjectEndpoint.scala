@@ -30,7 +30,7 @@ class ProjectEndpoint(schemaRepository: ISchemaRepository,
 
   val service: ProjectService = new ProjectService(projectRepository)
   val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(schemaRepository, mappingRepository)
-  val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository)
+  val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository, jobRepository)
   val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository, mappingRepository, schemaRepository, logServiceEndpoint)
   val mappingContextEndpoint: MappingContextEndpoint = new MappingContextEndpoint(mappingContextRepository)
 

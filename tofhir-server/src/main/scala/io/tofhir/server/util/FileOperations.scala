@@ -11,6 +11,7 @@ import io.tofhir.server.model.InternalError
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization.writePretty
+import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets

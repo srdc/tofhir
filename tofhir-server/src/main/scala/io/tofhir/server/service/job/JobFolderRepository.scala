@@ -137,8 +137,22 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
   }
 
   /**
+   * Retrieves the jobs referencing the given mapping in their definitions.
+   *
+   * @param projectId  identifier of project whose jobs will be checked
+   * @param mappingUrl the url of mapping
+   * @return the jobs referencing the given mapping in their definitions
+   */
+  override def getJobsReferencingMapping(projectId: String, mappingUrl: String): Future[Seq[FhirMappingJob]] = {
+    Future {
+      val jobs: Seq[FhirMappingJob] = jobDefinitions.getOrElse(key = projectId, default = Map.empty).values.toSeq
+      jobs.filter(job => job.mappings.map(mappingTask => mappingTask.mappingRef).contains(mappingUrl))
+    }
+  }
+
+  /**
    * Get the mapping job file for the given project id and job id
- *
+   *
    * @param projectId
    * @param fhirMapping
    * @return
