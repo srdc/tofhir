@@ -4,6 +4,7 @@ import io.onfhir.api.validation.{ConstraintKeys, ElementRestrictions, ProfileRes
 import io.onfhir.config.BaseFhirConfig
 import io.onfhir.validation._
 import io.tofhir.common.model._
+import io.tofhir.server.model.CountingMap
 
 class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
@@ -25,7 +26,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
      * @param accumulatingTypeUrls          Data types throughout the recursive chain so that recursion can stop if a loop over the data types exists.
      * @return
      */
-    def simplifier(profileUrl: Option[String], parentPath: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: Seq[String]): Seq[SimpleStructureDefinition] = {
+    def simplifier(profileUrl: Option[String], parentPath: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: CountingMap[String]): Seq[SimpleStructureDefinition] = {
 
       /**
        * Helper function to create a single SimpleStructureDefinition for a slice of a field (e.g., valueQuantity under value[x])
@@ -42,7 +43,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
        */
       def createDefinitionWithElements(fieldName: String, sliceName: String, parentPath: Option[String], profileUrlForDataType: Option[String],
                                        restrictionsOnSlicesOfField: Seq[(String, ElementRestrictions)], restrictionsOnChildrenOfField: Seq[(String, ElementRestrictions)],
-                                       accumulatingTypeUrls: Seq[String], dataTypeWithProfiles: Option[DataTypeWithProfiles] = None): SimpleStructureDefinition = {
+                                       accumulatingTypeUrls: CountingMap[String], dataTypeWithProfiles: Option[DataTypeWithProfiles] = None): SimpleStructureDefinition = {
         // Partition the restriction into 2: (i) directly on that field (e.g., value[x]:valueQuantity) and (ii) on the children (e.g., value[x]:valueQuantity.system)
         val (restrictionsOnSliceField, restrictionsOnChildrenOfSlices) = restrictionsOnSlicesOfField.partition(_._1 == s"$fieldName:$sliceName")
         val typeRestrictionForThisTypeField = dataTypeWithProfiles.map(dt =>
@@ -68,7 +69,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
               profileUrl = if (dataTypeOfCreatedTypeElement.isDefined) dataTypeOfCreatedTypeElement else profileUrlForDataType,
               parentPath = Some(createdChoiceTypeElement.path),
               restrictionsFromParentElement = navigatedRestrictionsOnChildren,
-              accumulatingTypeUrls = accumulatingTypeUrls ++ profileUrl)
+              accumulatingTypeUrls = accumulatingTypeUrls.apply(profileUrl))
           createdChoiceTypeElement.withElements(definitionsOfChoiceTypeElementsChildren)
         }
       }
@@ -76,10 +77,10 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       // Start of the simplifier method
       if (profileUrl.isDefined &&
         // Stop the recursion if the profile is already visited twice (to avoid infinite recursion)
-        (accumulatingTypeUrls.count(_ == profileUrl.get) >= 2 ||
+        (accumulatingTypeUrls.get(profileUrl.get)>= 2 ||
         // The following is a hack to decrease the size of the SimpleStructureDefinition because Identifier type occurs in many places in the FHIR spec.
         // If more examples like this are found, either we should find a better way to stop the recursion or we should add them here
-        (profileUrl.get == "http://hl7.org/fhir/StructureDefinition/Identifier") && accumulatingTypeUrls.count(_ == profileUrl.get) >= 1)) {
+        (profileUrl.get == "http://hl7.org/fhir/StructureDefinition/Identifier") && accumulatingTypeUrls.get(profileUrl.get) >= 1)) {
         // Stop the recursion here because we are entering into a recursive type chain (e.g., Identifier -> Reference -> Identifier)
         Seq.empty[SimpleStructureDefinition]
       } else {
@@ -149,7 +150,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                 val createdNoSliceElement = generateSimpleDefinition("No Slice", parentPath, Seq.empty[ElementRestrictions])
                 val navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
                 val createdNoSliceElementWithChildren = createdNoSliceElement
-                  .withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, Some(createdNoSliceElement.path), navigatedRestrictionsOnChildren, accumulatingTypeUrls ++ profileUrl))
+                  .withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, Some(createdNoSliceElement.path), navigatedRestrictionsOnChildren, accumulatingTypeUrls.apply(profileUrl)))
                 Some(createdElementDefinition.withElements(createdNoSliceElementWithChildren +: definitionsOfSlices))
               } else {
                 val navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
@@ -157,7 +158,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                   simplifier(profileUrl = createdElementDefinition.getProfileUrlForDataType,
                     parentPath = Some(createdElementDefinition.path),
                     restrictionsFromParentElement = navigatedRestrictionsOnChildren,
-                    accumulatingTypeUrls = accumulatingTypeUrls ++ profileUrl)
+                    accumulatingTypeUrls = accumulatingTypeUrls.apply(profileUrl))
                 Some(createdElementDefinition.withElements(definitionsOfChildren))
               }
             }
@@ -170,7 +171,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       profileUrl = Some(profileUrl),
       parentPath = if (withResourceTypeInPaths) fhirConfig.findResourceType(profileUrl) else Option.empty[String],
       restrictionsFromParentElement = Seq.empty[(String, ElementRestrictions)],
-      accumulatingTypeUrls = Seq.empty[String])
+      accumulatingTypeUrls = CountingMap.empty[String])
 
     // Handle the content references to populate them.
     populateContentReferences(simplifiedElementsOfProfile, simplifiedElementsOfProfile)
