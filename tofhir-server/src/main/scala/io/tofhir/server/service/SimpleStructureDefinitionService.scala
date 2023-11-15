@@ -94,7 +94,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
             // remove the extensions coming from DomainResource. SimpleStructureDefinition will include "extension" element
             // iff the profile has some slices for it.
             else if (pr.url.endsWith("DomainResource"))
-              pr.elementRestrictions.filterNot(er => er._1 == "extension")
+              pr.elementRestrictions.filterNot(er => er._1 == "extension"|| er._1 == "modifierExtension")
             else
               pr.elementRestrictions
           }
