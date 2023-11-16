@@ -52,7 +52,12 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
         if (createdChoiceTypeElement.isPrimitive) createdChoiceTypeElement
         else {
           val navigatedRestrictionsOnChildrenOfSlices = restrictionsOnChildrenOfSlices
-            .filter(_._1.startsWith(s"$fieldName:$sliceName")) // Take the children only for this slice, other slices will also be in restrictionsOnChildrenOfSlices because of our use of partition (above)
+            .filter(res => {
+              val searchText = s"$fieldName:$sliceName"
+              // startsWith check is not enough when there are some slices starting with the same word such as qtInterval and qtIntervalCorrected
+              // therefore, we check the first character following searchText to determine correct restrictions for the slice
+              res._1.startsWith(searchText) && res._1.substring(searchText.length).charAt(0).==('.')
+            }) // Take the children only for this slice, other slices will also be in restrictionsOnChildrenOfSlices because of our use of partition (above)
             .map(navigateFhirPathFromField(s"$fieldName:$sliceName", _))
           val navigatedRestrictionsOnChildrenOfField = restrictionsOnChildrenOfField
             .map(navigateFhirPathFromField(fieldName, _))
