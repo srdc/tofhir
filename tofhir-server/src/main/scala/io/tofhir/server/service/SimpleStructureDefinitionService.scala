@@ -48,7 +48,8 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
         val (restrictionsOnSliceField, restrictionsOnChildrenOfSlices) = restrictionsOnSlicesOfField.partition(_._1 == s"$fieldName:$sliceName")
         val typeRestrictionForThisTypeField = dataTypeWithProfiles.map(dt =>
           ElementRestrictions(path = s"$fieldName:$sliceName", restrictions = Map(ConstraintKeys.DATATYPE -> TypeRestriction(Seq(dt.dataType -> Seq.empty[String]))), sliceName = None, contentReference = None))
-        val createdChoiceTypeElement = generateSimpleDefinition(sliceName, parentPath, restrictionsOnSliceField.map(_._2) ++ typeRestrictionForThisTypeField)
+        // for the sliced elements, their paths should include the current element. Therefore, pass the field name with parent path to generateSimpleDefinition function
+        val createdChoiceTypeElement = generateSimpleDefinition(sliceName, Some(parentPath.map(pp => s"$pp.$fieldName").getOrElse(fieldName)), restrictionsOnSliceField.map(_._2) ++ typeRestrictionForThisTypeField)
         if (createdChoiceTypeElement.isPrimitive) createdChoiceTypeElement
         else {
           val navigatedRestrictionsOnChildrenOfSlices = restrictionsOnChildrenOfSlices
