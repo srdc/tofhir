@@ -150,14 +150,18 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
             throw FhirMappingException(msg, fce)
           } else {
             zipWithEntryIndex(fce.serverResponse.get.outcomeIssues).map {
-              case (index, outcomeIssue) =>
-                mappingResults.apply(index)._2.copy(
-                  error = Some(FhirMappingError( //Set the error
-                    code = FhirMappingErrorCodes.INVALID_RESOURCE,
-                    description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
-                    expression = Some(Serialization.write(outcomeIssue))
-                  )))
-            }.foreach(failedResult => problemsAccumulator.add(failedResult))
+              case (Some(index), outcomeIssue) =>
+                Some(
+                  mappingResults.apply(index)._2.copy(
+                    error = Some(FhirMappingError( //Set the error
+                      code = FhirMappingErrorCodes.INVALID_RESOURCE,
+                      description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
+                      expression = Some(Serialization.write(outcomeIssue))
+                    )))
+                )
+              case _ => None
+            }.filter(failedResult => failedResult.isDefined)
+              .foreach(failedResult => problemsAccumulator.add(failedResult.get))
             None
           }
         } else {
@@ -212,7 +216,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
     }
   }
 
-  private def zipWithEntryIndex(outcomeIssues: Seq[OutcomeIssue]): Seq[(Int, OutcomeIssue)] = {
+  private def zipWithEntryIndex(outcomeIssues: Seq[OutcomeIssue]): Seq[(Option[Int], OutcomeIssue)] = {
     outcomeIssues.map(issue => {
       if (issue.expression.isEmpty) {
         // If Firely does not return an expression for the OutcomeIssue, I cannot find for which FhirMappingResult this issue is raised!!!
@@ -221,7 +225,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
       if (issue.expression.size > 1) {
         logger.warn(s"There are more than one expression describing the location of the OutcomeIssue. I will continue with the first expression: ${issue.expression.head}")
       }
-      val matchResult = "^Bundle\\.entry\\[(\\d+)\\]".r.findFirstMatchIn(issue.expression.head)
 
       val resourceEntryIndex = // Find the index of the resource so that I can find it in the mappingResults.
         "^Bundle\\.entry\\[(\\d+)\\]".r
@@ -232,7 +235,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
       if (resourceEntryIndex.isEmpty) {
         logger.error(s"Entry index cannot be extracted from the expression given in the OutcomeIssue: ${Serialization.write(issue)}")
       }
-      resourceEntryIndex.get -> issue
+      resourceEntryIndex -> issue
     })
   }
 
