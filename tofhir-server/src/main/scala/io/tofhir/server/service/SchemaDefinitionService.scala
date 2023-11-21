@@ -4,13 +4,12 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.{BadRequest, InferTask, InternalError, ResourceNotFound, Unauthorized}
+import io.tofhir.server.model.{BadRequest, InferTask, ResourceNotFound}
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
-import io.tofhir.engine.model.{FileSystemSource, FileSystemSourceSettings, SqlSourceSettings}
+import io.tofhir.engine.model.FhirMappingException
 import io.tofhir.server.service.mapping.IMappingRepository
 
-import java.sql.SQLException
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import akka.stream.scaladsl.Source
@@ -106,66 +105,11 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
       SourceHandler.readSource(inferTask.name, SparkConfig.sparkSession,
         inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
     } catch {
-      case e: Throwable =>
-        val errorClass = e.getClass
-        val errorMessage: String = e.getMessage
-
-        // This error is thrown if the extension of the file is not expected
-        if(errorClass == classOf[scala.NotImplementedError]){
-          val filePath = inferTask.sourceContext.asInstanceOf[FileSystemSource].path;
-          throw BadRequest("Unsupported file", s" The file ${filePath} is not supported. Correct the extension of the file.")
-        }
-
-        // Gives the error if path of the source file is wrong
-        else if (errorClass == classOf[org.apache.spark.sql.AnalysisException]) {
-          val dataFolderPath: String = inferTask.sourceSettings("source").asInstanceOf[FileSystemSourceSettings].dataFolderPath
-          throw ResourceNotFound("Path not found", s"The file to be inferred cannot be found in the path: ${dataFolderPath}")
-        }
-
-        // Syntax errors in preprocess SQL field in front-end
-        else if (errorClass == classOf[org.apache.spark.sql.catalyst.parser.ParseException]) {
-          // Capitalize and replace("\n", " ") is needed to read the message in the front-end properly
-          throw BadRequest("Preprocess SQL syntax error", errorMessage.capitalize.replace("\n", " "))
-        }
-
-        /**
-         * If the error is an instance of SQL error handle it by its SQLState
-         * Reference: https://www.ibm.com/docs/en/i/7.4?topic=codes-listing-sqlstate-values
-         */
-        else if(classOf[java.sql.SQLException].isAssignableFrom(errorClass)){
-          val sqlError: SQLException = e.asInstanceOf[SQLException]
-          val sqlState = sqlError.getSQLState
-          val databaseUrl: String = inferTask.sourceSettings("source").asInstanceOf[SqlSourceSettings].databaseUrl
-
-          // There is no distinct message for the case that user does not exists. Both wrong password and wrong username gives:
-          // SqlSate: 28*** (Ex: in PostgreSQL: 28P01)
-          if(sqlState.startsWith("28")) {
-            throw Unauthorized("Authentication failed", "Wrong user name or password, connection cannot be established.")
-          }
-
-          // Wrong database URL
-          // sqlState: 08*** (Ex: in PostgreSQL: 08001)
-          else if(sqlState.startsWith("08")){
-            throw ResourceNotFound("Database not found", s"Connection cannot be established with: ${databaseUrl}")
-          }
-
-          // Database url and authorization information is true but catalog not found
-          // sqlState: 3D*** (Ex: in PostgreSQL: 3D000)
-          else if(sqlState.startsWith("3D")){
-            val urlParts = databaseUrl.split("/")
-            val catalogName = urlParts.last
-            throw ResourceNotFound("Database not found", s"${catalogName} is not found in the given database.")
-          }
-
-          // Syntax error in query, table name
-          // SqlState: 42*** (Ex: in PostgreSQL: 42P01)
-          else if (sqlState.startsWith("42")) {
-            throw BadRequest("Erroneous query", errorMessage.capitalize)
-          }
-        }
-
-        // If error is not handled by any if statement
-        throw InternalError("Source cannot be read", errorMessage.capitalize.replace("\n", " "))
+      case e: FhirMappingException =>
+        val detail: String = e.getCause.toString
+        val title: String = e.getMessage
+        // Remove the new lines and capitalize the error detail to show it in front-end properly.
+        throw BadRequest(title, detail.capitalize.replace("\n", " "))
     }
     // Default name for undefined information
     val defaultName: String = "unnamed"

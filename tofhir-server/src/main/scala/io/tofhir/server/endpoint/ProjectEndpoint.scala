@@ -45,7 +45,9 @@ class ProjectEndpoint(schemaRepository: ISchemaRepository,
             val projectExists: Future[Option[Project]] = service.getProject(projectId)
             onSuccess(projectExists) {
               case None => complete {
-                StatusCodes.NotFound -> (ResourceNotFound("Project not found", s"Project with id $projectId not found").toString)
+                StatusCodes.NotFound -> {
+                  throw ResourceNotFound("Project not found", s"Project with id $projectId not found")
+                }
               }
               case Some(_) => {
                 request.projectId = Some(projectId)

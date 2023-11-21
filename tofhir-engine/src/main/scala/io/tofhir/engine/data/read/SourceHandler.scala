@@ -1,6 +1,6 @@
 package io.tofhir.engine.data.read
 
-import io.tofhir.engine.model.{DataSourceSettings, FhirMappingSourceContext}
+import io.tofhir.engine.model.{DataSourceSettings, FhirMappingException, FhirMappingSourceContext}
 import org.apache.spark.sql.functions.{col, lit, when}
 import org.apache.spark.sql.types.{DataTypes, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -36,15 +36,23 @@ object SourceHandler {
                                                                           limit: Option[Int] = Option.empty,
                                                                           jobId: Option[String] = Option.empty
                                                                         ): DataFrame = {
-    val reader =
+    val reader = try{
       DataSourceReaderFactory
         .apply(spark, mappingSource, sourceSettings)
+    }
+    catch {
+      case e: Throwable => throw FhirMappingException("Source cannot be read.", e)
+    }
 
-    val sourceData =
+
+    val sourceData = try {
       reader
         .read( mappingSource, sourceSettings, schema, timeRange, limit, jobId = jobId)
+    } catch {
+      case e: Throwable => throw FhirMappingException("Source cannot be read.", e)
+    }
 
-    val finalSourceData =
+    val finalSourceData = try {
       //If there is some preprocessing SQL defined, apply it
       mappingSource.preprocessSql match {
         case Some(sql) =>
@@ -53,6 +61,9 @@ object SourceHandler {
         case None =>
           sourceData
       }
+    } catch {
+      case e: Throwable => throw FhirMappingException("Erroneous Preprocess SQL.", e)
+    }
     schema match {
       //If there is a schema and also need validation
       case Some(sc) if reader.needTypeValidation || reader.needCardinalityValidation =>
