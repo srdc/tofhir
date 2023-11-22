@@ -152,10 +152,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     SparkUtil.writeToSourceFile(sourceWriter, test2CsvFile)
     sourceWriter.close()
 
-    // Access getInputFile method of FileStreamInputArchiver using reflection
-    val FileStreamInputArchiverInstance = FileStreamInputArchiver
-    val methodSymbol = typeOf[FileStreamInputArchiver.type].decl(TermName("getInputFiles")).asMethod
-    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(FileStreamInputArchiverInstance)
+    // Access getInputFile method of SparkUtil using reflection
+    val sparkUtilInstance = SparkUtil
+    val methodSymbol = typeOf[SparkUtil.type].decl(TermName("getInputFiles")).asMethod
+    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(sparkUtilInstance)
     val getInputFilesMethod = methodMirror.reflectMethod(methodSymbol)
 
     // Call reflected getInputFile function
@@ -191,10 +191,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     commitWriter2.write("test")
     commitWriter2.close()
 
-    // Access getLastCommitOffset method of FileStreamInputArchiver using reflection
-    val FileStreamInputArchiverInstance = FileStreamInputArchiver
-    val methodSymbol = typeOf[FileStreamInputArchiver.type].decl(TermName("getLastCommitOffset")).asMethod
-    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(FileStreamInputArchiverInstance)
+    // Access getLastCommitOffset method of SparkUtil using reflection
+    val SparkUtilInstance = SparkUtil
+    val methodSymbol = typeOf[SparkUtil.type].decl(TermName("getLastCommitOffset")).asMethod
+    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(SparkUtilInstance)
     val getLastCommitOffsetMethod = methodMirror.reflectMethod(methodSymbol)
 
     // Call reflected getLastCommitOffset function
