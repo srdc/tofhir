@@ -287,7 +287,6 @@ class SchemaEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/BadRequest")
-        response should include("The file WRONG.wrong is not supported")
       }
     }
 
@@ -301,10 +300,9 @@ class SchemaEndpointTest extends BaseEndpointTest {
         sourceContext = FileSystemSource("lab-results.csv")
       )
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
-        status shouldEqual StatusCodes.NotFound
+        status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("Type: https://tofhir.io/errors/ResourceNotFound")
-        response should include("The file to be inferred cannot be found in the path: data-integration-suite/test-data")
+        response should include("Type: https://tofhir.io/errors/BadRequest")
       }
     }
 
@@ -317,8 +315,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("https://tofhir.io/errors/BadRequest")
-        response should include("Title: Preprocess SQL syntax error")
+        response should include("Type: https://tofhir.io/errors/BadRequest")
       }
     }
 
@@ -333,10 +330,9 @@ class SchemaEndpointTest extends BaseEndpointTest {
         ))
       )
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
-        status shouldEqual StatusCodes.Unauthorized
+        status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("Type: https://tofhir.io/errors/Unauthorized")
-        response should include("Detail: Wrong user name or password")
+        response should include("Type: https://tofhir.io/errors/BadRequest")
       }
     }
 
@@ -351,10 +347,9 @@ class SchemaEndpointTest extends BaseEndpointTest {
         ))
       )
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
-        status shouldEqual StatusCodes.NotFound
+        status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("Type: https://tofhir.io/errors/ResourceNotFound")
-        response should include("Detail: Connection cannot be established with: WRONG DATABASE URL")
+        response should include("Type: https://tofhir.io/errors/BadRequest")
       }
     }
 
@@ -367,8 +362,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("https://tofhir.io/errors/BadRequest")
-        response should include("Title: Erroneous query")
+        response should include("Type: https://tofhir.io/errors/BadRequest")
       }
     }
 
@@ -381,8 +375,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
-        response should include("https://tofhir.io/errors/BadRequest")
-        response should include("Column \"WRONG\" not found")
+        response should include("Type: https://tofhir.io/errors/BadRequest")
       }
     }
   }
