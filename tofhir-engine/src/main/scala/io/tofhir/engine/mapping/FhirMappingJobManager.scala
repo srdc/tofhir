@@ -8,7 +8,7 @@ import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.data.write.{BaseFhirWriter, FhirWriterFactory, SinkHandler}
 import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model._
-import org.apache.spark.SparkException
+import org.apache.spark.SparkThrowable
 import org.apache.spark.sql.functions.{collect_list, struct}
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession}
@@ -71,31 +71,31 @@ class FhirMappingJobManager(
             fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
       }.recover {
         // Check whether the job is stopped
-        case se: SparkException if se.getMessage.contains("cancelled part of cancelled job group") =>
+        case se: SparkThrowable if se.getMessage.contains("cancelled part of cancelled job group") =>
           logger.debug(s"Job is interrupted. jobId: ${mappingJobExecution.job.id}, executionId: ${mappingJobExecution.id}")
           throw FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project ${mappingJobExecution.projectId}' terminated manually!")
         // Exceptions from Spark executors are wrapped inside a SparkException, which are caught below
-        case se: SparkException =>
+        case se: SparkThrowable =>
           se.getCause match {
-            // FhirMappingInvalidResourceException is already handled
+            // FhirMappingInvalidResourceException is already handled and logged in SinkHandler, there is no need to handle here
             case _: FhirMappingInvalidResourceException =>
-            // FhirMappingException is already handled and logged by Spark while running the mapping
-            case _: FhirMappingException =>
             // log the mapping job result and exception for the rest
             case _ =>
               val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
               logger.error(jobResult.toLogstashMarker, jobResult.toString, se)
           }
-          // Continue or halt according to error handling type.
-          // In the halt case, thrown exception is caught by the upstream Futures and a new exception is created until the root is reached.
-          if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
-            throw FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project " +
-              s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!", se)
-          }
+        // Halt the execution if error handling type is HALT
+        haltOrContinueExecution(mappingJobExecution, task, se)
         // Pass the stop exception to the upstream Futures in the chain laid out by foldLeft above
         case t: FhirMappingJobStoppedException =>
           throw t
-        case _ =>
+        case e: Throwable =>
+          // log the mapping job result and exception
+          val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
+          logger.error(jobResult.toLogstashMarker, jobResult.toString, e)
+          // Halt or continue according to errorHandlingType of the mapping job
+          haltOrContinueExecution(mappingJobExecution, task, e)
+          throw FhirMappingException("Unexpected error, this is not handled!", e)
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.job.id}.") }
   }
@@ -490,6 +490,21 @@ class FhirMappingJobManager(
           .collect() // Collect into an Array[String]
           .toSeq // Convert to Seq[Resource]
       }
+  }
+
+  /**
+   * Continue or halt according to error handling type.
+   * In the halt case, thrown exception is caught by the upstream Futures and a new exception is created until the root is reached.
+   *
+   * @param mappingJobExecution mapping job execution to halt or stop
+   * @param task the erroneous task in mapping job
+   * @param err the error thrown at that task
+   */
+  def haltOrContinueExecution(mappingJobExecution: FhirMappingJobExecution, task: FhirMappingTask, err: Throwable): Unit = {
+    if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
+      throw  FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project " +
+        s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!", err)
+    }
   }
 }
 
