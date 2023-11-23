@@ -6,7 +6,7 @@ import io.tofhir.engine.execution.FileStreamInputArchiver._
 import io.tofhir.engine.model.ArchiveModes.ArchiveModes
 import io.tofhir.engine.model.{ArchiveModes, FhirMappingJobExecution, FileSystemSource, FileSystemSourceSettings}
 import io.tofhir.engine.util.{FileUtils, SparkUtil}
-
+import java.nio.file.Paths
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
@@ -43,7 +43,7 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
    */
   def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
     // Get the commit file directory for this execution
-    val commitDirectory: File = FileUtils.getPath(taskExecution.getCommitDirectory(mappingUrl)).toFile
+    val commitDirectory: File = new File(taskExecution.getCommitDirectory(mappingUrl))
 
     // Get the sources file directory for this execution
     val sourcesDirectory: String = taskExecution.getSourceDirectory(mappingUrl)
@@ -58,7 +58,7 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
       Range.inclusive(lastProcessedOffset + 1, lastOffsetSet) // +1 for skipping the last processed offset
         .foreach(sourceFileName => {
           // Extract the actual input files
-          val inputFiles: Seq[File] = SparkUtil.getInputFiles(FileUtils.getPath(sourcesDirectory, sourceFileName.toString).toFile)
+          val inputFiles: Seq[File] = SparkUtil.getInputFiles(Paths.get(sourcesDirectory, sourceFileName.toString).toFile)
           if (inputFiles.nonEmpty) {
             inputFiles.foreach(inputFile => {
               processArchiveMode(inputFile, archiveMode)
@@ -92,7 +92,7 @@ object FileStreamInputArchiver {
       if (archiveMode != ArchiveModes.OFF) {
         val fileSystemSourceSettings = execution.job.sourceSettings.head._2.asInstanceOf[FileSystemSourceSettings]
         // get data folder path from data source settings
-        val dataFolderPath = FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, fileSystemSourceSettings.dataFolderPath).toString
+        val dataFolderPath = FileUtils.getPath(fileSystemSourceSettings.dataFolderPath).toString
 
         // Get paths of the input files referred by the mapping tasks
         paths = execution.mappingTasks.flatMap(mapping => {
@@ -104,7 +104,7 @@ object FileStreamInputArchiver {
           })
         })
         paths.foreach(relativePath => {
-          val file = FileUtils.getPath(dataFolderPath, relativePath).toFile
+          val file = Paths.get(dataFolderPath, relativePath).toFile
           processArchiveMode(file.getAbsoluteFile, archiveMode)
         })
       }
@@ -149,7 +149,7 @@ object FileStreamInputArchiver {
       // Find the relative path between the workspace folder and the file to be archived
       val relPath = FileUtils.getPath("").toAbsolutePath.relativize(file.toPath)
       // The relative path is appended to the base archive folder so that the path of the original input file is preserved
-      val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
+      val finalArchivePath = Paths.get(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
       val archiveFile: File = new File(finalArchivePath.toString)
 
       // create parent directories if not exists

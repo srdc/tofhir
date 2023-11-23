@@ -1,6 +1,5 @@
 package io.tofhir.test.engine.model
 
-import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirRepositorySinkSettings}
 import io.tofhir.engine.util.{FileUtils, SparkUtil}
 import org.scalatest.flatspec.AnyFlatSpec

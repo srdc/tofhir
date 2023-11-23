@@ -26,7 +26,7 @@ object ToFhirConfig {
   /** Master url of the Spark cluster */
   lazy val sparkMaster: String = Try(sparkConfig.getString("master")).getOrElse("local[4]")
   /** Directory to keep Spark's checkpoints created  */
-  lazy val sparkCheckpointDirectory: String = FileUtils.getPath(engineConfig.contextPath, Try(sparkConfig.getString("checkpoint-dir")).getOrElse("checkpoint")).toString
+  lazy val sparkCheckpointDirectory: String = FileUtils.getPath(Try(sparkConfig.getString("checkpoint-dir")).getOrElse("checkpoint")).toString
   /**
    * Default configurations for spark
    */
