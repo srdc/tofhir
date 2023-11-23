@@ -10,6 +10,7 @@ import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.{ResourceFilter, TestResourceCreationRequest}
 import io.tofhir.server.util.{FileOperations, TestUtil}
@@ -47,7 +48,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     sourceContext = Map("source" -> FileSystemSource(path = "patients.csv")),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/patient-mapping.json").getPath)))
   )
-  val job: FhirMappingJob = FhirMappingJob(
+  val batchJob: FhirMappingJob = FhirMappingJob(
     id = job1Id,
     name = Some("mappingJob"),
     sourceSettings = dataSourceSettings,
@@ -55,20 +56,46 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     mappings = Seq(patientMappingTask),
     dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE, saveErroneousRecords = true, archiveMode = ArchiveModes.OFF))
 
+  // streaming job initialization
+  val parentStreamingFolderName = "streaming-parent-folder"
+  val parentStreamingFolder: File = new File(parentStreamingFolderName)
+
+  val patientStreamingFolderName = "patients"
+  val patientStreamingFolder: File = new File(patientStreamingFolderName)
+
+  var sinkSettingsForStreaming: FhirSinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job3", Some(SinkFileFormats.NDJSON))
+  val streamingDataSourceSettings: Map[String, DataSourceSettings] =
+    Map("source" ->
+      FileSystemSourceSettings("streaming-test-source", "https://some-url-for-data-source", Paths.get(getClass.getResource(s"/$parentStreamingFolderName").toURI).normalize().toAbsolutePath.toString, asStream = true))
+  val patientStreamingMappingTask: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://some-url-for-streaming-patient-mapping",
+    sourceContext = Map("source" -> FileSystemSource(path = s"$patientStreamingFolderName", fileFormat = Some(SourceFileFormats.CSV))),
+    mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/patient-mapping.json").getPath)))
+  )
+
+  val streamingJob: FhirMappingJob = FhirMappingJob(
+    id = UUID.randomUUID().toString,
+    name = Some("streamingMappingJob"),
+    sourceSettings = streamingDataSourceSettings,
+    sinkSettings = sinkSettingsForStreaming,
+    mappings = Seq(patientStreamingMappingTask),
+    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE, saveErroneousRecords = true, archiveMode = ArchiveModes.OFF)
+  )
+
   "The service" should {
     "run a job including a mapping" in {
       // Create the job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(batchJob))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is created
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${batchJob.id}${FileExtensions.JSON}").toFile should exist
       }
 
       // Run the job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
@@ -88,7 +115,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
 
       var firstId: Option[String] = Option.empty
 
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions?page=1") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/executions?page=1") ~> route ~> check {
         // Get id of previous execution
 
         val jValue = JsonMethods.parse(responseAs[String])
@@ -97,7 +124,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
 
       // Rerun the previous job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
@@ -132,7 +159,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv"))
       )
       sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_2", Some(SinkFileFormats.NDJSON))
-      val job1Updated = job.copy(mappings = Seq(observationsMappingTask), sinkSettings = sinkSettings, name = Some("updatedJob"))
+      val job1Updated = batchJob.copy(mappings = Seq(observationsMappingTask), sinkSettings = sinkSettings, name = Some("updatedJob"))
 
       Put(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/$job1Id", HttpEntity(ContentTypes.`application/json`, writePretty(job1Updated))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
@@ -142,7 +169,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
 
       // Run the job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${job.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
@@ -161,7 +188,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         success = waitForCondition(10) {
           val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
           erroneousRecordsFolder.toFile.exists() && {
-            val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${job.id}").toFile
+            val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
             val csvFile = jobFolder.listFiles().head.listFiles().head.listFiles().head
             csvFile.exists() && {
               val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.getPath)
@@ -184,7 +211,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 2
         // check job folder is created
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job2.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${job2.id}${FileExtensions.JSON}").toFile should exist
       }
 
       // Create the schema
@@ -251,6 +278,55 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         (result \ "valueQuantity" \ "value").extract[Int] shouldEqual 450
       }
     }
+
+    /**
+     * Run streaming job with streaming data source folder, which contains some initial data
+     * Then add data to the streaming data source folder and check if the streaming job is triggered
+     */
+    "run a streaming job including a mapping" in {
+      // Create the streaming job
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(streamingJob))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+        // validate that job metadata file is updated
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 3
+        // check job folder is created
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${streamingJob.id}${FileExtensions.JSON}").toFile should exist
+      }
+
+      // Run the job
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${streamingJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+
+        // Mappings run asynchronously. Wait at most 10 seconds for the job to finish
+        val success = waitForCondition(10) {
+          fsSinkFolder.listFiles.exists(_.getName.contains("job3")) && {
+            // Check the resources created in the file system
+            val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job3")).get
+            val results = sparkSession.read.text(outputFolder.getPath)
+            results.count() == 10
+          }
+        }
+        if (!success) fail("Failed to find expected number of results. Either the results are not available or the number of results does not match.")
+
+        // put more data by copying same csv file with different name
+        val csvFile = Paths.get(getClass.getResource(s"/$parentStreamingFolderName/$patientStreamingFolder/patients.csv").toURI).toFile
+        // clone the csv file with different name
+        val csvFile2 = new File(csvFile.getParentFile, "patients2.csv")
+        org.apache.commons.io.FileUtils.copyFile(csvFile, csvFile2)
+        // mappings run asynchronously, wait at most 10 seconds for the job to finish
+        // check if the mapping is executed with cloned/new csv file automatically
+        val success2 = waitForCondition(10) {
+          fsSinkFolder.listFiles.exists(_.getName.contains("job3")) && {
+            // Check the resources created in the file system
+            val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job3")).get
+            val results = sparkSession.read.text(outputFolder.getPath)
+            results.count() == 20
+          }
+        }
+        if (!success2) fail("Failed to find empty sink file.")
+      }
+    }
   }
 
   /**
@@ -270,7 +346,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
       (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual expectedSchemaCount
       // check schema folder is created
-      FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, otherObservationSourceSchema.id).toFile.exists()
+      FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${otherObservationSourceSchema.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile should exist
     }
   }
 
@@ -288,7 +364,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
       (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingContexts").asInstanceOf[JArray].arr.length shouldEqual 1
       // check mapping context file is created
-      FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContextId).toFile.exists()
+      FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContextId).toFile should exist
     }
     // get file from resources
     val file: File = FileOperations.getFileIfExists(getClass.getResource(s"/$conceptMapResourceFile").getPath)
@@ -318,7 +394,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
       (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual expectedMappingCount
       // check mapping folder is created
-      FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping.id).toFile.exists()
+      FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, s"${mapping.id}${FileExtensions.JSON}").toFile should exist
     }
   }
 
@@ -380,7 +456,11 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   override def afterAll(): Unit = {
     super.afterAll()
     org.apache.commons.io.FileUtils.deleteDirectory(fsSinkFolder)
+    // delete checkpoint folder
+    org.apache.commons.io.FileUtils.deleteDirectory(Paths.get(ToFhirConfig.sparkCheckpointDirectory).toFile)
     // delete erroneous folder
     org.apache.commons.io.FileUtils.deleteDirectory(Paths.get(toFhirEngineConfig.erroneousRecordsFolder).toFile)
+    // remove cloned csv file used for streaming job
+    org.apache.commons.io.FileUtils.delete(Paths.get(getClass.getResource(s"/$parentStreamingFolderName/$patientStreamingFolder/patients2.csv").toURI).toFile)
   }
 }

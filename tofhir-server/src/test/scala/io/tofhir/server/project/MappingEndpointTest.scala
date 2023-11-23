@@ -40,7 +40,7 @@ class MappingEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping folder is created
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping1.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, s"${mapping1.id}${FileExtensions.JSON}").toFile should exist
       }
       // create the second mapping
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
@@ -48,7 +48,7 @@ class MappingEndpointTest extends BaseEndpointTest {
         // validate that mapping metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 2
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping2.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, s"${mapping2.id}${FileExtensions.JSON}").toFile should exist
       }
     }
 
@@ -111,7 +111,7 @@ class MappingEndpointTest extends BaseEndpointTest {
         (projects.arr.find(p => (p \ "id").extract[String] == projectId)
           .get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping folder is deleted
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping1.id).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, s"${mapping1.id}${FileExtensions.JSON}").toFile shouldNot exist
       }
       // delete a mapping with invalid id
       Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123") ~> route ~> check {

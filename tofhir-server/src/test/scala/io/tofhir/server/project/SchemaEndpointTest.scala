@@ -14,6 +14,7 @@ import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.engine.util.FileUtils.FileExtensions
 
 import java.io.File
 import java.sql.{Connection, DriverManager, Statement}
@@ -90,7 +91,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
         // check schema folder is created
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, schema1.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema1.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile should exist
       }
       // create the second schema
       Post(s"/tofhir/projects/${projectId}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(schema2))) ~> route ~> check {
@@ -98,7 +99,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
         // validate that schema metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 2
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, schema2.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema2.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile should exist
       }
     }
 
@@ -167,7 +168,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
         // check schema folder is deleted
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, schema1.id).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema1.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile shouldNot exist
       }
       // delete a schema with invalid id
       Delete(s"/tofhir/projects/${projectId}/schemas/123123") ~> route ~> check {
@@ -183,7 +184,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping folder is created
-        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, s"${mapping.id}${FileExtensions.JSON}").toFile should exist
       }
 
       // delete schema2
@@ -230,7 +231,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Infer the schema and retrieve column types" in {
+    "infer the schema and retrieve column types" in {
       // infer the schema
       Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(inferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
@@ -245,14 +246,14 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Cannot create a schema having the same url as another schema" in {
+    "cannot create a schema having the same url as another schema" in {
       Post(s"/tofhir/projects/${projectId}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(schema5))) ~> route ~> check {
         // Expect a conflict status because schema5 has the same url as the schema2
         status shouldEqual StatusCodes.Conflict
       }
     }
 
-    "Import REDCap data dictionary file" in {
+    "import REDCap data dictionary file" in {
       // get file from resources
       val file: File = FileOperations.getFileIfExists(getClass.getResource("/redcap/instrument.csv").getPath)
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/csv(UTF-8)`, file.toPath)

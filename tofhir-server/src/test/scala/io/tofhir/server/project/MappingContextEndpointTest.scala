@@ -26,7 +26,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingContexts").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping context file is created
-        FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContext1).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContext1).toFile should exist
       }
       // create the second mapping context
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts", HttpEntity(ContentTypes.`text/plain(UTF-8)`, mappingContext2)) ~> route ~> check {
@@ -34,7 +34,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
         // validate that mapping context is updated in projects.json file
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingContexts").asInstanceOf[JArray].arr.length shouldEqual 2
-        FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContext2).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContext2).toFile should exist
       }
     }
 
@@ -55,7 +55,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingContexts").asInstanceOf[JArray].arr.length shouldEqual 1
         // check mapping context file is deleted
-        FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContext2).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContext2).toFile shouldNot exist
       }
     }
 

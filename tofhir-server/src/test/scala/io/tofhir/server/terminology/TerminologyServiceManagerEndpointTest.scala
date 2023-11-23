@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.TerminologySystem
 import io.tofhir.server.model.TerminologySystem.{TerminologyCodeSystem, TerminologyConceptMap}
@@ -41,7 +42,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         // set the created terminology
         terminologySystem1 = terminologySystem
         // validate that a folder is created for the terminology
-        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem.id).toFile should exist
         // validate that terminologies metadata file is updated
         val terminologySystems
         = FileOperations.readJsonContent[TerminologySystem](FileUtils.getPath(getTerminologySystemsJsonPath(toFhirEngineConfig.terminologySystemFolderPath)).toFile)
@@ -103,7 +104,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       Delete(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that terminology folder is deleted
-        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem2.id).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem2.id).toFile shouldNot exist
         // validate that terminology metadata file is updated
         val terminologySystems
         = FileOperations.readJsonContent[TerminologySystem](FileUtils.getPath(getTerminologySystemsJsonPath(toFhirEngineConfig.terminologySystemFolderPath)).toFile)
@@ -125,7 +126,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is created
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, jobTest.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${jobTest.id}${FileExtensions.JSON}").toFile should exist
       }
     }
 
@@ -141,7 +142,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         updatedTerminology.conceptMaps.length shouldEqual 1
         updatedTerminology.conceptMaps.last.name shouldEqual "testCM"
         // validate that concept map file is created
-        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, updatedTerminology.conceptMaps.last.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, updatedTerminology.conceptMaps.last.id).toFile should exist
       }
       // add a concept map to the terminology system object
       updatedTerminology = updatedTerminology.copy(conceptMaps = updatedTerminology.conceptMaps :+ conceptMap2)
@@ -154,7 +155,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         updatedTerminology.conceptMaps.head.name shouldEqual "testCM"
         updatedTerminology.conceptMaps.last.name shouldEqual "testCM2"
         // validate that concept map file is created
-        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, updatedTerminology.conceptMaps.last.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, updatedTerminology.conceptMaps.last.id).toFile should exist
       }
     }
 
@@ -230,7 +231,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         updatedTerminology.conceptMaps.length shouldEqual 1
         updatedTerminology.conceptMaps.head.name shouldEqual "testCMUpdated"
         // validate that concept map file is deleted
-        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, conceptMap2.id).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, conceptMap2.id).toFile shouldNot exist
       }
     }
 
@@ -290,7 +291,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         updatedTerminology.codeSystems.length shouldEqual 1
         updatedTerminology.codeSystems.last.name shouldEqual "testCS"
         // validate that code system file is created
-        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, updatedTerminology.codeSystems.last.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, updatedTerminology.codeSystems.last.id).toFile should exist
       }
       // add a code system to the terminology system object
       updatedTerminology = updatedTerminology.copy(codeSystems = updatedTerminology.codeSystems :+ codeSystem2)
@@ -303,7 +304,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         updatedTerminology.codeSystems.head.name shouldEqual "testCS"
         updatedTerminology.codeSystems.last.name shouldEqual "testCS2"
         // validate that code system file is created
-        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, updatedTerminology.codeSystems.last.id).toFile.exists() shouldEqual true
+        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, updatedTerminology.codeSystems.last.id).toFile should exist
       }
     }
 
@@ -379,7 +380,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         updatedTerminology.codeSystems.length shouldEqual 1
         updatedTerminology.codeSystems.head.name shouldEqual "testCSUpdated"
         // validate that code system file is deleted
-        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, codeSystem2.id).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, codeSystem2.id).toFile shouldNot exist
       }
     }
 

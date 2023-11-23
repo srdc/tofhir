@@ -40,7 +40,7 @@ class JobEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is created
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job1.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${job1.id}${FileExtensions.JSON}").toFile should exist
       }
 
       // create the second job
@@ -100,7 +100,7 @@ class JobEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is deleted
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job1.id).toFile.exists() shouldEqual false
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${job1.id}${FileExtensions.JSON}").toFile shouldNot exist
       }
       // delete a job with invalid id
       Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/123123") ~> route ~> check {
