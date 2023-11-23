@@ -218,6 +218,10 @@ object MappingTaskExecutor {
             if(innerException.serverResponse.nonEmpty){
               val serverResponse = innerException.serverResponse.get
               errorDescription = errorDescription + s" Status Code: ${serverResponse.httpStatus}${serverResponse.responseBody.map(s" Response Body: " + _).getOrElse("")}"
+              // add outcome issues to the error description
+              if(serverResponse.outcomeIssues.nonEmpty) {
+                errorDescription = errorDescription + s" Outcome Issues: ${serverResponse.outcomeIssues}"
+              }
             }
           }
           val fmr = FhirMappingResult(
