@@ -456,6 +456,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   override def afterAll(): Unit = {
     super.afterAll()
     org.apache.commons.io.FileUtils.deleteDirectory(fsSinkFolder)
+    // delete checkpoint folder
+    org.apache.commons.io.FileUtils.deleteDirectory(Paths.get(ToFhirConfig.sparkCheckpointDirectory).toFile)
     // delete erroneous folder
     org.apache.commons.io.FileUtils.deleteDirectory(Paths.get(toFhirEngineConfig.erroneousRecordsFolder).toFile)
     // remove cloned csv file used for streaming job
