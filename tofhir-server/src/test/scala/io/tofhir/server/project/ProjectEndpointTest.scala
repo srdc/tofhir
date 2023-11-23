@@ -90,9 +90,9 @@ class ProjectEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.head \ "schemas").asInstanceOf[JArray].arr.length === 2
+        (projects.arr.head \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
         // validate the project folder has been created within the schemas
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile.exists() === true
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile should exist
       }
 
       // delete a project
@@ -100,11 +100,11 @@ class ProjectEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.NoContent
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        projects.arr.length === 1
+        projects.arr.length shouldEqual 1
 
         // validate the project file has been deleted under the schemas folder
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile.exists() === false
-        FileUtils.getPath(toFhirEngineConfig.contextPath, project1.id).toFile.exists() === false
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile shouldNot exist
+        FileUtils.getPath(toFhirEngineConfig.contextPath, project1.id).toFile shouldNot exist
       }
       // delete a non-existent project
       Delete(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {

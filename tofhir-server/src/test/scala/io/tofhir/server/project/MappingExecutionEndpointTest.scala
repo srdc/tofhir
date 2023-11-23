@@ -91,7 +91,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
         // check job folder is created
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, batchJob.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${batchJob.id}${FileExtensions.JSON}").toFile should exist
       }
 
       // Run the job
@@ -211,7 +211,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 2
         // check job folder is created
-        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, job2.id).toFile.exists()
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${job2.id}${FileExtensions.JSON}").toFile should exist
       }
 
       // Create the schema
@@ -346,7 +346,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
       (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual expectedSchemaCount
       // check schema folder is created
-      FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, otherObservationSourceSchema.id).toFile.exists()
+      FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${otherObservationSourceSchema.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile should exist
     }
   }
 
@@ -364,7 +364,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
       (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingContexts").asInstanceOf[JArray].arr.length shouldEqual 1
       // check mapping context file is created
-      FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContextId).toFile.exists()
+      FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContextId).toFile should exist
     }
     // get file from resources
     val file: File = FileOperations.getFileIfExists(getClass.getResource(s"/$conceptMapResourceFile").getPath)
@@ -394,7 +394,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
       (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappings").asInstanceOf[JArray].arr.length shouldEqual expectedMappingCount
       // check mapping folder is created
-      FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, mapping.id).toFile.exists()
+      FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, s"${mapping.id}${FileExtensions.JSON}").toFile should exist
     }
   }
 
