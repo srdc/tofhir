@@ -2,9 +2,10 @@ package io.tofhir.engine.model
 
 import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
 import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
-import io.tofhir.engine.util.{FileUtils, SparkUtil}
+import io.tofhir.engine.util.SparkUtil
 import org.apache.spark.sql.streaming.StreamingQuery
 
+import java.nio.file.Paths
 import java.util.UUID
 import java.util.regex.Pattern
 
@@ -80,7 +81,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return Directory path in which the checkpoints will be managed
    */
   def getCheckpointDirectory(mappingUrl: String): String =
-    s"${FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, job.id, mappingUrl.hashCode.toString).toString}"
+    Paths.get(ToFhirConfig.sparkCheckpointDirectory, job.id, mappingUrl.hashCode.toString).toString
 
   /**
    * Creates a commit directory for a mapping included in a job
@@ -89,7 +90,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return Directory path in which the commits will be managed
    */
   def getCommitDirectory(mappingUrl: String): String = {
-    SparkUtil.getCommitDirectoryPath(FileUtils.getPath(getCheckpointDirectory(mappingUrl)))
+    SparkUtil.getCommitDirectoryPath(Paths.get(getCheckpointDirectory(mappingUrl)))
   }
 
   /**
@@ -99,7 +100,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return Directory path in which the sources will be managed
    */
   def getSourceDirectory(mappingUrl: String): String = {
-    SparkUtil.getSourceDirectoryPath(FileUtils.getPath(getCheckpointDirectory(mappingUrl)))
+    SparkUtil.getSourceDirectoryPath(Paths.get(getCheckpointDirectory(mappingUrl)))
   }
 
   /**
@@ -112,7 +113,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return
    */
   def getErrorOutputDirectory(mappingUrl: String, errorType: String): String =
-    FileUtils.getPath(ToFhirConfig.engineConfig.erroneousRecordsFolder, errorType, s"job-${job.id}", s"execution-${id}",
+    Paths.get(ToFhirConfig.engineConfig.erroneousRecordsFolder, errorType, s"job-${job.id}", s"execution-${id}",
       this.convertUrlToAlphaNumeric(mappingUrl)).toString
 
 

@@ -57,7 +57,7 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <membersOnlySuites>io.tofhir.test</membersOnlySuites>
+                            <wildcardSuites>io.tofhir.test</wildcardSuites>
                         </configuration>
                     </execution>
                     <execution>

@@ -1,10 +1,10 @@
 package io.tofhir.engine.util
 
-import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import org.json4s.jackson.JsonMethods
 
 import java.io.{File, PrintWriter}
+import java.net.URI
 import java.nio.file.{Path, Paths}
 import scala.io.Source
 
@@ -38,13 +38,13 @@ object SparkUtil {
   }
 
   /**
-   * Write csv path to source file
+   * Write csv URI to source file
    *
    * @param sourceWriter Writer for source file
    * @param testCsvFile  Selected csv file
    */
   def writeToSourceFile(sourceWriter: PrintWriter, testCsvFile: File): Unit = {
-    sourceWriter.write(s"{\"path\":\"${testCsvFile.getAbsolutePath.replace("\\", "\\\\")}\"}\n")
+    sourceWriter.write(s"{\"path\":\"${testCsvFile.toURI.toString.replace("\\", "\\\\")}\"}\n")
   }
 
   /**
@@ -61,10 +61,9 @@ object SparkUtil {
       .flatMap(line => {
         // Some lines do not contain the desired information
         try {
-          // Source name is specified in the "path" field of a json object
+          // Source URI is specified in the "path" field of a json object
           val path: String = (JsonMethods.parse(line) \ "path").extract[String]
-          Some(FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, path).toFile)
-
+          Some(Paths.get(new URI(path)).toFile)
         } catch {
           case _: Throwable => None
         }

@@ -43,12 +43,9 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     val testCsvFile: File = initializeSparkFiles(jobId, mappingUrl)
 
     // Find the relative path between the workspace folder and the file to be archived
-    val relPath = FileUtils.getPath("").toAbsolutePath.relativize(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toAbsolutePath)
-    val expectedRelPath = FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, "test.csv")
-    // validate relPath
-    relPath shouldBe expectedRelPath
+    val relPath = FileUtils.getPath("").toAbsolutePath.relativize(Paths.get(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toAbsolutePath)
     // The relative path is appended to the base archive folder so that the path of the original input file is preserved
-    val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
+    val finalArchivePath = Paths.get(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
 
     // Check whether archiving file does not exist and csv file exists
     finalArchivePath.toFile.exists() shouldBe false
@@ -62,8 +59,8 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     testCsvFile.exists() shouldBe false
 
     // Clean test directory
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory).toFile)
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(ToFhirConfig.sparkCheckpointDirectory))
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(ToFhirConfig.engineConfig.archiveFolder))
   }
 
   "FileStreamInputArchiver" should "apply deletion for a streaming job" in {
@@ -81,7 +78,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     testCsvFile.exists() shouldBe false
 
     // Clean test directory
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(ToFhirConfig.sparkCheckpointDirectory))
   }
 
   "FileStreamInputArchiver" should "apply archiving for a batch job" in{
@@ -91,11 +88,8 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
     // Find the relative path between the workspace folder and the file to be archived
     val relPath = FileUtils.getPath("").toAbsolutePath.relativize(inputFile.toPath.toAbsolutePath)
-    val expectedRelPath = inputFile.toPath
-    // validate relPath
-    relPath shouldBe expectedRelPath
     // The relative path is appended to the base archive folder so that the path of the original input file is preserved
-    val finalArchivePath = FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
+    val finalArchivePath = Paths.get(ToFhirConfig.engineConfig.archiveFolder, relPath.toString)
 
     // Check whether archiving file does not exist and input file exists
     finalArchivePath.toFile.exists() shouldBe false
@@ -109,8 +103,8 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     inputFile.exists() shouldBe false
 
     // Clean test directories
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, sourceFolderPath).toFile)
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.archiveFolder).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(sourceFolderPath).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(ToFhirConfig.engineConfig.archiveFolder))
   }
 
   "FileStreamInputArchiver" should "apply deletion for a batch job" in{
@@ -128,7 +122,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     inputFile.exists() shouldBe false
 
     // Clean test directories
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, sourceFolderPath).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(sourceFolderPath).toFile)
   }
 
   "FileStreamInputArchiver" should "get input files" in {
@@ -152,10 +146,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     SparkUtil.writeToSourceFile(sourceWriter, test2CsvFile)
     sourceWriter.close()
 
-    // Access getInputFile method of FileStreamInputArchiver using reflection
-    val FileStreamInputArchiverInstance = FileStreamInputArchiver
-    val methodSymbol = typeOf[FileStreamInputArchiver.type].decl(TermName("getInputFiles")).asMethod
-    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(FileStreamInputArchiverInstance)
+    // Access getInputFile method of SparkUtil using reflection
+    val sparkUtilInstance = SparkUtil
+    val methodSymbol = typeOf[SparkUtil.type].decl(TermName("getInputFiles")).asMethod
+    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(sparkUtilInstance)
     val getInputFilesMethod = methodMirror.reflectMethod(methodSymbol)
 
     // Call reflected getInputFile function
@@ -191,10 +185,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     commitWriter2.write("test")
     commitWriter2.close()
 
-    // Access getLastCommitOffset method of FileStreamInputArchiver using reflection
-    val FileStreamInputArchiverInstance = FileStreamInputArchiver
-    val methodSymbol = typeOf[FileStreamInputArchiver.type].decl(TermName("getLastCommitOffset")).asMethod
-    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(FileStreamInputArchiverInstance)
+    // Access getLastCommitOffset method of SparkUtil using reflection
+    val SparkUtilInstance = SparkUtil
+    val methodSymbol = typeOf[SparkUtil.type].decl(TermName("getLastCommitOffset")).asMethod
+    val methodMirror = runtimeMirror(getClass.getClassLoader).reflect(SparkUtilInstance)
     val getLastCommitOffsetMethod = methodMirror.reflectMethod(methodSymbol)
 
     // Call reflected getLastCommitOffset function
@@ -206,7 +200,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath("test-archiver").toFile)
   }
 
-  "FileStreamInputArchiver" should "get last proccessed offset" in {
+  "FileStreamInputArchiver" should "get last processed offset" in {
 
     val mappingUrl = "mocked_mapping_url"
     val jobId = "mocked_job_id_5"
@@ -236,14 +230,14 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   }
 
   /**
-   * Initialize needed input files.
+   * Creates a dummy input file.
    * @param sourceFolderPath Source folder path for input file
    * @param inputFileName Input file name
    * @return Return input file
    */
   private def initializeInputFiles(sourceFolderPath: String, inputFileName: String): File = {
     // Create a test input file
-    val inputFile = FileUtils.getPath(ToFhirConfig.engineConfig.contextPath, sourceFolderPath, inputFileName).toFile
+    val inputFile = FileUtils.getPath(sourceFolderPath, inputFileName).toFile
     inputFile.getParentFile.mkdirs()
     // Write test to input file
     val inputWriter = new PrintWriter(inputFile)
@@ -254,7 +248,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   }
 
   /**
-   * Initialize needed spark files.
+   * Creates the following Spark files for the given mapping:
+   *  - A commit file
+   *  - A source file
+   *  - A test csv file
    * @param jobId Job id of the execution.
    * @param mappingUrl Selected mapping url.
    * @return Return test csv file
@@ -263,7 +260,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     // Create a source file to refer location of test.csv
     val sourceFile = getSourceFileFromSparkArchiver(jobId, mappingUrl, "0")
     // Path of test.csv
-    val testCsvFile = FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toFile
+    val testCsvFile = Paths.get(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toFile
     // Ensure the parent directories exist, if not, create them
     sourceFile.getParentFile.mkdirs()
     testCsvFile.getParentFile.mkdirs()
@@ -313,7 +310,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
    */
   def getSourceFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
     Paths.get(
-      SparkUtil.getSourceDirectoryPath(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString)),
+      SparkUtil.getSourceDirectoryPath(Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString)),
       fileName
     ).toFile
   }
@@ -343,7 +340,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
    */
   def getCommitFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
     Paths.get(
-      SparkUtil.getCommitDirectoryPath(FileUtils.getPath(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString)),
+      SparkUtil.getCommitDirectoryPath(Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString)),
       fileName
     ).toFile
   }

@@ -1,10 +1,11 @@
 package io.tofhir.test.engine.model
 
-import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirRepositorySinkSettings}
-import io.tofhir.engine.util.{FileUtils, SparkUtil}
+import io.tofhir.engine.util.SparkUtil
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.nio.file.Paths
 
 class FhirMappingJobExecutionTest extends AnyFlatSpec with Matchers{
 
@@ -18,12 +19,12 @@ class FhirMappingJobExecutionTest extends AnyFlatSpec with Matchers{
   "FhirMappingJobExecution" should "get source file" in {
     // Test whether source directory is right
     testExecution.getSourceDirectory(mappingUrl) shouldBe
-      SparkUtil.getSourceDirectoryPath(FileUtils.getPath(testExecution.getCheckpointDirectory(mappingUrl)))
+      SparkUtil.getSourceDirectoryPath(Paths.get(testExecution.getCheckpointDirectory(mappingUrl)))
   }
 
   "FhirMappingJobExecution" should "get commit file" in {
     // Test whether commit directory is right
     testExecution.getCommitDirectory(mappingUrl) shouldBe
-      SparkUtil.getCommitDirectoryPath(FileUtils.getPath(testExecution.getCheckpointDirectory(mappingUrl)))
+      SparkUtil.getCommitDirectoryPath(Paths.get(testExecution.getCheckpointDirectory(mappingUrl)))
   }
 }

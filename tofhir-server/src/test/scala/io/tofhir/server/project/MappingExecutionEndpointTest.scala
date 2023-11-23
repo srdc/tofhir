@@ -159,9 +159,9 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
 
         // test if erroneous records are written to error folder
         success = waitForCondition(10) {
-          val erroneousRecordsFolder = FileUtils.getPath(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
+          val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
           erroneousRecordsFolder.toFile.exists() && {
-            val jobFolder = FileUtils.getPath(erroneousRecordsFolder.toString, s"job-${job.id}").toFile
+            val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${job.id}").toFile
             val csvFile = jobFolder.listFiles().head.listFiles().head.listFiles().head
             csvFile.exists() && {
               val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.getPath)
@@ -372,7 +372,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   override def beforeAll(): Unit = {
     super.beforeAll()
     org.apache.commons.io.FileUtils.deleteDirectory(new File(fsSinkFolderName))
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.erroneousRecordsFolder).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(Paths.get(toFhirEngineConfig.erroneousRecordsFolder).toFile)
     fsSinkFolder.mkdirs()
     this.createProject(Some("deadbeef-dead-dead-dead-deaddeafbeef"))
   }
@@ -381,6 +381,6 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     super.afterAll()
     org.apache.commons.io.FileUtils.deleteDirectory(fsSinkFolder)
     // delete erroneous folder
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.erroneousRecordsFolder).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(Paths.get(toFhirEngineConfig.erroneousRecordsFolder).toFile)
   }
 }
