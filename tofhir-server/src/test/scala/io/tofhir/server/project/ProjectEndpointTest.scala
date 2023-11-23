@@ -88,9 +88,10 @@ class ProjectEndpointTest extends BaseEndpointTest {
       // first create a schema to trigger creation of the project folder under the schemas folder
       Post(s"/${webServerConfig.baseUri}/projects/${project1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
-        // validate that projects metadata file is updated
-        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.head \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
+        // validate that projects metadata file is updated for the first project
+        val firstProject = TestUtil.getProjectJsonFile(toFhirEngineConfig).arr
+          .find(p => (p \ "id").extract[String].contentEquals(project1.id)).get // find first project
+        (firstProject \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
         // validate the project folder has been created within the schemas
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile should exist
       }
