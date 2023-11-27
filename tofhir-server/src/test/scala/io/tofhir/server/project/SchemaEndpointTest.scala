@@ -274,7 +274,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Try to infer a schema with wrong file extension" in {
+    "create an HTTP response with bad request for file data sources with wrong file extension" in {
       val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
         "source", FileSystemSourceSettings(
           name = "test-db-source",
@@ -290,7 +290,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Try to infer a schema with wrong path" in {
+    "create an HTTP response with bad request for data data sources with wrong file path" in {
       val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
         "source", FileSystemSourceSettings(
           name = "test-db-source",
@@ -306,7 +306,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Try to infer a schema with wrong preprocess SQL string" in {
+    "create an HTTP response with bad request for wrong preprocess SQL string" in {
       val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
@@ -319,7 +319,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Try to infer a schema with wrong user information" in {
+    "create an HTTP response with bad request for wrong user credentials to access the DB" in {
       val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
         "source", SqlSourceSettings(
           name = "test-db-source",
@@ -336,7 +336,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Try to infer a schema with wrong database URL" in {
+    "create an HTTP response with bad request for wrong database URL" in {
       val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
         "source", SqlSourceSettings(
           name = "test-db-source",
@@ -353,7 +353,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Try to infer a schema with erroneous query" in {
+    "create an HTTP response with bad request for erroneous SQL query" in {
       val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
@@ -366,7 +366,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "Try to infer a schema with wrong column name" in {
+    "create an HTTP response with bad request for wrong column name in the SQL query" in {
       val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),

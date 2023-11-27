@@ -77,8 +77,3 @@ case class UnsupportedMediaType(title: String, detail: String) extends ToFhirErr
 case class MethodForbidden(title: String, detail: String) extends ToFhirError {
   val statusCode = 405
 }
-
-case class Unauthorized(title: String, detail: String) extends ToFhirError {
-  val statusCode = 401
-}
-

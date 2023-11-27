@@ -106,10 +106,8 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
         inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
     } catch {
       case e: FhirMappingException =>
-        val detail: String = e.getCause.toString
-        val title: String = e.getMessage
         // Remove the new lines and capitalize the error detail to show it in front-end properly.
-        throw BadRequest(title, detail.capitalize.replace("\n", " "))
+        throw BadRequest(e.getMessage, e.getCause.toString.capitalize.replace("\n", " "))
     }
     // Default name for undefined information
     val defaultName: String = "unnamed"

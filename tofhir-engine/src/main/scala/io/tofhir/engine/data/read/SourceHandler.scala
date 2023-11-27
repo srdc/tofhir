@@ -41,7 +41,7 @@ object SourceHandler {
         .apply(spark, mappingSource, sourceSettings)
     }
     catch {
-      case e: Throwable => throw FhirMappingException("Source cannot be read.", e)
+      case e: Throwable => throw FhirMappingException(s"Failed to construct reader for mapping source: $mappingSource source settings: $sourceSettings.", e)
     }
 
 
@@ -49,7 +49,7 @@ object SourceHandler {
       reader
         .read( mappingSource, sourceSettings, schema, timeRange, limit, jobId = jobId)
     } catch {
-      case e: Throwable => throw FhirMappingException("Source cannot be read.", e)
+      case e: Throwable => throw FhirMappingException("Source cannot be read for mapping source: $mappingSource source settings: $sourceSettings.", e)
     }
 
     val finalSourceData = try {
@@ -62,7 +62,7 @@ object SourceHandler {
           sourceData
       }
     } catch {
-      case e: Throwable => throw FhirMappingException("Erroneous Preprocess SQL.", e)
+      case e: Throwable => throw FhirMappingException(s"Erroneous Preprocess SQL: ${mappingSource.preprocessSql}", e)
     }
     schema match {
       //If there is a schema and also need validation

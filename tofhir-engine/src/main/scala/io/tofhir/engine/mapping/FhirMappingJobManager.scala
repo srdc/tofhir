@@ -95,7 +95,6 @@ class FhirMappingJobManager(
           logger.error(jobResult.toLogstashMarker, jobResult.toString, e)
           // Halt or continue according to errorHandlingType of the mapping job
           haltOrContinueExecution(mappingJobExecution, task, e)
-          throw FhirMappingException("Unexpected error, this is not handled!", e)
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.job.id}.") }
   }
@@ -497,8 +496,9 @@ class FhirMappingJobManager(
    * In the halt case, thrown exception is caught by the upstream Futures and a new exception is created until the root is reached.
    *
    * @param mappingJobExecution mapping job execution to halt or stop
-   * @param task the erroneous task in mapping job
-   * @param err the error thrown at that task
+   * @param task                the erroneous task in mapping job
+   * @param err                 the error thrown at that task
+   * @throws                    [[FhirMappingJobStoppedException]] if mapping job is configured to halt
    */
   def haltOrContinueExecution(mappingJobExecution: FhirMappingJobExecution, task: FhirMappingTask, err: Throwable): Unit = {
     if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
