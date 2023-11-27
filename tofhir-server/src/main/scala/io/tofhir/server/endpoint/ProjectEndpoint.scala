@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.endpoint.ProjectEndpoint.SEGMENT_PROJECTS
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{Project, ToFhirRestCall}
+import io.tofhir.server.model.{Project, ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.service.ProjectService
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
@@ -45,7 +45,9 @@ class ProjectEndpoint(schemaRepository: ISchemaRepository,
             val projectExists: Future[Option[Project]] = service.getProject(projectId)
             onSuccess(projectExists) {
               case None => complete {
-                StatusCodes.NotFound -> s"Project with id $projectId not found"
+                StatusCodes.NotFound -> {
+                  throw ResourceNotFound("Project not found", s"Project with id $projectId not found")
+                }
               }
               case Some(_) => {
                 request.projectId = Some(projectId)
@@ -99,7 +101,9 @@ class ProjectEndpoint(schemaRepository: ISchemaRepository,
         complete {
           service.getProject(projectId) map {
             case Some(project) => StatusCodes.OK -> project
-            case None => StatusCodes.NotFound -> s"Project with id $projectId not found"
+            case None => StatusCodes.NotFound -> {
+              throw ResourceNotFound("Project not found", s"Project with id $projectId not found")
+            }
           }
         }
       }

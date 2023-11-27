@@ -8,7 +8,7 @@ import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{InferTask, ToFhirRestCall}
+import io.tofhir.server.model.{BadRequest, InferTask, ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -62,7 +62,9 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
       complete {
         service.getSchema(projectId, id) map {
           case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
-          case None => StatusCodes.NotFound -> s"Schema definition with name $id not found"
+          case None => StatusCodes.NotFound -> {
+            throw ResourceNotFound("Schema not found", s"Schema definition with name $id not found")
+          }
         }
       }
     }
@@ -73,7 +75,9 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
       complete {
         service.getSchemaByUrl(projectId, url) map {
           case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
-          case None => StatusCodes.NotFound -> s"Schema definition with url $url not found"
+          case None => StatusCodes.NotFound -> {
+            throw ResourceNotFound("Schema not found", s"Schema definition with url $url not found")
+          }
         }
       }
     }
@@ -109,7 +113,9 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
         complete {
           service.inferSchema(inferTask) map {
             case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
-            case None => StatusCodes.BadRequest -> s"Schema cannot be inferred"
+            case None => StatusCodes.BadRequest -> {
+              throw BadRequest("Schema inferring problem", s"Schema cannot be inferred")
+            }
           }
         }
       }

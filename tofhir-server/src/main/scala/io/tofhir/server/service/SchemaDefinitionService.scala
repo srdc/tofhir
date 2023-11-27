@@ -7,6 +7,7 @@ import io.tofhir.server.config.SparkConfig
 import io.tofhir.server.model.{BadRequest, InferTask, ResourceNotFound}
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
+import io.tofhir.engine.model.FhirMappingException
 import io.tofhir.server.service.mapping.IMappingRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -100,8 +101,14 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    */
   def inferSchema(inferTask: InferTask): Future[Option[SchemaDefinition]] = {
     // Execute SQL and get the dataFrame
-    val dataFrame = SourceHandler.readSource(inferTask.name, SparkConfig.sparkSession,
-      inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
+    val dataFrame = try {
+      SourceHandler.readSource(inferTask.name, SparkConfig.sparkSession,
+        inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
+    } catch {
+      case e: FhirMappingException =>
+        // Remove the new lines and capitalize the error detail to show it in front-end properly.
+        throw BadRequest(e.getMessage, e.getCause.toString.capitalize.replace("\n", " "))
+    }
     // Default name for undefined information
     val defaultName: String = "unnamed"
     // Create unnamed Schema definition by infer the schema from DataFrame

@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCode
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.onfhir.api.FHIR_FOUNDATION_RESOURCES
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
-import io.tofhir.engine.model.{FhirMapping, FhirMappingSource, SqlSource, SqlSourceSettings}
+import io.tofhir.engine.model.{FhirMapping, FhirMappingSource, FileSystemSource, FileSystemSourceSettings, SqlSource, SqlSourceSettings}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.InferTask
@@ -15,7 +15,6 @@ import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils.FileExtensions
-
 import java.io.File
 import java.sql.{Connection, DriverManager, Statement}
 import scala.io.{BufferedSource, Source}
@@ -272,6 +271,111 @@ class SchemaEndpointTest extends BaseEndpointTest {
         schema.url shouldEqual s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId"
         val fieldDefinitions = schema.fieldDefinitions.get
         fieldDefinitions.size shouldEqual 5
+      }
+    }
+
+    "create an HTTP response with bad request for file data sources with wrong file extension" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source", FileSystemSourceSettings(
+          name = "test-db-source",
+          sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
+          dataFolderPath = "data-integration-suite/test-data"
+        )),
+        sourceContext = FileSystemSource("WRONG.wrong")
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/BadRequest")
+      }
+    }
+
+    "create an HTTP response with bad request for data data sources with wrong file path" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source", FileSystemSourceSettings(
+          name = "test-db-source",
+          sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
+          dataFolderPath = "data-integration-suite/test-data"
+        )),
+        sourceContext = FileSystemSource("lab-results.csv")
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/BadRequest")
+      }
+    }
+
+    "create an HTTP response with bad request for wrong preprocess SQL string" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source",
+        SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
+        sourceContext = SqlSource(query = Some("Select * from death"), preprocessSql = Some("Wrong query string"))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/BadRequest")
+      }
+    }
+
+    "create an HTTP response with bad request for wrong user credentials to access the DB" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source", SqlSourceSettings(
+          name = "test-db-source",
+          sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
+          databaseUrl = DATABASE_URL,
+          username = "Wrong username",
+          password = ""
+        ))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/BadRequest")
+      }
+    }
+
+    "create an HTTP response with bad request for wrong database URL" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source", SqlSourceSettings(
+          name = "test-db-source",
+          sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
+          databaseUrl = "WRONG DATABASE URL",
+          username = "",
+          password = ""
+        ))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/BadRequest")
+      }
+    }
+
+    "create an HTTP response with bad request for erroneous SQL query" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source",
+        SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
+        sourceContext = SqlSource(query = Some("WRONG"))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/BadRequest")
+      }
+    }
+
+    "create an HTTP response with bad request for wrong column name in the SQL query" in {
+      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+        "source",
+        SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
+        sourceContext = SqlSource(query = Some("select WRONG from death"))
+      )
+      Post(s"/tofhir/projects/${projectId}/schemas/infer", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Type: https://tofhir.io/errors/BadRequest")
       }
     }
   }

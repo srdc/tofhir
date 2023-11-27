@@ -81,6 +81,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         terminologySystem.id shouldEqual terminologySystem1.id
         terminologySystem.name shouldEqual terminologySystem1.name
       }
+
+      // try to get a non-existent terminology system
+      Get(s"/${webServerConfig.baseUri}/terminologies/Non-existent") ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
     }
 
     "put a terminology system" in {
@@ -176,6 +181,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         // validate that it returns the concept map
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
         conceptMap.name shouldEqual conceptMap1.name
+      }
+
+      // try to get a non-existent concept map within a terminology system
+      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/Non-existent") ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
       }
     }
 
@@ -325,6 +335,11 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         // validate that it returns the code system
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
         codeSystem.name shouldEqual codeSystem1.name
+      }
+
+      // try to get a non-existent code system within a terminology system
+      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/Non-existent").addHeader(RawHeader("Content-Type", "application/json")) ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
       }
     }
 

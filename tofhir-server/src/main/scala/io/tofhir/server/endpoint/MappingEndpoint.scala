@@ -8,7 +8,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.server.endpoint.MappingEndpoint.SEGMENT_MAPPINGS
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.ToFhirRestCall
+import io.tofhir.server.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.service.MappingService
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
@@ -54,7 +54,9 @@ class MappingEndpoint(mappingRepository: IMappingRepository, jobRepository: IJob
       complete {
         service.getMapping(projectId, id) map {
           case Some(fhirMapping) => StatusCodes.OK -> fhirMapping
-          case None => StatusCodes.NotFound -> s"Mapping with name $id not found"
+          case None => StatusCodes.NotFound -> {
+            throw ResourceNotFound("Mapping not found", s"Mapping with name $id not found")
+          }
         }
       }
     }

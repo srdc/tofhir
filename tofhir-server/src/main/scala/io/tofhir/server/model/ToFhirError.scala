@@ -69,3 +69,11 @@ case class ResourceNotFound(title: String, detail: String) extends ToFhirError {
 case class InternalError(title: String, detail: String, override val cause: Option[Throwable] = None) extends ToFhirError {
   val statusCode = 500
 }
+
+case class UnsupportedMediaType(title: String, detail: String) extends ToFhirError {
+  val statusCode = 415
+}
+
+case class MethodForbidden(title: String, detail: String) extends ToFhirError {
+  val statusCode = 405
+}
