@@ -246,7 +246,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     jobRepository.getJob(projectId, jobId).flatMap {
       case Some(_) =>
         val page = queryParams.getOrElse("page", "1").toInt
-        logServiceClient.getExecutions(projectId, jobId, page).map(paginatedLogsResponse => {
+        val filters = queryParams.getOrElse("filters", null)
+        logServiceClient.getExecutions(projectId, jobId, page, filters).map(paginatedLogsResponse => {
           logger.debug(s"Retrieved executions for projectId: $projectId, jobId: $jobId, page: $page")
           // Retrieve the running executions for the given job
           val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)

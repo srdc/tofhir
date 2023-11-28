@@ -28,13 +28,14 @@ class LogServiceClient(logServiceEndpoint: String) {
    * @param projectId
    * @param jobId
    * @param page
+   * @param filters start end, end date, error status and running status information to filter executions. Uri is formatted in frontend.
    * @return A future of a tuple containing the details of individual executions and total number of executions
    *         //TODO we can define a dedicated class representing the response type
    */
-  def getExecutions(projectId: String, jobId: String, page: Int): Future[(Seq[JValue], Long)] = {
+  def getExecutions(projectId: String, jobId: String, page: Int, filters: String): Future[(Seq[JValue], Long)] = {
     val request = HttpRequest(
       method = HttpMethods.GET,
-      uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions?page=$page"
+      uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions?page=$page&${filters}"
     )
 
     var countHeader: Long = 0

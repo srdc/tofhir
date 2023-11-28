@@ -4,13 +4,15 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.log.server.config.SparkConfig
 import io.tofhir.log.server.model.ResourceNotFound
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions.{col, lit, to_date, to_timestamp}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
-import org.json4s.JsonAST.{JBool, JObject, JValue}
+import org.json4s.JsonAST.{JObject, JValue}
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JString}
 
+import java.text.SimpleDateFormat
+import java.util.Date
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -111,6 +113,11 @@ class ExecutionService() extends LazyLogging {
    */
   def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long)] = {
     // retrieve the job to validate its existence
+    val dateBefore = queryParams.getOrElse("dateBefore", null)
+    val dateAfter = queryParams.getOrElse("dateAfter", null)
+    val errorStatuses = queryParams.getOrElse("errorStatus", null)
+    val runningStatus = queryParams.getOrElse("runningStatus", "")
+
     Future {
       // read logs/tofhir-mappings.log file
       val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
@@ -154,8 +161,31 @@ class ExecutionService() extends LazyLogging {
           } else {
             val start = (page - 1) * 10
             val end = Math.min(start + 10, total.toInt)
+            var filteredLogs = executionLogs
+            // Filter according to running status of the execution
+            if(runningStatus.equals("STARTED")){
+              filteredLogs = filteredLogs.filter("errorStatus == 'STARTED'")
+            }
+            // Only 'STARTED' is hold as running status. So executions without 'STARTED' in their errorStatus field, is completed.
+            if(runningStatus.equals("COMPLETED")){
+              filteredLogs = filteredLogs.filter("errorStatus != 'STARTED'")
+            }
+
+            // Filter according to error status of the execution
+            if(Option(errorStatuses).nonEmpty){
+              filteredLogs = filteredLogs.filter(col("errorStatus").isin(errorStatuses.split(","): _*))
+            }
+
+            // Filter according to start date
+            if(Option(dateAfter).nonEmpty){
+              filteredLogs = filteredLogs.filter(col("startTime") > dateAfter)
+            }
+            if (Option(dateBefore).nonEmpty) {
+              filteredLogs = filteredLogs.filter(col("startTime") < dateBefore)
+            }
+
             // sort the executions by latest to oldest
-            val paginatedLogs = executionLogs.sort(executionLogs.col("startTime").desc).collect().slice(start, end)
+            val paginatedLogs = filteredLogs.sort(executionLogs.col("startTime").desc).collect().slice(start, end)
 
             // Retrieve the running executions for the given job
             (paginatedLogs.map(row => {
