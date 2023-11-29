@@ -47,11 +47,12 @@ class ExecutionEndpoint(webServerConfig: WebServerConfig) extends ICORSHandler w
    * */
   private def getExecutions(projectId: String, id: String): Route = {
     get {
-      parameterMap { queryParams => // page is supported for now (e.g. page=1)
+      parameterMap { queryParams => // page and filter information is included (Ex: page=1&errorStatus=SUCCESS,FAILURE)
         onComplete(executionService.getExecutions(projectId, id, queryParams)) {
           case util.Success(response) =>
             val headers = List(
-              RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString)
+              RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString),
+              RawHeader(ICORSHandler.X_FILTERED_COUNT_HEADER, response._3.toString)
             )
             respondWithHeaders(headers) {
               complete(response._1)

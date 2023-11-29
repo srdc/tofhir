@@ -199,7 +199,9 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
         onComplete(executionService.getExecutions(projectId, id, queryParams)) {
           case util.Success(response) =>
             val headers = List(
-              RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString)
+              RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString),
+              RawHeader(ICORSHandler.X_FILTERED_COUNT_HEADER, response._3.toString)
+
             )
             respondWithHeaders(headers) {
               complete(response._1)
