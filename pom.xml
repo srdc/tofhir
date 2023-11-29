@@ -6,7 +6,7 @@
 
     <groupId>io.onfhir</groupId>
     <artifactId>tofhir_2.13</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>${revision}</version>
 
     <packaging>pom</packaging>
 
@@ -15,7 +15,7 @@
         various sources (CSV/Test/JSON/Parquet/Avro files, relational databases, Hive tables) and transform to FHIR
         resources through mapping definitions.
     </description>
-    <url>https://tofhir.io</url>
+    <url>https://onfhir.io/tofhir</url>
 
     <licenses>
         <license>
@@ -40,9 +40,30 @@
             <organizationUrl>https://www.srdc.com.tr</organizationUrl>
         </developer>
         <developer>
+            <id>suatgonul</id>
+            <name>Suat Gönül</name>
+            <email>suat@srdc.com.tr</email>
+            <organization>SRDC Corp.</organization>
+            <organizationUrl>https://www.srdc.com.tr</organizationUrl>
+        </developer>
+        <developer>
+            <id>dogukan10</id>
+            <name>Doğukan Çavdaroğlu</name>
+            <email>dogukan@srdc.com.tr</email>
+            <organization>SRDC Corp.</organization>
+            <organizationUrl>https://www.srdc.com.tr</organizationUrl>
+        </developer>
+        <developer>
             <id>YemreGurses</id>
             <name>Yunus Emre Gürses</name>
             <email>yunusemre@srdc.com.tr</email>
+            <organization>SRDC Corp.</organization>
+            <organizationUrl>https://www.srdc.com.tr</organizationUrl>
+        </developer>
+        <developer>
+            <id>Okanmercan99</id>
+            <name>Okan Mercan</name>
+            <email>okan@srdc.com.tr</email>
             <organization>SRDC Corp.</organization>
             <organizationUrl>https://www.srdc.com.tr</organizationUrl>
         </developer>
@@ -66,6 +87,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+
+        <!-- This is a special placeholder to manage the version from a single property throughout the parent and child modules. No other property name can be used. -->
+        <!-- https://maven.apache.org/maven-ci-friendly.html -->
+        <revision>1.0.0</revision>
 
         <scala.version>2.13.10</scala.version>
         <scala.binary.version>2.13</scala.binary.version>

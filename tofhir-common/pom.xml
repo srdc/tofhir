@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.onfhir</groupId>
         <artifactId>tofhir_2.13</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>tofhir-common</artifactId>
@@ -46,7 +46,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Generates an jar with Maven, containing all dependencies. -->
+            <!-- Generates a jar with Maven, containing all dependencies. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
