@@ -51,4 +51,5 @@ trait ICORSHandler extends BasicDirectives {
  */
 object ICORSHandler {
   val X_TOTAL_COUNT_HEADER = "X-Total-Count" // Header to return the total number of resources
+  var X_FILTERED_COUNT_HEADER = "X-Filtered-Count" // Header to return the number of resources after filter
 }

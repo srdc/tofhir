@@ -241,7 +241,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    *         second element is the total number of executions without applying any filters i.e. query params
    * @throws ResourceNotFound when mapping job does not exist
    */
-  def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long)] = {
+  def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long, Long)] = {
     // retrieve the job to validate its existence
     jobRepository.getJob(projectId, jobId).flatMap {
       case Some(_) =>
@@ -258,7 +258,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               logJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains((logJson \ "id").extract[String])))
             )
           })
-          (ret, paginatedLogsResponse._2)
+          (ret, paginatedLogsResponse._2, paginatedLogsResponse._3)
         })
 
       case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists")

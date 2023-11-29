@@ -111,7 +111,7 @@ class ExecutionService() extends LazyLogging {
    *         second element is the total number of executions without applying any filters i.e. query params
    * @throws ResourceNotFound when mapping job does not exist
    */
-  def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long)] = {
+  def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long, Long)] = {
     // retrieve the job to validate its existence
     val dateBefore = queryParams.getOrElse("dateBefore", null)
     val dateAfter = queryParams.getOrElse("dateAfter", null)
@@ -123,13 +123,13 @@ class ExecutionService() extends LazyLogging {
       val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
       // handle the case where no job has been run yet which makes the data frame empty
       if (dataFrame.isEmpty) {
-        (Seq.empty, 0)
+        (Seq.empty, 0, 0)
       }
       else {
         val jobRuns = dataFrame.filter(s"jobId = '$jobId' and projectId = '$projectId'")
         // handle the case where the job has not been run yet which makes the data frame empty
         if (jobRuns.isEmpty) {
-          (Seq.empty, 0)
+          (Seq.empty, 0, 0)
         } else {
           // group logs by execution id
           val jobRunsGroupedByExecutionId = jobRuns.groupByKey(row => row.get(row.fieldIndex("executionId")).toString)(Encoders.STRING)
@@ -157,7 +157,7 @@ class ExecutionService() extends LazyLogging {
           val page = queryParams.getOrElse("page", "1").toInt
           // handle the case where requested page does not exist
           if (page > numOfPages) {
-            (Seq.empty, 0)
+            (Seq.empty, 0, 0)
           } else {
             val start = (page - 1) * 10
             val end = Math.min(start + 10, total.toInt)
@@ -190,7 +190,7 @@ class ExecutionService() extends LazyLogging {
             // Retrieve the running executions for the given job
             (paginatedLogs.map(row => {
               JsonMethods.parse(row.json).asInstanceOf[JObject]
-            }), total.toInt)
+            }), total.toInt, filteredLogs.count())
           }
         }
       }

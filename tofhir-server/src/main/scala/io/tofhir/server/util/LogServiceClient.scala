@@ -32,21 +32,23 @@ class LogServiceClient(logServiceEndpoint: String) {
    * @return A future of a tuple containing the details of individual executions and total number of executions
    *         //TODO we can define a dedicated class representing the response type
    */
-  def getExecutions(projectId: String, jobId: String, page: Int, filters: String): Future[(Seq[JValue], Long)] = {
+  def getExecutions(projectId: String, jobId: String, page: Int, filters: String): Future[(Seq[JValue], Long, Long)] = {
     val request = HttpRequest(
       method = HttpMethods.GET,
       uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions?page=$page&${filters}"
     )
 
     var countHeader: Long = 0
+    var filteredCountHeader: Long = 0
     Http().singleRequest(request)
       .flatMap(resp => {
         countHeader = resp.headers.find(_.name == ICORSHandler.X_TOTAL_COUNT_HEADER).map(_.value).get.toInt
+        filteredCountHeader = resp.headers.find(_.name == ICORSHandler.X_FILTERED_COUNT_HEADER).map(_.value).get.toLong
         resp.entity.toStrict(timeout)
       })
       .map(strictEntity => {
         val response = strictEntity.data.utf8String
-        JsonMethods.parse(response).extract[Seq[JValue]] -> countHeader
+        (JsonMethods.parse(response).extract[Seq[JValue]], countHeader, filteredCountHeader)
       })
   }
 
