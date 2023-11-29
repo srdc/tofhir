@@ -116,7 +116,6 @@ class ExecutionService() extends LazyLogging {
     val dateBefore = queryParams.getOrElse("dateBefore", null)
     val dateAfter = queryParams.getOrElse("dateAfter", null)
     val errorStatuses = queryParams.getOrElse("errorStatus", null)
-    val runningStatus = queryParams.getOrElse("runningStatus", "")
 
     Future {
       // read logs/tofhir-mappings.log file
@@ -161,16 +160,8 @@ class ExecutionService() extends LazyLogging {
           } else {
             val start = (page - 1) * 10
             val end = Math.min(start + 10, total.toInt)
-            var filteredLogs = executionLogs
-            // Filter according to running status of the execution
-            if(runningStatus.equals("STARTED")){
-              filteredLogs = filteredLogs.filter("errorStatus == 'STARTED'")
-            }
-            // Only 'STARTED' is hold as running status. So executions without 'STARTED' in their errorStatus field, is completed.
-            if(runningStatus.equals("COMPLETED")){
-              filteredLogs = filteredLogs.filter("errorStatus != 'STARTED'")
-            }
 
+            var filteredLogs = executionLogs
             // Filter according to error status of the execution
             if(Option(errorStatuses).nonEmpty){
               filteredLogs = filteredLogs.filter(col("errorStatus").isin(errorStatuses.split(","): _*))
