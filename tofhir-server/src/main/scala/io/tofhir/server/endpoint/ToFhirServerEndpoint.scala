@@ -13,7 +13,9 @@ import io.tofhir.server.service.mapping.ProjectMappingFolderRepository
 import io.tofhir.server.service.mappingcontext.MappingContextFolderRepository
 import io.tofhir.server.service.project.{FolderDBInitializer, ProjectFolderRepository}
 import io.tofhir.server.service.schema.SchemaFolderRepository
-import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
+import io.tofhir.server.service.terminology.codesystem.{CodeSystemRepository, ICodeSystemRepository}
+import io.tofhir.server.service.terminology.{ITerminologySystemRepository, TerminologySystemFolderRepository}
+import io.tofhir.server.service.terminology.conceptmap.{ConceptMapRepository, IConceptMapRepository}
 
 import java.util.UUID
 
@@ -28,14 +30,17 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val schemaRepository: SchemaFolderRepository = new SchemaFolderRepository(toFhirEngineConfig.schemaRepositoryFolderPath, projectRepository)
   val mappingJobRepository: JobFolderRepository = new JobFolderRepository(toFhirEngineConfig.jobRepositoryFolderPath, projectRepository)
   val mappingContextRepository: MappingContextFolderRepository = new MappingContextFolderRepository(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectRepository)
-  val terminologySystemFolderRepository: TerminologySystemFolderRepository = new TerminologySystemFolderRepository(toFhirEngineConfig.terminologySystemFolderPath)
+  val terminologySystemFolderRepository: ITerminologySystemRepository = new TerminologySystemFolderRepository(toFhirEngineConfig.toFhirDbFolderPath)
+  val conceptMapRepository: IConceptMapRepository = new ConceptMapRepository(toFhirEngineConfig.toFhirDbFolderPath)
+  val codeSystemRepository: ICodeSystemRepository = new CodeSystemRepository(toFhirEngineConfig.toFhirDbFolderPath)
+
   // Initialize the projects by reading the resources available in the file system
   new FolderDBInitializer(toFhirEngineConfig, schemaRepository, mappingRepository, mappingJobRepository, projectRepository, mappingContextRepository).init()
 
   val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository, logServiceConfig.logServiceEndpoint)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint()
-  val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, mappingJobRepository, toFhirEngineConfig)
+  val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, conceptMapRepository, codeSystemRepository, mappingJobRepository)
   val redCapIntegrationModuleEndpoint = new RedCapIntegrationModuleEndpoint()
   // Custom rejection handler to send proper messages to user
   val toFhirRejectionHandler: RejectionHandler = ToFhirRejectionHandler.getRejectionHandler();

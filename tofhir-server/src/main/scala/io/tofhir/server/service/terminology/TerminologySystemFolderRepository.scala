@@ -1,7 +1,6 @@
 package io.tofhir.server.service.terminology
 
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.{AlreadyExists, BadRequest, ResourceNotFound, TerminologySystem}
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository.getTerminologySystemsJsonPath

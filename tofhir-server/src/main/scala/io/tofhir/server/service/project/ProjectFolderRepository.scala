@@ -11,7 +11,7 @@ import io.tofhir.server.model._
 import org.json4s._
 import org.json4s.jackson.Serialization
 
-import java.io.{File, FileWriter}
+import java.io.FileWriter
 import scala.collection.mutable
 import scala.concurrent.Future
 

@@ -4,13 +4,11 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.TerminologySystem.TerminologyConceptMap
-import io.tofhir.server.service.terminology.conceptmap.{ConceptMapRepository, IConceptMapRepository}
+import io.tofhir.server.service.terminology.conceptmap.IConceptMapRepository
 
 import scala.concurrent.Future
 
-class ConceptMapService(terminologySystemFolderPath: String) extends LazyLogging {
-
-  private val conceptMapRepository: IConceptMapRepository = new ConceptMapRepository(terminologySystemFolderPath)
+class ConceptMapService(conceptMapRepository: IConceptMapRepository) extends LazyLogging {
 
   /**
    * Get all ConceptMaps for a terminology

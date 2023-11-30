@@ -435,7 +435,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         Thread.sleep(1000)
         if (condition) {
           success = true
-          break
+          break()
         }
       }
     }

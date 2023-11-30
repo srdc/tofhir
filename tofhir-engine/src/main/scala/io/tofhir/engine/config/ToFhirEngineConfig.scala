@@ -24,9 +24,6 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   /** Path to the folder where the job definitions are kept. */
   lazy val jobRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mapping-jobs.repository.folder-path")).getOrElse("mapping-jobs")
 
-  /** Path to the folder where the terminology system definitions are kept. */
-  lazy val terminologySystemFolderPath: String = Try(toFhirEngineConfig.getString("terminology-systems.folder-path")).getOrElse("terminology-systems")
-
   /** Timeout for a single mapping */
   lazy val mappingTimeout: Duration = Try(toFhirEngineConfig.getDuration("mappings.timeout").toScala).toOption.getOrElse(Duration.apply(5, TimeUnit.SECONDS))
 
