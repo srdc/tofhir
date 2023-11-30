@@ -77,7 +77,12 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     // resolve schemas via the schema repository
     val schemaFutures: Future[Seq[Option[SchemaDefinition]]] = Future.sequence(
       (projectMetadata \ "schemas").asInstanceOf[JArray].arr.map(schemaMetadata => {
-        schemaFolderRepository.getSchema(id, (schemaMetadata \ "id").extract[String])
+        val schemaId: String = (schemaMetadata \ "id").extract[String]
+        schemaFolderRepository.getSchema(id, schemaId)
+          .map {
+            case None => throw new IllegalStateException(s"Failed to retrieve schema with id: $schemaId")
+            case schema => schema
+          }
       })
     )
     val schemas: Seq[SchemaDefinition] = Await.result[Seq[Option[SchemaDefinition]]](schemaFutures, 2 seconds).map(_.get)
@@ -85,7 +90,12 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     // resolve mappings via the mapping repository
     val mappingFutures: Future[Seq[Option[FhirMapping]]] = Future.sequence(
       (projectMetadata \ "mappings").asInstanceOf[JArray].arr.map(mappingMetadata => {
-        mappingFolderRepository.getMapping(id, (mappingMetadata \ "id").extract[String])
+        val mappingId: String = (mappingMetadata \ "id").extract[String]
+        mappingFolderRepository.getMapping(id, mappingId)
+          .map {
+            case None => throw new IllegalStateException(s"Failed to retrieve mapping with id: $mappingId")
+            case mapping => mapping
+          }
       })
     )
     val mappings: Seq[FhirMapping] = Await.result[Seq[Option[FhirMapping]]](mappingFutures, 2 seconds).map(_.get)
@@ -93,7 +103,12 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
     // resolve mapping jobs via the mapping repository
     val mappingJobFutures: Future[Seq[Option[FhirMappingJob]]] = Future.sequence(
       (projectMetadata \ "mappingJobs").asInstanceOf[JArray].arr.map(jobMetadata => {
-        mappingJobFolderRepository.getJob(id, (jobMetadata \ "id").extract[String])
+        val jobId: String = (jobMetadata \ "id").extract[String]
+        mappingJobFolderRepository.getJob(id, jobId)
+          .map {
+            case None => throw new IllegalStateException(s"Failed to retrieve job with id: $jobId")
+            case job => job
+          }
       })
     )
     val jobs: Seq[FhirMappingJob] = Await.result[Seq[Option[FhirMappingJob]]](mappingJobFutures, 2 seconds).map(_.get)
