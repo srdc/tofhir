@@ -97,6 +97,8 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
                 field._1 -> {
                   // performs the following conversions:
                   //  JString(v) => JBool(v)
+                  //  JString("0") => JBool(false)
+                  //  JString("1") => JBool(true)
                   //  JBool(v) => JBool(v)
                   //  JString() => JNull
                   val bool = field._2.extractOpt[Boolean] // try to extract as boolean
@@ -105,6 +107,8 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
                     case Some(value) => JBool(value)
                     // try to extract as string
                     case None => field._2.extractOpt[String] match {
+                      // matches JString("0") or matches JString("1")
+                      case Some(value) if value.contentEquals("0") || value.contentEquals("1") => JBool(if(value.contentEquals("0")) false else true)
                       // matches JString(v)
                       case Some(value) if value.nonEmpty => JBool(value.toBoolean)
                       // matches JString()
