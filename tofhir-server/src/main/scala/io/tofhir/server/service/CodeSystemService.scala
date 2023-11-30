@@ -4,13 +4,11 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
-import io.tofhir.server.service.terminology.codesystem.{CodeSystemRepository, ICodeSystemRepository}
+import io.tofhir.server.service.terminology.codesystem.ICodeSystemRepository
 
 import scala.concurrent.Future
 
-class CodeSystemService(terminologySystemFolderPath: String) extends LazyLogging {
-
-  private val codeSystemRepository: ICodeSystemRepository = new CodeSystemRepository(terminologySystemFolderPath)
+class CodeSystemService(codeSystemRepository: ICodeSystemRepository) extends LazyLogging {
 
   /**
    * Get all code systems for a terminology

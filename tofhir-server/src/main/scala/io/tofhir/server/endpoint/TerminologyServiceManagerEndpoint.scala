@@ -5,22 +5,24 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{ResourceNotFound, TerminologySystem, ToFhirRestCall}
 import io.tofhir.server.service.TerminologySystemService
 import io.tofhir.server.service.job.JobFolderRepository
 import io.tofhir.server.service.terminology.ITerminologySystemRepository
+import io.tofhir.server.service.terminology.codesystem.ICodeSystemRepository
+import io.tofhir.server.service.terminology.conceptmap.IConceptMapRepository
 
 import scala.concurrent.Future
 
-class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminologySystemRepository, mappingJobRepository: JobFolderRepository, toFhirEngineConfig: ToFhirEngineConfig) extends LazyLogging {
+class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminologySystemRepository, conceptMapRepository: IConceptMapRepository,
+                                        codeSystemRepository: ICodeSystemRepository, mappingJobRepository: JobFolderRepository) extends LazyLogging {
 
   private val terminologySystemService: TerminologySystemService = new TerminologySystemService(terminologySystemRepository, mappingJobRepository)
 
-  private val conceptMapEndpoint: ConceptMapEndpoint = new ConceptMapEndpoint(toFhirEngineConfig)
-  private val codeSystemEndpoint: CodeSystemEndpoint = new CodeSystemEndpoint(toFhirEngineConfig)
+  private val conceptMapEndpoint: ConceptMapEndpoint = new ConceptMapEndpoint(conceptMapRepository)
+  private val codeSystemEndpoint: CodeSystemEndpoint = new CodeSystemEndpoint(codeSystemRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_TERMINOLOGY) {
