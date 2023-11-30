@@ -1,6 +1,8 @@
 package io.tofhir.engine
 
+import com.typesafe.scalalogging.Logger
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
+import io.tofhir.common.app.AppVersion
 import io.tofhir.engine.cli.{CommandExecutionContext, CommandFactory, CommandLineInterface}
 import io.tofhir.engine.config.ToFhirConfig
 
@@ -8,9 +10,13 @@ import io.tofhir.engine.config.ToFhirConfig
  * Entrypoint of toFHIR
  */
 object Boot extends App {
+
+  val logger: Logger = Logger(this.getClass)
+  logger.info(s"Starting toFHIR version: ${AppVersion.getVersion}")
+
   init(args)
 
-  def init(args: Array[String], functionLibraryFactories : Map[String, IFhirPathFunctionLibraryFactory] = Map.empty): Unit = {
+  def init(args: Array[String], functionLibraryFactories: Map[String, IFhirPathFunctionLibraryFactory] = Map.empty): Unit = {
     val options = CommandLineInterface.nextArg(Map(), args.toList)
     //Interactive command line interface
     if (options.isEmpty || !options.contains("command") || options("command").asInstanceOf[String] == "cli") {
