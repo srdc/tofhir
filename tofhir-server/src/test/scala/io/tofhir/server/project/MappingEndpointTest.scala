@@ -100,6 +100,10 @@ class MappingEndpointTest extends BaseEndpointTest {
       Put(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(id = "123123")))) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
+      // update a mapping with existing url
+      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = mapping2.url)))) ~> route ~> check {
+        status shouldEqual StatusCodes.Conflict
+      }
     }
 
     "delete a mapping from a project" in {
@@ -129,6 +133,17 @@ class MappingEndpointTest extends BaseEndpointTest {
       // delete a mapping
       Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "cannot create a mapping with the existing ID or URL" in {
+      // create the mapping with existing id
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
+        status shouldEqual StatusCodes.Conflict
+      }
+      // create the mapping with existing url
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2.copy(id = "id-updated")))) ~> route ~> check {
+        status shouldEqual StatusCodes.Conflict
       }
     }
 
