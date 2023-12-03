@@ -53,7 +53,7 @@ object CsvUtil {
   def readFromCSV(filePath: String, encoding: String = "UTF-8"): Seq[Map[String, String]] = {
       val csvFile = new File(filePath)
       val csvMapper = new CsvMapper()
-      val csvSchema = CsvSchema.emptySchema().withHeader()
+      val csvSchema = CsvSchema.emptySchema().withEscapeChar('\\').withHeader()
 
       val mappingIterator:MappingIterator[java.util.Map[String, String]] =
         csvMapper.readerFor(classOf[java.util.Map[String, String]]) // read each line into a Map[String, String]
