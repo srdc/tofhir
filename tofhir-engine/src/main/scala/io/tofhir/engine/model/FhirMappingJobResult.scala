@@ -33,14 +33,10 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
 
   override def toString: String = {
     s"toFHIR batch mapping result ($result) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n" +
-      (if (result != "FAILURE")
         s"\t# of Invalid Rows: \t$numOfInvalids\n" +
           s"\t# of Not Mapped: \t$numOfNotMapped\n" +
           s"\t# of Failed writes:\t$numOfFailedWrites\n" +
           s"\t# of Written FHIR resources:\t$numOfFhirResources"
-      else
-        ""
-        )
   }
 
   /**
