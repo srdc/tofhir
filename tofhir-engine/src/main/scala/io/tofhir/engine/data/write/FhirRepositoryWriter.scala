@@ -149,19 +149,21 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
             logger.error(msg, fce)
             throw FhirMappingException(msg, fce)
           } else {
-            zipWithEntryIndex(fce.serverResponse.get.outcomeIssues).map {
-              case (Some(index), outcomeIssue) =>
-                Some(
-                  mappingResults.apply(index)._2.copy(
-                    error = Some(FhirMappingError( //Set the error
-                      code = FhirMappingErrorCodes.INVALID_RESOURCE,
-                      description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
-                      expression = Some(Serialization.write(outcomeIssue))
-                    )))
-                )
-              case _ => None
-            }.filter(failedResult => failedResult.isDefined)
-              .foreach(failedResult => problemsAccumulator.add(failedResult.get))
+            // find the validation errors of mappings
+            val validationErrorsOfMappings = groupOutcomeIssuesByEntryIndex(fce.serverResponse.get.outcomeIssues)
+            mappingResults
+              .zipWithIndex.map {
+                case (element, index) =>
+                  element._2.copy(
+                    error = Some(
+                      FhirMappingError(
+                        code = FhirMappingErrorCodes.INVALID_RESOURCE,
+                        description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
+                        expression = Some(Serialization.write(validationErrorsOfMappings.getOrElse(index, None)))
+                      )
+                    )
+                  )
+              }.foreach(failedResult => problemsAccumulator.add(failedResult))
             None
           }
         } else {
@@ -216,27 +218,36 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
     }
   }
 
-  private def zipWithEntryIndex(outcomeIssues: Seq[OutcomeIssue]): Seq[(Option[Int], OutcomeIssue)] = {
-    outcomeIssues.map(issue => {
+  /**
+   * Groups a sequence of OutcomeIssues by their entry index in the resource bundle.
+   *
+   * @param outcomeIssues The sequence of OutcomeIssues to be grouped.
+   * @return A map where the keys are resource entry indices, and the values are sequences of OutcomeIssues associated with each index.
+   */
+  private def groupOutcomeIssuesByEntryIndex(outcomeIssues: Seq[OutcomeIssue]): Map[Int, Seq[OutcomeIssue]] = {
+    outcomeIssues.groupBy { issue =>
       if (issue.expression.isEmpty) {
         // If Firely does not return an expression for the OutcomeIssue, I cannot find for which FhirMappingResult this issue is raised!!!
         logger.error(s"Firely did not return an expression indicating the location of the OutcomeIssue: ${Serialization.write(issue)}")
-      }
-      if (issue.expression.size > 1) {
-        logger.warn(s"There are more than one expression describing the location of the OutcomeIssue. I will continue with the first expression: ${issue.expression.head}")
-      }
-
-      val resourceEntryIndex = // Find the index of the resource so that I can find it in the mappingResults.
-        "^Bundle\\.entry\\[(\\d+)\\]".r
-          .findFirstMatchIn(issue.expression.head) match {
-          case Some(matched) => Some(matched.group(1).toInt)
-          case None => None
+        None
+      } else {
+        if (issue.expression.size > 1) {
+          logger.warn(s"There are more than one expression describing the location of the OutcomeIssue. I will continue with the first expression: ${issue.expression.head}")
         }
-      if (resourceEntryIndex.isEmpty) {
-        logger.error(s"Entry index cannot be extracted from the expression given in the OutcomeIssue: ${Serialization.write(issue)}")
+        val resourceEntryIndex = // Find the index of the resource so that I can find it in the mappingResults.
+          "^Bundle\\.entry\\[(\\d+)\\]".r
+            .findFirstMatchIn(issue.expression.head) match {
+            case Some(matched) => Some(matched.group(1).toInt)
+            case None => None
+          }
+        if (resourceEntryIndex.isEmpty) {
+          logger.error(s"Entry index cannot be extracted from the expression given in the OutcomeIssue: ${Serialization.write(issue)}")
+        }
+        resourceEntryIndex
       }
-      resourceEntryIndex -> issue
-    })
+    }.collect {
+      case (Some(index), issues) => index -> issues
+    }
   }
 
   /**
