@@ -1,6 +1,7 @@
 package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.model.{BadRequest, Project, ProjectEditableFields}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
@@ -11,6 +12,7 @@ import org.json4s.JObject
 import org.json4s.JsonAST.JString
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class ProjectService(projectRepository: IProjectRepository,
                      jobRepository: IJobRepository,
@@ -78,24 +80,43 @@ class ProjectService(projectRepository: IProjectRepository,
     val mappingContextIds: Seq[String] = projectRepository.getMappingContextIds(id)
     val schemaIds: Seq[String] = projectRepository.getSchemaIds(id)
 
-    // First delete project from cache asynchronously
-    projectRepository.removeProjectFromCache(id)
-
-    jobIds.foreach(jobId => {
-      jobRepository.deleteJob(id, jobId)
-    })
-    mappingIds.foreach(mappingId => {
-      mappingRepository.deleteMapping(id, mappingId)
-    })
-    mappingContextIds.foreach(mappingContextId => {
-      mappingContextRepository.deleteMappingContext(id, mappingContextId)
-    })
-    schemaIds.foreach(schemaId => {
-      schemaRepository.deleteSchema(id, schemaId)
-    })
-
-    // Delete the folders parallel with other removals
-    projectRepository.removeProjectFolders(id)
+    Future {
+      // Delete the folders
+      projectRepository.removeProject(id) onComplete {
+        case Success(v) =>
+          // Delete elements in the project, if any of the deletion is failed log the error and continue
+          jobIds.foreach(jobId => {
+            try{
+              jobRepository.deleteJob(id, jobId)
+            }catch {
+              case e: Throwable => logger.error(s"Error while deleting the job: ${jobId}", e)
+            }
+          })
+          mappingIds.foreach(mappingId => {
+            try {
+              mappingRepository.deleteMapping(id, mappingId)
+            } catch {
+              case e: Throwable => logger.error(s"Error while deleting the mapping: ${mappingId}", e)
+            }
+          })
+          mappingContextIds.foreach(mappingContextId => {
+            try {
+              mappingContextRepository.deleteMappingContext(id, mappingContextId)
+            } catch {
+              case e: Throwable => logger.error(s"Error while deleting the mapping context: ${mappingContextId}", e)
+            }
+          })
+          schemaIds.foreach(schemaId => {
+            try {
+              schemaRepository.deleteSchema(id, schemaId)
+            } catch {
+              case e: Throwable => logger.error(s"Error while deleting the schema: ${schemaId}", e)
+            }
+          })
+        // If project deletion is failed return the exception thrown in removeProject
+        case Failure(exception) => throw exception
+      }
+    }
   }
 
   /**

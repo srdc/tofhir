@@ -109,13 +109,23 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
     }
   }
   /**
-   * Delete folders from the repositories.
+   * * Delete the project and folders belong to project
    *
    * @param id id of the project
    * @return
    */
-  override def removeProjectFolders(id: String): Future[Unit] = {
+  override def removeProject(id: String): Future[Unit] = {
     Future {
+      // validate that the project exists
+      if (!projects.contains(id))
+        throw ResourceNotFound("Project does not exist.", s"Project $id not found")
+
+      // remove the project from the cache
+      projects.remove(id)
+
+      // update projects metadata with the remaining ones
+      updateProjectsMetadata()
+
       // Delete the schema, mappings and job folders the project
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.schemaRepositoryFolderPath, id).toFile)
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.contextPath, id).toFile)
@@ -123,22 +133,6 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.jobRepositoryFolderPath, id).toFile)
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(config.mappingContextRepositoryFolderPath, id).toFile)
     }
-  }
-
-  /**
-   * Remove project from cache and update meta data without deleting the repository folders
-   * @param id
-   */
-  override def removeProjectFromCache(id: String): Unit = {
-    // validate that the project exists
-    if (!projects.contains(id))
-      throw ResourceNotFound("Project does not exist.", s"Project $id not found")
-
-    // remove the project from the cache
-    projects.remove(id)
-
-    // update projects metadata with the remaining ones
-    updateProjectsMetadata()
   }
 
   /**
