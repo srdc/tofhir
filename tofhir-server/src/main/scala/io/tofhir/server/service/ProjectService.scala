@@ -11,7 +11,7 @@ import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JObject
 import org.json4s.JsonAST.JString
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 class ProjectService(projectRepository: IProjectRepository,
@@ -80,43 +80,60 @@ class ProjectService(projectRepository: IProjectRepository,
     val mappingContextIds: Seq[String] = projectRepository.getMappingContextIds(id)
     val schemaIds: Seq[String] = projectRepository.getSchemaIds(id)
 
-    Future {
-      // Delete the folders
-      projectRepository.removeProject(id) onComplete {
-        case Success(v) =>
-          // Delete elements in the project, if any of the deletion is failed log the error and continue
-          jobIds.foreach(jobId => {
-            try{
-              jobRepository.deleteJob(id, jobId)
-            }catch {
-              case e: Throwable => logger.error(s"Error while deleting the job: ${jobId}", e)
-            }
-          })
-          mappingIds.foreach(mappingId => {
-            try {
-              mappingRepository.deleteMapping(id, mappingId)
-            } catch {
-              case e: Throwable => logger.error(s"Error while deleting the mapping: ${mappingId}", e)
-            }
-          })
-          mappingContextIds.foreach(mappingContextId => {
-            try {
-              mappingContextRepository.deleteMappingContext(id, mappingContextId)
-            } catch {
-              case e: Throwable => logger.error(s"Error while deleting the mapping context: ${mappingContextId}", e)
-            }
-          })
-          schemaIds.foreach(schemaId => {
-            try {
-              schemaRepository.deleteSchema(id, schemaId)
-            } catch {
-              case e: Throwable => logger.error(s"Error while deleting the schema: ${schemaId}", e)
-            }
-          })
-        // If project deletion is failed return the exception thrown in removeProject
-        case Failure(exception) => throw exception
+    // Define future for job deletion
+    def jobDeletion = Future.traverse(jobIds)(jobId => {
+      // try catch is necessary because recover cannot detect thrown exceptions before future is returned
+      try{
+        jobRepository.deleteJob(id, jobId)
+      }catch {
+        case e: Throwable => Future.failed(e)
       }
-    }
+    }.recover({
+      case e: Throwable => logger.error(s"Error while deleting the job: ${jobId}", e)
+    }))
+    // Define future for mapping deletion
+    def mappingDeletion = Future.traverse(mappingIds)(mappingId =>
+      {
+        try{
+          mappingRepository.deleteMapping(id, mappingId)
+        }catch {
+          case e: Throwable => Future.failed(e)
+        }
+      }.recover({
+      case e: Throwable => logger.error(s"Error while deleting the mapping: ${mappingId}", e)
+    }))
+    // define future for mapping context deletion
+    def mappingContextDeletion = Future.traverse(mappingContextIds)(mappingContextId =>
+      {
+        try {
+          mappingContextRepository.deleteMappingContext(id, mappingContextId)
+        }catch {
+          case e: Throwable => Future.failed(e)
+        }
+      }.recover({
+      case e: Throwable => logger.error(s"Error while deleting the mapping context: ${mappingContextId}", e)
+    }))
+    // define future for schema deletion
+    def schemaDeletion = Future.traverse(schemaIds)(schemaId =>
+      {
+        try {
+          schemaRepository.deleteSchema(id, schemaId)
+        }catch {
+          case e: Throwable => Future.failed(e)
+        }
+      }.recover({
+      case e: Throwable => logger.error(s"Error while deleting the schema: ${schemaId}", e)
+    }))
+    // Execute deletion futures in order
+    for {
+      // First delete the project metadata and folders if project is not found throw the exception
+      projectErr <- projectRepository.removeProject(id) recover {case e: Throwable => throw e}
+
+      jobErr <- jobDeletion
+      mappingErr <- mappingDeletion
+      mappingContextErr <- mappingContextDeletion
+      schemaErr <- schemaDeletion
+    } yield (projectErr)
   }
 
   /**
