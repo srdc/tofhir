@@ -9,7 +9,7 @@ import io.tofhir.engine.Execution.actorSystem
 import actorSystem.dispatcher
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
+import scala.concurrent.{Await, TimeoutException}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
@@ -67,27 +67,40 @@ class FhirEndpointResourceReader(fhirDefinitionsConfig: FhirDefinitionsConfig) e
       case FHIR_FOUNDATION_RESOURCES.FHIR_SEARCH_PARAMETER | FHIR_FOUNDATION_RESOURCES.FHIR_OPERATION_DEFINITION | FHIR_FOUNDATION_RESOURCES.FHIR_COMPARTMENT_DEFINITION =>
         Seq.empty[Resource] // SearchParameter, OperationDefinition and CompartmentDefinition are not supported!
       case FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION | FHIR_FOUNDATION_RESOURCES.FHIR_VALUE_SET | FHIR_FOUNDATION_RESOURCES.FHIR_CODE_SYSTEM =>
-        Await.result(
-          fhirSearchRequest.executeAndMergeBundle().map(_.searchResults).transform {
-            case Success(value) => Try(value)
-            case Failure(exception) =>
-              actorSystem.log.error(s"An error occurred while searching infrastructure resources from ${fhirSearchRequest.request.requestUri}", exception)
-              throw exception
-          },
-          FiniteDuration(30, TimeUnit.SECONDS))
+        try {
+          Await.result(
+            fhirSearchRequest.executeAndMergeBundle().map(_.searchResults).transform {
+              case Success(value) => Try(value)
+              case Failure(exception) =>
+                actorSystem.log.error(s"An error occurred while searching infrastructure resources from ${fhirSearchRequest.request.requestUri}", exception)
+                throw exception
+            },
+            FiniteDuration(30, TimeUnit.SECONDS))
+        } catch {
+          case ex: TimeoutException =>
+            actorSystem.log.error(s"Timeout! Cannot reach FHIR endpoint while searching infrastructure resources from ${fhirSearchRequest.request.requestUri}", ex)
+            throw ex
+        }
     }
 
   }
 
   override def readCapabilityStatement(): Resource = {
-    Await.result(
-      fhirClient.search("metadata").executeAndReturnResource().transform {
-        case Success(value) => Try(value)
-        case Failure(exception) =>
-          actorSystem.log.error(s"An error occurred while reading the CapabilityStatement", exception)
-          throw exception
-      },
-      FiniteDuration(5, TimeUnit.SECONDS))
+    val fhirSearchRequest = fhirClient.search("metadata")
+    try {
+      Await.result(
+        fhirSearchRequest.executeAndReturnResource().transform {
+          case Success(value) => Try(value)
+          case Failure(exception) =>
+            actorSystem.log.error(s"An error occurred while reading the CapabilityStatement", exception)
+            throw exception
+        },
+        FiniteDuration(5, TimeUnit.SECONDS))
+    } catch {
+      case ex: TimeoutException =>
+        actorSystem.log.error(s"Timeout! Cannot reach FHIR endpoint while reading capability statement from ${fhirSearchRequest.request.requestUri}", ex)
+        throw ex
+    }
   }
 }
 
