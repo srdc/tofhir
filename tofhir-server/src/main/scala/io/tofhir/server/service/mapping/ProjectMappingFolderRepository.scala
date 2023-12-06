@@ -57,12 +57,19 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    *
    * @param projectId  subfolder to save the mapping in
    * @param mapping mapping to save
-   * @return
+   * @return the saved FhirMapping
+   * @throws AlreadyExists if a mapping with the same ID or URL already exists
    */
   override def createMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping] = {
+    // validate that mapping id is unique
     if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).contains(mapping.id)) {
       throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with id ${mapping.id} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
     }
+    // validate that mapping url is unique
+    if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).exists(mD => mD._2.url.contentEquals(mapping.url))) {
+      throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with url ${mapping.url} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+
     // Write to the repository as a new file
     getFileForMapping(projectId, mapping).map(newFile => {
       val fw = new FileWriter(newFile)
@@ -97,6 +104,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * @param id        mapping id
    * @param mapping   mapping to save
    * @return
+   * @throws AlreadyExists if a mapping with the same URL already exists
    */
   override def putMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping] = {
     // cross check ids
@@ -105,6 +113,10 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
     }
     if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(id)) {
       throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // validate that mapping url is unique
+    if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).exists(mD => !mD._1.contentEquals(id) && mD._2.url.contentEquals(mapping.url))) {
+      throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with url ${mapping.url} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // update the mapping in the repository
     getFileForMapping(projectId, mapping).map(file => {
