@@ -33,6 +33,41 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
         })
     }
 
+    "should get executions filtered by a date range" in {
+      val queryParams = Map("dateBefore" -> "2023-12-06", "dateAfter" -> "2023-12-03")
+      executionService.getExecutions("pilot1", "pilot1", queryParams)
+        .map(executions => {
+          val executionsData = executions._1
+          val count = executions._2
+          val filteredCount = executions._3
+          filteredCount shouldEqual 1
+          count shouldEqual 8
+          executionsData.length shouldEqual filteredCount
+          (executionsData.head \ "id").extract[String] shouldEqual "1f47ee28-65b8-48b5-bbd6-347b15254cfb"
+          (executionsData.head \ "errorStatus").extract[String] shouldEqual "SUCCESS"
+          (executionsData.head \ "mappingUrls").extract[Seq[String]].length shouldEqual 21
+          (executionsData.head \ "mappingUrls")(1).extract[String] shouldEqual "https://aiccelerate.eu/fhir/mappings/pilot1/practitioner-mapping"
+        })
+    }
+
+    "should get executions filtered by error status" in {
+      val queryParams = Map("errorStatus" -> "SUCCESS")
+      executionService.getExecutions("pilot1", "pilot1", queryParams)
+        .map(executions => {
+          val executionsData = executions._1
+          val count = executions._2
+          val filteredCount = executions._3
+          filteredCount shouldEqual 3
+          count shouldEqual 8
+          executionsData.length shouldEqual filteredCount
+          (executionsData(1) \ "id").extract[String] shouldEqual "57bb4431-5d58-44d5-b525-a838c0cfa21c"
+          (executionsData(1) \ "errorStatus").extract[String] shouldEqual "SUCCESS"
+          (executionsData(1) \ "startTime").extract[String] shouldEqual "2023-12-01T14:37:05.577+03:00"
+          (executionsData(1) \ "mappingUrls").extract[Seq[String]].length shouldEqual 21
+          (executionsData(1) \ "mappingUrls")(10).extract[String] shouldEqual "https://aiccelerate.eu/fhir/mappings/pilot1/medication-administration-mapping"
+        })
+    }
+
     "should get execution by id" in {
       executionService.getExecutionById("pilot1", "pilot1", "4df92d34-7712-47a7-8677-15339797c554")
         .map(execution => {
@@ -43,7 +78,7 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
         })
     }
 
-    "should get execution logs" in {
+    "should get execution logs by execution id" in {
       executionService.getExecutionLogs("4df92d34-7712-47a7-8677-15339797c554")
         .map(logs => {
           logs.length shouldEqual 42
