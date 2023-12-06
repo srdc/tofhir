@@ -43,6 +43,8 @@ fabric.properties
 
 # Log file
 *.log
+# Dont't ignore this log file used for testing
+!log-sample.log
 
 # BlueJ files
 *.ctxt
