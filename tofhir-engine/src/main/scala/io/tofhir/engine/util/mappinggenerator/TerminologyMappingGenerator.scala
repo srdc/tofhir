@@ -1,40 +1,22 @@
-package io.tofhir.engine.util
+package io.tofhir.engine.util.mappinggenerator
 
 import com.fasterxml.jackson.dataformat.csv.{CsvMapper, CsvSchema}
 import io.tofhir.engine.mapping.LocalTerminologyService.ConceptMapFileColumns
-import io.tofhir.engine.util.TerminologySystemMappingGenerator._
+import io.tofhir.engine.util.mappinggenerator.TerminologySystemMappingGenerator._
 
 import java.io.File
-import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
-import scala.beans.BeanProperty
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
 object TerminologySystemMappingGenerator {
-  private val DB_URL = "jdbc:postgresql://localhost:5432/ucl_omop"
-  private val USERNAME = "postgres"
-  private val PASSWORD = "password"
 
   private val OMOP_URL: String = "https://www.ohdsi.org/omop"
-
-  private val COLUMN_CONCEPT_CODE: String = "concept_code"
-  private val COLUMN_CONCEPT_OMOP_ID = "concept_id"
-  private val COLUMN_CONCEPT_VOCABULARY_ID = "vocabulary_id"
-  private val COLUMN_CONCEPT_NAME = "concept_name"
-
-  private val COLUMN_CONCEPT_RELATIONSHIP_CONCEPT_ID_1 = "concept_id_1"
-  private val COLUMN_CONCEPT_RELATIONSHIP_CONCEPT_ID_2 = "concept_id_2"
-  private val COLUMN_CONCEPT_RELATIONSHIP_RELATIONSHIP_ID = "relationship_id"
-
-  private val getConceptsForVocabulary: String = s"SELECT * FROM concept WHERE vocabulary_id = ?"
-  private val getConceptRelationships: String = "SELECT * FROM concept_relationship cr" +
-    " WHERE cr.concept_id_1 != cr.concept_id_2 AND cr.relationship_id = 'Mapped from'"
 
   /**
    * Example usage
    */
   def main(args: Array[String]): Unit = {
-    new TerminologySystemMappingGenerator().generateMappings("SNOMED", "ICD10CM", "http://hl7.org/fhir/sid/icd-10", "icd10cm.csv")
+    new TerminologySystemMappingGenerator(new GeneratorDBAdapter()).generateMappings("SNOMED", "ICD10CM", "http://hl7.org/fhir/sid/icd-10", "icd10cm.csv")
   }
 
 }
@@ -43,7 +25,7 @@ object TerminologySystemMappingGenerator {
  * A class to generate file-based terminology mappings by parsing the relationships defined in the OMOP vocabulary.
  * The generator creates terminology mappings from a source terminology to a target one e.g. from SNOMED to ICD10.
  */
-class TerminologySystemMappingGenerator {
+class TerminologySystemMappingGenerator(dbAdapter: GeneratorDBAdapter) {
   // All concepts defined in the OMOP vocabulary associated with the source and target terminologies.
   // It is a map from the OMOP concept id to the concept object including the details about the concept.
   var concepts: mutable.Map[Int, OmopConcept] = mutable.Map.empty
@@ -74,35 +56,35 @@ class TerminologySystemMappingGenerator {
    * @param outputFile      Name of the output file
    */
   def generateMappings(sourceSystem: String, targetSystem: String, targetSystemUrl: String, outputFile: String): Unit = {
-    val connection: Connection = getConnection()
-
     // Retrieve all the concepts associated with the source and target code systems (terminologies) and all relationships are obtained from the OMOP vocabulary
-    populateConceptsAndRelationships(sourceSystem, targetSystem, connection)
+    populateConceptsAndRelationships(sourceSystem, targetSystem)
 
     // Each source system concept is a starting point to initiate a mapping identification process
-    val sourceSystemConcepts: Set[OmopConcept] = getConcepts(sourceSystem, connection)
+    val sourceSystemConcepts: Set[OmopConcept] = dbAdapter.getConcepts(sourceSystem)
     // Visited concepts will keep the concepts that are already considered so that they won't be considered again. This case might happen
     // when a concept is considered already while identifiying mappings for an upstream concept. For example:
     // Assuming we have such a mapping structure: SNOMED code 1 -> SNOMED code 2 -> ICD, indicating that SNOMED code 1 maps to SNOMED code 2; and SNOMED code 2
     // maps to an ICD code. While getting the mappings for SNOMED code 1, we will have processed the SNOMED code 2 as well. Therefore, it won't need to be processed once again.
     val visitedConcepts: mutable.Set[OmopConcept] = mutable.Set.empty[OmopConcept]
-    // Keeps the terminology system concepts to be outputed to the CSV file
-    val terminologySystemConcepts: mutable.Set[TerminologySystemMapping] = mutable.Set.empty[TerminologySystemMapping]
+    // Keeps the terminology system concepts to be outputted to the CSV file
+    val terminologySystemMappings: mutable.Set[TerminologySystemMapping] = mutable.Set.empty[TerminologySystemMapping]
 
     // Find mappings for each source concept unless it's been processed already
     sourceSystemConcepts.toSeq.foreach(concept => {
       if (!visitedConcepts.contains(concept)) {
         val mappings: Set[TerminologySystemMapping] = findMappings(concept, targetSystem, targetSystemUrl, visitedConcepts)
-        terminologySystemConcepts.addAll(mappings)
+        terminologySystemMappings.addAll(mappings)
         if (mappings.nonEmpty) {
           println(s"Retrieved ${mappings.size} mappings for concept: $concept")
         }
       }
     })
 
-    connection.close()
+    // DB operations are complete, clear any resources
+    dbAdapter.clear()
 
-    generateTerminologySystemFile(terminologySystemConcepts.toSet, outputFile)
+    // Generate the file using the accumulated mappings
+    generateTerminologySystemFile(terminologySystemMappings.toSet, outputFile)
   }
 
   /**
@@ -117,19 +99,6 @@ class TerminologySystemMappingGenerator {
       .`with`(getCsvSchema())
     val tempFile = new File(outputFile)
     myObjectWriter.writeValues(tempFile).writeAll(terminologySystemConcepts.asJava)
-  }
-
-  /**
-   * Get concepts for a specific terminology, wrapped as [[OmopConcept]]s
-   *
-   * @param vocabularyId OMOP vocabulary id for the terminology system, for which the concepts to be obtained
-   * @param connection
-   * @return
-   */
-  private def getConcepts(vocabularyId: String, connection: Connection): Set[OmopConcept] = {
-    val statement: PreparedStatement = connection.prepareStatement(getConceptsForVocabulary)
-    statement.setString(1, vocabularyId)
-    getOmopConcepts(statement.executeQuery())
   }
 
   /**
@@ -175,17 +144,10 @@ class TerminologySystemMappingGenerator {
    * @param targetSystem
    * @param connection
    */
-  private def populateConceptsAndRelationships(sourceSystem: String, targetSystem: String, connection: Connection): Unit = {
-    var statement: PreparedStatement = connection.prepareStatement(getConceptsForVocabulary)
-    statement.setString(1, sourceSystem)
-    getOmopConcepts(statement.executeQuery()).foreach(concept => concepts.put(concept.concept_id, concept))
-    statement.clearParameters()
-    statement.setString(1, targetSystem)
-    getOmopConcepts(statement.executeQuery()).foreach(concept => concepts.put(concept.concept_id, concept))
-    statement.close()
-
-    statement = connection.prepareStatement(getConceptRelationships)
-    getOmopConceptRelationships(statement.executeQuery())
+  private def populateConceptsAndRelationships(sourceSystem: String, targetSystem: String): Unit = {
+    dbAdapter.getConcepts(sourceSystem).foreach(concept => concepts.put(concept.concept_id, concept))
+    dbAdapter.getConcepts(targetSystem).foreach(concept => concepts.put(concept.concept_id, concept))
+    dbAdapter.getOmopConceptRelationships()
       .foreach(relationship => {
         val conceptMappings: mutable.Set[OmopConcept] = relationships.getOrElseUpdate(relationship.concept_id_1, mutable.Set.empty[OmopConcept])
         if (concepts.contains(relationship.concept_id_2)) {
@@ -194,39 +156,10 @@ class TerminologySystemMappingGenerator {
       })
   }
 
-  private def getOmopConcepts(resultSet: ResultSet): Set[OmopConcept] = {
-    val concepts: mutable.Set[OmopConcept] = mutable.Set.empty
-    while (resultSet.next()) {
-      concepts.add(
-        OmopConcept(
-          resultSet.getInt(COLUMN_CONCEPT_OMOP_ID),
-          resultSet.getString(COLUMN_CONCEPT_VOCABULARY_ID),
-          resultSet.getString(COLUMN_CONCEPT_CODE),
-          resultSet.getString(COLUMN_CONCEPT_NAME)
-        )
-      )
-    }
-    concepts.toSet
-  }
-
-  private def getOmopConceptRelationships(resultSet: ResultSet): Set[OmopConceptRelationship] = {
-    val relationships: mutable.Set[OmopConceptRelationship] = mutable.Set.empty
-    while (resultSet.next()) {
-      relationships.add(
-        OmopConceptRelationship(
-          resultSet.getInt(COLUMN_CONCEPT_RELATIONSHIP_CONCEPT_ID_1),
-          resultSet.getInt(COLUMN_CONCEPT_RELATIONSHIP_CONCEPT_ID_2),
-          resultSet.getString(COLUMN_CONCEPT_RELATIONSHIP_RELATIONSHIP_ID)
-        )
-      )
-    }
-    relationships.toSet
-  }
-
-  private def getConnection(): Connection = {
-    DriverManager.getConnection(DB_URL, USERNAME, PASSWORD)
-  }
-
+  /**
+   * Creates a [[CsvSchema]] conforming to the structure of a concept map that will be used as a terminology mapping service.
+   * @return
+   */
   private def getCsvSchema(): CsvSchema = {
     CsvSchema.builder()
       .addColumn(ConceptMapFileColumns.SOURCE_SYSTEM)
@@ -240,13 +173,3 @@ class TerminologySystemMappingGenerator {
   }
 
 }
-
-case class OmopConcept(concept_id: Int, vocabulary_id: String, concept_code: String, concept_name: String)
-
-case class OmopConceptRelationship(concept_id_1: Int, concept_id_2: Int, relationship_id: String)
-
-case class TerminologySystemMapping(@BeanProperty source_system: String,
-                                    @BeanProperty source_code: String,
-                                    @BeanProperty target_system: String,
-                                    @BeanProperty target_code: String,
-                                    @BeanProperty target_display: String)
