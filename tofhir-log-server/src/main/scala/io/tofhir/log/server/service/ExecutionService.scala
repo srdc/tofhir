@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.log.server.config.SparkConfig
 import io.tofhir.log.server.model.ResourceNotFound
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.functions.{col, lit, to_date, to_timestamp}
+import org.apache.spark.sql.functions.{col, lit, to_date, to_timestamp, when}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
 import org.json4s.JsonAST.{JObject, JValue}
@@ -39,7 +39,13 @@ class ExecutionService() extends LazyLogging {
       }
       else {
         // Get mapping tasks logs for the given execution. ProjectId field is not null for selecting mappingTasksLogs, filter out row error logs.
-        val mappingTasksLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is not null")
+        var mappingTasksLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is not null")
+
+        // mapping tasks without input data are markes as 'STARTED', map them to 'FAILURE'
+        mappingTasksLogs = mappingTasksLogs.withColumn("result",
+          when(col("level") === "ERROR", "FAILURE")
+            .otherwise(col("result"))
+        )
 
         // Handle the case where the job has not been run yet, which makes the data frame empty
         if (mappingTasksLogs.isEmpty) {
