@@ -76,6 +76,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   private def cleanFolders(): Unit = {
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath).toFile)
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath).toFile)
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath).toFile)
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath).toFile)
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath).toFile)
