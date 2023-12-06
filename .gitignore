@@ -8,6 +8,8 @@
 
 #toFHIR
 tofhir-db/
+projects.json
+terminology-systems.json
 
 # Spark
 checkpoint/
