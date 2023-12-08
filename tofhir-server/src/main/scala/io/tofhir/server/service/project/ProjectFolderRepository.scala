@@ -275,7 +275,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * Updates the projects metadata with project included in the cache.
    */
   def updateProjectsMetadata() = {
-    val file = FileUtils.getPath(config.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile
+    val file = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
     // when projects metadata file does not exist, create it
     if (!file.exists()) {
       logger.debug("There does not exist a metadata file for projects to update. Creating it...")
