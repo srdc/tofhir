@@ -10,12 +10,14 @@ import io.tofhir.server.config.{LogServiceConfig, WebServerConfig}
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.Project
+import io.tofhir.server.service.project.ProjectFolderRepository
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.io.File
 import java.util.UUID
 
 trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
@@ -75,7 +77,11 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   }
 
   private def cleanFolders(): Unit = {
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.toFhirDbFolderPath).toFile)
+    // delete projects metadata file if exists
+    val projectsJson: File = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
+    if(projectsJson.exists()) {
+      org.apache.commons.io.FileUtils.delete(projectsJson)
+    }
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath).toFile)
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath).toFile)
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath).toFile)

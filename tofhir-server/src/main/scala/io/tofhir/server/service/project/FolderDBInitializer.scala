@@ -37,7 +37,7 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
    */
   def init(): Unit = {
 
-    val file = FileUtils.getPath(config.toFhirDbFolderPath, ProjectFolderRepository.PROJECTS_JSON).toFile
+    val file = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
 
     val parsedProjects = if (file.exists()) {
       val projects: JArray = FileOperations.readFileIntoJson(file).asInstanceOf[JArray]
@@ -49,9 +49,6 @@ class FolderDBInitializer(config: ToFhirEngineConfig,
       collection.mutable.Map(projectMap.toSeq: _*)
     } else {
       logger.debug("There does not exist a metadata file for projects. Creating it...")
-      if (!file.getParentFile.exists()) {
-        file.getParentFile.mkdirs()
-      }
       file.createNewFile()
       // Parse the folder structure of the respective resource and to initialize projects with the resources found.
       val projects = initProjectsWithResources()
