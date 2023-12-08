@@ -84,17 +84,23 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
       throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
-    Future {
-      // delete the mapping context from the repository
-      getFileForMappingContext(projectId, id).map(file => {
-        file.delete()
-      })
-
-      // delete the mapping context from the in-memory map
-      mappingContextDefinitions(projectId) = mappingContextDefinitions(projectId).filterNot(_ == id)
+    // delete the mapping context from the repository
+    getFileForMappingContext(projectId, id).map(file => {
+      file.delete()
+      deleteMappingContextFromCache(projectId, id)
       // update the projects metadata json file
       projectFolderRepository.deleteMappingContext(projectId, id)
-    }
+    })
+  }
+
+  /**
+   * delete the mapping context from the in-memory map
+   *
+   * @param projectId project id of the mapping context belongs to
+   * @param id id of the mapping context to be deleted
+   */
+  override def deleteMappingContextFromCache(projectId: String, id: String): Unit = {
+    mappingContextDefinitions(projectId) = mappingContextDefinitions(projectId).filterNot(_ == id)
   }
 
   /**

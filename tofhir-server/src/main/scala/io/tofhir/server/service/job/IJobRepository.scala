@@ -54,6 +54,13 @@ trait IJobRepository {
   def deleteJob(projectId: String, id: String): Future[Unit]
 
   /**
+   * Delete the job only from the cache
+   * @param projectId project id the job belongs to
+   * @param id        id of the job to be deleted
+   */
+  def deleteJobFromCache(projectId: String, id: String): Unit
+
+  /**
    * Retrieves the jobs referencing the given mapping in their definitions.
    * @param projectId identifier of project whose jobs will be checked
    * @param mappingUrl the url of mapping

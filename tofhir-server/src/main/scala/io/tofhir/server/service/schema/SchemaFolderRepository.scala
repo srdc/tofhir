@@ -123,7 +123,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       }
 
       // Write to the repository as a new file
-      getFileForSchema(projectId, schemaDefinition).map(newFile => {
+      getFileForSchema(projectId, schemaDefinition.id).map(newFile => {
         val fw = new FileWriter(newFile)
         fw.write(structureDefinitionResource.toPrettyJson)
         fw.close()
@@ -175,7 +175,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     {
       val oldSchema: SchemaDefinition = schemaDefinitions(projectId)(id)
       if (!oldSchema.name.equals(schemaDefinition.name)) {
-        getFileForSchema(projectId, oldSchema).map(oldFile => {
+        getFileForSchema(projectId, oldSchema.id).map(oldFile => {
           oldFile.delete()
         })
       } else {
@@ -183,7 +183,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       }
     }.flatMap(_ => {
       // Update the file
-      getFileForSchema(projectId, schemaDefinition).map(file => {
+      getFileForSchema(projectId, schemaDefinition.id).map(file => {
 
         val fw = new FileWriter(file)
         import io.onfhir.util.JsonFormatter._
@@ -210,19 +210,27 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       throw ResourceNotFound("Schema does not exists.", s"A schema with id $id does not exists in the schema repository at ${FileUtils.getPath(schemaRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
-    Future {
-      // Update cache
-      val schema: SchemaDefinition = schemaDefinitions(projectId)(id)
-      // delete schema file from repository
-      getFileForSchema(projectId, schema).map(file => {
-        file.delete()
-      })
-      
-      schemaDefinitions(projectId).remove(id)
-      baseFhirConfig.profileRestrictions -= schema.url
+    // delete schema file from repository
+    getFileForSchema(projectId, id).map(file => {
+      file.delete()
+      deleteSchemaFromCache(projectId, id)
       // Update project
-      projectFolderRepository.deleteSchema(projectId, schema.id)
-    }
+      projectFolderRepository.deleteSchema(projectId, id)
+    })
+  }
+
+  /**
+   * Delete schema only from the cache
+   *
+   * @param projectId project id the schema belongs to
+   * @param id id of the schema to be deleted
+   */
+  override def deleteSchemaFromCache(projectId: String, id: String): Unit = {
+    val schema: SchemaDefinition = schemaDefinitions(projectId)(id)
+    // delete the schema from the in-memory map
+    schemaDefinitions(projectId).remove(id)
+    // remove the url of the schema
+    baseFhirConfig.profileRestrictions -= schema.url
   }
 
   /**
@@ -231,10 +239,10 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    * @param schemaDefinition
    * @return
    */
-  private def getFileForSchema(projectId: String, schemaDefinition: SchemaDefinition): Future[File] = {
+  private def getFileForSchema(projectId: String, id: String): Future[File] = {
     val projectFuture: Future[Option[Project]] = projectFolderRepository.getProject(projectId)
     projectFuture.map(project => {
-      val file: File = FileUtils.getPath(schemaRepositoryFolderPath, project.get.id, getFileName(schemaDefinition.id)).toFile
+      val file: File = FileUtils.getPath(schemaRepositoryFolderPath, project.get.id, getFileName(id)).toFile
       // If the project folder does not exist, create it
       if (!file.getParentFile.exists()) {
         file.getParentFile.mkdir()

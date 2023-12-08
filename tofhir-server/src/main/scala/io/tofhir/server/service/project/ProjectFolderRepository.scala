@@ -316,11 +316,9 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    */
   override def getJobIds(id: String): Seq[String] = {
     val projectData: Option[Project] = projects.get(id)
-    val fhirMappingJobIds: Seq[String] = projectData.flatMap { project =>
-      Some(project.mappingJobs.map(_.id))
+    projectData.map { project =>
+      project.mappingJobs.map(_.id)
     }.getOrElse(Seq.empty)
-
-    fhirMappingJobIds
   }
 
   /**
@@ -331,11 +329,9 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    */
   override def getMappingIds(id: String): Seq[String] = {
     val projectData: Option[Project] = projects.get(id)
-    val fhirMappingIds: Seq[String] = projectData.flatMap { project =>
-      Some(project.mappings.map(_.id))
+    projectData.map { project =>
+      project.mappings.map(_.id)
     }.getOrElse(Seq.empty)
-
-    fhirMappingIds
   }
 
   /**
@@ -346,11 +342,9 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    */
   override def getMappingContextIds(id: String): Seq[String] = {
     val projectData: Option[Project] = projects.get(id)
-    val mappingContextIds: Seq[String] = projectData.flatMap { project =>
-      Some(project.mappingContexts)
+    projectData.map { project =>
+      project.mappingContexts
     }.getOrElse(Seq.empty)
-
-    mappingContextIds
   }
 
   /**
@@ -361,11 +355,9 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    */
   override def getSchemaIds(id: String): Seq[String] = {
     val projectData: Option[Project] = projects.get(id)
-    val schemaIds: Seq[String] = projectData.flatMap { project =>
-      Some(project.schemas.map(_.id))
+    projectData.map { project =>
+      project.schemas.map(_.id)
     }.getOrElse(Seq.empty)
-
-    schemaIds
   }
 }
 

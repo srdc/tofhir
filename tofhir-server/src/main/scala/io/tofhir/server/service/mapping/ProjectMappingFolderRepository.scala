@@ -143,17 +143,22 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
       throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
-    Future {
-      // delete the mapping from the repository
-      getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
-        file.delete()
-      })
-
-      // delete the mapping from the map
-      mappingDefinitions(projectId).remove(id)
+    // delete the mapping from the repository
+    getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
+      file.delete()
+      deleteMappingFromCache(projectId, id)
       // delete the mapping from projects json file
       projectFolderRepository.deleteMapping(projectId, id)
-    }
+    })
+  }
+
+  /**
+   * delete mapping from the cache
+   * @param projectId project id the mapping belongs to
+   * @param id id of the mapping to be deleted
+   */
+  override def deleteMappingFromCache(projectId: String, id: String): Unit = {
+    mappingDefinitions(projectId).remove(id)
   }
 
   /**

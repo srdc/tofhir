@@ -63,4 +63,11 @@ trait ISchemaRepository extends IFhirSchemaLoader {
    */
   def deleteSchema(projectId: String, id: String): Future[Unit]
 
+  /**
+   * Delete schema only from the cache
+   * @param projectId project id the schema belongs to
+   * @param id id of the schema to be deleted
+   */
+  def deleteSchemaFromCache(projectId: String, id: String): Unit
+
 }

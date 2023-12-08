@@ -127,17 +127,23 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
       throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
-    Future {
-      // delete the mapping job from the repository
-      getFileForJob(projectId, jobDefinitions(projectId)(id)).map(file => {
-        file.delete()
-      })
-
-      // delete the mapping job from the map
-      jobDefinitions(projectId).remove(id)
+    // delete the mapping job from the repository
+    getFileForJob(projectId, jobDefinitions(projectId)(id)).map(file => {
+      file.delete()
+      deleteJobFromCache(projectId, id)
       // delete the job from the project
       projectFolderRepository.deleteJob(projectId, id)
-    }
+    })
+  }
+
+  /**
+   * Delete the job only from cache
+   *
+   * @param projectId project id the job belongs to
+   * @param id id of the job to be deleted
+   */
+  override def deleteJobFromCache(projectId: String, id: String): Unit = {
+    jobDefinitions(projectId).remove(id)
   }
 
   /**
