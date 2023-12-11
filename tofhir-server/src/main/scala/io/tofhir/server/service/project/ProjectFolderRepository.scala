@@ -109,7 +109,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
     }
   }
   /**
-   * * Delete the project and folders belong to project
+   * Delete the project from the repository.
    *
    * @param id id of the project
    * @return

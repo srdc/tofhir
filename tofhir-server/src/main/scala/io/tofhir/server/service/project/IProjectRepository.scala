@@ -44,7 +44,7 @@ trait IProjectRepository {
   def updateProject(id: String, patch: JObject): Future[Project]
 
   /**
-   * Delete the project and folders belong to project
+   * Delete the project from the repository.
    *
    * @param id id of the project
    * @return
