@@ -126,14 +126,28 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
     if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
       throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
     }
+
     // delete the mapping job from the repository
     getFileForJob(projectId, jobDefinitions(projectId)(id)).map(file => {
       file.delete()
-      // delete the mapping job from the map
       jobDefinitions(projectId).remove(id)
       // delete the job from the project
-      projectFolderRepository.deleteJob(projectId, id)
+      projectFolderRepository.deleteJob(projectId, Some(id))
     })
+  }
+
+  /**
+   * Deletes all jobs associated with a specific project.
+   *
+   * @param projectId The unique identifier of the project for which jobs should be deleted.
+   */
+  override def deleteProjectJobs(projectId: String): Unit = {
+    // delete job definitions for the project
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(jobRepositoryFolderPath, projectId).toFile)
+    // remove project from the cache
+    jobDefinitions.remove(projectId)
+    // delete project jobs
+    projectFolderRepository.deleteJob(projectId)
   }
 
   /**

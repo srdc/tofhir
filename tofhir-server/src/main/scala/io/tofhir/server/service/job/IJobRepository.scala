@@ -54,6 +54,13 @@ trait IJobRepository {
   def deleteJob(projectId: String, id: String): Future[Unit]
 
   /**
+   * Deletes all jobs associated with a specific project.
+   *
+   * @param projectId The unique identifier of the project for which jobs should be deleted.
+   */
+  def deleteProjectJobs(projectId: String): Unit
+
+  /**
    * Retrieves the jobs referencing the given mapping in their definitions.
    * @param projectId identifier of project whose jobs will be checked
    * @param mappingUrl the url of mapping

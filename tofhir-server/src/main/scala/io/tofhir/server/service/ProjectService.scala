@@ -1,14 +1,23 @@
 package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.model.{BadRequest, Project, ProjectEditableFields}
+import io.tofhir.server.service.job.IJobRepository
+import io.tofhir.server.service.mapping.IMappingRepository
+import io.tofhir.server.service.mappingcontext.IMappingContextRepository
 import io.tofhir.server.service.project.IProjectRepository
+import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JObject
 import org.json4s.JsonAST.JString
 
 import scala.concurrent.Future
 
-class ProjectService(projectRepository: IProjectRepository) extends LazyLogging {
+class ProjectService(projectRepository: IProjectRepository,
+                     jobRepository: IJobRepository,
+                     mappingRepository: IMappingRepository,
+                     mappingContextRepository: IMappingContextRepository,
+                     schemaRepository: ISchemaRepository) extends LazyLogging {
 
   /**
    * Retrieve all Projects
@@ -59,13 +68,22 @@ class ProjectService(projectRepository: IProjectRepository) extends LazyLogging 
   }
 
   /**
-   * Delete project from the repository
+   * Removes a project and associated resources.
    *
-   * @param id id of the project
-   * @return
+   * @param id The unique identifier of the project to be removed.
    */
   def removeProject(id: String): Future[Unit] = {
+    // first delete the project from repository
     projectRepository.removeProject(id)
+      // if project deletion is failed throw the error
+      .recover {case e: Throwable => throw e}
+      // else delete jobs, mappings, mapping contexts and schemas as well
+      .map(_=> {
+        jobRepository.deleteProjectJobs(id)
+        mappingRepository.deleteProjectMappings(id)
+        mappingContextRepository.deleteProjectMappingContexts(id)
+        schemaRepository.deleteProjectSchemas(id)
+      })
   }
 
   /**

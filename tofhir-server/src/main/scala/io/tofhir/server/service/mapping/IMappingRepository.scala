@@ -53,6 +53,13 @@ trait IMappingRepository extends IFhirMappingCachedRepository {
   def deleteMapping(projectId: String, id: String): Future[Unit]
 
   /**
+   * Deletes all mappings associated with a specific project.
+   *
+   * @param projectId The unique identifier of the project for which mappings should be deleted.
+   */
+  def deleteProjectMappings(projectId: String): Unit
+
+  /**
    * Retrieves the identifiers of mappings referencing the given schema in their definitions.
    * @param projectId identifier of project whose mappings will be checked
    * @param schemaUrl the url of schema
