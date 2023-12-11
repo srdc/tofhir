@@ -205,10 +205,6 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
     }
     var directories = Seq.empty[File]
     directories = folder.listFiles.filter(_.isDirectory).toSeq
-    if (directories.isEmpty) {
-      throw new RuntimeException("There is no project folder for job in the repository")
-    }
-
     directories.foreach { projectDirectory =>
       // job-id -> FhirMappingJob
       val fhirJobMap: mutable.Map[String, FhirMappingJob] = mutable.Map.empty

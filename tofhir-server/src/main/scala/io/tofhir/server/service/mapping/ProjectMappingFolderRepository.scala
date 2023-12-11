@@ -222,9 +222,6 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
     }
     var directories = Seq.empty[File]
     directories = folder.listFiles.filter(_.isDirectory).toSeq
-    if (directories.isEmpty) {
-      throw new RuntimeException("There is no project folder for mapping in the repository")
-    }
     directories.foreach { projectDirectory =>
       // mapping-id -> FhirMapping
       val fhirMappingMap: mutable.Map[String, FhirMapping] = mutable.Map.empty

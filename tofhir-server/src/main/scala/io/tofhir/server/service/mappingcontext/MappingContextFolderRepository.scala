@@ -1,6 +1,5 @@
 package io.tofhir.server.service.mappingcontext
 
-
 import akka.stream.scaladsl.FileIO
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -186,9 +185,6 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
     }
     var directories = Seq.empty[File]
     directories = folder.listFiles.filter(_.isDirectory).toSeq
-    if (directories.isEmpty) {
-      throw new RuntimeException("There is no project folder for mapping-context in the repository")
-    }
     directories.foreach { projectDirectory =>
       val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = None, recursively = Some(true))
       val fileNameList = files.map(_.getName)
