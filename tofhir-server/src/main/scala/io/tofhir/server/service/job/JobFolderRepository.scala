@@ -1,5 +1,6 @@
 package io.tofhir.server.service.job
 
+import com.fasterxml.jackson.core.JsonParseException
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
 import io.onfhir.util.JsonFormatter._
@@ -212,10 +213,17 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
       files.map { file =>
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()
-        val job = fileContent.parseJson.extract[FhirMappingJob]
-        // discard if the job id and file name not match
-        if(FileOperations.checkFileNameMatchesEntityId(job.id, file, "job")) {
-          fhirJobMap.put(job.id, job)
+        // Try to parse the file content as FhirMappingJob
+        try{
+          val job = fileContent.parseJson.extract[FhirMappingJob]
+          // discard if the job id and file name not match
+          if(FileOperations.checkFileNameMatchesEntityId(job.id, file, "job")) {
+            fhirJobMap.put(job.id, job)
+          }
+        }catch{
+          case _: JsonParseException =>
+            logger.error(s"Failed to parse '${file.getPath}'!")
+            System.exit(1)
         }
       }
       map.put(projectDirectory.getName, fhirJobMap)
