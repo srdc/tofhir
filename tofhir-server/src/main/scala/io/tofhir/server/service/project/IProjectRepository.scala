@@ -50,36 +50,4 @@ trait IProjectRepository {
    * @return
    */
   def removeProject(id: String): Future[Unit]
-
-  /**
-   * Returns IDs of jobs under a project
-   *
-   * @param id id of the project
-   * @return
-   */
-  def getJobIds(id: String): Seq[String]
-
-  /**
-   * Returns IDs of mappings under a project
-   *
-   * @param id id of the project
-   * @return
-   */
-  def getMappingIds(id: String): Seq[String]
-
-  /**
-   * Returns IDs of mapping contexts under a project
-   *
-   * @param id id of the project
-   * @return
-   */
-  def getMappingContextIds(id: String): Seq[String]
-
-  /**
-   * Returns IDs of schemas under a project
-   *
-   * @param id id of the project
-   * @return
-   */
-  def getSchemaIds(id: String): Seq[String]
 }

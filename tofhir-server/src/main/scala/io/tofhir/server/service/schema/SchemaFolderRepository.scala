@@ -213,24 +213,33 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     // delete schema file from repository
     getFileForSchema(projectId, id).map(file => {
       file.delete()
-      deleteSchemaFromCache(projectId, id)
+      val schema: SchemaDefinition = schemaDefinitions(projectId)(id)
+      // delete the schema from the in-memory map
+      schemaDefinitions(projectId).remove(id)
+      // remove the url of the schema
+      baseFhirConfig.profileRestrictions -= schema.url
       // Update project
-      projectFolderRepository.deleteSchema(projectId, id)
+      projectFolderRepository.deleteSchema(projectId, Some(id))
     })
   }
 
   /**
-   * Delete schema only from the cache
+   * Deletes all schemas associated with a specific project.
    *
-   * @param projectId project id the schema belongs to
-   * @param id id of the schema to be deleted
+   * @param projectId The unique identifier of the project for which schemas should be deleted.
    */
-  override def deleteSchemaFromCache(projectId: String, id: String): Unit = {
-    val schema: SchemaDefinition = schemaDefinitions(projectId)(id)
-    // delete the schema from the in-memory map
-    schemaDefinitions(projectId).remove(id)
-    // remove the url of the schema
-    baseFhirConfig.profileRestrictions -= schema.url
+  override def deleteProjectSchemas(projectId: String): Unit = {
+    // delete schema definitions for the project
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(schemaRepositoryFolderPath, projectId).toFile)
+    // remove profile restrictions of project schemas
+    val schemaUrls:Set[String] = schemaDefinitions(projectId)
+      .values.map(definition => definition.url)
+      .toSet
+    baseFhirConfig.profileRestrictions --= schemaUrls
+    // remove project from the cache
+    schemaDefinitions.remove(projectId)
+    // delete project schemas
+    projectFolderRepository.deleteSchema(projectId)
   }
 
   /**

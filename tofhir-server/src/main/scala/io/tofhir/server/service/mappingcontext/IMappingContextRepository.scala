@@ -34,11 +34,11 @@ trait IMappingContextRepository {
   def deleteMappingContext(projectId: String, id: String): Future[Unit]
 
   /**
-   * Delete the mapping context only from the cache
-   * @param projectId project id the mapping context belongs to
-   * @param id id of the mapping context to be deleted
+   * Deletes all mapping contexts associated with a specific project.
+   *
+   * @param projectId The unique identifier of the project for which mapping contexts should be deleted.
    */
-  def deleteMappingContextFromCache(projectId: String, id: String): Unit
+  def deleteProjectMappingContexts(projectId: String): Unit
 
   /**
    * Save the mapping context content to the repository

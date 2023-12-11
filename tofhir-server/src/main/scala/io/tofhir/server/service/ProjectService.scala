@@ -68,55 +68,21 @@ class ProjectService(projectRepository: IProjectRepository,
   }
 
   /**
-   * Delete project from the repository
+   * Removes a project and associated resources.
    *
-   * @param id id of the project
-   * @return
+   * @param id The unique identifier of the project to be removed.
    */
   def removeProject(id: String): Future[Unit] = {
-    val jobIds: Seq[String] = projectRepository.getJobIds(id)
-    val mappingIds: Seq[String] = projectRepository.getMappingIds(id)
-    val mappingContextIds: Seq[String] = projectRepository.getMappingContextIds(id)
-    val schemaIds: Seq[String] = projectRepository.getSchemaIds(id)
-
-    // first delete the project from cache and delete its folders
+    // first delete the project from repository
     projectRepository.removeProject(id)
       // if project deletion is failed throw the error
       .recover {case e: Throwable => throw e}
-      // else delete jobs, mappings, mapping contexts and schemas from caches in order
+      // else delete jobs, mappings, mapping contexts and schemas as well
       .map(_=> {
-        // delete jobs from the cache
-        jobIds.foreach(jobId => {
-          try{
-            jobRepository.deleteJobFromCache(id, jobId)
-          } catch{
-            case e: Throwable => logger.error(s"Error while deleting the job: ${jobId}", e)
-          }
-        })
-        // delete mappings from the cache
-        mappingIds.foreach(mappingId => {
-          try{
-            mappingRepository.deleteMappingFromCache(id, mappingId)
-          } catch {
-            case e: Throwable => logger.error(s"Error while deleting the mapping: ${mappingId}", e)
-          }
-        })
-        // delete mapping contexts from the cache
-        mappingContextIds.foreach(mappingContextId => {
-          try{
-            mappingContextRepository.deleteMappingContextFromCache(id, mappingContextId)
-          } catch {
-            case e: Throwable => logger.error(s"Error while deleting the mapping context: ${mappingContextId}", e)
-          }
-        })
-        // delete schemas from the cache
-        schemaIds.foreach(schemaId => {
-          try{
-            schemaRepository.deleteSchemaFromCache(id, schemaId)
-          } catch {
-            case e: Throwable => logger.error(s"Error while deleting the schema: ${schemaId}", e)
-          }
-        })
+        jobRepository.deleteProjectJobs(id)
+        mappingRepository.deleteProjectMappings(id)
+        mappingContextRepository.deleteProjectMappingContexts(id)
+        schemaRepository.deleteProjectSchemas(id)
       })
   }
 

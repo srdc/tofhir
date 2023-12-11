@@ -87,20 +87,24 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
     // delete the mapping context from the repository
     getFileForMappingContext(projectId, id).map(file => {
       file.delete()
-      deleteMappingContextFromCache(projectId, id)
+      mappingContextDefinitions(projectId) = mappingContextDefinitions(projectId).filterNot(_ == id)
       // update the projects metadata json file
-      projectFolderRepository.deleteMappingContext(projectId, id)
+      projectFolderRepository.deleteMappingContext(projectId, Some(id))
     })
   }
 
   /**
-   * delete the mapping context from the in-memory map
+   * Deletes all mapping contexts associated with a specific project.
    *
-   * @param projectId project id of the mapping context belongs to
-   * @param id id of the mapping context to be deleted
+   * @param projectId The unique identifier of the project for which mapping contexts should be deleted.
    */
-  override def deleteMappingContextFromCache(projectId: String, id: String): Unit = {
-    mappingContextDefinitions(projectId) = mappingContextDefinitions(projectId).filterNot(_ == id)
+  override def deleteProjectMappingContexts(projectId: String): Unit = {
+    // delete mapping context definitions for the project
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(mappingContextRepositoryFolderPath, projectId).toFile)
+    // remove project from the cache
+    mappingContextDefinitions.remove(projectId)
+    // delete project mapping contexts
+    projectFolderRepository.deleteMappingContext(projectId)
   }
 
   /**

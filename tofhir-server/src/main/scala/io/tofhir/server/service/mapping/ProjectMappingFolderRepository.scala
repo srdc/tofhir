@@ -146,19 +146,24 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
     // delete the mapping from the repository
     getFileForMapping(projectId, mappingDefinitions(projectId)(id)).map(file => {
       file.delete()
-      deleteMappingFromCache(projectId, id)
+      mappingDefinitions(projectId).remove(id)
       // delete the mapping from projects json file
-      projectFolderRepository.deleteMapping(projectId, id)
+      projectFolderRepository.deleteMapping(projectId, Some(id))
     })
   }
 
   /**
-   * delete mapping from the cache
-   * @param projectId project id the mapping belongs to
-   * @param id id of the mapping to be deleted
+   * Deletes all mappings associated with a specific project.
+   *
+   * @param projectId The unique identifier of the project for which mappings should be deleted.
    */
-  override def deleteMappingFromCache(projectId: String, id: String): Unit = {
-    mappingDefinitions(projectId).remove(id)
+  override def deleteProjectMappings(projectId: String): Unit = {
+    // delete mapping definitions for the project
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(mappingRepositoryFolderPath, projectId).toFile)
+    // remove project from the cache
+    mappingDefinitions.remove(projectId)
+    // delete project mappings
+    projectFolderRepository.deleteMapping(projectId)
   }
 
   /**

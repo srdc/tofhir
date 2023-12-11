@@ -130,20 +130,24 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
     // delete the mapping job from the repository
     getFileForJob(projectId, jobDefinitions(projectId)(id)).map(file => {
       file.delete()
-      deleteJobFromCache(projectId, id)
+      jobDefinitions(projectId).remove(id)
       // delete the job from the project
-      projectFolderRepository.deleteJob(projectId, id)
+      projectFolderRepository.deleteJob(projectId, Some(id))
     })
   }
 
   /**
-   * Delete the job only from cache
+   * Deletes all jobs associated with a specific project.
    *
-   * @param projectId project id the job belongs to
-   * @param id id of the job to be deleted
+   * @param projectId The unique identifier of the project for which jobs should be deleted.
    */
-  override def deleteJobFromCache(projectId: String, id: String): Unit = {
-    jobDefinitions(projectId).remove(id)
+  override def deleteProjectJobs(projectId: String): Unit = {
+    // delete job definitions for the project
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(jobRepositoryFolderPath, projectId).toFile)
+    // remove project from the cache
+    jobDefinitions.remove(projectId)
+    // delete project jobs
+    projectFolderRepository.deleteJob(projectId)
   }
 
   /**
