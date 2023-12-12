@@ -28,6 +28,7 @@ class LogServiceClient(logServiceEndpoint: String) {
    * @param projectId
    * @param jobId
    * @param page desired number of page
+   * @param rowPerPage row count per page
    * @param dateBefore last date of the filtered executions
    * @param dateAfter start date of the filtered executions
    * @param errorStatuses desired error status of the filtered executions
@@ -37,11 +38,12 @@ class LogServiceClient(logServiceEndpoint: String) {
    *         number of executions after applying filter as the third element
    *         //TODO we can define a dedicated class representing the response type
    */
-  def getExecutions(projectId: String, jobId: String, page: Int, dateBefore: String, dateAfter: String, errorStatuses: String ): Future[(Seq[JValue], Long, Long)] = {
-    val params = Map("page" -> page.toString,
+  def getExecutions(projectId: String, jobId: String, page: String, rowPerPage: String, dateBefore: String, dateAfter: String, errorStatuses: String ): Future[(Seq[JValue], Long, Long)] = {
+    val params = Map("page" -> page,
                      "dateBefore" -> dateBefore,
                      "dateAfter" -> dateAfter,
-                     "errorStatuses" -> errorStatuses)
+                     "errorStatuses" -> errorStatuses,
+                     "rowPerPage" -> rowPerPage)
     val uri: Uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions"
     val request = HttpRequest(
       method = HttpMethods.GET,

@@ -154,17 +154,17 @@ class ExecutionService() extends LazyLogging {
               StructField("startTime", StringType) ::
               StructField("errorStatus", StringType) :: Nil
           )))
-          // page size is 10, handle pagination
+          val pageSize: Int = queryParams.getOrElse("rowsPerPage", "10").toInt
+          // handle the pagination according to the page size
           val total = executionLogs.count()
-          val numOfPages = Math.ceil(total.toDouble / 10).toInt
+          val numOfPages = Math.ceil(total.toDouble / pageSize).toInt
           val page = queryParams.getOrElse("page", "1").toInt
           // handle the case where requested page does not exist
           if (page > numOfPages) {
             (Seq.empty, 0, 0)
           } else {
-            val start = (page - 1) * 10
-            val end = Math.min(start + 10, total.toInt)
-
+            val start = (page - 1) * pageSize
+            val end = Math.min(start + pageSize, total.toInt)
             // get the filter parameters
             val dateBefore = queryParams.getOrElse("dateBefore", "")
             val dateAfter = queryParams.getOrElse("dateAfter", "")

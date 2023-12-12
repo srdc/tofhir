@@ -247,15 +247,17 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     jobRepository.getJob(projectId, jobId).flatMap {
       case Some(_) =>
         // Desired page number
-        val page = queryParams.getOrElse("page", "1").toInt
+        val page = queryParams.getOrElse("page", "1")
         // Request executions before this date
         val dateBefore = queryParams.getOrElse("dateBefore", "")
         // Request executions after this date
         val dateAfter = queryParams.getOrElse("dateAfter", "")
         // Desired error statuses
         val errorStatuses = queryParams.getOrElse("errorStatuses", "")
+        // log count per page
+        val rowPerPage = queryParams.getOrElse("rowPerPage", "10")
 
-        logServiceClient.getExecutions(projectId, jobId, page, dateBefore, dateAfter, errorStatuses).map(paginatedLogsResponse => {
+        logServiceClient.getExecutions(projectId, jobId, page, rowPerPage, dateBefore, dateAfter, errorStatuses).map(paginatedLogsResponse => {
           logger.debug(s"Retrieved executions for projectId: $projectId, jobId: $jobId, page: $page")
           // Retrieve the running executions for the given job
           val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)

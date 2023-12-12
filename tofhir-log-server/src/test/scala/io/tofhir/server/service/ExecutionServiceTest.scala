@@ -51,6 +51,19 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
         })
     }
 
+    "should not get any execution when page number is greater than the maximum" in {
+      val queryParams = Map("dateBefore" -> "2023-12-06", "dateAfter" -> "2023-12-03", "rowsPerPage" -> "4", "page" -> "3")
+      executionService.getExecutions("pilot1", "pilot1", queryParams)
+        .map(executions => {
+          val executionsData = executions._1
+          val count = executions._2
+          val filteredCount = executions._3
+          filteredCount shouldEqual 0
+          count shouldEqual 0
+          executionsData.length shouldEqual filteredCount
+          })
+    }
+
     "should get executions filtered by error status" in {
       val queryParams = Map("errorStatuses" -> "SUCCESS")
       executionService.getExecutions("pilot1", "pilot1", queryParams)
