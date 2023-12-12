@@ -1,10 +1,12 @@
 package io.tofhir.server.service.schema
 
+import com.typesafe.scalalogging.Logger
 import io.onfhir.api
 import io.onfhir.api.Resource
 import io.onfhir.api.util.IOUtil
 import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
+import io.onfhir.exception.InitializationException
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.common.util.SchemaUtil
@@ -34,10 +36,12 @@ import scala.util.Try
  */
 class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends AbstractSchemaRepository {
 
+  private val logger: Logger = Logger(this.getClass)
+
   private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(
     profilesPath = Some(FileUtils.getPath(schemaRepositoryFolderPath).toString))
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
-  private val baseFhirConfig: BaseFhirConfig = fhirConfigurator.initializePlatform(fhirConfigReader)
+  private val baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
   // Schema definition cache: project id -> schema id -> schema definition
   private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
@@ -331,6 +335,23 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         val decomposedSchema: Resource = SchemaUtil.convertToStructureDefinitionResource(s) // Schema definition in the FHIR Resource representation
         new SchemaConverter(fhirVersion).convertSchema(decomposedSchema)
       })
+  }
+
+  /**
+   * Try to initialize the BaseFhirConfig. Otherwise print the error message and halt.
+   * @param fhirConfigReader config reader for BaseFhirConfig
+   * @return
+   */
+  private def initBaseFhirConfig(fhirConfigReader: IFhirConfigReader): BaseFhirConfig = {
+    var baseFhirConfig: BaseFhirConfig = null
+    try {
+      baseFhirConfig = fhirConfigurator.initializePlatform(fhirConfigReader)
+    } catch {
+      case error: InitializationException =>
+        logger.error(error.getMessage)
+        System.exit(1)
+    }
+    baseFhirConfig
   }
 }
 

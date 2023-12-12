@@ -1,5 +1,7 @@
 package io.tofhir.server.service.mapping
 
+import com.fasterxml.jackson.core.JsonParseException
+import com.typesafe.scalalogging.Logger
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMapping
@@ -26,6 +28,9 @@ import scala.io.Source
  * @param projectFolderRepository     project repository to update corresponding projects based on updates on the mappings
  */
 class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
+
+  private val logger: Logger = Logger(this.getClass)
+
   // project id -> mapping id -> mapping
   private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
 
@@ -229,10 +234,17 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
       files.foreach { file =>
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()
-        val fhirMapping = fileContent.parseJson.extract[FhirMapping]
-        // discard if the mapping id and file name not match
-        if (FileOperations.checkFileNameMatchesEntityId(fhirMapping.id, file, "mapping")) {
-          fhirMappingMap.put(fhirMapping.id, fhirMapping)
+        // Try to parse the file content as FhirMapping
+        try {
+          val fhirMapping = fileContent.parseJson.extract[FhirMapping]
+          // discard if the mapping id and file name not match
+          if (FileOperations.checkFileNameMatchesEntityId(fhirMapping.id, file, "mapping")) {
+            fhirMappingMap.put(fhirMapping.id, fhirMapping)
+          }
+        }catch{
+          case e: Throwable =>
+            logger.error(s"Failed to parse mapping definition at ${file.getPath}: ${e.getMessage}")
+            System.exit(1)
         }
       }
       map.put(projectDirectory.getName, fhirMappingMap)
