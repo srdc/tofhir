@@ -222,7 +222,7 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
           }
         }catch{
           case e: Throwable =>
-            logger.error(e.getMessage)
+            logger.error(s"Failed to parse mapping job definition at ${file.getPath}: ${e.getMessage}")
             System.exit(1)
         }
       }

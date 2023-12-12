@@ -243,7 +243,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
           }
         }catch{
           case e: Throwable =>
-            logger.error(e.getMessage)
+            logger.error(s"Failed to parse mapping definition at ${file.getPath}: ${e.getMessage}")
             System.exit(1)
         }
       }
