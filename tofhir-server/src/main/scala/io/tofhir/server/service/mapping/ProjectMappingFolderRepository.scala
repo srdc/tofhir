@@ -242,8 +242,8 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
             fhirMappingMap.put(fhirMapping.id, fhirMapping)
           }
         }catch{
-          case _: JsonParseException =>
-            logger.error(s"Failed to parse '${file.getPath}'!")
+          case e: Throwable =>
+            logger.error(e.getMessage)
             System.exit(1)
         }
       }

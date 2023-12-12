@@ -221,8 +221,8 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
             fhirJobMap.put(job.id, job)
           }
         }catch{
-          case _: JsonParseException =>
-            logger.error(s"Failed to parse '${file.getPath}'!")
+          case e: Throwable =>
+            logger.error(e.getMessage)
             System.exit(1)
         }
       }
