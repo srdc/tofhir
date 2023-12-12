@@ -18,7 +18,7 @@ trait ICORSHandler extends BasicDirectives {
     `Access-Control-Allow-Credentials`(true),
     `Access-Control-Allow-Headers`("Origin, X-Requested-With, X-Correlation-Id, Content-Type, Accept, Accept-Encoding, Accept-Language, Authorization, Host, Referer, User-Agent, Link"),
     `Access-Control-Max-Age`(1728000),
-    `Access-Control-Expose-Headers`("Location", "Link", ICORSHandler.X_TOTAL_COUNT_HEADER)
+    `Access-Control-Expose-Headers`("Location", "Link", ICORSHandler.X_TOTAL_COUNT_HEADER, ICORSHandler.X_FILTERED_COUNT_HEADER)
   )
 
   //this directive adds access control headers to normal responses

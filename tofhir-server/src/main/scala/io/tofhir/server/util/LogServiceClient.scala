@@ -1,7 +1,7 @@
 package io.tofhir.server.util
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.interceptor.ICORSHandler
@@ -27,16 +27,25 @@ class LogServiceClient(logServiceEndpoint: String) {
    *
    * @param projectId
    * @param jobId
-   * @param page
-   * @param filters start end, end date, error status and running status information to filter executions. Uri is formatted in frontend.
-   * @return A future of a tuple containing the details of individual executions and total number of executions
+   * @param page desired number of page
+   * @param dateBefore last date of the filtered executions
+   * @param dateAfter start date of the filtered executions
+   * @param errorStatuses desired error status of the filtered executions
+   * @return A future of a tuple containing
+   *         the details of individual executions as the first element
+   *         total number of executions as the second element
+   *         number of executions after applying filter as the third element
    *         //TODO we can define a dedicated class representing the response type
    */
-  def getExecutions(projectId: String, jobId: String, page: Int, filters: String): Future[(Seq[JValue], Long, Long)] = {
+  def getExecutions(projectId: String, jobId: String, page: Int, dateBefore: String, dateAfter: String, errorStatuses: String ): Future[(Seq[JValue], Long, Long)] = {
+    val params = Map("page" -> page.toString,
+                     "dateBefore" -> dateBefore,
+                     "dateAfter" -> dateAfter,
+                     "errorStatuses" -> errorStatuses)
+    val uri: Uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions"
     val request = HttpRequest(
       method = HttpMethods.GET,
-      uri = s"$logServiceEndpoint/projects/$projectId/jobs/$jobId/executions?page=$page&${filters}"
-    )
+    ).withUri(uri.withQuery(Uri.Query(params)))
 
     var countHeader: Long = 0
     var filteredCountHeader: Long = 0
