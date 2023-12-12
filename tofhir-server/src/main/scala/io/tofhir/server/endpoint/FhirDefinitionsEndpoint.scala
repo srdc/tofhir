@@ -54,19 +54,19 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
    */
   private def validateResource(): Route = {
     post {
-      parameters("redirectUrl") { redirectUrl =>
-        if (service.isValidUrl(redirectUrl)) { // validate parameter is a valid URL
-          entity(as[Resource]) { requestBody =>
-            // call the API and return the response
-            onComplete(service.validateResource(requestBody, redirectUrl)) {
-              case scala.util.Success(response) =>
-                complete(response)
-              case scala.util.Failure(ex) =>
-                complete(StatusCodes.InternalServerError, s"Proxy request failed: ${ex.getMessage}")
+      parameterMap { paramMap =>
+        paramMap.get("fhirValidationUrl") match {
+          case Some(fhirValidationUrl) =>
+            entity(as[Resource]) { requestBody =>
+              // call the API and return the response
+              onComplete(service.validateResource(requestBody, fhirValidationUrl)) {
+                case scala.util.Success(response) =>
+                  complete(response)
+                case scala.util.Failure(ex) =>
+                  complete(StatusCodes.InternalServerError, s"Proxy request failed: ${ex.getMessage}")
+              }
             }
-          }
-        } else {
-          complete(StatusCodes.BadRequest, "Invalid redirectUrl")
+          case None => throw BadRequest("Missing query parameter.", s"$SEGMENT_VALIDATE path cannot be invoked without the query parameter 'fhirValidationUrl'.")
         }
       }
     }

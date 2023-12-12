@@ -17,6 +17,7 @@ import org.json4s.JsonAST.JObject
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.server.model.BadRequest
 
 import java.net.{MalformedURLException, URL}
 import scala.collection.mutable
@@ -127,13 +128,16 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
    * Redirects the request to the onFHIR/FHIR validator based on the given redirectUrl and returns the response.
    *
    * @param requestBody FHIR resource to validate
-   * @param redirectUrl URL of the onFHIR/FHIR validator
+   * @param fhirValidationUrl URL of the onFHIR/FHIR validator
    * @return
    */
-  def validateResource(requestBody: Resource, redirectUrl: String): Future[JObject] = {
+  def validateResource(requestBody: Resource, fhirValidationUrl: String): Future[JObject] = {
+    if (!isValidUrl(fhirValidationUrl)) {
+      throw BadRequest("Invalid fhirValidationUrl", s"$fhirValidationUrl is not a valid URL.")
+    }
     val proxiedRequest = HttpRequest(
       method = HttpMethods.POST,
-      uri = s"$redirectUrl",
+      uri = s"$fhirValidationUrl",
       headers = RawHeader("Content-Type", "application/json") :: Nil,
       entity = HttpEntity(ContentTypes.`application/json`, compact(JsonMethods.render(requestBody)))
     )
@@ -145,7 +149,6 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
         val response = strictEntity.data.utf8String
         JsonMethods.parse(response).extract[JObject]
       })
-
   }
 
   /**
@@ -154,7 +157,7 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
    * @param url string to validate
    * @return
    */
-  def isValidUrl(url: String): Boolean = {
+  private def isValidUrl(url: String): Boolean = {
     try {
       new URL(url)
       true
