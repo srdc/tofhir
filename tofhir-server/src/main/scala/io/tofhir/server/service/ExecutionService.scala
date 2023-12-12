@@ -239,15 +239,23 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @return a tuple as follows
    *         first element is the execution logs of mapping job as a JSON array. It returns an empty array if the job has not been run before.
    *         second element is the total number of executions without applying any filters i.e. query params
+   *         third element is the number of executions after applying a filter
    * @throws ResourceNotFound when mapping job does not exist
    */
   def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long, Long)] = {
     // retrieve the job to validate its existence
     jobRepository.getJob(projectId, jobId).flatMap {
       case Some(_) =>
+        // Desired page number
         val page = queryParams.getOrElse("page", "1").toInt
-        val filters = queryParams.getOrElse("filters", null)
-        logServiceClient.getExecutions(projectId, jobId, page, filters).map(paginatedLogsResponse => {
+        // Request executions before this date
+        val dateBefore = queryParams.getOrElse("dateBefore", "")
+        // Request executions after this date
+        val dateAfter = queryParams.getOrElse("dateAfter", "")
+        // Desired error statuses
+        val errorStatuses = queryParams.getOrElse("errorStatuses", "")
+
+        logServiceClient.getExecutions(projectId, jobId, page, dateBefore, dateAfter, errorStatuses).map(paginatedLogsResponse => {
           logger.debug(s"Retrieved executions for projectId: $projectId, jobId: $jobId, page: $page")
           // Retrieve the running executions for the given job
           val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)

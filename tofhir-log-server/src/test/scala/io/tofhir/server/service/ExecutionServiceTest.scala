@@ -1,6 +1,7 @@
 package io.tofhir.server.service
 
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.server.config.ToFhirConfig
 import org.apache.commons.io.FileUtils
 
 import java.nio.file.Paths
@@ -51,7 +52,7 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
     }
 
     "should get executions filtered by error status" in {
-      val queryParams = Map("errorStatus" -> "SUCCESS")
+      val queryParams = Map("errorStatuses" -> "SUCCESS")
       executionService.getExecutions("pilot1", "pilot1", queryParams)
         .map(executions => {
           val executionsData = executions._1
@@ -110,7 +111,7 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
     }
     // move log file to logs folder by changing its name to tofhir-mappings.log
     val logFile = Paths.get(getClass.getResource("/log-sample.log").toURI).toFile
-    val logFileDest = io.tofhir.engine.util.FileUtils.getPath("logs/tofhir-mappings.log").toFile
+    val logFileDest = io.tofhir.engine.util.FileUtils.getPath(ToFhirConfig.mappingLogsFilePath).toFile
     FileUtils.copyFile(logFile, logFileDest)
 
   }

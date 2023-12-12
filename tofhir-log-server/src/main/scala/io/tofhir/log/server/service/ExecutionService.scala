@@ -3,16 +3,15 @@ package io.tofhir.log.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.log.server.config.SparkConfig
 import io.tofhir.log.server.model.ResourceNotFound
+import io.tofhir.server.config.ToFhirConfig
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.functions.{col, lit, to_date, to_timestamp, when}
+import org.apache.spark.sql.functions.{col, when}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
 import org.json4s.JsonAST.{JObject, JValue}
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JString}
 
-import java.text.SimpleDateFormat
-import java.util.Date
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -31,8 +30,8 @@ class ExecutionService() extends LazyLogging {
    * */
   def getExecutionLogs(executionId: String): Future[Seq[JValue]] = {
     Future {
-      // read logs/tofhir-mappings.log file
-      val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
+      // read the logs file
+      val dataFrame = SparkConfig.sparkSession.read.json(ToFhirConfig.mappingLogsFilePath)
       // handle the case where no job has been run yet which makes the data frame empty
       if (dataFrame.isEmpty) {
         Seq.empty
@@ -41,7 +40,8 @@ class ExecutionService() extends LazyLogging {
         // Get mapping tasks logs for the given execution. ProjectId field is not null for selecting mappingTasksLogs, filter out row error logs.
         var mappingTasksLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is not null")
 
-        // mapping tasks without input data are markes as 'STARTED', map them to 'FAILURE'
+        // If the level of the mapping task log is 'ERROR', mark the log as 'FAILURE'
+        // Mapping tasks without input data stay marked as 'STARTED' but its level field is 'ERROR', map it to 'FAILURE'.
         mappingTasksLogs = mappingTasksLogs.withColumn("result",
           when(col("level") === "ERROR", "FAILURE")
             .otherwise(col("result"))
@@ -115,17 +115,15 @@ class ExecutionService() extends LazyLogging {
    * @return a tuple as follows
    *         first element is the execution logs of mapping job as a JSON array. It returns an empty array if the job has not been run before.
    *         second element is the total number of executions without applying any filters i.e. query params
+   *         third element is the number of executions after applying a filter
    * @throws ResourceNotFound when mapping job does not exist
    */
   def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long, Long)] = {
     // retrieve the job to validate its existence
-    val dateBefore = queryParams.getOrElse("dateBefore", null)
-    val dateAfter = queryParams.getOrElse("dateAfter", null)
-    val errorStatuses = queryParams.getOrElse("errorStatus", null)
 
     Future {
-      // read logs/tofhir-mappings.log file
-      val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
+      // read the logs file
+      val dataFrame = SparkConfig.sparkSession.read.json(ToFhirConfig.mappingLogsFilePath)
       // handle the case where no job has been run yet which makes the data frame empty
       if (dataFrame.isEmpty) {
         (Seq.empty, 0, 0)
@@ -167,22 +165,27 @@ class ExecutionService() extends LazyLogging {
             val start = (page - 1) * 10
             val end = Math.min(start + 10, total.toInt)
 
+            // get the filter parameters
+            val dateBefore = queryParams.getOrElse("dateBefore", "")
+            val dateAfter = queryParams.getOrElse("dateAfter", "")
+            val errorStatuses = queryParams.getOrElse("errorStatuses", "")
+
             var filteredLogs = executionLogs
             // Filter according to error status of the execution
-            if(Option(errorStatuses).nonEmpty){
+            if(errorStatuses.nonEmpty){
               filteredLogs = filteredLogs.filter(col("errorStatus").isin(errorStatuses.split(","): _*))
             }
 
             // Filter according to start date
-            if(Option(dateAfter).nonEmpty){
+            if(dateAfter.nonEmpty){
               filteredLogs = filteredLogs.filter(col("startTime") > dateAfter)
             }
-            if (Option(dateBefore).nonEmpty) {
+            if (dateBefore.nonEmpty) {
               filteredLogs = filteredLogs.filter(col("startTime") < dateBefore)
             }
 
             // sort the executions by latest to oldest
-            val paginatedLogs = filteredLogs.sort(executionLogs.col("startTime").desc).collect().slice(start, end)
+            val paginatedLogs = filteredLogs.sort(filteredLogs.col("startTime").desc).collect().slice(start, end)
 
             // Retrieve the running executions for the given job
             (paginatedLogs.map(row => {
@@ -205,8 +208,8 @@ class ExecutionService() extends LazyLogging {
   def getExecutionById(projectId: String, jobId: String, executionId: String): Future[JObject] = {
     // Retrieve the job to validate its existence
     Future {
-      // Read logs/tofhir-mappings.log file
-      val dataFrame = SparkConfig.sparkSession.read.json("logs/tofhir-mappings.log")
+      // Read the logs file
+      val dataFrame = SparkConfig.sparkSession.read.json(ToFhirConfig.mappingLogsFilePath)
       // Filter logs by job and execution ID
       val filteredLogs = dataFrame.filter(s"jobId = '$jobId' and projectId = '$projectId' and executionId = '$executionId'")
       // Check if any logs exist for the given execution
