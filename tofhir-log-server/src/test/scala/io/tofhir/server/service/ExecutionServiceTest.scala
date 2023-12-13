@@ -40,10 +40,8 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
         .map(executions => {
           val executionsData = executions._1
           val count = executions._2
-          val filteredCount = executions._3
-          filteredCount shouldEqual 1
-          count shouldEqual 8
-          executionsData.length shouldEqual filteredCount
+          count shouldEqual 1
+          executionsData.length shouldEqual count
           (executionsData.head \ "id").extract[String] shouldEqual "1f47ee28-65b8-48b5-bbd6-347b15254cfb"
           (executionsData.head \ "errorStatus").extract[String] shouldEqual "SUCCESS"
           (executionsData.head \ "mappingUrls").extract[Seq[String]].length shouldEqual 4
@@ -57,10 +55,8 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
         .map(executions => {
           val executionsData = executions._1
           val count = executions._2
-          val filteredCount = executions._3
-          filteredCount shouldEqual 0
           count shouldEqual 0
-          executionsData.length shouldEqual filteredCount
+          executionsData.length shouldEqual count
           })
     }
 
@@ -70,10 +66,8 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
         .map(executions => {
           val executionsData = executions._1
           val count = executions._2
-          val filteredCount = executions._3
-          filteredCount shouldEqual 3
-          count shouldEqual 8
-          executionsData.length shouldEqual filteredCount
+          count shouldEqual 3
+          executionsData.length shouldEqual count
           (executionsData(1) \ "id").extract[String] shouldEqual "57bb4431-5d58-44d5-b525-a838c0cfa21c"
           (executionsData(1) \ "errorStatus").extract[String] shouldEqual "SUCCESS"
           (executionsData(1) \ "startTime").extract[String] shouldEqual "2023-12-01T14:37:31.348+03:00"
