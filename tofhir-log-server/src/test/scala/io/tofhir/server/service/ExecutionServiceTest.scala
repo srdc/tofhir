@@ -108,18 +108,4 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
         })
     }
   }
-
-  override def beforeAll(): Unit = {
-    // remove log files if exists
-    val logDir = io.tofhir.engine.util.FileUtils.getPath("logs/").toFile
-    if (logDir.exists && logDir.isDirectory) {
-      val files = logDir.listFiles
-      files.foreach(f => f.delete)
-    }
-    // move log file to logs folder by changing its name to tofhir-mappings.log
-    val logFile = Paths.get(getClass.getResource("/log-sample.log").toURI).toFile
-    val logFileDest = io.tofhir.engine.util.FileUtils.getPath(ToFhirConfig.mappingLogsFilePath).toFile
-    FileUtils.copyFile(logFile, logFileDest)
-
-  }
 }
