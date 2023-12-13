@@ -4,7 +4,8 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_FHIR_DEFINITIONS}
+import io.onfhir.api.Resource
+import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_FHIR_DEFINITIONS, SEGMENT_VALIDATE}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.{BadRequest, ToFhirRestCall}
 import io.tofhir.server.service.FhirDefinitionsService
@@ -41,13 +42,42 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
           }
         }
       }
+    } ~ pathPrefix(SEGMENT_VALIDATE) {
+        pathEndOrSingleSlash {
+          validateResource()
+        }
+      }
+
+  /**
+   * Validates a FHIR resource against a given FHIR validation URL in 'fhirValidationUrl' query param.
+   * @return
+   */
+  private def validateResource(): Route = {
+    post {
+      parameterMap { paramMap =>
+        paramMap.get("fhirValidationUrl") match {
+          case Some(fhirValidationUrl) =>
+            entity(as[Resource]) { requestBody =>
+              // call the API and return the response
+              onComplete(service.validateResource(requestBody, fhirValidationUrl)) {
+                case scala.util.Success(response) =>
+                  complete(response)
+                case scala.util.Failure(ex) =>
+                  complete(StatusCodes.InternalServerError, s"Proxy request failed: ${ex.getMessage}")
+              }
+            }
+          case None => throw BadRequest("Missing query parameter.", s"$SEGMENT_VALIDATE path cannot be invoked without the query parameter 'fhirValidationUrl'.")
+        }
+      }
     }
+  }
+
 
 }
 
 object FhirDefinitionsEndpoint {
-
   val SEGMENT_FHIR_DEFINITIONS = "fhir-definitions"
+  val SEGMENT_VALIDATE = "validate"
   val QUERY_PARAM_Q = "q"
   val QUERY_PARAM_RTYPE = "rtype"
   val QUERY_PARAM_PROFILE = "profile"

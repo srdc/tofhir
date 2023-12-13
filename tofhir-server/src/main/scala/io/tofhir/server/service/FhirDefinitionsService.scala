@@ -1,18 +1,34 @@
 package io.tofhir.server.service
 
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.headers.RawHeader
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api
+import io.onfhir.api.Resource
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
+import org.json4s.jackson.JsonMethods
+import org.json4s.jackson.JsonMethods.compact
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
 import io.onfhir.r4.config.FhirR4Configurator
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
 import io.tofhir.common.model.SimpleStructureDefinition
+import org.json4s.JsonAST.JObject
+import io.tofhir.server.model.Json4sSupport._
+import io.tofhir.engine.Execution.actorSystem
+import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.server.model.BadRequest
 
+import java.net.{MalformedURLException, URL}
 import scala.collection.mutable
+import scala.concurrent.Future
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
 
   private val logger: Logger = Logger(this.getClass)
+  // timeout for the proxy request to the FHIR validator
+  val timeout: FiniteDuration = 20.seconds
 
   val fhirConfigReader: IFhirConfigReader = fhirDefinitionsConfig.definitionsFHIREndpoint match {
     case Some(_) =>
@@ -106,6 +122,49 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
    */
   def getElementDefinitionsOfProfile(profileUrl: String): Seq[SimpleStructureDefinition] = {
     simplifiedStructureDefinitionCache.getOrElseUpdate(profileUrl, simpleStructureDefinitionService.simplifyStructureDefinition(profileUrl))
+  }
+
+  /**
+   * Validates a FHIR resource against a specified FHIR validation URL.
+   *
+   * @param requestBody       The FHIR resource to be validated.
+   * @param fhirValidationUrl The URL for FHIR validation.
+   * @return A Future containing the validated FHIR resource as a JObject.
+   * @throws BadRequestException If the provided FHIR validation URL is not a valid URL.
+   */
+  def validateResource(requestBody: Resource, fhirValidationUrl: String): Future[JObject] = {
+    if (!isValidUrl(fhirValidationUrl)) {
+      throw BadRequest("Invalid fhirValidationUrl", s"$fhirValidationUrl is not a valid URL.")
+    }
+    val proxiedRequest = HttpRequest(
+      method = HttpMethods.POST,
+      uri = s"$fhirValidationUrl",
+      headers = RawHeader("Content-Type", "application/json") :: Nil,
+      entity = HttpEntity(ContentTypes.`application/json`, compact(JsonMethods.render(requestBody)))
+    )
+
+    // add timeout and transform response to json
+    Http().singleRequest(proxiedRequest)
+      .flatMap { resp => resp.entity.toStrict(timeout) }
+      .map(strictEntity => {
+        val response = strictEntity.data.utf8String
+        JsonMethods.parse(response).extract[JObject]
+      })
+  }
+
+  /**
+   * Validates if the given string is a valid URL
+   *
+   * @param url string to validate
+   * @return
+   */
+  private def isValidUrl(url: String): Boolean = {
+    try {
+      new URL(url)
+      true
+    } catch {
+      case _: MalformedURLException => false
+    }
   }
 
 }
