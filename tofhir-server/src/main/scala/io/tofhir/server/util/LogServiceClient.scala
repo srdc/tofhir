@@ -35,10 +35,9 @@ class LogServiceClient(logServiceEndpoint: String) {
    * @return A future of a tuple containing
    *         the details of individual executions as the first element
    *         total number of executions as the second element
-   *         number of executions after applying filter as the third element
    *         //TODO we can define a dedicated class representing the response type
    */
-  def getExecutions(projectId: String, jobId: String, page: String, rowPerPage: String, dateBefore: String, dateAfter: String, errorStatuses: String ): Future[(Seq[JValue], Long, Long)] = {
+  def getExecutions(projectId: String, jobId: String, page: String, rowPerPage: String, dateBefore: String, dateAfter: String, errorStatuses: String ): Future[(Seq[JValue], Long)] = {
     val params = Map("page" -> page,
                      "dateBefore" -> dateBefore,
                      "dateAfter" -> dateAfter,
@@ -50,16 +49,14 @@ class LogServiceClient(logServiceEndpoint: String) {
     ).withUri(uri.withQuery(Uri.Query(params)))
 
     var countHeader: Long = 0
-    var filteredCountHeader: Long = 0
     Http().singleRequest(request)
       .flatMap(resp => {
         countHeader = resp.headers.find(_.name == ICORSHandler.X_TOTAL_COUNT_HEADER).map(_.value).get.toInt
-        filteredCountHeader = resp.headers.find(_.name == ICORSHandler.X_FILTERED_COUNT_HEADER).map(_.value).get.toLong
         resp.entity.toStrict(timeout)
       })
       .map(strictEntity => {
         val response = strictEntity.data.utf8String
-        (JsonMethods.parse(response).extract[Seq[JValue]], countHeader, filteredCountHeader)
+        (JsonMethods.parse(response).extract[Seq[JValue]], countHeader)
       })
   }
 

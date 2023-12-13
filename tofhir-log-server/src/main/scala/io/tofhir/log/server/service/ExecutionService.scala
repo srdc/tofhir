@@ -115,10 +115,9 @@ class ExecutionService() extends LazyLogging {
    * @return a tuple as follows
    *         first element is the execution logs of mapping job as a JSON array. It returns an empty array if the job has not been run before.
    *         second element is the total number of executions without applying any filters i.e. query params
-   *         third element is the number of executions after applying a filter
    * @throws ResourceNotFound when mapping job does not exist
    */
-  def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long, Long)] = {
+  def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long)] = {
     // retrieve the job to validate its existence
 
     Future {
@@ -126,13 +125,13 @@ class ExecutionService() extends LazyLogging {
       val dataFrame = SparkConfig.sparkSession.read.json(ToFhirConfig.mappingLogsFilePath)
       // handle the case where no job has been run yet which makes the data frame empty
       if (dataFrame.isEmpty) {
-        (Seq.empty, 0, 0)
+        (Seq.empty, 0)
       }
       else {
         val jobRuns = dataFrame.filter(s"jobId = '$jobId' and projectId = '$projectId'")
         // handle the case where the job has not been run yet which makes the data frame empty
         if (jobRuns.isEmpty) {
-          (Seq.empty, 0, 0)
+          (Seq.empty, 0)
         } else {
           // group logs by execution id
           val jobRunsGroupedByExecutionId = jobRuns.groupByKey(row => row.get(row.fieldIndex("executionId")).toString)(Encoders.STRING)
@@ -161,7 +160,7 @@ class ExecutionService() extends LazyLogging {
           val page = queryParams.getOrElse("page", "1").toInt
           // handle the case where requested page does not exist
           if (page > numOfPages) {
-            (Seq.empty, 0, 0)
+            (Seq.empty, 0)
           } else {
             val start = (page - 1) * pageSize
             val end = Math.min(start + pageSize, total.toInt)
@@ -183,6 +182,8 @@ class ExecutionService() extends LazyLogging {
             if (dateBefore.nonEmpty) {
               filteredLogs = filteredLogs.filter(col("startTime") < dateBefore)
             }
+            // get length before doing pagination
+            val filteredCount = filteredLogs.count()
 
             // sort the executions by latest to oldest
             val paginatedLogs = filteredLogs.sort(filteredLogs.col("startTime").desc).collect().slice(start, end)
@@ -190,7 +191,7 @@ class ExecutionService() extends LazyLogging {
             // Retrieve the running executions for the given job
             (paginatedLogs.map(row => {
               JsonMethods.parse(row.json).asInstanceOf[JObject]
-            }), total.toInt, filteredLogs.count())
+            }), filteredCount)
           }
         }
       }
