@@ -49,7 +49,7 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
       }
 
   /**
-   * Validates a FHIR resource using the onFHIR or FHIR validator (it is given as a parameter as redirectUrl)
+   * Validates a FHIR resource against a given FHIR validation URL in 'fhirValidationUrl' query param.
    * @return
    */
   private def validateResource(): Route = {

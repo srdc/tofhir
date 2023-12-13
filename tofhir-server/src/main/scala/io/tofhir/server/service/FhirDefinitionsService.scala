@@ -125,11 +125,12 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
   }
 
   /**
-   * Redirects the request to the onFHIR/FHIR validator based on the given redirectUrl and returns the response.
+   * Validates a FHIR resource against a specified FHIR validation URL.
    *
-   * @param requestBody FHIR resource to validate
-   * @param fhirValidationUrl URL of the onFHIR/FHIR validator
-   * @return
+   * @param requestBody       The FHIR resource to be validated.
+   * @param fhirValidationUrl The URL for FHIR validation.
+   * @return A Future containing the validated FHIR resource as a JObject.
+   * @throws BadRequestException If the provided FHIR validation URL is not a valid URL.
    */
   def validateResource(requestBody: Resource, fhirValidationUrl: String): Future[JObject] = {
     if (!isValidUrl(fhirValidationUrl)) {
