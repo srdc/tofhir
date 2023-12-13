@@ -153,37 +153,38 @@ class ExecutionService() extends LazyLogging {
               StructField("startTime", StringType) ::
               StructField("errorStatus", StringType) :: Nil
           )))
+          // get the filter parameters
+          val dateBefore = queryParams.getOrElse("dateBefore", "")
+          val dateAfter = queryParams.getOrElse("dateAfter", "")
+          val errorStatuses = queryParams.getOrElse("errorStatuses", "")
+
+          var filteredLogs = executionLogs
+          // Filter according to error status of the execution
+          if(errorStatuses.nonEmpty){
+            filteredLogs = filteredLogs.filter(col("errorStatus").isin(errorStatuses.split(","): _*))
+          }
+
+          // Filter according to start date
+          if(dateAfter.nonEmpty){
+            filteredLogs = filteredLogs.filter(col("startTime") > dateAfter)
+          }
+          if (dateBefore.nonEmpty) {
+            filteredLogs = filteredLogs.filter(col("startTime") < dateBefore)
+          }
+          // get length before doing pagination
+          val filteredCount = filteredLogs.count()
+
           val pageSize: Int = queryParams.getOrElse("rowsPerPage", "10").toInt
           // handle the pagination according to the page size
-          val total = executionLogs.count()
-          val numOfPages = Math.ceil(total.toDouble / pageSize).toInt
+          val numOfPages = Math.ceil(filteredCount.toDouble / pageSize).toInt
           val page = queryParams.getOrElse("page", "1").toInt
-          // handle the case where requested page does not exist
+
           if (page > numOfPages) {
             (Seq.empty, 0)
           } else {
+            // handle the case where requested page does not exist
             val start = (page - 1) * pageSize
-            val end = Math.min(start + pageSize, total.toInt)
-            // get the filter parameters
-            val dateBefore = queryParams.getOrElse("dateBefore", "")
-            val dateAfter = queryParams.getOrElse("dateAfter", "")
-            val errorStatuses = queryParams.getOrElse("errorStatuses", "")
-
-            var filteredLogs = executionLogs
-            // Filter according to error status of the execution
-            if(errorStatuses.nonEmpty){
-              filteredLogs = filteredLogs.filter(col("errorStatus").isin(errorStatuses.split(","): _*))
-            }
-
-            // Filter according to start date
-            if(dateAfter.nonEmpty){
-              filteredLogs = filteredLogs.filter(col("startTime") > dateAfter)
-            }
-            if (dateBefore.nonEmpty) {
-              filteredLogs = filteredLogs.filter(col("startTime") < dateBefore)
-            }
-            // get length before doing pagination
-            val filteredCount = filteredLogs.count()
+            val end = Math.min(start + pageSize, filteredCount.toInt)
 
             // sort the executions by latest to oldest
             val paginatedLogs = filteredLogs.sort(filteredLogs.col("startTime").desc).collect().slice(start, end)

@@ -31,7 +31,7 @@ class LogServiceClient(logServiceEndpoint: String) {
    * @param rowPerPage row count per page
    * @param dateBefore last date of the filtered executions
    * @param dateAfter start date of the filtered executions
-   * @param errorStatuses desired error status of the filtered executions
+   * @param errorStatuses comma-separated list of error statuses to be used for filtering.
    * @return A future of a tuple containing
    *         the details of individual executions as the first element
    *         total number of executions as the second element
