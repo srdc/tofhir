@@ -3,14 +3,13 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.common.util.CustomMappingFunctionsFactory
-import io.tofhir.engine.{Execution, ToFhirEngine}
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
+import io.tofhir.engine.{Execution, ToFhirEngine}
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
 import io.tofhir.server.model.{BadRequest, ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
@@ -103,9 +102,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     }
 
     // create execution
-    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), job = mappingJob, projectId = projectId, mappingTasks = mappingTasks,
-      mappingErrorHandling = executeJobTask.flatMap(_.mappingErrorHandling).getOrElse(mappingJob.dataProcessingSettings.mappingErrorHandling))
-    val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.dataProcessingSettings.mappingErrorHandling)
+    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), job = mappingJob,
+      projectId = projectId, mappingTasks = mappingTasks)
+    val fhirMappingJobManager = getFhirMappingJobManager
 
     // Streaming jobs
     val submittedJob = Future {
@@ -183,7 +182,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           testResourceCreationRequest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls))
       }
 
-    val fhirMappingJobManager = getFhirMappingJobManager(mappingJob.dataProcessingSettings.mappingErrorHandling)
+    val fhirMappingJobManager = getFhirMappingJobManager
     val (fhirMapping, dataSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId))
     val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
     fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, dataSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings())
@@ -310,17 +309,15 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     }
   }
 
-  private def getFhirMappingJobManager(mappingErrorHandlingType: ErrorHandlingType) =
+  private def getFhirMappingJobManager =
     new FhirMappingJobManager(
       toFhirEngine.mappingRepo,
       toFhirEngine.contextLoader,
       toFhirEngine.schemaLoader,
       toFhirEngine.functionLibraries,
       toFhirEngine.sparkSession,
-      mappingErrorHandlingType,
       toFhirEngine.runningJobRegistry
     )
-
 }
 
 

@@ -12,10 +12,17 @@ class Run extends Command {
       println("There is no loaded FhirMappingJob! I cannot run anything!")
 
     } else {
+      val fhirMappingJobManager = new FhirMappingJobManager(
+        context.toFhirEngine.mappingRepo,
+        context.toFhirEngine.contextLoader,
+        context.toFhirEngine.schemaLoader,
+        context.toFhirEngine.functionLibraries,
+        context.toFhirEngine.sparkSession,
+        context.toFhirEngine.runningJobRegistry
+      )
       val mappingJob = context.fhirMappingJob.get
 
       if (!isStreamingJob(mappingJob)) {
-          val fhirMappingJobManager = getFhirMappingJobManager(context, mappingJob)
 
             if (args.isEmpty) {
               // Execute all tasks in the mapping job
@@ -72,7 +79,6 @@ class Run extends Command {
 
         // Streaming job
       } else {
-        val fhirMappingJobManager = getFhirMappingJobManager(context, mappingJob)
         val mappingJobExecution: FhirMappingJobExecution = FhirMappingJobExecution(job = mappingJob, mappingTasks = mappingJob.mappings)
         fhirMappingJobManager.startMappingJobStream(
           mappingJobExecution = mappingJobExecution,
@@ -85,25 +91,6 @@ class Run extends Command {
       }
     }
     context
-  }
-
-  /**
-   * Creates a [[FhirMappingJobManager]] instance from the given context and job
-   *
-   * @param context
-   * @param mappingJob
-   * @return
-   */
-  private def getFhirMappingJobManager(context: CommandExecutionContext, mappingJob: FhirMappingJob): FhirMappingJobManager = {
-    new FhirMappingJobManager(
-      context.toFhirEngine.mappingRepo,
-      context.toFhirEngine.contextLoader,
-      context.toFhirEngine.schemaLoader,
-      context.toFhirEngine.functionLibraries,
-      context.toFhirEngine.sparkSession,
-      mappingJob.dataProcessingSettings.mappingErrorHandling,
-      context.toFhirEngine.runningJobRegistry
-    )
   }
 
   /**
