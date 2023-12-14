@@ -1,11 +1,8 @@
 package io.tofhir.server.service
 
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.server.config.ToFhirConfig
-import org.apache.commons.io.FileUtils
-
-import java.nio.file.Paths
-import io.tofhir.server.model.Json4sSupport.formats
+import io.tofhir.log.server.model.Json4sSupport.formats
+import io.tofhir.log.server.service.ExecutionService
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
