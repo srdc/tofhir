@@ -28,6 +28,12 @@
             <plugin>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest-maven-plugin</artifactId>
+                <configuration>
+                    <!-- Set the location of the mappings log file as a system property -->
+                    <systemProperties>
+                        <tofhir.logs-path>src/test/resources/log-sample.log</tofhir.logs-path>
+                    </systemProperties>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
