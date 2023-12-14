@@ -1,7 +1,6 @@
 package io.tofhir.engine.model
 
-import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
+import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.util.SparkUtil
 import org.apache.spark.sql.streaming.StreamingQuery
 
@@ -16,14 +15,12 @@ import java.util.regex.Pattern
  * @param projectId                  Unique identifier of project to which mapping job belongs
  * @param job                        Fhir mapping job
  * @param mappingTasks               List of mapping tasks to be executed (as a subset of the mapping tasks defined in the job)
- * @param mappingErrorHandling       Error handling type for execution process
  * @param jobGroupIdOrStreamingQuery Keeps Spark job group id for batch jobs and StreamingQuery for streaming jobs
  */
 case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
                                    projectId: String = "",
                                    job: FhirMappingJob,
                                    mappingTasks: Seq[FhirMappingTask] = Seq.empty,
-                                   mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.CONTINUE,
                                    jobGroupIdOrStreamingQuery: Option[Either[String, collection.mutable.Map[String, StreamingQuery]]] = None
                                   ) {
 

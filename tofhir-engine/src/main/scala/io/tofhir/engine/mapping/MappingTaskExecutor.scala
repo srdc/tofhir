@@ -46,11 +46,11 @@ object MappingTaskExecutor {
    * @param executionId        Id of FhirMappingJobExecution object
    * @return
    */
-  def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, errorHandlingType: ErrorHandlingType, executionId: Option[String] = None): Dataset[FhirMappingResult] = {
+  def executeMapping(spark: SparkSession, df: DataFrame, fhirMappingService: FhirMappingService, executionId: Option[String] = None): Dataset[FhirMappingResult] = {
     fhirMappingService.sources match {
-      case Seq(_) => executeMappingOnSingleSource(spark, df, fhirMappingService, errorHandlingType, executionId)
+      case Seq(_) => executeMappingOnSingleSource(spark, df, fhirMappingService, executionId)
       //Executing on multiple sources
-      case oth => executeMappingOnMultipleSources(spark, df, fhirMappingService, oth, errorHandlingType, executionId)
+      case oth => executeMappingOnMultipleSources(spark, df, fhirMappingService, oth, executionId)
     }
   }
 
@@ -65,7 +65,6 @@ object MappingTaskExecutor {
   private def executeMappingOnSingleSource(spark: SparkSession,
                                            df: DataFrame,
                                            fhirMappingService: FhirMappingService,
-                                           errorHandlingType: ErrorHandlingType,
                                            executionId: Option[String] = None): Dataset[FhirMappingResult] = {
     import spark.implicits._
     val result =
@@ -78,7 +77,7 @@ object MappingTaskExecutor {
 
           Option(row.getAs[String](SourceHandler.INPUT_VALIDITY_ERROR)) match {
             //If input is valid
-            case None => executeMappingOnInput(jo, Map.empty[String, JValue], fhirMappingService, errorHandlingType, executionId)
+            case None => executeMappingOnInput(jo, Map.empty[String, JValue], fhirMappingService, executionId)
             //If the input is not valid, return the error
             case Some(validationError) =>
               Seq(FhirMappingResult(
@@ -102,7 +101,6 @@ object MappingTaskExecutor {
                                               df: DataFrame,
                                               fhirMappingService: FhirMappingService,
                                               sources: Seq[String],
-                                              errorHandlingType: ErrorHandlingType,
                                               executionId: Option[String] = None): Dataset[FhirMappingResult] = {
     import spark.implicits._
     val result =
@@ -140,7 +138,7 @@ object MappingTaskExecutor {
 
           validationErrors match {
             //If input is valid
-            case Nil => executeMappingOnInput(jo, otherObjectMap, fhirMappingService, errorHandlingType, executionId)
+            case Nil => executeMappingOnInput(jo, otherObjectMap, fhirMappingService, executionId)
             //If the input is not valid, return the error
             case _ =>
               Seq(FhirMappingResult(
@@ -165,14 +163,12 @@ object MappingTaskExecutor {
    *
    * @param jo                 Input object
    * @param fhirMappingService Mapping service
-   * @param errorHandlingType  Error handling type
    * @param executionId        Id of FhirMappingJobExecution object
    * @return
    */
   private def executeMappingOnInput(jo: JObject,
                                     otherInputs: Map[String, JValue],
                                     fhirMappingService: FhirMappingService,
-                                    errorHandlingType: ErrorHandlingType,
                                     executionId: Option[String] = None): Seq[FhirMappingResult] = {
 
     val results =
@@ -224,7 +220,7 @@ object MappingTaskExecutor {
               }
             }
           }
-          val fmr = FhirMappingResult(
+          Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingUrl = fhirMappingService.mappingUrl,
             mappingExpr = Some(mappingExpr),
@@ -235,15 +231,10 @@ object MappingTaskExecutor {
               description = errorDescription,
               expression = t.expression
             )),
-            executionId = executionId)
-          if (errorHandlingType == ErrorHandlingType.CONTINUE) {
-            Seq(fmr)
-          } else {
-            throw FhirMappingException(fmr.toString, t)
-          }
+            executionId = executionId))
         //Other general exceptions
         case e: FhirMappingException =>
-          val fmr = FhirMappingResult(
+          Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingUrl = fhirMappingService.mappingUrl,
             mappingExpr = None,
@@ -253,14 +244,10 @@ object MappingTaskExecutor {
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = ExceptionUtil.extractExceptionMessages(e)
             )),
-            executionId = executionId)
-          if (errorHandlingType == ErrorHandlingType.CONTINUE) {
-            Seq(fmr)
-          } else {
-            throw FhirMappingException(fmr.toString, e)
-          }
+            executionId = executionId))
         case e: TimeoutException =>
-          val fmr = FhirMappingResult(
+          logger.debug("Mapping timeout, continuing the processing of mappings...")
+          Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingUrl = fhirMappingService.mappingUrl,
             mappingExpr = None,
@@ -270,17 +257,10 @@ object MappingTaskExecutor {
               code = FhirMappingErrorCodes.MAPPING_TIMEOUT,
               description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.engineConfig.mappingTimeout.toString}!"
             )),
-            executionId = executionId)
-          if (errorHandlingType == ErrorHandlingType.CONTINUE) {
-            logger.debug("Mapping timeout, continuing the processing of mappings...")
-            Seq(fmr)
-          } else {
-            logger.debug("Mapping timeout, halting the mapping execution!")
-            throw FhirMappingException(fmr.toString, e)
-          }
-
+            executionId = executionId))
         case oth: Exception =>
-          val fmr = FhirMappingResult(
+          logger.error("Unexpected problem while executing the mappings...", oth)
+          Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingUrl = fhirMappingService.mappingUrl,
             mappingExpr = None,
@@ -290,14 +270,7 @@ object MappingTaskExecutor {
               code = FhirMappingErrorCodes.UNEXPECTED_PROBLEM,
               description = "Exception:" + oth.getMessage
             )),
-            executionId = executionId)
-          if (errorHandlingType == ErrorHandlingType.CONTINUE) {
-            logger.error("Unexpected problem while executing the mappings...", oth)
-            Seq(fmr)
-          } else {
-            logger.error("Unexpected problem while executing the mappings...", oth)
-            throw FhirMappingException(fmr.toString, oth)
-          }
+            executionId = executionId))
       }
     results
   }

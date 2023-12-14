@@ -2,8 +2,7 @@ package io.tofhir.engine.mapping
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
-import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
+import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.data.write.{BaseFhirWriter, FhirWriterFactory, SinkHandler}
 import io.tofhir.engine.execution.RunningJobRegistry
@@ -11,7 +10,7 @@ import io.tofhir.engine.model._
 import org.apache.spark.SparkThrowable
 import org.apache.spark.sql.functions.{collect_list, struct}
 import org.apache.spark.sql.streaming.StreamingQuery
-import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
 import java.io.{File, FileNotFoundException, FileWriter}
 import java.net.URI
@@ -27,7 +26,6 @@ import scala.io.Source
  * @param contextLoader         Context loader
  * @param schemaLoader          Schema (StructureDefinition) loader
  * @param spark                 Spark session
- * @param mappingErrorHandlingType How to handle errors encountered while executing the mapping
  * @param ec                    Execution context
  */
 class FhirMappingJobManager(
@@ -36,7 +34,6 @@ class FhirMappingJobManager(
                              schemaLoader: IFhirSchemaLoader,
                              functionLibraries : Map[String, IFhirPathFunctionLibraryFactory],
                              spark: SparkSession,
-                             mappingErrorHandlingType: ErrorHandlingType,
                              runningJobRegistry: RunningJobRegistry,
                              mappingJobScheduler: Option[MappingJobScheduler] = Option.empty
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
@@ -68,7 +65,7 @@ class FhirMappingJobManager(
         logger.info(jobResult.toLogstashMarker, jobResult.toString)
 
         readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
-            fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
+          fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
       }.recover {
         // Check whether the job is stopped
         case se: SparkThrowable if se.getMessage.contains("cancelled part of cancelled job group") =>
@@ -84,17 +81,10 @@ class FhirMappingJobManager(
               val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
               logger.error(jobResult.toLogstashMarker, jobResult.toString, se)
           }
-        // Halt the execution if error handling type is HALT
-        haltOrContinueExecution(mappingJobExecution, task, se)
-        // Pass the stop exception to the upstream Futures in the chain laid out by foldLeft above
-        case t: FhirMappingJobStoppedException =>
-          throw t
         case e: Throwable =>
           // log the mapping job result and exception
           val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
           logger.error(jobResult.toLogstashMarker, jobResult.toString, e)
-          // Halt or continue according to errorHandlingType of the mapping job
-          haltOrContinueExecution(mappingJobExecution, task, e)
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.job.id}.") }
   }
@@ -373,7 +363,7 @@ class FhirMappingJobManager(
       sources.map {
         case (alias, schema, sourceContext, sourceStt, timeRange) =>
           alias ->
-              SourceHandler.readSource( alias, spark, sourceContext, sourceStt, schema, timeRange, jobId = jobId)
+            SourceHandler.readSource( alias, spark, sourceContext, sourceStt, schema, timeRange, jobId = jobId)
       }
 
     val df = handleJoin(fhirMapping.source, sourceDataFrames)
@@ -419,7 +409,7 @@ class FhirMappingJobManager(
       val configurationContext = mainSourceSettings.toConfigurationContext
       //Construct the mapping service
       val fhirMappingService = new FhirMappingService(jobId, fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries)
-      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, mappingErrorHandlingType, executionId)
+      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, executionId)
     })
   }
 
@@ -489,22 +479,6 @@ class FhirMappingJobManager(
           .collect() // Collect into an Array[String]
           .toSeq // Convert to Seq[Resource]
       }
-  }
-
-  /**
-   * Continue or halt according to error handling type.
-   * In the halt case, thrown exception is caught by the upstream Futures and a new exception is created until the root is reached.
-   *
-   * @param mappingJobExecution mapping job execution to halt or stop
-   * @param task                the erroneous task in mapping job
-   * @param err                 the error thrown at that task
-   * @throws                    [[FhirMappingJobStoppedException]] if mapping job is configured to halt
-   */
-  def haltOrContinueExecution(mappingJobExecution: FhirMappingJobExecution, task: FhirMappingTask, err: Throwable): Unit = {
-    if (mappingJobExecution.mappingErrorHandling == ErrorHandlingType.HALT) {
-      throw  FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project " +
-        s"'${mappingJobExecution.projectId}' for mapping '${task.mappingRef}' terminated with exceptions!", err)
-    }
   }
 }
 

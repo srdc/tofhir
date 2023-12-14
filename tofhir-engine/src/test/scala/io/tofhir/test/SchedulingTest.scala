@@ -103,7 +103,7 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
     assume(fhirServerIsAvailable)
     val lMappingJob: FhirMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testScheduleMappingJobFilePath)
 
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, lMappingJob.dataProcessingSettings.mappingErrorHandling, runningJobRegistry, Some(mappingJobScheduler))
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, runningJobRegistry, Some(mappingJobScheduler))
     fhirMappingJobManager.scheduleMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = lMappingJob.mappings, job = lMappingJob), sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
     scheduler.start() //job set to run every minute
     Thread.sleep(61000) //wait for the job to be executed once
