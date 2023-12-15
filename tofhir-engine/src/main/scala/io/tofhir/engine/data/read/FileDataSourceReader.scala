@@ -35,13 +35,13 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
     var rowIndex: Integer = 0
     //Based on source type
     val resultDf = mappingSource.sourceType match {
-        case SourceFileFormats.CSV =>
+        case SourceFileFormats.CSV | SourceFileFormats.TSV =>
           //Options that we infer for csv
           val inferSchema = schema.isEmpty || mappingSource.preprocessSql.isDefined
           val csvSchema = if(mappingSource.preprocessSql.isDefined) None else schema
           //val enforceSchema = schema.isDefined
           val includeHeader = mappingSource.options.get("header").forall(_ == "true")
-          val fileFilter = mappingSource.options.getOrElse("pathGlobFilter", "*.csv")
+          val fileFilter = mappingSource.options.getOrElse("pathGlobFilter", s"*.{${SourceFileFormats.CSV},${SourceFileFormats.TSV}}")
           //Other options
           val otherOptions = mappingSource.options.filterNot(o => o._1 == "header" || o._1 == "inferSchema" || o._1 == "enforceSchema")
           if(sourceSettings.asStream)

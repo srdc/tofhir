@@ -92,6 +92,7 @@ case class KafkaSource(topicName: String, groupId: String, startingOffsets: Stri
  */
 object SourceFileFormats {
   final val CSV = "csv"
+  final val TSV = "tsv"
   final val PARQUET = "parquet"
   final val JSON = "json"
   final val AVRO = "avro"
