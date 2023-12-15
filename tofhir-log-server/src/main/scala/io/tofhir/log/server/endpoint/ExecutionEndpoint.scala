@@ -21,15 +21,15 @@ class ExecutionEndpoint(webServerConfig: WebServerConfig) extends ICORSHandler w
           pathPrefix(Segment) { projectId: String => {
             pathPrefix(SEGMENT_JOB) {
               pathPrefix(Segment) { jobId: String =>
-                pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, jobs/<jobId>/executions
+                pathPrefix(SEGMENT_EXECUTIONS) {
                   pathEndOrSingleSlash {
-                    getExecutions(projectId, jobId)
-                  } ~ pathPrefix(Segment) { executionId: String => // operations on a single execution, jobs/<jobId>/executions/<executionId>
+                    getExecutions(projectId, jobId) // Get all executions for this job, jobs/<jobId>/executions
+                  } ~ pathPrefix(Segment) { executionId: String =>
                     pathEndOrSingleSlash {
-                      getExecutionById(projectId, jobId, executionId)
-                    } ~ pathPrefix(SEGMENT_LOGS) { // logs on a single execution, jobs/<jobId>/executions/<executionId>/logs
+                      getExecutionById(projectId, jobId, executionId) // get an execution, jobs/<jobId>/executions/<executionId>
+                    } ~ pathPrefix(SEGMENT_LOGS) {
                       pathEndOrSingleSlash {
-                        getExecutionLogs(executionId)
+                        getExecutionLogs(executionId) // get logs of an execution, jobs/<jobId>/executions/<executionId>/logs
                       }
                     }
                   }

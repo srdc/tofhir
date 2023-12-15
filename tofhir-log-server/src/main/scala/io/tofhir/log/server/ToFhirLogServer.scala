@@ -10,6 +10,6 @@ object ToFhirLogServer {
     val webServerConfig = new WebServerConfig(actorSystem.settings.config.getConfig("webserver"))
     val endpoint = new ExecutionEndpoint(webServerConfig)
 
-    ToFhirHttpServer.start(endpoint.toFHIRRoute, webServerConfig)
+    ToFhirLogHttpServer.start(endpoint.toFHIRRoute, webServerConfig)
   }
 }
