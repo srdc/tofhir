@@ -13,7 +13,7 @@ import scala.concurrent._
 import scala.io.StdIn
 import scala.util.{Failure, Success}
 
-object ToFhirHttpServer extends LazyLogging {
+object ToFhirLogHttpServer extends LazyLogging {
 
   def start(route: Route, webServerConfig: WebServerConfig)(implicit actorSystem: ActorSystem): Unit = {
     implicit val executionContext: ExecutionContext = actorSystem.dispatcher
