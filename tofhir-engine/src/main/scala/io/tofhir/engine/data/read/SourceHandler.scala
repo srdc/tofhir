@@ -49,7 +49,7 @@ object SourceHandler {
       reader
         .read( mappingSource, sourceSettings, schema, timeRange, limit, jobId = jobId)
     } catch {
-      case e: Throwable => throw FhirMappingException("Source cannot be read for mapping source: $mappingSource source settings: $sourceSettings.", e)
+      case e: Throwable => throw FhirMappingException(s"Source cannot be read for mapping source: $mappingSource source settings: $sourceSettings.", e)
     }
 
     val finalSourceData = try {
