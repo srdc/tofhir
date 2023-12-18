@@ -64,6 +64,11 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     sourceContext = Map("source" -> FileSystemSource(path = "patients-extra.csv"))
   )
 
+  val patientTsvFileMappingTask: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+    sourceContext = Map("source" -> FileSystemSource(path = "patients.tsv", options = Map("sep" -> "\\t")))
+  )
+
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
   val fhirServerIsAvailable: Boolean =
     Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
@@ -191,6 +196,38 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
         }
       }
     )
+  }
+
+  it should "execute the patient mapping task with given tsv file and return the results" in {
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling, runningJobRegistry)
+    fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(
+      job = fhirMappingJob,
+      mappingTasks = Seq(patientTsvFileMappingTask)), sourceSettings = dataSourceSettings) map { mappingResults =>
+      val results = mappingResults.map(r => {
+        r.mappedResource should not be None
+        val resource = r.mappedResource.get.parseJson
+        resource shouldBe a[Resource]
+        resource
+      })
+
+      results.size shouldBe 10
+      val patient1 = results.head
+      FHIRUtil.extractResourceType(patient1) shouldBe "Patient"
+      FHIRUtil.extractIdFromResource(patient1) shouldBe FhirMappingUtility.getHashedId("Patient", "p1")
+      FHIRUtil.extractValue[String](patient1, "gender") shouldBe "male"
+
+      val patient2 = results(1)
+      FHIRUtil.extractResourceType(patient2) shouldBe "Patient"
+      FHIRUtil.extractIdFromResource(patient2) shouldBe FhirMappingUtility.getHashedId("Patient", "p2")
+      FHIRUtil.extractValue[String](patient2, "deceasedDateTime") shouldBe "2017-03-10"
+
+      val patient10 = results.last
+      FHIRUtil.extractResourceType(patient10) shouldBe "Patient"
+      FHIRUtil.extractIdFromResource(patient10) shouldBe FhirMappingUtility.getHashedId("Patient", "p10")
+      FHIRUtil.extractValue[String](patient10, "gender") shouldBe "female"
+      FHIRUtil.extractValue[String](patient10, "birthDate") shouldBe "2003-11"
+      FHIRUtil.extractValueOption[String](patient10, "deceasedDateTime").isEmpty shouldBe true
+    }
   }
 
   it should "execute the other observation mapping task and return the results" in {
