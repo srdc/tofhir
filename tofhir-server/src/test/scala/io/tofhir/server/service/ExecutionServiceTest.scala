@@ -28,7 +28,7 @@ class ExecutionServiceTest extends AnyWordSpec with Matchers {
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
     sourceContext = Map("source" -> KafkaSource(topicName = "patients", groupId = "tofhir", startingOffsets = "earliest"))
   )
-  val testExecuteJobTask: ExecuteJobTask = ExecuteJobTask(clearCheckpoints = true, Option.empty, Option.empty)
+  val testExecuteJobTask: ExecuteJobTask = ExecuteJobTask(clearCheckpoints = true, Option.empty)
 
   val mappingRepository: ProjectMappingFolderRepository = mock[ProjectMappingFolderRepository]
   val schemaRepository: SchemaFolderRepository = mock[SchemaFolderRepository]
