@@ -1,10 +1,9 @@
 package io.tofhir
 
 import akka.actor.ActorSystem
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
-import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
+import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.execution.RunningJobRegistry
-import io.tofhir.engine.mapping.{FhirMappingFolderRepository, IFhirMappingRepository, IMappingContextLoader, MappingContextLoader, SchemaFolderLoader}
+import io.tofhir.engine.mapping._
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.scalatest.matchers.should.Matchers
@@ -13,9 +12,6 @@ import org.scalatest.{Inside, Inspectors, OptionValues}
 import java.net.URI
 
 trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspectors {
-
-  val mappingErrorHandling: ErrorHandlingType = ErrorHandlingType.HALT
-  val fhirWriteErrorHandling: ErrorHandlingType = ErrorHandlingType.HALT
 
   val repositoryFolderUri: URI = getClass.getResource(ToFhirConfig.engineConfig.mappingRepositoryFolderPath).toURI
   val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri)

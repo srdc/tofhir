@@ -6,8 +6,7 @@ import io.onfhir.expression.FhirExpressionException
 import io.onfhir.path.FhirPathException
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.common.util.ExceptionUtil
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
-import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
+import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}

@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCode
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.testkit.TestDuration
 import io.tofhir.common.model.SchemaDefinition
-import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
+import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -54,7 +54,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     sourceSettings = dataSourceSettings,
     sinkSettings = sinkSettings,
     mappings = Seq(patientMappingTask),
-    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE, saveErroneousRecords = true, archiveMode = ArchiveModes.OFF))
+    dataProcessingSettings = DataProcessingSettings(saveErroneousRecords = true, archiveMode = ArchiveModes.OFF))
 
   // streaming job initialization
   val parentStreamingFolderName = "streaming-parent-folder"
@@ -79,7 +79,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     sourceSettings = streamingDataSourceSettings,
     sinkSettings = sinkSettingsForStreaming,
     mappings = Seq(patientStreamingMappingTask),
-    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE, saveErroneousRecords = true, archiveMode = ArchiveModes.OFF)
+    dataProcessingSettings = DataProcessingSettings(saveErroneousRecords = true, archiveMode = ArchiveModes.OFF)
   )
 
   "The service" should {

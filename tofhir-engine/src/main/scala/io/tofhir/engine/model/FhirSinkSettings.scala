@@ -2,7 +2,6 @@ package io.tofhir.engine.model
 
 import akka.actor.ActorSystem
 import io.onfhir.client.OnFhirNetworkClient
-import io.tofhir.engine.config.ErrorHandlingType.ErrorHandlingType
 import io.tofhir.engine.util.FhirClientUtil
 
 /**
@@ -31,14 +30,12 @@ case class FileSystemSinkSettings(path: String,
  *
  * @param fhirRepoUrl      FHIR endpoint root url
  * @param securitySettings Security settings if target API is secured
- * @param errorHandling    How to handle error while writing mapped FHIR resources to this FHIR repository
  * @param returnMinimal    Whether 'return=minimal' header should be added to the batch request while writing the
  *                         resources into the FHIR Repository. If this header is added, the response does not return the
  *                         body which improves the performance.
  */
 case class FhirRepositorySinkSettings(fhirRepoUrl: String,
                                       securitySettings: Option[IFhirRepositorySecuritySettings] = None,
-                                      errorHandling: Option[ErrorHandlingType] = None,
                                       returnMinimal: Boolean = true) extends FhirSinkSettings with IdentityServiceSettings with TerminologyServiceSettings {
   /**
    * Create an OnFhir client

@@ -10,8 +10,7 @@
   },
   "sinkSettings": {
     "jsonClass": "FhirRepositorySinkSettings",
-    "fhirRepoUrl": "http://localhost:8081/fhir",
-    "errorHandling": "halt"
+    "fhirRepoUrl": "http://localhost:8081/fhir"
   },
   "mappings": [
     {
@@ -34,6 +33,7 @@
     }
   ],
   "dataProcessingSettings": {
-    "mappingErrorHandling": "halt"
+    "saveErroneousRecords": false,
+    "archiveMode": "off"
   }
 }

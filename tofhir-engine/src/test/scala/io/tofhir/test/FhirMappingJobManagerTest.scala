@@ -8,7 +8,6 @@ import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.path.{FhirPathIdentityServiceFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.ToFhirTestSpec
-import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
@@ -28,8 +27,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   val dataSourceSettings: Map[String, DataSourceSettings] =
     Map("source" ->
       FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data", Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString))
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"),
-    errorHandling = Some(fhirWriteErrorHandling))
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"))
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
@@ -83,7 +81,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
         patientMappingTask,
         otherObservationMappingTask
       ),
-      dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.HALT))
+      dataProcessingSettings = DataProcessingSettings())
 
   implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
@@ -246,24 +244,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
           }
         }
       }
-    }
-  }
-
-  it should "halt execute the mapping job when encounter with an error" in {
-    assume(fhirServerIsAvailable)
-
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, runningJobRegistry)
-
-    val future = fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(
-      mappingTasks = Seq(patientMappingTaskWithError, otherObservationMappingTask),
-      job = fhirMappingJob),
-      sourceSettings = dataSourceSettings,
-      sinkSettings = fhirSinkSettings)
-    try {
-      Await.result(future, Duration.apply("5000 ms"))
-      fail()
-    }catch{
-      case t: Throwable => t shouldBe a[FhirMappingJobStoppedException]
     }
   }
 

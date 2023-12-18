@@ -9,7 +9,7 @@ import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution
-import io.tofhir.engine.config.{ErrorHandlingType, ToFhirConfig}
+import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model._
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus

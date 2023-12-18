@@ -14,7 +14,8 @@
     "path": "/test-data/sink/streaming-test-fhir.ndjson"
   },
   "dataProcessingSettings": {
-    "mappingErrorHandling": "halt"
+    "saveErroneousRecords": false,
+    "archiveMode": "off"
   },
   "mappings": [
     {
