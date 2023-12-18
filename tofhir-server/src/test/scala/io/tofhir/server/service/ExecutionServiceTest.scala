@@ -1,7 +1,6 @@
 package io.tofhir.server.service
 
 import akka.actor.ActorSystem
-import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.model._
 import io.tofhir.server.model.ExecuteJobTask
 import io.tofhir.server.service.job.JobFolderRepository
@@ -23,7 +22,7 @@ class ExecutionServiceTest extends AnyWordSpec with Matchers {
 
   // FhirMappingJob for test
   val testJob: FhirMappingJob = FhirMappingJob(name = Some("testJob"), sourceSettings = Map.empty, sinkSettings = sinkSettings, mappings = Seq.apply(patientMappingTask),
-    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE, archiveMode = ArchiveModes.OFF))
+    dataProcessingSettings = DataProcessingSettings(archiveMode = ArchiveModes.OFF))
   val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",

@@ -202,7 +202,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
   }
 
   /**
-   * Route to continue a job execution with parameters (e.g. clearCheckpoint, mappingErrorHandling)
+   * Route to continue a job execution with parameters (e.g. clearCheckpoint)
    * @param projectId
    * @param jobId
    * @param executionId

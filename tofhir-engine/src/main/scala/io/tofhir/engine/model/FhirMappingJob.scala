@@ -14,7 +14,7 @@ import java.util.UUID
  * @param identityServiceSettings       Settings for a external identity service that will be used within mappings
  * @param mappings                      Mapping tasks
  * @param schedulingSettings            Scheduling information for periodic mapping jobs
- * @param dataProcessingSettings        Settings for data processing(e.g. archiveMode, errorHandling,etc.)
+ * @param dataProcessingSettings        Settings for data processing(e.g. archiveMode etc.)
  * @param useFhirSinkAsIdentityService  If true it means the FHIR repository to write the mapped resources where the configuration
  *                                      is given in sink settings will be used as identity service (Override identityServiceSettings if given)
  */

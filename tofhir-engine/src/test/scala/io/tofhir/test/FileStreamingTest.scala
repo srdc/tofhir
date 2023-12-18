@@ -2,7 +2,6 @@ package io.tofhir.test
 
 import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.tofhir.ToFhirTestSpec
-import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model._
@@ -56,7 +55,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     sourceSettings = dataSourceSettings,
     sinkSettings = fileSinkSettings,
     mappings = Seq.empty,
-    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE)
+    dataProcessingSettings = DataProcessingSettings()
   )
 
   override def beforeAll(): Unit = {

@@ -8,7 +8,6 @@ import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
@@ -85,8 +84,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   val streamingSourceSettings: Map[String, KafkaSourceSettings] =
     Map("source" -> KafkaSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort"))
 
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"),
-    errorHandling = Some(fhirWriteErrorHandling))
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"))
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
@@ -106,7 +104,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     mappings = Seq.empty,
     sourceSettings = streamingSourceSettings,
     sinkSettings = fhirSinkSettings,
-    dataProcessingSettings = DataProcessingSettings(mappingErrorHandling = ErrorHandlingType.CONTINUE)
+    dataProcessingSettings = DataProcessingSettings()
   )
 
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)

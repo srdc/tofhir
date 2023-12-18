@@ -1,6 +1,5 @@
 package io.tofhir.engine.util
 
-import io.tofhir.engine.config.ErrorHandlingType
 import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirRepositorySinkSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, FixedTokenAuthenticationSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SqlSource, SqlSourceSettings}
 import org.json4s.{Formats, ShortTypeHints}
 import org.json4s.ext.EnumNameSerializer
@@ -36,9 +35,7 @@ object FhirMappingJobFormatter {
           classOf[FixedTokenAuthenticationSettings],
           //Terminology setvices
           classOf[LocalFhirTerminologyServiceSettings]
-        ))) +
-      new EnumNameSerializer(ErrorHandlingType) +
-      KafkaSourceSettingsSerializers.KafkaSourceSettingsSerializer
+        ))) + KafkaSourceSettingsSerializers.KafkaSourceSettingsSerializer
 
 
   /**
