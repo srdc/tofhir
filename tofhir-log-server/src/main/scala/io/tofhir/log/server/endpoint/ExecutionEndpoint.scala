@@ -5,10 +5,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import io.tofhir.log.server.model.Json4sSupport._
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.log.server.config.WebServerConfig
 import io.tofhir.log.server.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.log.server.service.ExecutionService
 import ExecutionEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_PROJECTS}
+import io.tofhir.server.common.config.WebServerConfig
 
 class ExecutionEndpoint(webServerConfig: WebServerConfig) extends ICORSHandler with IErrorHandler with LazyLogging {
 
