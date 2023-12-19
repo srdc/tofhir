@@ -6,9 +6,9 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
+import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CONTENT, SEGMENT_CONTEXTS}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.ToFhirRestCall
 import io.tofhir.server.service.MappingContextService
 import io.tofhir.server.service.mappingcontext.IMappingContextRepository
 import io.tofhir.server.service.project.IProjectRepository

@@ -1,17 +1,18 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives.{parameterMap, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{BadRequest, InferTask, ResourceNotFound, ToFhirRestCall}
+import io.tofhir.server.model.{BadRequest, InferTask, ResourceNotFound}
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.MappingContextEndpoint.ATTACHMENT
 import io.tofhir.server.service.mapping.IMappingRepository
 
