@@ -80,6 +80,7 @@
         <module>tofhir-server</module>
         <module>tofhir-log-server</module>
         <module>tofhir-common</module>
+        <module>tofhir-server-common</module>
         <module>tofhir-rxnorm</module>
     </modules>
 
@@ -420,6 +421,11 @@
             <dependency>
                 <groupId>io.onfhir</groupId>
                 <artifactId>tofhir-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>tofhir-server-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
