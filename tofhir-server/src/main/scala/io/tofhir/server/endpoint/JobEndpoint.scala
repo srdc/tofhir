@@ -1,13 +1,13 @@
 package io.tofhir.server.endpoint
 
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.StreamTcpException
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STOP, SEGMENT_TEST, SEGMENT_LOGS}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{ExecuteJobTask, ResourceNotFound, RowSelectionOrder, TestResourceCreationRequest, ToFhirRestCall}
 import io.tofhir.server.service.{ExecutionService, JobService}
@@ -17,6 +17,8 @@ import io.tofhir.server.interceptor.ICORSHandler
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
+
+import scala.concurrent.Future
 
 class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository, logServiceEndpoint: String) extends LazyLogging {
 
@@ -35,13 +37,17 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
           pathEndOrSingleSlash {
             runJob(projectId, jobId)
           }
+        } ~ pathPrefix(SEGMENT_STATUS) { // check whether a mapping job is running, jobs/<jobId>/status
+          pathEndOrSingleSlash {
+            isJobRunning(jobId)
+          }
         } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations, jobs/<jobId>/test
           pathEndOrSingleSlash {
             testMappingWithJob(projectId, jobId)
           }
         } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, jobs/<jobId>/executions
           pathEndOrSingleSlash {
-            getExecutions(projectId, jobId)
+            getExecutions(projectId, jobId) ~ stopExecutions(jobId)
           } ~ pathPrefix(Segment) { executionId: String => // operations on a single execution, jobs/<jobId>/executions/<executionId>
             pathEndOrSingleSlash {
               getExecutionById(projectId, jobId, executionId)
@@ -117,11 +123,27 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
     }
   }
 
+  /**
+   * Route to delete a mapping job if it is not currently running.
+   *
+   * If the job is running, a BadRequest response is returned, indicating that running mapping jobs cannot
+   * be deleted. If the job is not running, the job is deleted.
+   *
+   * @param projectId The identifier of the project to which the mapping job belongs.
+   * @param id        The identifier of the mapping job to be deleted.
+   */
   private def deleteJob(projectId: String, id: String): Route = {
     delete {
       complete {
-        service.deleteJob(projectId, id) map { _ =>
-          StatusCodes.NoContent
+        executionService.isJobRunning(id) flatMap  { result =>
+          if(result)
+            Future {
+              StatusCodes.BadRequest -> s"The running mapping jobs cannot be deleted."
+            }
+          else
+            service.deleteJob(projectId, id) map { _ =>
+              StatusCodes.NoContent -> HttpEntity.Empty
+            }
         }
       }
     }
@@ -135,6 +157,19 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
             StatusCodes.OK
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Route to check if a mapping job with the specified ID is currently running.
+   *
+   * @param id The identifier of the mapping job to be checked for running status.
+   */
+  private def isJobRunning(id: String): Route = {
+    get {
+      complete {
+        executionService.isJobRunning(id).map(result => result.toString)
       }
     }
   }
@@ -182,6 +217,19 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
               case t:Throwable => throw t
             }
         }
+      }
+    }
+  }
+
+  /**
+   * Route to handle the stopping of executions for a mapping job.
+   *
+   * @param jobId The identifier of the mapping job for which executions should be stopped.
+   */
+  private def stopExecutions(jobId: String): Route = {
+    delete {
+      complete {
+        executionService.stopJobExecutions(jobId)
       }
     }
   }
@@ -264,6 +312,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
 object JobEndpoint {
   val SEGMENT_JOB = "jobs"
   val SEGMENT_RUN = "run"
+  val SEGMENT_STATUS = "status"
   val SEGMENT_EXECUTIONS = "executions"
   val SEGMENT_LOGS = "logs"
   val SEGMENT_TEST = "test"

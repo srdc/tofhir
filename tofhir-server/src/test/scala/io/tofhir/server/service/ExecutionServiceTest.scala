@@ -1,6 +1,5 @@
 package io.tofhir.server.service
 
-import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import io.tofhir.engine.config.{ToFhirConfig, ToFhirEngineConfig}
 import io.tofhir.engine.model._
@@ -14,18 +13,14 @@ import org.apache.spark.sql.types.StructType
 import org.mockito.MockitoSugar._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AsyncWordSpec
 
 import java.io.{File, FileOutputStream}
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext}
 
-class ExecutionServiceTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
 
-  implicit val actorSystem: ActorSystem = ActorSystem("toFhirEngineTest")
-  implicit val executionContext: ExecutionContext = actorSystem.getDispatcher
   // Name of the folder to keep test data to run file mapping job
   private val testDataFolder: String = "test-data"
   // toFHIR engine config
@@ -67,13 +62,11 @@ class ExecutionServiceTest extends AnyWordSpec with Matchers with BeforeAndAfter
       io.FileUtils.sizeOfDirectory(testDirectory) shouldBe >(0L)
 
       // run the job and expect to clear the created directory
-      val futureResult = executionService.runJob("testProject", "testJob", Option.empty, Some(testExecuteJobTask))
-
-      // Use Await.result to wait for the future to complete and capture any assertion failures
-      Await.result(futureResult, 5.seconds)
-
-      // Check whether the directory is deleted after the job has completed
-      Files.exists(testDirectory.toPath) shouldBe false
+      executionService.runJob("testProject", "testJob", Option.empty, Some(testExecuteJobTask))
+        .map(_ =>
+          // Check whether the directory is deleted after the job has completed
+          Files.exists(testDirectory.toPath) shouldBe false
+        )
     }
   }
 

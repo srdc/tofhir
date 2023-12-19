@@ -306,6 +306,18 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   }
 
   /**
+   * Stops all executions associated with a mapping job specified by the jobId.
+   *
+   * @param jobId The identifier of the mapping job for which executions should be stopped.
+   * @return A Future[Unit] representing the completion of the stop operations.
+   */
+  def stopJobExecutions(jobId: String): Future[Unit] = {
+    Future {
+      toFhirEngine.runningJobRegistry.stopJobExecutions(jobId)
+    }
+  }
+
+  /**
    * Stops the execution of the specific mapping task
    *
    * @param executionId Execution in which the mapping is run
@@ -320,6 +332,18 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       } else {
         throw ResourceNotFound("Mapping execution does not exists.", s"A mapping execution with jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl does not exists.")
       }
+    }
+  }
+
+  /**
+   * Checks whether a mapping job with the specified jobId is currently running.
+   *
+   * @param jobId The identifier of the mapping job to be checked for running status.
+   * @return A Future[Boolean] indicating whether the specified mapping job is running (true) or not (false).
+   */
+  def isJobRunning(jobId: String): Future[Boolean] = {
+    Future {
+      toFhirEngine.runningJobRegistry.isJobRunning(jobId)
     }
   }
 }

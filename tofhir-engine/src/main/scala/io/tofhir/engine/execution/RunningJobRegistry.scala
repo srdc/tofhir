@@ -121,6 +121,20 @@ class RunningJobRegistry(spark: SparkSession) {
   }
 
   /**
+   * Stops all the executions of a mapping job with the specified jobId.
+   *
+   * @param jobId The identifier of the mapping job for which executions should be stopped.
+   */
+  def stopJobExecutions(jobId: String): Unit = {
+    runningTasks.get(jobId) match {
+      case None => // No running tasks for the specified jobId, nothing to do
+      case Some(executionsMap) =>
+        // Stop each individual execution associated with the jobId
+        executionsMap.values.toSeq.foreach(execution => removeExecutionFromRunningTasks(jobId,execution.id))
+    }
+  }
+
+  /**
    * Stops the [[StreamingQuery]] associated with an individual mapping task
    *
    * @param jobId       Identified of the associated with the execution
@@ -225,6 +239,19 @@ class RunningJobRegistry(spark: SparkSession) {
     } else {
       false
     }
+  }
+
+  /**
+   * Checks whether a mapping job with the specified jobId is currently running.
+   *
+   * This method determines if a mapping job is running by checking if there are
+   * any active executions associated with the specified jobId.
+   *
+   * @param jobId The identifier of the mapping job to be checked for running status.
+   * @return `true` if the specified mapping job is running, otherwise `false`.
+   */
+  def isJobRunning(jobId: String): Boolean = {
+    runningTasks.contains(jobId)
   }
 
   /**
