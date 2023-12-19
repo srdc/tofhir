@@ -1,4 +1,4 @@
-package io.tofhir.log.server.model
+package io.tofhir.server.common.model
 
 import akka.http.scaladsl.model.{HttpMethod, RequestEntity, Uri}
 

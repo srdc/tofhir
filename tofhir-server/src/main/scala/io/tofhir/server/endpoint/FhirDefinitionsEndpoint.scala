@@ -5,9 +5,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
+import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_FHIR_DEFINITIONS, SEGMENT_VALIDATE}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
-import io.tofhir.server.model.{BadRequest, ToFhirRestCall}
+import io.tofhir.server.model.BadRequest
 import io.tofhir.server.service.FhirDefinitionsService
 
 import io.tofhir.server.model.Json4sSupport._

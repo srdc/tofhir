@@ -5,10 +5,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{ResourceNotFound, ToFhirRestCall}
+import io.tofhir.server.model.ResourceNotFound
 import io.tofhir.server.service.ConceptMapService
 import io.tofhir.server.service.terminology.conceptmap.IConceptMapRepository
 
