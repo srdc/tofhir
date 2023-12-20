@@ -104,7 +104,14 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     // create execution
     val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), job = mappingJob,
       projectId = projectId, mappingTasks = mappingTasks)
-    val fhirMappingJobManager = getFhirMappingJobManager
+    val fhirMappingJobManager = new FhirMappingJobManager(
+      toFhirEngine.mappingRepo,
+      toFhirEngine.contextLoader,
+      toFhirEngine.schemaLoader,
+      toFhirEngine.functionLibraries,
+      toFhirEngine.sparkSession,
+      toFhirEngine.runningJobRegistry
+    )
 
     // Streaming jobs
     val submittedJob = Future {
@@ -182,7 +189,14 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           testResourceCreationRequest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls))
       }
 
-    val fhirMappingJobManager = getFhirMappingJobManager
+    val fhirMappingJobManager = new FhirMappingJobManager(
+      toFhirEngine.mappingRepo,
+      toFhirEngine.contextLoader,
+      toFhirEngine.schemaLoader,
+      toFhirEngine.functionLibraries,
+      toFhirEngine.sparkSession,
+      toFhirEngine.runningJobRegistry
+    )
     val (fhirMapping, dataSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId))
     val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
     fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, dataSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings())
@@ -308,16 +322,6 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       }
     }
   }
-
-  private def getFhirMappingJobManager =
-    new FhirMappingJobManager(
-      toFhirEngine.mappingRepo,
-      toFhirEngine.contextLoader,
-      toFhirEngine.schemaLoader,
-      toFhirEngine.functionLibraries,
-      toFhirEngine.sparkSession,
-      toFhirEngine.runningJobRegistry
-    )
 }
 
 
