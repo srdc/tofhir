@@ -185,7 +185,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
         None
       case e: Throwable =>
         val msg = "UNEXPECTED!!! There is an unidentified error while writing resources to the FHIR Repository."
-        logger.error(msg, e)
         mappingResults
           .map(_._2)
           .map(mr =>
