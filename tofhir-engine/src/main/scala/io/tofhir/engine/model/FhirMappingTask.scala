@@ -55,9 +55,9 @@ case class FileSystemSource(path: String, fileFormat:Option[String] = None, opti
     // split the path into segments based on the period ('.')
     val pathSegments = path.split('.')
 
-    // if the file format is empty and there are exactly two segments in the path,
+    // if the file format is empty and path is a file i.e. there are at least two segments in the path,
     // set the file format based on the last segment of the path
-    if (format.isEmpty && pathSegments.length == 2) {
+    if (format.isEmpty && pathSegments.length > 1) {
       format = Some(pathSegments.last)
     }
 
