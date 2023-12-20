@@ -81,6 +81,9 @@ class FhirMappingJobManager(
               val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
               logger.error(jobResult.toLogstashMarker, jobResult.toString, se)
           }
+        // Pass the stop exception to the upstream Futures in the chain laid out by foldLeft above
+        case t: FhirMappingJobStoppedException =>
+          throw t
         case e: Throwable =>
           // log the mapping job result and exception
           val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
