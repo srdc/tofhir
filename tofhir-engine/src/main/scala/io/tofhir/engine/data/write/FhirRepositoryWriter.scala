@@ -144,8 +144,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
           //    if the batch was processed correctly, regardless of the success of the operations within the Batch."
           // For this reason, we will handle a kind of "checkResults" (see the function below) at this point for Firely.
 
-          val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} returned validation errors for batch interaction while writing the resources!"
-          logger.error(msg, fce)
           // find the validation errors of mappings
           val validationErrorsOfMappings = groupOutcomeIssuesByEntryIndex(fce.serverResponse.get.outcomeIssues)
           mappingResults
@@ -164,7 +162,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
           None
         } else {
           val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} returned an unidentified error while writing the resources!"
-          logger.error(msg, fce)
           mappingResults
             .map(_._2)
             .map(mr =>
@@ -177,7 +174,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobR
         }
       case tout: TimeoutException =>
         val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} timeout for batch interaction while writing the resources!"
-        logger.error(msg, tout)
         mappingResults
           .map(_._2)
           .map(mr =>
