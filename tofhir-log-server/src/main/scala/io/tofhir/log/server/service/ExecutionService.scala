@@ -2,7 +2,7 @@ package io.tofhir.log.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.log.server.config.{SparkConfig, ToFhirLogServerConfig}
-import io.tofhir.log.server.model.ResourceNotFound
+import io.tofhir.server.common.model.ResourceNotFound
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.{col, when}
 import org.apache.spark.sql.types._

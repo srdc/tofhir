@@ -9,12 +9,12 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST}
 import io.tofhir.server.model.Json4sSupport._
-import io.tofhir.server.model.{ExecuteJobTask, ResourceNotFound, RowSelectionOrder, TestResourceCreationRequest}
+import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest}
 import io.tofhir.server.service.{ExecutionService, JobService}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.common.interceptor.ICORSHandler
-import io.tofhir.server.common.model.ToFhirRestCall
+import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository

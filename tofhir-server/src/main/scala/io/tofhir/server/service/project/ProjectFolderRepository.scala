@@ -7,6 +7,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.model.{FhirMapping, FhirMappingJob}
 import io.tofhir.engine.util.FileUtils
+import io.tofhir.server.common.model.{AlreadyExists, ResourceNotFound}
 import io.tofhir.server.model._
 import org.json4s._
 import org.json4s.jackson.Serialization
