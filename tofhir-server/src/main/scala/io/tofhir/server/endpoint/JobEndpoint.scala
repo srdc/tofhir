@@ -1,9 +1,10 @@
 package io.tofhir.server.endpoint
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.stream.StreamTcpException
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STOP, SEGMENT_TEST, SEGMENT_LOGS}
@@ -167,6 +168,18 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
             )
             respondWithHeaders(headers) {
               complete(response._1)
+            }
+          case util.Failure(exception) =>
+            exception match {
+              case e:StreamTcpException =>
+                logger.error(s"Failed to retrieve executions for project $projectId job $id",e)
+                complete {
+                  HttpResponse(
+                    status = StatusCodes.GatewayTimeout,
+                    entity = "The toFHIR Log Server is currently unavailable. Please try again later."
+                  )
+                }
+              case t:Throwable => throw t
             }
         }
       }
