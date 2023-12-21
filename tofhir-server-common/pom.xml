@@ -55,6 +55,11 @@
     </build>
 
     <dependencies>
+        <!-- Application Configuration -->
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+        </dependency>
         <!-- Akka HTTP Suite -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
