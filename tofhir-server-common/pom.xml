@@ -69,5 +69,10 @@
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-http-core_${scala.binary.version}</artifactId>
         </dependency>
+        <!-- Scala Logging -->
+        <dependency>
+            <groupId>com.typesafe.scala-logging</groupId>
+            <artifactId>scala-logging_${scala.binary.version}</artifactId>
+        </dependency>
     </dependencies>
 </project>
