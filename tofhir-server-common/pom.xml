@@ -55,14 +55,6 @@
     </build>
 
     <dependencies>
-        <!-- onFhir Common -->
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-common_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-path_${scala.binary.version}</artifactId>
-        </dependency>
+
     </dependencies>
 </project>
