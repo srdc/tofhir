@@ -2,7 +2,8 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.server.model.{BadRequest, Project, ProjectEditableFields}
+import io.tofhir.server.common.model.BadRequest
+import io.tofhir.server.model.{Project, ProjectEditableFields}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.mappingcontext.IMappingContextRepository

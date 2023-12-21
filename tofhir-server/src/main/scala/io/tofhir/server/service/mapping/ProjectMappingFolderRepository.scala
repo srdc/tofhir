@@ -7,13 +7,14 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.{AlreadyExists, BadRequest, Project, ResourceNotFound}
+import io.tofhir.server.model.Project
 import io.tofhir.server.service.project.ProjectFolderRepository
 import org.json4s.jackson.Serialization.writePretty
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
 import io.onfhir.api.util.IOUtil
+import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
 import io.tofhir.server.util.FileOperations
 
 import scala.collection.mutable

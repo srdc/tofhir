@@ -2,7 +2,8 @@ package io.tofhir.server.model
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.MalformedRequestContentRejection
-import akka.http.scaladsl.server.{MethodRejection, RejectionHandler, UnsupportedRequestContentTypeRejection, Rejection}
+import akka.http.scaladsl.server.{MethodRejection, Rejection, RejectionHandler, UnsupportedRequestContentTypeRejection}
+import io.tofhir.server.common.model.{BadRequest, MethodForbidden, ResourceNotFound, UnsupportedMediaType}
 
 object ToFhirRejectionHandler {
 

@@ -7,11 +7,11 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.model.InternalError
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization.writePretty
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.common.model.InternalError
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets

@@ -17,7 +17,7 @@ import org.json4s.JsonAST.JObject
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.server.model.BadRequest
+import io.tofhir.server.common.model.BadRequest
 
 import java.net.{MalformedURLException, URL}
 import scala.collection.mutable

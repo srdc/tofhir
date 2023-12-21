@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.server.config.SparkConfig
-import io.tofhir.server.model.{BadRequest, InferTask, ResourceNotFound}
+import io.tofhir.server.model.InferTask
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
 import io.tofhir.engine.model.FhirMappingException
@@ -15,6 +15,7 @@ import scala.concurrent.Future
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import io.tofhir.engine.util.{CsvUtil, RedCapUtil}
+import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 
 class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 

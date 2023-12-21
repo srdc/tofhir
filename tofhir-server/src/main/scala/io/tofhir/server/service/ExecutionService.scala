@@ -11,7 +11,8 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.engine.{Execution, ToFhirEngine}
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
-import io.tofhir.server.model.{BadRequest, ExecuteJobTask, ResourceNotFound, TestResourceCreationRequest}
+import io.tofhir.server.common.model.{ResourceNotFound, BadRequest}
+import io.tofhir.server.model.{ExecuteJobTask, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository

@@ -2,7 +2,7 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.server.model.{BadRequest, ResourceNotFound}
+import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 

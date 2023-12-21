@@ -1,6 +1,4 @@
-package io.tofhir.server.model
-
-import io.tofhir.engine.model.FhirMappingError
+package io.tofhir.server.common.model
 
 import java.io.{PrintWriter, StringWriter}
 
@@ -52,14 +50,6 @@ case class BadRequest(title: String, detail: String, override val cause: Option[
 
 case class AlreadyExists(title: String, detail: String) extends ToFhirError {
   val statusCode = 409
-}
-
-case class MappingExecutionError(title: String, detail: String) extends ToFhirError {
-  val statusCode = 422
-
-  def this(fhirMappingError: FhirMappingError) = {
-    this(fhirMappingError.code, s"Description:${fhirMappingError.description} -- Expression:${fhirMappingError.expression.getOrElse("Not available.")}")
-  }
 }
 
 case class ResourceNotFound(title: String, detail: String) extends ToFhirError {
