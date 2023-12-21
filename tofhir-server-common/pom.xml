@@ -55,6 +55,14 @@
     </build>
 
     <dependencies>
-
+        <!-- Akka HTTP Suite -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http-core_${scala.binary.version}</artifactId>
+        </dependency>
     </dependencies>
 </project>
