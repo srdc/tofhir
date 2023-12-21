@@ -37,6 +37,29 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   val testJobWithDelete: FhirMappingJob = testJob.copy(id = jobId2, dataProcessingSettings = testDataProcessingSettingsWithDelete)
   val testExecutionWithDelete: FhirMappingJobExecution = testExecution.copy(id = jobId2, job = testJobWithDelete)
 
+  // Create test objects for off mode
+  val jobId3 = "mocked_job_id_3"
+  val testDataProcessingSettingsWithOff: DataProcessingSettings = DataProcessingSettings(archiveMode = ArchiveModes.OFF)
+  val testJobWithOff: FhirMappingJob = testJob.copy(id = jobId3, dataProcessingSettings = testDataProcessingSettingsWithOff)
+  val testExecutionWithOff: FhirMappingJobExecution = testExecution.copy(id = jobId3, job = testJobWithOff)
+
+  "FileStreamInputArchiver" should "not apply archiving/deletion for a streaming job with archive mode is off" in {
+    // Initialize spark files for this test
+    val testCsvFile: File = initializeSparkFiles(jobId3, mappingUrl)
+
+    // Check whether csv file exists
+    testCsvFile.exists() shouldBe true
+
+    // Call archiving function
+    fileStreamInputArchiver.applyArchivingOnStreamingJob(testExecutionWithOff, mappingUrl)
+
+    // Check whether csv file remains
+    testCsvFile.exists() shouldBe true
+
+    // Clean test directory
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(ToFhirConfig.sparkCheckpointDirectory))
+  }
+
   "FileStreamInputArchiver" should "apply archiving for a streaming job" in {
 
     // Initialize spark files for this test
@@ -79,6 +102,24 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
     // Clean test directory
     org.apache.commons.io.FileUtils.deleteDirectory(new File(ToFhirConfig.sparkCheckpointDirectory))
+  }
+
+  "FileStreamInputArchiver" should "not apply archiving/deletion for a batch job with archive mode is off" in {
+
+      // Create a test input file
+      val inputFile = initializeInputFiles(sourceFolderPath, inputFilePath)
+
+      // Check whether input file exists
+      inputFile.exists() shouldBe true
+
+      //Call archiving function
+      FileStreamInputArchiver.applyArchivingOnBatchJob(testExecutionWithOff)
+
+      // Check whether input file remains
+      inputFile.exists() shouldBe true
+
+      // Clean test directories
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(sourceFolderPath).toFile)
   }
 
   "FileStreamInputArchiver" should "apply archiving for a batch job" in{
