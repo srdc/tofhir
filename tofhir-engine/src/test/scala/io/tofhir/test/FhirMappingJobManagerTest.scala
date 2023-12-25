@@ -199,7 +199,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "execute the patient mapping task with given tsv file and return the results" in {
-    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, mappingErrorHandling, runningJobRegistry)
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession, runningJobRegistry)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(
       job = fhirMappingJob,
       mappingTasks = Seq(patientTsvFileMappingTask)), sourceSettings = dataSourceSettings) map { mappingResults =>
