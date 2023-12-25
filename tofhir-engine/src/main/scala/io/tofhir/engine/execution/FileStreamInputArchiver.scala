@@ -42,30 +42,32 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
    * @param taskExecution
    */
   def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
-    // Get the commit file directory for this execution
-    val commitDirectory: File = new File(taskExecution.getCommitDirectory(mappingUrl))
+    val archiveMode: ArchiveModes = taskExecution.job.dataProcessingSettings.archiveMode
+    if (archiveMode != ArchiveModes.OFF) {
+      // Get the commit file directory for this execution
+      val commitDirectory: File = new File(taskExecution.getCommitDirectory(mappingUrl))
 
-    // Get the sources file directory for this execution
-    val sourcesDirectory: String = taskExecution.getSourceDirectory(mappingUrl)
+      // Get the sources file directory for this execution
+      val sourcesDirectory: String = taskExecution.getSourceDirectory(mappingUrl)
 
-    // There won't be any file (with name as an integer) during the initialization or after checkpoints are cleared
-    if (commitDirectory.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {
-      // Apply archiving for the files as of the last processed offset until the last unprocessed offset
-      val lastProcessedOffset: Int = processedOffsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
-      val lastOffsetSet: Int = SparkUtil.getLastCommitOffset(commitDirectory)
-      val archiveMode: ArchiveModes = taskExecution.job.dataProcessingSettings.archiveMode
+      // There won't be any file (with name as an integer) during the initialization or after checkpoints are cleared
+      if (commitDirectory.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {
+        // Apply archiving for the files as of the last processed offset until the last unprocessed offset
+        val lastProcessedOffset: Int = processedOffsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
+        val lastOffsetSet: Int = SparkUtil.getLastCommitOffset(commitDirectory)
 
-      Range.inclusive(lastProcessedOffset + 1, lastOffsetSet) // +1 for skipping the last processed offset
-        .foreach(sourceFileName => {
-          // Extract the actual input files
-          val inputFiles: Seq[File] = SparkUtil.getInputFiles(Paths.get(sourcesDirectory, sourceFileName.toString).toFile)
-          if (inputFiles.nonEmpty) {
-            inputFiles.foreach(inputFile => {
-              processArchiveMode(inputFile, archiveMode)
-            })
-            processedOffsets.put(getOffsetKey(taskExecution.id, mappingUrl), sourceFileName)
-          }
-        })
+        Range.inclusive(lastProcessedOffset + 1, lastOffsetSet) // +1 for skipping the last processed offset
+          .foreach(sourceFileName => {
+            // Extract the actual input files
+            val inputFiles: Seq[File] = SparkUtil.getInputFiles(Paths.get(sourcesDirectory, sourceFileName.toString).toFile)
+            if (inputFiles.nonEmpty) {
+              inputFiles.foreach(inputFile => {
+                processArchiveMode(inputFile, archiveMode)
+              })
+              processedOffsets.put(getOffsetKey(taskExecution.id, mappingUrl), sourceFileName)
+            }
+          })
+      }
     }
   }
 
