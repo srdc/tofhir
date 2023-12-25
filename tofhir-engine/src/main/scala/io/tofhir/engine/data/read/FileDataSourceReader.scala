@@ -36,23 +36,28 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
     //Based on source type
     val resultDf = mappingSource.sourceType match {
         case SourceFileFormats.CSV | SourceFileFormats.TSV =>
+          val updatedOptions = mappingSource.sourceType match {
+            case SourceFileFormats.TSV =>
+              // If the file format is tsv, use tab (\t) as separator by default if it is not set explicitly
+              mappingSource.options +
+                ("sep" -> mappingSource.options.getOrElse("sep", "\\t"),
+                // use *.tsv as pathGlobFilter by default if it is not set explicitly to ignore files without tsv extension
+                "pathGlobFilter" -> mappingSource.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.TSV}"))
+            case SourceFileFormats.CSV =>
+              mappingSource.options +
+                // use *.csv as pathGlobFilter by default if it is not set explicitly to ignore files without csv extension
+                ("pathGlobFilter" -> mappingSource.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.CSV}"))
+          }
+
           //Options that we infer for csv
           val inferSchema = schema.isEmpty || mappingSource.preprocessSql.isDefined
           val csvSchema = if(mappingSource.preprocessSql.isDefined) None else schema
           //val enforceSchema = schema.isDefined
           val includeHeader = mappingSource.options.get("header").forall(_ == "true")
-          val fileFilter = mappingSource.options.getOrElse("pathGlobFilter", s"*.{${SourceFileFormats.CSV},${SourceFileFormats.TSV}}")
-          // If the file format is tsv, use tab (\t) as separator by default if it is not set explicitly
-          val updatedOptions = mappingSource.sourceType match {
-            case SourceFileFormats.TSV if !mappingSource.options.contains("sep") =>
-              mappingSource.options + ("sep" -> "\\t")
-            case _ => mappingSource.options
-          }
           //Other options except header, inferSchema and enforceSchema
           val otherOptions = updatedOptions.filterNot(o => o._1 == "header" || o._1 == "inferSchema" || o._1 == "enforceSchema")
           if(sourceSettings.asStream)
             spark.readStream
-              .option("pathGlobFilter",fileFilter) // Ignore files without csv extension in default
               .option("enforceSchema", false) //Enforce schema should be false (See https://spark.apache.org/docs/latest/sql-data-sources-csv.html)
               .option("header", includeHeader)
               .option("inferSchema", inferSchema)
@@ -68,7 +73,6 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               },logger = logger,jobId =  jobId)(input_file_name))
           else
             spark.read
-              .option("pathGlobFilter", fileFilter) // Ignore files without csv extension in default
               .option("enforceSchema", false) //Enforce schema should be false
               .option("header", includeHeader)
               .option("inferSchema", inferSchema)
