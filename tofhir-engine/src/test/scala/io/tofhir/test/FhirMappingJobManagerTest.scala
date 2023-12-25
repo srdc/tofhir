@@ -66,7 +66,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
   val patientTsvFileMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = "patients.tsv", options = Map("sep" -> "\\t")))
+    sourceContext = Map("source" -> FileSystemSource(path = "patients.tsv"))
   )
 
   val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
