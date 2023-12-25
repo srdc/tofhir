@@ -76,9 +76,9 @@ class FhirMappingJobManager(
           se.getCause match {
             // FhirMappingInvalidResourceException is already handled and logged in SinkHandler, there is no need to handle here
             case _: FhirMappingInvalidResourceException =>
-            // log the mapping job result and exception for the rest
+            // log the mapping job result and exception for the errors encountered while reading the schema or writing the FHIR Resources
             case _ =>
-              val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
+              val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.FAILURE))
               logger.error(jobResult.toLogstashMarker, jobResult.toString, se)
           }
         // Pass the stop exception to the upstream Futures in the chain laid out by foldLeft above
