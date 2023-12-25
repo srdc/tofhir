@@ -90,7 +90,7 @@
 
         <!-- This is a special placeholder to manage the version from a single property throughout the parent and child modules. No other property name can be used. -->
         <!-- https://maven.apache.org/maven-ci-friendly.html -->
-        <revision>1.0.0</revision>
+        <revision>1.1-SNAPSHOT</revision>
 
         <scala.version>2.13.10</scala.version>
         <scala.binary.version>2.13</scala.binary.version>
@@ -182,6 +182,25 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.5.0</version>
+                <configuration>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencyManagement>
