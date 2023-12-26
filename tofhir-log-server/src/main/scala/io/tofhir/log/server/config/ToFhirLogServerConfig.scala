@@ -14,11 +14,11 @@ object ToFhirLogServerConfig {
   protected lazy val config: Config = actorSystem.settings.config
 
   /**
-   * Config for toFhir
+   * Config for toFhir log server
    */
-  lazy val toFhirConfig: Config = config.getConfig("tofhir")
+  private lazy val toFhirLogServerConfig: Config = config.getConfig("tofhir.log-server")
 
   /** Path of the file that contains results of mapping executions */
-  lazy val mappingLogsFilePath: String = toFhirConfig.getString("logs-path")
+  lazy val mappingLogsFilePath: String = toFhirLogServerConfig.getString("filepath")
 
 }

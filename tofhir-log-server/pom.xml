@@ -31,7 +31,7 @@
                 <configuration>
                     <!-- Set the location of the mappings log file as a system property -->
                     <systemProperties>
-                        <tofhir.logs-path>src/test/resources/log-sample.log</tofhir.logs-path>
+                        <tofhir.log-server.filepath>src/test/resources/log-sample.log</tofhir.log-server.filepath>
                     </systemProperties>
                 </configuration>
             </plugin>
