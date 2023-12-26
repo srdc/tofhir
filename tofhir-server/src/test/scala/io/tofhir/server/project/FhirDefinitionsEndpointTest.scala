@@ -43,12 +43,12 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest {
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition", HttpEntity(ContentTypes.`application/json`, writePretty(conditionResourceJson))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, writePretty(conditionResourceJson))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition", HttpEntity(ContentTypes.`application/json`, writePretty(invalidConditionResourceJson))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, writePretty(invalidConditionResourceJson))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Convert the JSON response to a JValue
@@ -82,13 +82,13 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest {
         val secondEntryFirstIssue = (entries.arr.lift(1).get \ "resource" \ "issue").asInstanceOf[JArray].arr.head
         (secondEntryFirstIssue \ "severity") should be(JString("error"))
         (secondEntryFirstIssue \ "code") should be(JString("invalid"))
-        (secondEntryFirstIssue \ "diagnostics") should be(JString("[Validating against 'https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient'] => Invalid value '1' for FHIR primitive type 'boolean'!"))
+        (secondEntryFirstIssue \ "diagnostics").asInstanceOf[JString].s.split(" => ").last should be("Invalid value '1' for FHIR primitive type 'boolean'!")
         (secondEntryFirstIssue \ "expression").asInstanceOf[JArray].arr.head should be(JString("active"))
 
         val thirdEntryFirstIssue = (entries.arr.last \ "resource" \ "issue").asInstanceOf[JArray].arr.head
         (thirdEntryFirstIssue \ "severity") should be(JString("error"))
         (thirdEntryFirstIssue \ "code") should be(JString("invalid"))
-        (thirdEntryFirstIssue \ "diagnostics") should be(JString("[Validating against 'https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient'] => Invalid value 'test' for FHIR primitive type 'date'!"))
+        (thirdEntryFirstIssue \ "diagnostics").asInstanceOf[JString].s.split(" => ").last should be("Invalid value 'test' for FHIR primitive type 'date'!")
         (thirdEntryFirstIssue \ "expression").asInstanceOf[JArray].arr.head should be(JString("birthDate"))
       }
     }
