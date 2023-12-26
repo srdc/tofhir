@@ -38,14 +38,7 @@ class ExecutionService() extends LazyLogging {
       }
       else {
         // Get mapping tasks logs for the given execution. ProjectId field is not null for selecting mappingTasksLogs, filter out row error logs.
-        var mappingTasksLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is not null")
-
-        // If the level of the mapping task log is 'ERROR', mark the log as 'FAILURE'
-        // Mapping tasks without input data stay marked as 'STARTED' but its level field is 'ERROR', map it to 'FAILURE'.
-        mappingTasksLogs = mappingTasksLogs.withColumn("result",
-          when(col("level") === "ERROR", "FAILURE")
-            .otherwise(col("result"))
-        )
+        val mappingTasksLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is not null")
 
         // Handle the case where the job has not been run yet, which makes the data frame empty
         if (mappingTasksLogs.isEmpty) {
