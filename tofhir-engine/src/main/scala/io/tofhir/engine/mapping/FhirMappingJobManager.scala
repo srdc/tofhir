@@ -86,7 +86,7 @@ class FhirMappingJobManager(
           throw t
         case e: Throwable =>
           // log the mapping job result and exception
-          val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
+          val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.FAILURE))
           logger.error(jobResult.toLogstashMarker, jobResult.toString, e)
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.job.id}.") }
