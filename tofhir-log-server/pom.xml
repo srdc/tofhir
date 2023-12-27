@@ -62,7 +62,7 @@
                                 <!-- add Main-Class to manifest file -->
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.tofhir.server.Boot</mainClass>
+                                    <mainClass>io.tofhir.log.server.Boot</mainClass>
                                 </transformer>
 
                                 <!-- Append reference.conf to jar configurations for Akka to run -->
