@@ -10,7 +10,6 @@ import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model._
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
 import org.apache.spark.sql.{Dataset, SparkSession}
@@ -27,7 +26,7 @@ import scala.concurrent.{Await, ExecutionContext}
  *
  * @param sinkSettings Settings for the FHIR repository
  */
-class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings, runningJobRegistry: RunningJobRegistry) extends BaseFhirWriter(sinkSettings) {
+class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends BaseFhirWriter(sinkSettings) {
 
   private val logger: Logger = Logger(this.getClass)
 

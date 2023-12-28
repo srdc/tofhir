@@ -1,6 +1,5 @@
 package io.tofhir.engine.data.write
 
-import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model.{FhirMappingResult, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSinkSettings}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
@@ -23,10 +22,10 @@ abstract class BaseFhirWriter(sinkSettings: FhirSinkSettings) extends Serializab
  * Factory for FHIR writers
  */
 object FhirWriterFactory {
-  def apply(sinkSettings: FhirSinkSettings, runningJobRegistry: RunningJobRegistry): BaseFhirWriter = {
+  def apply(sinkSettings: FhirSinkSettings): BaseFhirWriter = {
     sinkSettings match {
-      case frs: FhirRepositorySinkSettings => new FhirRepositoryWriter(frs, runningJobRegistry)
-      case fsss: FileSystemSinkSettings => new FileSystemWriter(fsss, runningJobRegistry)
+      case frs: FhirRepositorySinkSettings => new FhirRepositoryWriter(frs)
+      case fsss: FileSystemSinkSettings => new FileSystemWriter(fsss)
       case _ => throw new NotImplementedError()
     }
   }

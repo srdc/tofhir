@@ -5,7 +5,6 @@ import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.data.write.{BaseFhirWriter, FhirWriterFactory, SinkHandler}
-import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model._
 import org.apache.spark.SparkThrowable
 import org.apache.spark.sql.functions.{collect_list, struct}
@@ -34,7 +33,6 @@ class FhirMappingJobManager(
                              schemaLoader: IFhirSchemaLoader,
                              functionLibraries : Map[String, IFhirPathFunctionLibraryFactory],
                              spark: SparkSession,
-                             runningJobRegistry: RunningJobRegistry,
                              mappingJobScheduler: Option[MappingJobScheduler] = Option.empty
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
 
@@ -57,8 +55,7 @@ class FhirMappingJobManager(
                                  terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                  identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
-    val fhirWriter = FhirWriterFactory.apply(sinkSettings, runningJobRegistry)
-
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
@@ -108,7 +105,7 @@ class FhirMappingJobManager(
                                      terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                      identityServiceSettings: Option[IdentityServiceSettings] = None,
                                     ): Map[String, Future[StreamingQuery]] = {
-    val fhirWriter = FhirWriterFactory.apply(sinkSettings, runningJobRegistry)
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
     mappingJobExecution.mappingTasks
       .map(t => {
         logger.debug(s"Streaming mapping job ${mappingJobExecution.job.id}, mapping url ${t.mappingRef} is started and waiting for the data...")
@@ -242,7 +239,7 @@ class FhirMappingJobManager(
                                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                   identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  ): Future[Unit] = {
-    val fhirWriter = FhirWriterFactory.apply(sinkSettings, runningJobRegistry)
+    val fhirWriter = FhirWriterFactory.apply(sinkSettings)
 
     readSourceAndExecuteTask(mappingJobExecution.job.id, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
       .map {

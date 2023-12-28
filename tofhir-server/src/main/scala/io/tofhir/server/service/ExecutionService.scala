@@ -4,14 +4,15 @@ import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.common.util.CustomMappingFunctionsFactory
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
+import io.tofhir.engine.mapping.MappingContextLoader
+import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.engine.{Execution, ToFhirEngine}
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
-import io.tofhir.server.common.model.{ResourceNotFound, BadRequest}
+import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 import io.tofhir.server.model.{ExecuteJobTask, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
@@ -110,8 +111,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       toFhirEngine.contextLoader,
       toFhirEngine.schemaLoader,
       toFhirEngine.functionLibraries,
-      toFhirEngine.sparkSession,
-      toFhirEngine.runningJobRegistry
+      toFhirEngine.sparkSession
     )
 
     // Streaming jobs
@@ -195,8 +195,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       toFhirEngine.contextLoader,
       toFhirEngine.schemaLoader,
       toFhirEngine.functionLibraries,
-      toFhirEngine.sparkSession,
-      toFhirEngine.runningJobRegistry
+      toFhirEngine.sparkSession
     )
     val (fhirMapping, dataSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId))
     val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
