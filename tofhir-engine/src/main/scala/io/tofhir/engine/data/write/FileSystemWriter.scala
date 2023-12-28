@@ -2,12 +2,11 @@ package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
 import FileSystemWriter.SinkFileFormats
-import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings}
 import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 
-class FileSystemWriter(sinkSettings: FileSystemSinkSettings, runningJobRegistry: RunningJobRegistry) extends BaseFhirWriter(sinkSettings) {
+class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWriter(sinkSettings) {
   private val logger: Logger = Logger(this.getClass)
   /**
    * Write the data frame of json serialized FHIR resources to given sink (e.g. FHIR repository)

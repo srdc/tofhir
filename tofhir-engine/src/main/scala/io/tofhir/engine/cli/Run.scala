@@ -17,8 +17,7 @@ class Run extends Command {
         context.toFhirEngine.contextLoader,
         context.toFhirEngine.schemaLoader,
         context.toFhirEngine.functionLibraries,
-        context.toFhirEngine.sparkSession,
-        context.toFhirEngine.runningJobRegistry
+        context.toFhirEngine.sparkSession
       )
       val mappingJob = context.fhirMappingJob.get
 

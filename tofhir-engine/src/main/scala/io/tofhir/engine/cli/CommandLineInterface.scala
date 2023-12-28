@@ -11,12 +11,11 @@ import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
 import java.util.Scanner
-import java.util.concurrent.CompletableFuture
 import scala.annotation.tailrec
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 object CommandLineInterface {
 
@@ -96,8 +95,7 @@ object CommandLineInterface {
           toFhirEngine.contextLoader,
           toFhirEngine.schemaLoader,
           toFhirEngine.functionLibraries,
-          toFhirEngine.sparkSession,
-          toFhirEngine.runningJobRegistry
+          toFhirEngine.sparkSession
         )
       val mappingJobExecution = FhirMappingJobExecution(job = mappingJob, mappingTasks = mappingJob.mappings)
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
@@ -141,7 +139,6 @@ object CommandLineInterface {
           toFhirEngine.schemaLoader,
           toFhirEngine.functionLibraries,
           toFhirEngine.sparkSession,
-          toFhirEngine.runningJobRegistry,
           Some(mappingJobScheduler)
         )
       fhirMappingJobManager
