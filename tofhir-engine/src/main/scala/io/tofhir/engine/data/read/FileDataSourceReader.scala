@@ -7,6 +7,7 @@ import org.apache.spark.sql.functions.{input_file_name, udf}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+import java.io.File
 import java.time.LocalDateTime
 
 /**
@@ -25,9 +26,15 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    * @param limit         Limit the number of rows to read
    * @param jobId         The identifier of mapping job which executes the mapping
    * @return
+   * @throws IllegalArgumentException If the path is not a directory for streaming jobs.
+   * @throws NotImplementedError      If the specified source format is not implemented.
    */
   override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty,jobId: Option[String] = Option.empty): DataFrame = {
     val finalPath = FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
+    // validate whether the provided path is a directory when streaming is enabled in the source settings
+    if(sourceSettings.asStream && !new File(finalPath).isDirectory){
+      throw new IllegalArgumentException(s"$finalPath is not a directory. For streaming job, you should provide a directory.")
+    }
 
     val isDistinct = mappingSource.options.get("distinct").contains("true")
 
