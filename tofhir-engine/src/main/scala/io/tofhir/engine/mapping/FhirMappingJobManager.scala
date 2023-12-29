@@ -66,7 +66,8 @@ class FhirMappingJobManager(
       }.recover {
         // Check whether the job is stopped
         case se: SparkThrowable if se.getMessage.contains("cancelled part of cancelled job group") =>
-          logger.debug(s"Job is interrupted. jobId: ${mappingJobExecution.job.id}, executionId: ${mappingJobExecution.id}")
+          val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.STOPPED))
+          logger.info(jobResult.toLogstashMarker, jobResult.toString)
           throw FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project ${mappingJobExecution.projectId}' terminated manually!")
         // Exceptions from Spark executors are wrapped inside a SparkException, which are caught below
         case se: SparkThrowable =>
@@ -80,6 +81,8 @@ class FhirMappingJobManager(
           }
         // Pass the stop exception to the upstream Futures in the chain laid out by foldLeft above
         case t: FhirMappingJobStoppedException =>
+          val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.SKIPPED))
+          logger.info(jobResult.toLogstashMarker, jobResult.toString)
           throw t
         case e: Throwable =>
           // log the mapping job result and exception
@@ -115,17 +118,13 @@ class FhirMappingJobManager(
         // Construct a tuple of (mapping url, Future[StreamingQuery])
         t.mappingRef ->
           readSourceAndExecuteTask(mappingJobExecution.job.id, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
-            .recover {
-              case e: Throwable =>
-                logger.error(s"Failed to read and execute mapping task! job: ${mappingJobExecution.job.id}, execution: ${mappingJobExecution.id}, mappingUrl: ${t.mappingRef}\n${e.getMessage}", e)
-                throw e
-            }
             .map(ts => {
               SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
             })
             .recover {
               case e: Throwable =>
-                logger.error(s"Failed to initiate streaming query! job: ${mappingJobExecution.job.id}, execution: ${mappingJobExecution.id}, mappingUrl: ${t.mappingRef}\n${e.getMessage}", e)
+                val jobResult = FhirMappingJobResult(mappingJobExecution, Some(t.mappingRef), status = Some(FhirMappingJobResult.FAILURE))
+                logger.error(jobResult.toLogstashMarker, jobResult.toString,e)
                 throw e
             }
       })
@@ -267,10 +266,10 @@ class FhirMappingJobManager(
                                        identityServiceSettings: Option[IdentityServiceSettings] = None,
                                        timeRange: Option[(LocalDateTime, LocalDateTime)] = None,
                                        executionId: Option[String] = None
-                                      ): Future[Dataset[FhirMappingResult]] = {
+                                      ): Future[Dataset[FhirMappingResult]] = Future {
     val (fhirMapping, mds, df) = readJoinSourceData(task, sourceSettings, timeRange, jobId = Some(jobId))
     executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId)
-  }
+  }.flatMap(identity)
 
   /**
    * Read the source data, divide it into batches and execute the mapping (first mapping task in the Fhir Mapping Job

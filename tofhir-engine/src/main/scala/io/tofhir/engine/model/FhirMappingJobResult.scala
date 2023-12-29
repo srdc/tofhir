@@ -97,4 +97,18 @@ object FhirMappingJobResult {
    * All FHIR Resources are written to the configured FHIR Repository or File System.
    */
   val SUCCESS: String = "SUCCESS"
+
+  /**
+   * Represents the status when the mapping task has been skipped.
+   * When a batch mapping job is stopped, the remaining mapping tasks i.e., the ones that are not yet executed, are marked as SKIPPED.
+   * These tasks are not processed further and are considered skipped due to the premature termination of the job.
+   */
+  val SKIPPED: String = "SKIPPED"
+
+  /**
+   * Represents the status when the mapping task has been stopped.
+   * This status indicates that the execution of the mapping task has been manually stopped before completion.
+   * It allows distinguishing between tasks that were intentionally halted and those that failed.
+   */
+  val STOPPED: String = "STOPPED"
 }
