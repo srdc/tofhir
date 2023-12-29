@@ -12,7 +12,15 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
- * Execution manager that keeps track of running mapping tasks in-memory
+ * Execution manager that keeps track of running mapping tasks in-memory.
+ * This registry is designed to maintain the execution status of both Streaming and Batch mapping jobs.
+ *
+ * For Streaming Jobs:
+ * - Each task's execution status is tracked individually.
+ *
+ * For Batch Jobs:
+ * - The registry maintains the overall execution status of the Batch job.
+ * - Individual statuses of tasks within a batch job are not maintained in the registry due to the nature of batch processing.
  */
 class RunningJobRegistry(spark: SparkSession) {
   // Keeps active executions in the form of: jobId -> (executionId -> execution)
@@ -35,6 +43,8 @@ class RunningJobRegistry(spark: SparkSession) {
    */
   def registerStreamingQuery(execution: FhirMappingJobExecution, mappingUrl: String, streamingQueryFuture: Future[StreamingQuery], blocking: Boolean = false): Future[Unit] = {
     Future {
+      // If there is an error in the streaming query, stop the mapping execution.
+      streamingQueryFuture.recover(_ => stopMappingExecution(execution.job.id, execution.id, mappingUrl))
       // Wait for the initial Future to be resolved
       val streamingQuery: StreamingQuery = Await.result(streamingQueryFuture, Duration.Inf)
       val jobId: String = execution.job.id
@@ -290,12 +300,13 @@ class RunningJobRegistry(spark: SparkSession) {
   }
 
   /**
-   * Sets the Spark's job group for the active thread.
+   * Sets the Spark job group for the active thread, which is used to uniquely identify and manage
+   * batch jobs. This is particularly useful for closing mapping tasks associated with a specific job.
    *
    * @param description Description for the job group
    * @return The generated job group id
    */
-  def setSparkJobGroup(description: String = ""): String = {
+  private def setSparkJobGroup(description: String = ""): String = {
     val newJobGroup: String = UUID.randomUUID().toString
     spark.sparkContext.setJobGroup(newJobGroup, description, true)
     newJobGroup
