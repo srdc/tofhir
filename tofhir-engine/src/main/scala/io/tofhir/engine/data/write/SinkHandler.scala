@@ -32,20 +32,7 @@ object SinkHandler {
     val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
     fhirWriteProblemsAccum.reset()
     //Write the FHIR resources
-    try {
-      resourceWriter.write(spark, mappedResults, fhirWriteProblemsAccum)
-    } catch {
-      case t:Throwable => {
-        // handle the exception caused by invalid mapping results
-        t.getCause match {
-          case e:FhirMappingInvalidResourceException =>
-            logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,e.getProblems,mappingErrors,invalidInputs)
-            ErroneousRecordWriter.saveErroneousRecords(spark, mappingJobExecution, mappingUrl, e.getProblems, mappingErrors, invalidInputs)
-          case _ => // We do not do anything for other types of exceptions
-        }
-        throw t
-      }
-    }
+    resourceWriter.write(spark, mappedResults, fhirWriteProblemsAccum)
     logMappingJobResult(mappingJobExecution,mappingUrl,mappedResults,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
     ErroneousRecordWriter.saveErroneousRecords(spark, mappingJobExecution, mappingUrl, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
     //Unpersist the data frame
