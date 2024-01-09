@@ -43,7 +43,9 @@ class RunningJobRegistry(spark: SparkSession) {
    */
   def registerStreamingQuery(execution: FhirMappingJobExecution, mappingUrl: String, streamingQueryFuture: Future[StreamingQuery], blocking: Boolean = false): Future[Unit] = {
     Future {
-      // If there is an error in the streaming query, stop the mapping execution.
+      // If there is an error in the streaming query execution, call 'stopMappingExecution' function,
+      // which is responsible for removing it from the registry. Without that, the registry might contain incorrect
+      // information such as indicating that the job is still running when it has encountered an error.
       streamingQueryFuture.recover(_ => stopMappingExecution(execution.job.id, execution.id, mappingUrl))
       // Wait for the initial Future to be resolved
       val streamingQuery: StreamingQuery = Await.result(streamingQueryFuture, Duration.Inf)

@@ -266,10 +266,13 @@ class FhirMappingJobManager(
                                        identityServiceSettings: Option[IdentityServiceSettings] = None,
                                        timeRange: Option[(LocalDateTime, LocalDateTime)] = None,
                                        executionId: Option[String] = None
-                                      ): Future[Dataset[FhirMappingResult]] = Future {
-    val (fhirMapping, mds, df) = readJoinSourceData(task, sourceSettings, timeRange, jobId = Some(jobId))
-    executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId)
-  }.flatMap(identity)
+                                      ): Future[Dataset[FhirMappingResult]] = {
+    // Using Future.apply to convert the result of readJoinSourceData into a Future
+    // ensuring that if there's an error in readJoinSourceData, it will be propagated as a failed future
+    Future.apply(readJoinSourceData(task, sourceSettings, timeRange, jobId = Some(jobId))) flatMap {
+        case (fhirMapping, mds, df) => executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId)
+      }
+  }
 
   /**
    * Read the source data, divide it into batches and execute the mapping (first mapping task in the Fhir Mapping Job
