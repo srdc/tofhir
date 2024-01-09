@@ -72,8 +72,6 @@ class FhirMappingJobManager(
         // Exceptions from Spark executors are wrapped inside a SparkException, which are caught below
         case se: SparkThrowable =>
           se.getCause match {
-            // FhirMappingInvalidResourceException is already handled and logged in SinkHandler, there is no need to handle here
-            case _: FhirMappingInvalidResourceException =>
             // log the mapping job result and exception for the errors encountered while reading the schema or writing the FHIR Resources
             case _ =>
               val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.FAILURE))
