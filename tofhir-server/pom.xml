@@ -204,11 +204,6 @@
             <artifactId>akka-http-testkit_${scala.binary.version}</artifactId>
             <version>${akka-http.version}</version>
         </dependency>
-        <!-- For subprocesses-->
-        <dependency>
-            <groupId>com.lihaoyi</groupId>
-            <artifactId>os-lib_${scala.binary.version}</artifactId>
-        </dependency>
         <!-- For database testing -->
         <dependency>
             <groupId>com.h2database</groupId>
