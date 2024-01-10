@@ -43,7 +43,6 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint()
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, conceptMapRepository, codeSystemRepository, mappingJobRepository)
-  val redCapIntegrationModuleEndpoint = new RedCapIntegrationModuleEndpoint()
   // Custom rejection handler to send proper messages to user
   val toFhirRejectionHandler: RejectionHandler = ToFhirRejectionHandler.getRejectionHandler();
 
@@ -57,7 +56,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
                 val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
                 handleRejections(toFhirRejectionHandler) {
                   handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                    terminologyServiceManagerEndpoint.route(restCall) ~ projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall) ~ fhirPathFunctionsEndpoint.route(restCall) ~ redCapIntegrationModuleEndpoint.route(restCall)
+                    terminologyServiceManagerEndpoint.route(restCall) ~ projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall) ~ fhirPathFunctionsEndpoint.route(restCall)
                   }
                 }
               }
