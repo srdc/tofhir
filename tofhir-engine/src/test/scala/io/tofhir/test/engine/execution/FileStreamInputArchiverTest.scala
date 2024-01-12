@@ -81,6 +81,10 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     finalArchivePath.toFile.exists() shouldBe true
     testCsvFile.exists() shouldBe false
 
+    // Apply archiving using a new FileStreamInputArchiver to simulate the rerun of a streaming job
+    new FileStreamInputArchiver(runningJobRegistryMock).applyArchivingOnStreamingJob(testExecution, mappingUrl)
+    // Check whether archiving file still exists
+    finalArchivePath.toFile.exists() shouldBe true
     // Clean test directory
     org.apache.commons.io.FileUtils.deleteDirectory(new File(ToFhirConfig.sparkCheckpointDirectory))
     org.apache.commons.io.FileUtils.deleteDirectory(new File(ToFhirConfig.engineConfig.archiveFolder))

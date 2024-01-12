@@ -6,9 +6,9 @@ import io.tofhir.engine.execution.FileStreamInputArchiver._
 import io.tofhir.engine.model.ArchiveModes.ArchiveModes
 import io.tofhir.engine.model.{ArchiveModes, FhirMappingJobExecution, FileSystemSource, FileSystemSourceSettings}
 import io.tofhir.engine.util.{FileUtils, SparkUtil}
-import java.nio.file.Paths
+
+import java.nio.file.{Files, Paths, StandardCopyOption}
 import java.io.File
-import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Timer, TimerTask}
 import scala.jdk.CollectionConverters._
@@ -157,20 +157,9 @@ object FileStreamInputArchiver {
       // create parent directories if not exists
       archiveFile.getParentFile.mkdirs()
 
-      // Check if the parent folder already contains a file with the same name. Delete, if yes
-      val parentDirectory: File = archiveFile.getParentFile
-      parentDirectory.listFiles().find(f => f.getName.contentEquals(archiveFile.getName)) match {
-        case None =>
-        case Some(file) =>
-          file.delete()
-          logger.debug(s"File with the same name exists in the archive, deleting it. File: ${file.getAbsoluteFile}")
-      }
-
-      // We need to check whether the input file still exists.
-      // It might not exist in the following scenario: It has already been archived, the system is restarted and archiving starts from offset 0 and
-      // tries to rearchive the file.
       if (file.exists()) {
-        Files.move(file.toPath, archiveFile.toPath)
+        // use StandardCopyOption.REPLACE_EXISTING to replace the existing one
+        Files.move(file.toPath, archiveFile.toPath, StandardCopyOption.REPLACE_EXISTING)
         logger.info(s"Archived file: ${file.getAbsolutePath}")
       } else {
         logger.debug(s"File to archive does not exist. File: ${file.getAbsoluteFile}")
