@@ -12,6 +12,9 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   /** A path to a context file/directory from where any kind of file system reading should start. */
   lazy val contextPath: String = Try(toFhirEngineConfig.getString("context-path")).getOrElse(".")
 
+  /** Major FHIR version (R4 or R5) */
+  lazy val fhirVersion: String = toFhirEngineConfig.getString("fhir-version")
+
   /** Path to the folder where the mappings are kept. */
   lazy val mappingRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mappings.repository.folder-path")).getOrElse("mappings")
 

@@ -97,6 +97,7 @@ class SchemaConverter(majorFhirVersion: String) {
   private def getFoundationResourceParser(): IFhirFoundationResourceParser = {
     majorFhirVersion match {
       case "R4" => new R4Parser()
+      case "R5" => new R4Parser()
       case _ => throw new NotImplementedError()
     }
   }

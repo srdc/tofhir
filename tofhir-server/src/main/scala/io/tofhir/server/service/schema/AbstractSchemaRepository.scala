@@ -5,29 +5,31 @@ import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.config.IFhirVersionConfigurator
 import io.onfhir.r4.config.FhirR4Configurator
 import io.onfhir.r4.parsers.R4Parser
+import io.onfhir.r5.config.FhirR5Configurator
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.server.service.SimpleStructureDefinitionService
 
 /**
  * Abstract class to provide common functionality to the implementations of ISchemaRepository
- *
- * @param fhirVersion
  */
-abstract class AbstractSchemaRepository(val fhirVersion: String = "R4") extends ISchemaRepository {
+abstract class AbstractSchemaRepository extends ISchemaRepository {
 
   /**
    * So that its validation function can be used when a new schema needs to be validated.
    */
-  protected val fhirConfigurator: IFhirVersionConfigurator = fhirVersion match {
+  protected val fhirConfigurator: IFhirVersionConfigurator = ToFhirConfig.engineConfig.fhirVersion match {
     case "R4" => new FhirR4Configurator()
+    case "R5" => new FhirR5Configurator()
     case _ => throw new NotImplementedError()
   }
 
   /**
    * So that a StructureDefinition resource can be parsed into ProfileRestrictions
    */
-  protected val fhirFoundationResourceParser: IFhirFoundationResourceParser = fhirVersion match {
+  protected val fhirFoundationResourceParser: IFhirFoundationResourceParser = ToFhirConfig.engineConfig.fhirVersion match {
     case "R4" => new R4Parser()
+    case "R5" => new R4Parser()
     case _ => throw new NotImplementedError()
   }
 

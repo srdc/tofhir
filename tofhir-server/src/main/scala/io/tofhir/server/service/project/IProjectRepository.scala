@@ -10,7 +10,6 @@ import scala.concurrent.Future
  */
 trait IProjectRepository {
 
-//  protected val fhirConfigurator: IFhirVersionConfigurator = new FhirR4Configurator()
   /**
    * Retrieve all Projects
    *

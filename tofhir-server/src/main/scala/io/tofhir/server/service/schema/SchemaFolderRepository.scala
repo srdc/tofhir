@@ -11,7 +11,8 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.common.util.SchemaUtil
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.mapping.{AbstractFhirSchemaLoader, SchemaConverter}
+import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.mapping.SchemaConverter
 import io.tofhir.engine.model.FhirMappingException
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
@@ -20,7 +21,6 @@ import io.tofhir.server.model.Project
 import io.tofhir.server.service.SimpleStructureDefinitionService
 import io.tofhir.server.service.project.ProjectFolderRepository
 import org.apache.spark.sql.types.StructType
-import org.json4s.{Extraction, JBool, JObject}
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
@@ -28,7 +28,6 @@ import java.util.UUID
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
-import scala.util.Try
 
 /**
  * Folder/Directory based schema repository implementation.
@@ -41,6 +40,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private val logger: Logger = Logger(this.getClass)
 
   private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(
+    fhirStandardZipFilePath = Some("r5-definitions.json.zip"),
     profilesPath = Some(FileUtils.getPath(schemaRepositoryFolderPath).toString))
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
   private val baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
@@ -314,7 +314,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       .find(_.url.contentEquals(schemaUrl)) // Find the desired url
       .map(s => {
         val decomposedSchema: Resource = SchemaUtil.convertToStructureDefinitionResource(s) // Schema definition in the FHIR Resource representation
-        new SchemaConverter(fhirVersion).convertSchema(decomposedSchema)
+        new SchemaConverter(ToFhirConfig.engineConfig.fhirVersion).convertSchema(decomposedSchema)
       })
   }
 

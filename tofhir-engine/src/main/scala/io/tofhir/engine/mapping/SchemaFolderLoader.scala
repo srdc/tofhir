@@ -18,7 +18,7 @@ import scala.io.Source
  *
  * @param folderUri URI of the folder
  */
-class SchemaFolderLoader(folderUri: URI, majorFhirVersion: String = "R4") extends IFhirSchemaLoader {
+class SchemaFolderLoader(folderUri: URI, majorFhirVersion: String) extends IFhirSchemaLoader {
   private val logger: Logger = Logger(this.getClass)
 
   private val schemas: Map[String, Resource] = loadSchemas()

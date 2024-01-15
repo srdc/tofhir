@@ -22,7 +22,7 @@ object SchemaUtil {
         ("url" -> schemaDefinition.url) ~
         ("name" -> schemaDefinition.name) ~
         ("status" -> "draft") ~
-        ("fhirVersion" -> "4.0.1") ~
+        ("fhirVersion" -> "5.0.0") ~
         ("kind" -> "logical") ~
         ("abstract" -> false) ~
         ("type" -> schemaDefinition.`type`) ~
