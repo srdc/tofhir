@@ -354,5 +354,19 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     }
     baseFhirConfig
   }
+
+  /**
+   * @param projectId Project containing the schema definition
+   * @param id        Identifier of the schema definition
+   * @return          Structure definition of the schema
+   */
+  override def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[Resource]] = {
+    getSchema(projectId, id).map {
+      case Some(schemaStructureDefinition) =>
+        Some(SchemaUtil.convertToStructureDefinitionResource(schemaStructureDefinition))
+      case None =>
+        None
+    }
+  }
 }
 
