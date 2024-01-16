@@ -1,5 +1,7 @@
 package io.tofhir.server.service.schema
 
+import io.onfhir.api.Resource
+import io.onfhir.api.validation.ProfileRestrictions
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.mapping.IFhirSchemaLoader
 import org.json4s.JsonAST.JObject
@@ -78,5 +80,15 @@ trait ISchemaRepository extends IFhirSchemaLoader {
    * @return Structure definition of the schema
    */
   def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[JObject]]
+
+
+  /**
+   * Save the schema by using its Structure Definition
+   *
+   * @param projectId
+   * @param schemaDefinition The content of the structure definition
+   * @return
+   */
+  def saveSchemaByStructureDefinition(projectId: String, schemaDefinition: Resource): Future[SchemaDefinition]
 
 }

@@ -368,5 +368,19 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         None
     }
   }
+
+  /**
+   * Save the schema by using its Structure Definition
+   * @param projectId
+   * @param schemaDefinition The content of the structure definition
+   * @return
+   */
+  override def saveSchemaByStructureDefinition(projectId: String, schemaDefinition: Resource): Future[SchemaDefinition] = {
+    // Convert into schema definition and save
+    val structureDefinition: ProfileRestrictions = fhirFoundationResourceParser.parseStructureDefinition(schemaDefinition)
+    // TODO: Here schema conversion is not working properly although the structureDefinition is correct. Fix it.
+    val schema = convertToSchemaDefinition(structureDefinition, simpleStructureDefinitionService)
+    saveSchema(projectId, schema)
+  }
 }
 
