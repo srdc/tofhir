@@ -15,6 +15,8 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.MappingContextEndpoint.ATTACHMENT
 import io.tofhir.server.service.mapping.IMappingRepository
+import io.onfhir.api.Resource
+import io.onfhir.api.validation.ProfileRestrictions
 
 class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
@@ -27,7 +29,7 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
         parameterMap { queryParams =>
           queryParams.get("url") match {
             case Some(url) => getSchemaByUrl(projectId, url)
-            case None => getAllSchemas(request) ~ createSchema(projectId) // Operations on all schemas
+            case None => getAllSchemas(request) ~ createSchema(projectId, queryParams.getOrElse("format", "SimpleStructureDefinition")) // Operations on all schemas
           }
         }
       } ~ pathPrefix(SEGMENT_INFER) { // infer a schema
@@ -46,12 +48,22 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
     }
   }
 
-  private def createSchema(projectId: String): Route = {
+  private def createSchema(projectId: String, format: String): Route = {
     post { // Create a new schema definition
-      entity(as[SchemaDefinition]) { schemaDefinition =>
-        complete {
-          service.createSchema(projectId, schemaDefinition) map { createdDefinition =>
-            StatusCodes.Created -> createdDefinition
+      // If the schema is in the form of StructureDefinition, convert into SimpleStructureDefinition and save
+      if (format == "StructureDefinition") {
+        entity(as[Resource]) { schemaStructureDefinition =>
+          complete {
+            service.createSchemaFromStructureDefinition(projectId, schemaStructureDefinition)
+          }
+        }
+      }
+      else{
+        entity(as[SchemaDefinition]) { schemaDefinition =>
+          complete {
+            service.createSchema(projectId, schemaDefinition) map { createdDefinition =>
+              StatusCodes.Created -> createdDefinition
+            }
           }
         }
       }

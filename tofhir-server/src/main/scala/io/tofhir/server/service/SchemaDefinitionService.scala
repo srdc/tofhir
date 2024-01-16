@@ -14,6 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import io.onfhir.api.Resource
 import io.tofhir.engine.util.{CsvUtil, RedCapUtil}
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 import org.json4s.JsonAST.JObject
@@ -152,5 +153,15 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    */
   def getSchemaWithStructureDefinition(projectId: String, id: String): Future[Option[JObject]] = {
     schemaRepository.getSchemaAsStructureDefinition(projectId, id)
+  }
+
+  /**
+   * Save the schema by using its StructureDefinition
+   * @param projectId
+   * @param schemaDefinition schema definition in the form of Structure Definition
+   * @return
+   */
+  def createSchemaFromStructureDefinition(projectId: String, schemaDefinition: Resource): Future[SchemaDefinition] = {
+    schemaRepository.saveSchemaByStructureDefinition(projectId, schemaDefinition)
   }
 }
