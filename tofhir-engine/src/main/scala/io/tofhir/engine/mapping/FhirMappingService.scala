@@ -181,7 +181,7 @@ class FhirMappingService(
   private def evaluateExpressionReturnString(expr: String, cntx: Map[String, JValue], input: JValue): Future[String] = {
     templateEngine
       .evaluateExpression(
-        FhirExpression(name = "...", language = "application/fhir-template+json", expression = Some(expr), None, None),
+        FhirExpression(name = "...", language = "application/fhir-template+json", expression = Some(expr)),
         cntx,
         input
       ).map(_.extract[String])

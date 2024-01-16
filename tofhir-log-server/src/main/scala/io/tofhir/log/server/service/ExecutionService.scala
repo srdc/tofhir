@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.log.server.config.{SparkConfig, ToFhirLogServerConfig}
 import io.tofhir.server.common.model.ResourceNotFound
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.functions.{col, when}
+import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
 import org.json4s.JsonAST.{JObject, JValue}
@@ -50,10 +50,10 @@ class ExecutionService() extends LazyLogging {
           var rowErrorLogs = dataFrame.filter(s"executionId = '$executionId' and projectId is null")
 
           // Check whether there is any row error
-          if(!rowErrorLogs.isEmpty){
+          if (!rowErrorLogs.isEmpty) {
 
             // Select needed columns from row error logs
-            rowErrorLogs = rowErrorLogs.select(List("errorCode", "errorDesc", "message", "mappingUrl").map(col):_*)
+            rowErrorLogs = rowErrorLogs.select(List("errorCode", "errorDesc", "message", "mappingUrl").map(col): _*)
 
             // Group row error logs by mapping url
             val rowErrorLogsGroupedByMappingUrl = rowErrorLogs.groupByKey(row => row.get(row.fieldIndex("mappingUrl")).toString)(Encoders.STRING)
@@ -66,14 +66,13 @@ class ExecutionService() extends LazyLogging {
               Row.fromSeq(Row.unapplySeq(mappingTaskLog.head).get :+ rowError.toSeq)
             })(
               // Define a new schema for the resulting rows and create an encoder for it. We will add a "error_logs" column to mapping tasks logs that contains related error logs.
-              RowEncoder(mappingTasksLogs.schema.add("error_logs", ArrayType(
+              RowEncoder.encoderFor(mappingTasksLogs.schema.add("error_logs", ArrayType(
                 new StructType()
                   .add("errorCode", StringType)
                   .add("errorDesc", StringType)
                   .add("message", StringType)
                   .add("mappingUrl", StringType)
-              ))
-              )
+              )))
             )
 
             // Build a map for updated mapping tasks logs (mappingUrl -> mapping logs with errors)
@@ -139,7 +138,7 @@ class ExecutionService() extends LazyLogging {
             val results: Seq[String] = rows.map(row => row.get(row.fieldIndex("result")).toString)
             val status: String = ExecutionService.getErrorStatusOfExecution(results)
             Row.fromSeq(Seq(key, mappingUrls, timestamp, status))
-          })(RowEncoder(StructType(
+          })(RowEncoder.encoderFor(StructType(
             StructField("id", StringType) ::
               StructField("mappingUrls", ArrayType(StringType)) ::
               StructField("startTime", StringType) ::
@@ -152,12 +151,12 @@ class ExecutionService() extends LazyLogging {
 
           var filteredLogs = executionLogs
           // Filter according to error status of the execution
-          if(errorStatuses.nonEmpty){
+          if (errorStatuses.nonEmpty) {
             filteredLogs = filteredLogs.filter(col("errorStatus").isin(errorStatuses.split(","): _*))
           }
 
           // Filter according to start date
-          if(dateAfter.nonEmpty){
+          if (dateAfter.nonEmpty) {
             filteredLogs = filteredLogs.filter(col("startTime") > dateAfter)
           }
           if (dateBefore.nonEmpty) {
@@ -194,9 +193,9 @@ class ExecutionService() extends LazyLogging {
   /**
    * Returns the execution logs for a specific execution ID.
    *
-   * @param projectId    project id the job belongs to
-   * @param jobId        job id
-   * @param executionId  execution id
+   * @param projectId   project id the job belongs to
+   * @param jobId       job id
+   * @param executionId execution id
    * @return the execution summary as a JSON object
    */
   def getExecutionById(projectId: String, jobId: String, executionId: String): Future[JObject] = {
@@ -235,6 +234,7 @@ object ExecutionService {
 
   /**
    * Determines the error status of the execution based on the results of the mapping tasks.
+   *
    * @param results
    * @return
    */
