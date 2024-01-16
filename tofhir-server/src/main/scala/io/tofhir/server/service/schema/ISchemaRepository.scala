@@ -2,6 +2,7 @@ package io.tofhir.server.service.schema
 
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.mapping.IFhirSchemaLoader
+import org.json4s.JsonAST.JObject
 
 import scala.concurrent.Future
 
@@ -69,5 +70,13 @@ trait ISchemaRepository extends IFhirSchemaLoader {
    * @param projectId The unique identifier of the project for which schemas should be deleted.
    */
   def deleteProjectSchemas(projectId: String): Unit
+
+  /**
+   *
+   * @param projectId Project containing the schema definition
+   * @param id Identifier of the schema definition
+   * @return Structure definition of the schema
+   */
+  def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[JObject]]
 
 }

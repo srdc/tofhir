@@ -16,6 +16,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import io.tofhir.engine.util.{CsvUtil, RedCapUtil}
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
+import org.json4s.JsonAST.JObject
 
 class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
@@ -142,5 +143,14 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
       // save each schema
       Future.sequence(definitions.map(definition => schemaRepository.saveSchema(projectId, definition)))
     })
+  }
+
+  /**
+   * @param projectId project containing the schema definition
+   * @param id id of the requested schema
+   * @return Structure definition of the schema
+   */
+  def getSchemaWithStructureDefinition(projectId: String, id: String): Future[Option[JObject]] = {
+    schemaRepository.getSchemaAsStructureDefinition(projectId, id)
   }
 }

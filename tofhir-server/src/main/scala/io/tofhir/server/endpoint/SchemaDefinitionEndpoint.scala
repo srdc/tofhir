@@ -60,11 +60,25 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
 
   private def getSchema(projectId: String, id: String): Route = {
     get {
-      complete {
-        service.getSchema(projectId, id) map {
-          case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
-          case None => StatusCodes.NotFound -> {
-            throw ResourceNotFound("Schema not found", s"Schema definition with name $id not found")
+      parameterMap { queryParams =>
+        complete {
+          // Requested format of the schema: "StructureDefinition" or "SimpleStructureDefinition"
+          val format: String = queryParams.getOrElse("format", "SimpleStructureDefinition")
+          if(format == "StructureDefinition"){
+            service.getSchemaWithStructureDefinition(projectId, id) map {
+              case Some(schemaStructureDefinition) => StatusCodes.OK -> schemaStructureDefinition
+              case None => {
+                throw ResourceNotFound("Schema not found", s"Schema definition with name $id not found")
+              }
+            }
+          }
+          else {
+            service.getSchema(projectId, id) map {
+              case Some(schemaSimpleStructureDefinition) => StatusCodes.OK -> schemaSimpleStructureDefinition
+              case None => StatusCodes.NotFound -> {
+                throw ResourceNotFound("Schema not found", s"Schema definition with name $id not found")
+              }
+            }
           }
         }
       }
