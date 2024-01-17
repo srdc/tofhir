@@ -4,6 +4,8 @@ import io.onfhir.api.{FHIR_DATA_TYPES, FHIR_FOUNDATION_RESOURCES, FHIR_ROOT_URL_
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.common.util.SchemaUtil
 
+import javax.ws.rs.BadRequestException
+
 /**
  * Util class providing methods to extract schemas from a REDCap data dictionary.
  * */
@@ -28,6 +30,7 @@ object RedCapUtil {
    * @param content           The content of a REDCap data dictionary file
    * @param definitionRootUrl The definition root url for the newly created schemas
    * @return the list of schemas extracted from REDCap data dictionary
+   * @throws BadRequestException when REDCap data dictionary file does not include {@link RedCapDataDictionaryColumns.VARIABLE_FIELD_NAME}
    * */
   def extractSchemasAsSchemaDefinitions(content: Seq[Map[String, String]], definitionRootUrl: String): Seq[SchemaDefinition] = {
     // find forms
@@ -40,7 +43,11 @@ object RedCapUtil {
       var definitions:Seq[SimpleStructureDefinition] = Seq.empty
       form._2.foreach(row => {
         // read columns
-        val variableName = row(RedCapDataDictionaryColumns.VARIABLE_FIELD_NAME)
+        // try to retrieve the variable name from the regular field name column.
+        // if it's not present, fallback to the field name column that includes BOM.
+        val variableName: Option[String] = row.get(RedCapDataDictionaryColumns.VARIABLE_FIELD_NAME).orElse(row.get(RedCapDataDictionaryColumns.VARIABLE_FIELD_NAME_WITH_BOM))
+        if(variableName.isEmpty)
+          throw new BadRequestException(s"Invalid REDCap Data Dictionary file since it does not include the following column: ${RedCapDataDictionaryColumns.VARIABLE_FIELD_NAME}")
         val fieldType = row(RedCapDataDictionaryColumns.FIELD_TYPE)
         val fieldLabel = row(RedCapDataDictionaryColumns.FIELD_LABEL).trim()
         val fieldNotes = row.getOrElse(RedCapDataDictionaryColumns.FIELD_NOTES, fieldLabel).trim()
@@ -55,8 +62,8 @@ object RedCapUtil {
           // find cardinality
           val cardinality = getCardinality(fieldType, required)
 
-          definitions = definitions :+ SimpleStructureDefinition(id = variableName,
-            path = s"$schemaId.$variableName",
+          definitions = definitions :+ SimpleStructureDefinition(id = variableName.get,
+            path = s"$schemaId.${variableName.get}",
             dataTypes = Some(Seq(dataType)),
             isPrimitive = false,
             isChoiceRoot = false,
@@ -179,6 +186,9 @@ object RedCapUtil {
  * */
 object RedCapDataDictionaryColumns {
   val VARIABLE_FIELD_NAME = "Variable / Field Name"
+  // When exporting the Data Dictionary file from REDCap, it is encoded with 'UTF-8 with BOM'.
+  // The following variable is used to store the name including the BOM for 'Variable / Field Name' column.
+  val VARIABLE_FIELD_NAME_WITH_BOM = "\uFEFF\"Variable / Field Name\""
   val FORM_NAME = "Form Name"
   val FIELD_TYPE = "Field Type"
   val FIELD_LABEL = "Field Label"
