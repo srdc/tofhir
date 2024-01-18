@@ -17,7 +17,6 @@ import akka.util.ByteString
 import io.onfhir.api.Resource
 import io.tofhir.engine.util.{CsvUtil, RedCapUtil}
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
-import org.json4s.JsonAST.JObject
 
 class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
@@ -147,21 +146,22 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
   }
 
   /**
+   * Get structure definition resource of the schema
    * @param projectId project containing the schema definition
    * @param id id of the requested schema
    * @return Structure definition of the schema
    */
-  def getSchemaWithStructureDefinition(projectId: String, id: String): Future[Option[JObject]] = {
+  def getSchemaWithStructureDefinition(projectId: String, id: String): Future[Option[Resource]] = {
     schemaRepository.getSchemaAsStructureDefinition(projectId, id)
   }
 
   /**
    * Save the schema by using its StructureDefinition
    * @param projectId
-   * @param schemaDefinition schema definition in the form of Structure Definition
+   * @param structureDefinitionResource schema definition in the form of Structure Definition resource
    * @return
    */
-  def createSchemaFromStructureDefinition(projectId: String, schemaDefinition: Resource): Future[SchemaDefinition] = {
-    schemaRepository.saveSchemaByStructureDefinition(projectId, schemaDefinition)
+  def createSchemaFromStructureDefinition(projectId: String, structureDefinitionResource: Resource): Future[SchemaDefinition] = {
+    schemaRepository.saveSchemaByStructureDefinition(projectId, structureDefinitionResource)
   }
 }
