@@ -16,7 +16,6 @@ import io.tofhir.server.common.model.{BadRequest, ResourceNotFound, ToFhirRestCa
 import io.tofhir.server.endpoint.MappingContextEndpoint.ATTACHMENT
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.onfhir.api.Resource
-import io.onfhir.api.validation.ProfileRestrictions
 
 class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
@@ -29,7 +28,7 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
         parameterMap { queryParams =>
           queryParams.get("url") match {
             case Some(url) => getSchemaByUrl(projectId, url)
-            case None => getAllSchemas(request) ~ createSchema(projectId, queryParams.getOrElse("format", "SimpleStructureDefinition")) // Operations on all schemas
+            case None => getAllSchemas(request) ~ createSchema(projectId, queryParams.getOrElse("format", SchemaFormats.SIMPLE_STRUCTURE_DEFINITION)) // Operations on all schemas
           }
         }
       } ~ pathPrefix(SEGMENT_INFER) { // infer a schema
@@ -51,7 +50,7 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
   private def createSchema(projectId: String, format: String): Route = {
     post { // Create a new schema definition
       // If the schema is in the form of StructureDefinition, convert into SimpleStructureDefinition and save
-      if (format == "StructureDefinition") {
+      if (format == SchemaFormats.STRUCTURE_DEFINITION) {
         entity(as[Resource]) { schemaStructureDefinition =>
           complete {
             service.createSchemaFromStructureDefinition(projectId, schemaStructureDefinition)
@@ -75,8 +74,9 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
       parameterMap { queryParams =>
         complete {
           // Requested format of the schema: "StructureDefinition" or "SimpleStructureDefinition"
-          val format: String = queryParams.getOrElse("format", "SimpleStructureDefinition")
-          if(format == "StructureDefinition"){
+          val format: String = queryParams.getOrElse("format", SchemaFormats.SIMPLE_STRUCTURE_DEFINITION)
+          // Send structure definition for the user to export
+          if(format == SchemaFormats.STRUCTURE_DEFINITION){
             service.getSchemaWithStructureDefinition(projectId, id) map {
               case Some(schemaStructureDefinition) => StatusCodes.OK -> schemaStructureDefinition
               case None => {
@@ -84,6 +84,7 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
               }
             }
           }
+            // Send simple structure definition for general use in frontend
           else {
             service.getSchema(projectId, id) map {
               case Some(schemaSimpleStructureDefinition) => StatusCodes.OK -> schemaSimpleStructureDefinition
@@ -171,5 +172,10 @@ object SchemaDefinitionEndpoint {
   val SEGMENT_SCHEMAS = "schemas"
   val SEGMENT_INFER = "infer"
   val SEGMENT_REDCAP = "redcap"
+}
+
+object SchemaFormats{
+  val STRUCTURE_DEFINITION = "StructureDefinition"
+  val SIMPLE_STRUCTURE_DEFINITION = "SimpleStructureDefinition"
 }
 
