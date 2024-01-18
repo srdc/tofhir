@@ -4,7 +4,9 @@ import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.util.ByteString
-import org.json4s.{Formats, Serialization, jackson}
+import org.json4s.{Formats, MappingException, Serialization, jackson}
+
+import java.lang.reflect.InvocationTargetException
 
 /**
  * Automatic to and from JSON marshalling/unmarshalling using an in-scope *Json4s* protocol.
@@ -54,11 +56,11 @@ trait Json4sSupport {
   implicit def unmarshaller[A: Manifest](implicit serialization: Serialization, formats: Formats): FromEntityUnmarshaller[A] =
     jsonStringUnmarshaller
       .map(s => serialization.read(s))
-//      .recover { _ =>
-//        _ => {
-//          case MappingException(_, ite: InvocationTargetException) => throw ite.getCause
-//        }
-//      }
+      .recover { _ =>
+        _ => {
+          case MappingException(_, ite: InvocationTargetException) => throw ite.getCause
+        }
+      }
 
   /**
    * `A` => HTTP entity

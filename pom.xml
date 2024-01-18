@@ -100,13 +100,13 @@
         <scala-logging.version>3.9.5</scala-logging.version>
         <onfhir.version>3.3-SNAPSHOT</onfhir.version>
         <onfhir-template-engine.version>1.1-SNAPSHOT</onfhir-template-engine.version>
-        <json4s.version>4.1.0-M4</json4s.version>
+        <json4s.version>3.7.0-M11</json4s.version>
         <com.fasterxml.version>2.15.1</com.fasterxml.version>
         <scalatest.version>3.2.17</scalatest.version>
         <spark.version>3.5.0</spark.version>
         <jackson.version>2.15.1</jackson.version>
-        <logback.version>1.4.14</logback.version>
-        <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+        <logback.version>1.2.11</logback.version>
+        <logstash-logback-encoder.version>7.2</logstash-logback-encoder.version>
         <typesafe.config.version>1.4.3</typesafe.config.version>
         <mockito.version>1.17.30</mockito.version>
         <postgres.version>42.7.0</postgres.version>
@@ -269,11 +269,6 @@
 <!--                    </exclusion>-->
 <!--                </exclusions>-->
             </dependency>
-            <dependency>
-                <groupId>org.json4s</groupId>
-                <artifactId>json4s-ext_${scala.binary.version}</artifactId>
-                <version>${json4s.version}</version>
-            </dependency>
 
             <!-- These are required for Spark and resolving among different versions coming from akka and json4s -->
             <!-- Dependency from jackson-dataformat-csv and logstash-logback-encoder-->
@@ -336,16 +331,6 @@
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
                 <version>${logback.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-access</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>log4j-over-slf4j</artifactId>
-                <version>2.0.7</version>
             </dependency>
             <dependency>
                 <groupId>net.logstash.logback</groupId>

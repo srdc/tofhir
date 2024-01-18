@@ -3,7 +3,7 @@ package io.tofhir.log.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.log.server.config.{SparkConfig, ToFhirLogServerConfig}
 import io.tofhir.server.common.model.ResourceNotFound
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Encoders, Row}
@@ -66,7 +66,7 @@ class ExecutionService() extends LazyLogging {
               Row.fromSeq(Row.unapplySeq(mappingTaskLog.head).get :+ rowError.toSeq)
             })(
               // Define a new schema for the resulting rows and create an encoder for it. We will add a "error_logs" column to mapping tasks logs that contains related error logs.
-              RowEncoder.encoderFor(mappingTasksLogs.schema.add("error_logs", ArrayType(
+              ExpressionEncoder(mappingTasksLogs.schema.add("error_logs", ArrayType(
                 new StructType()
                   .add("errorCode", StringType)
                   .add("errorDesc", StringType)
@@ -138,7 +138,7 @@ class ExecutionService() extends LazyLogging {
             val results: Seq[String] = rows.map(row => row.get(row.fieldIndex("result")).toString)
             val status: String = ExecutionService.getErrorStatusOfExecution(results)
             Row.fromSeq(Seq(key, mappingUrls, timestamp, status))
-          })(RowEncoder.encoderFor(StructType(
+          })(ExpressionEncoder(StructType(
             StructField("id", StringType) ::
               StructField("mappingUrls", ArrayType(StringType)) ::
               StructField("startTime", StringType) ::

@@ -2,7 +2,6 @@ package io.tofhir.engine.util
 
 import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirRepositorySinkSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, FixedTokenAuthenticationSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SqlSource, SqlSourceSettings}
 import org.json4s.{Formats, ShortTypeHints}
-import org.json4s.ext.EnumNameSerializer
 import org.json4s.jackson.Serialization
 
 import java.nio.charset.StandardCharsets
