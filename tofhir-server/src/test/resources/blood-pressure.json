@@ -1,0 +1,112 @@
+{
+  "id": "blood-pressure-schema",
+  "resourceType": "StructureDefinition",
+  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-hsjd-blood-pressure",
+  "name": "blood-pressure-schema",
+  "status": "draft",
+  "fhirVersion": "4.0.1",
+  "kind": "logical",
+  "abstract": false,
+  "type": "Ext-plt1-hsjd-blood-pressure",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element",
+  "derivation": "specialization",
+  "differential": {
+    "element": [
+      {
+        "id": "Ext-plt1-hsjd-blood-pressure",
+        "path": "Ext-plt1-hsjd-blood-pressure",
+        "min": 0,
+        "max": "*",
+        "type": [
+          {
+            "code": "Element"
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-hsjd-blood-pressure.pid",
+        "path": "Ext-plt1-hsjd-blood-pressure.pid",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-hsjd-blood-pressure.time",
+        "path": "Ext-plt1-hsjd-blood-pressure.time",
+        "min": 1,
+        "max": "1",
+        "type": [
+          {
+            "code": "dateTime",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/dateTime"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-hsjd-blood-pressure.unit",
+        "path": "Ext-plt1-hsjd-blood-pressure.unit",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "code",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-hsjd-blood-pressure.episodeId",
+        "path": "Ext-plt1-hsjd-blood-pressure.episodeId",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "id",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-hsjd-blood-pressure.systolic",
+        "path": "Ext-plt1-hsjd-blood-pressure.systolic",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "string",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/string"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Ext-plt1-hsjd-blood-pressure.diastolic",
+        "path": "Ext-plt1-hsjd-blood-pressure.diastolic",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "string",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/string"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
