@@ -3,7 +3,7 @@ package io.tofhir.server.project
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import io.onfhir.api.FHIR_FOUNDATION_RESOURCES
+import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, Resource}
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.model.{FhirMapping, FhirMappingSource, FileSystemSource, FileSystemSourceSettings, SqlSource, SqlSourceSettings}
 import io.tofhir.engine.util.FileUtils
@@ -15,6 +15,8 @@ import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils.FileExtensions
+import io.tofhir.server.endpoint.SchemaFormats
+
 import java.io.File
 import java.sql.{Connection, DriverManager, Statement}
 import scala.io.{BufferedSource, Source}
@@ -76,6 +78,8 @@ class SchemaEndpointTest extends BaseEndpointTest {
   // fifth schema with the same url as the second schema, to be rejected
   val schema5: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", `type` = "ty5", name = "name5", rootDefinition = None, fieldDefinitions = None)
 
+  // blood pressure schema for import test (Does not include root and field definitions)
+  val bloodPressureSchema: SchemaDefinition = SchemaDefinition(url = "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-hsjd-blood-pressure", `type` = "blood-pressure-schema", id = "blood-pressure-schema", name = "blood-pressure-schema", rootDefinition = None, fieldDefinitions = None)
 
   // mapping using schema2
   val mapping: FhirMapping = FhirMapping(id = "mapping", url = "http://example.com/mapping", name = "mapping", source = Seq(FhirMappingSource(alias="test",url = "https://example.com/fhir/StructureDefinition/schema2")), context = Map.empty, mapping = Seq.empty)
@@ -378,6 +382,72 @@ class SchemaEndpointTest extends BaseEndpointTest {
         response should include("Type: https://tofhir.io/errors/BadRequest")
       }
     }
+
+    "get structure definition of a schema to export" in {
+      // get a schema structure definition by defining format parameter
+      Get(s"/tofhir/projects/${projectId}/schemas/${schema3.id}?format=${SchemaFormats.STRUCTURE_DEFINITION}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schemaResource: Resource = JsonMethods.parse(responseAs[String]).extract[Resource]
+        // Create a map from resource json
+        var schemaResourceMap: Map[String, Any] = Map.empty
+        schemaResource.values.foreach((tuple) => schemaResourceMap += tuple._1 -> tuple._2)
+        // Validate some fields of the schema
+        schemaResourceMap should contain allOf(
+          "id" -> schema3.id,
+          "url" -> schema3.url,
+          "name" -> schema3.name,
+          "resourceType" -> SchemaFormats.STRUCTURE_DEFINITION,
+          "type" -> schema3.`type`,
+          "fhirVersion" -> "4.0.1",
+          "kind" -> "logical",
+          "baseDefinition" -> "http://hl7.org/fhir/StructureDefinition/Element",
+          "derivation" -> "specialization",
+          "status" -> "draft",
+          "abstract" -> false
+        )
+
+        // Extract the elements of the StructureDefinition to a List
+        val differential: Map[String, List[Any]] = schemaResourceMap.get("differential") match {
+          case Some(value) => value.asInstanceOf[Map[String, List[Any]]]
+          case None => Map.empty
+        }
+        // Validate if fieldDefinitions length of the SchemaDefinition and element length of the StructureDefinition are the same
+        differential.get("element") match {
+          case Some(elementList) => elementList should have length(3)
+          case None => fail("Field definitions are missing in the structure definition of the schema.")
+        }
+      }
+
+      // get a schema with invalid id by a url including format parameter
+      Get(s"/tofhir/projects/${projectId}/schemas/123123?format=${SchemaFormats.STRUCTURE_DEFINITION}") ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "import schema as structure definition" in {
+      // read the StructureDefinition of the schema from file
+      val schemaResource: Some[Resource] = Some(FileOperations.readJsonContentAsObject[Resource](FileOperations.getFileIfExists(getClass.getResource("/blood-pressure.json").getPath)))
+
+      // create a schema by using StructureDefinition
+      Post(s"/tofhir/projects/${projectId}/schemas?format=${SchemaFormats.STRUCTURE_DEFINITION}", HttpEntity(ContentTypes.`application/json`, writePretty(schemaResource))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
+      // validate if the schema is imported correctly
+      Get(s"/tofhir/projects/${projectId}/schemas?url=${bloodPressureSchema.url}") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual bloodPressureSchema.url
+        schema.name shouldEqual bloodPressureSchema.name
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 6
+        fieldDefinitions.head.path shouldEqual "Ext-plt1-hsjd-blood-pressure.pid"
+        fieldDefinitions.last.path shouldEqual "Ext-plt1-hsjd-blood-pressure.diastolic"
+      }
+    }
+
   }
 
   /**
