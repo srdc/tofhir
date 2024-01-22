@@ -365,7 +365,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     }
 
     // Create structureDefinition from the resource
-    val structureDefinition: ProfileRestrictions = fhirFoundationResourceParser.parseStructureDefinition(structureDefinitionResource)
+    val structureDefinition: ProfileRestrictions = fhirFoundationResourceParser.parseStructureDefinition(structureDefinitionResource, includeElementMetadata = true)
     // Generate an Id if id is missing
     val schemaId = structureDefinition.id.getOrElse(UUID.randomUUID().toString)
 
