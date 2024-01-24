@@ -9,6 +9,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import java.io.File
 import java.time.LocalDateTime
+import scala.collection.mutable
 
 /**
  * Reader from file system
@@ -38,8 +39,8 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
 
     val isDistinct = mappingSource.options.get("distinct").contains("true")
 
-    //index of the row being read by Spark
-    var rowIndex: Integer = 0
+    // keeps the names of processed files by Spark
+    val processedFiles: mutable.HashSet[String] =mutable.HashSet.empty
     //Based on source type
     val resultDf = mappingSource.sourceType match {
         case SourceFileFormats.CSV | SourceFileFormats.TSV =>
@@ -72,12 +73,8 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               .schema(csvSchema.orNull)
               .csv(finalPath)
               // add a dummy column called 'filename' using a udf function to print a log when the data reading is
-              // started for a file. indexFn function, which is a parameter of logStartOfDataReading function, increments
-              // rowIndex and returns it for each row
-              .withColumn("filename",logStartOfDataReading(indexFn = () => {
-                rowIndex += 1
-                rowIndex
-              },logger = logger,jobId =  jobId)(input_file_name))
+              // started for a file.
+              .withColumn("filename",logStartOfDataReading(processedFiles,logger = logger,jobId =  jobId)(input_file_name))
           else
             spark.read
               .option("enforceSchema", false) //Enforce schema should be false
@@ -90,24 +87,14 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
           if(sourceSettings.asStream)
             spark.readStream.options(mappingSource.options).schema(schema.orNull).json(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file
-              // indexFn function, which is a parameter of logStartOfDataReading function, increments rowIndex and
-              // returns it for each row
-              .withColumn("filename", logStartOfDataReading(indexFn = () => {
-                rowIndex += 1
-                rowIndex
-              }, logger = logger, jobId = jobId)(input_file_name))
+              .withColumn("filename", logStartOfDataReading(processedFiles, logger = logger, jobId = jobId)(input_file_name))
           else
             spark.read.options(mappingSource.options).schema(schema.orNull).json(finalPath)
         case SourceFileFormats.PARQUET =>
           if(sourceSettings.asStream)
             spark.readStream.options(mappingSource.options).schema(schema.orNull).parquet(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file
-              // indexFn function, which is a parameter of logStartOfDataReading function, increments rowIndex and
-              // returns it for each row
-              .withColumn("filename", logStartOfDataReading(indexFn = () => {
-                rowIndex += 1
-                rowIndex
-              }, logger = logger, jobId = jobId)(input_file_name))
+              .withColumn("filename", logStartOfDataReading(processedFiles, logger = logger, jobId = jobId)(input_file_name))
           else
             spark.read.options(mappingSource.options).schema(schema.orNull).parquet(finalPath)
         case _ => throw new NotImplementedError()
@@ -121,17 +108,19 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
   /**
    * A user-defined function i.e. udf to print a log when data reading is started for a file. udf takes the
    * name of input file being read and returns it after logging a message to indicate that data reading is started and
-   * it may take a while. It makes use of the given indexFn function to decide whether to print a log. If it returns 'one'
-   * i.e. the first record, the log is printed.
-   * @param indexFn A function which returns the index of current row which is being read by Spark
+   * it may take a while. It makes use of the given processedFiles set to decide whether to print a log. If it does not
+   * contain the file name i.e. Spark just started to process it, the log is printed.
+   * @param processedFiles The set of file names processed by Spark
    * @param logger  Logger instance
    * @param jobId   The identifier of mapping job which executes the mapping
    * @return a user-defined function to print a log when data reading is started for a file
    * */
-  private def logStartOfDataReading(indexFn: () => Integer, logger: Logger, jobId: Option[String]) = udf((fileName: String) => {
-    val index = indexFn()
-    if (index == 1) {
+  private def logStartOfDataReading(processedFiles: mutable.HashSet[String], logger: Logger, jobId: Option[String]) = udf((fileName: String) => {
+    // if the file is not processed yet, print the log and add it to the processed files set
+    if (!processedFiles.contains(fileName)) {
       logger.info(s"Reading data from $fileName for the mapping job ${jobId.getOrElse("")}. This may take a while...")
+      // add it to the set
+      processedFiles.add(fileName)
     }
     fileName
   })
