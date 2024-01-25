@@ -78,9 +78,6 @@ class SchemaEndpointTest extends BaseEndpointTest {
   // fifth schema with the same url as the second schema, to be rejected
   val schema5: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", `type` = "ty5", name = "name5", rootDefinition = None, fieldDefinitions = None)
 
-  // blood pressure schema for import test (Does not include root and field definitions)
-  val bloodPressureSchema: SchemaDefinition = SchemaDefinition(url = "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-hsjd-blood-pressure", `type` = "blood-pressure-schema", id = "blood-pressure-schema", name = "blood-pressure-schema", rootDefinition = None, fieldDefinitions = None)
-
   // mapping using schema2
   val mapping: FhirMapping = FhirMapping(id = "mapping", url = "http://example.com/mapping", name = "mapping", source = Seq(FhirMappingSource(alias="test",url = "https://example.com/fhir/StructureDefinition/schema2")), context = Map.empty, mapping = Seq.empty)
 
@@ -426,6 +423,10 @@ class SchemaEndpointTest extends BaseEndpointTest {
     }
 
     "import schema as structure definition" in {
+      // blood pressure schema information for the test
+      val bloodPressureSchemaUrl: String =  "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-hsjd-blood-pressure"
+      val bloodPressureSchemaName: String = "blood-pressure-schema"
+
       // read the StructureDefinition of the schema from file
       val schemaResource: Some[Resource] = Some(FileOperations.readJsonContentAsObject[Resource](FileOperations.getFileIfExists(getClass.getResource("/blood-pressure.json").getPath)))
 
@@ -435,12 +436,12 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
 
       // validate if the schema is imported correctly
-      Get(s"/tofhir/projects/${projectId}/schemas?url=${bloodPressureSchema.url}") ~> route ~> check {
+      Get(s"/tofhir/projects/${projectId}/schemas?url=${bloodPressureSchemaUrl}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved schema
         val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
-        schema.url shouldEqual bloodPressureSchema.url
-        schema.name shouldEqual bloodPressureSchema.name
+        schema.url shouldEqual bloodPressureSchemaUrl
+        schema.name shouldEqual bloodPressureSchemaName
         val fieldDefinitions = schema.fieldDefinitions.get
         fieldDefinitions.size shouldEqual 6
         fieldDefinitions.head.path shouldEqual "Ext-plt1-hsjd-blood-pressure.pid"

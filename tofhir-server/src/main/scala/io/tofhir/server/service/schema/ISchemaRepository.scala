@@ -72,10 +72,11 @@ trait ISchemaRepository extends IFhirSchemaLoader {
   def deleteProjectSchemas(projectId: String): Unit
 
   /**
+   * Retrieve the Structure Definition of the schema identified by its id.
    *
    * @param projectId Project containing the schema definition
    * @param id Identifier of the schema definition
-   * @return Structure definition of the schema
+   * @return Structure definition of the schema converted into StructureDefinition Resource
    */
   def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[Resource]]
 
@@ -83,9 +84,9 @@ trait ISchemaRepository extends IFhirSchemaLoader {
   /**
    * Save the schema by using its Structure Definition
    *
-   * @param projectId
+   * @param projectId Project containing the schema definition
    * @param structureDefinitionResource The resource of the structure definition
-   * @return
+   * @return the SchemaDefinition of the created schema
    */
   def saveSchemaByStructureDefinition(projectId: String, structureDefinitionResource: Resource): Future[SchemaDefinition]
 

@@ -336,9 +336,11 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   }
 
   /**
+   * Retrieve the Structure Definition of the schema identified by its id.
+   *
    * @param projectId Project containing the schema definition
    * @param id        Identifier of the schema definition
-   * @return          Structure definition of the schema
+   * @return          Structure definition of the schema converted into StructureDefinition Resource
    */
   override def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[Resource]] = {
     getSchema(projectId, id).map {
@@ -351,9 +353,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
 
   /**
    * Save a schema by using directly its structure definition resource
-   * @param projectId
+   * Throws:
+   *  InitializationException – If there is a problem in given profile or value set definitions of the schema structure definition
+   *
+   * @param projectId Identifier of the project in which the schema will be created
    * @param structureDefinitionResource Structure definition resource of the schema
-   *  @return
+   * @return the SchemaDefinition of the created schema
    */
   override def saveSchemaByStructureDefinition(projectId: String, structureDefinitionResource: Resource): Future[SchemaDefinition] = {
     // Validate the resource
@@ -383,9 +388,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
 
   /**
    * Checks if ID of the schema is unique in the project and url is unique in the program
-   * @param projectId
-   * @param schemaId
-   * @param schemaUrl
+   * Throws:
+   *  {@link AlreadyExists} with the code 409 if the schema id is not unique in the project or the schema url is not unique in the program
+   *
+   * @param projectId Identifier of the project to check schema ID's in it
+   * @param schemaId Identifier of the schema
+   * @param schemaUrl Url of the schema
    */
   private def checkIfSchemaIsUnique(projectId: String, schemaId: String, schemaUrl: String): Unit = {
     if (schemaDefinitions.contains(projectId) && schemaDefinitions(projectId).contains(schemaId)) {

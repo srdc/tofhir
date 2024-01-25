@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.common.model.SchemaDefinition
+import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
 import io.tofhir.server.model.Json4sSupport._
@@ -47,6 +47,12 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
     }
   }
 
+  /**
+   * Create a new schema with the given body
+   * @param projectId Id of the project in which the schemas will be created
+   * @param format format of the schema in the request, there are two options StructureDefinition and SimpleStructureDefinition
+   * @return the SchemaDefinition of the created schema
+   */
   private def createSchema(projectId: String, format: String): Route = {
     post { // Create a new schema definition
       // If the schema is in the form of StructureDefinition, convert into SimpleStructureDefinition and save
@@ -77,7 +83,7 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
           val format: String = queryParams.getOrElse("format", SchemaFormats.SIMPLE_STRUCTURE_DEFINITION)
           // Send structure definition for the user to export
           if(format == SchemaFormats.STRUCTURE_DEFINITION){
-            service.getSchemaWithStructureDefinition(projectId, id) map {
+            service.getSchemaAsStructureDefinition(projectId, id) map {
               case Some(schemaStructureDefinition) => StatusCodes.OK -> schemaStructureDefinition
               case None => {
                 throw ResourceNotFound("Schema not found", s"Schema definition with name $id not found")
@@ -174,6 +180,9 @@ object SchemaDefinitionEndpoint {
   val SEGMENT_REDCAP = "redcap"
 }
 
+/**
+ * The schema formats available for POST and GET schema methods
+ */
 object SchemaFormats{
   val STRUCTURE_DEFINITION = "StructureDefinition"
   val SIMPLE_STRUCTURE_DEFINITION = "SimpleStructureDefinition"
