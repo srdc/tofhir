@@ -8,6 +8,7 @@ servers:
   - url: http://localhost:8085/tofhir
     description: Local deployment of the toFHIR server
 
+
 tags:
   - name: "Terminology"
     description: "Represents a logical grouping for terminolgy entities with concept maps and code systems"
@@ -30,6 +31,8 @@ tags:
 
 
 paths:
+
+  # Beginning of the Terminology tag
   /terminologies:
     get:
       tags:
@@ -45,6 +48,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TerminologySystem"
+
     post:
       tags:
         - "Terminology"
@@ -67,6 +71,7 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '409':
           $ref: '#/components/responses/409AlreadyExists'
+
   /terminologies/{terminologyId}:
     get:
       tags:
@@ -84,6 +89,7 @@ paths:
                 $ref: "#/components/schemas/TerminologySystem"
         '404':
           $ref: "#/components/responses/404NotFound"
+
     put:
       tags:
         - "Terminology"
@@ -108,6 +114,7 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '404':
           $ref: '#/components/responses/404NotFound'
+
     delete:
       tags:
         - "Terminology"
@@ -122,6 +129,7 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '404':
           $ref: '#/components/responses/404NotFound'
+
   /terminologies/{terminologyId}/concept-maps/:
     get:
       tags:
@@ -158,6 +166,7 @@ paths:
                 $ref: "#/components/schemas/TerminologyConceptMap"
         '404':
           $ref: "#/components/responses/404NotFound"
+
   /terminologies/{terminologyId}/concept-maps/{conceptMapId}/content:
     get:
       tags:
@@ -178,6 +187,7 @@ paths:
                 example: "source_system,source_code,target_system,target_code,target_display,equivalence\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNE,http://snomed.info/sct,309068002,Specimen from skin,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323008,Pus specimen,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323009,Pus specimen 2,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,BULLA,http://snomed.info/sct,258482009,Pus specimen 2,narrower"
         '404':
           $ref: "#/components/responses/404NotFound"
+
     post:
       tags:
         - "Terminology"
@@ -208,6 +218,7 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '404':
           $ref: "#/components/responses/404NotFound"
+
   /terminologies/{terminologyId}/code-systems:
     get:
       tags:
@@ -227,6 +238,7 @@ paths:
                   $ref: "#/components/schemas/TerminologyCodeSystem"
         '404':
           $ref: "#/components/responses/404NotFound"
+
   /terminologies/{terminologyId}/code-systems/{codeSystemId}:
     get:
       tags:
@@ -245,6 +257,7 @@ paths:
                 $ref: "#/components/schemas/TerminologyCodeSystem"
         '404':
           $ref: "#/components/responses/404NotFound"
+
   /terminologies/{terminologyId}/code-systems/{codeSystemId}/content:
     get:
       tags:
@@ -265,6 +278,7 @@ paths:
                 example: "code,display,fr,de\n309068002,Specimen from skin,Spécimen de peau,Probe von der Haut\n119323008,Pus specimen,Spécimen de pus,Eiterprobe"
         '404':
           $ref: "#/components/responses/404NotFound"
+
     post:
       tags:
         - "Terminology"
@@ -296,6 +310,7 @@ paths:
         '404':
           $ref: "#/components/responses/404NotFound"
 
+  # Beginning of the Project tag
   /projects:
     get:
       tags:
@@ -311,6 +326,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Project"
+
     post:
       tags:
         - "Project"
@@ -353,6 +369,7 @@ paths:
                 $ref: "#/components/schemas/Project"
         '404':
           $ref: '#/components/responses/404NotFound'
+
     patch:
       tags:
         - "Project"
@@ -373,6 +390,7 @@ paths:
           $ref: '#/components/responses/404NotFound'
         '415':
           $ref: '#/components/responses/415UnsupportedMediaType'
+
     delete:
       tags:
         - "Project"
@@ -386,6 +404,7 @@ paths:
         '404':
           $ref: '#/components/responses/404NotFound'
 
+  # Beginning the Schema Tag
   /projects/{projectId}/schemas:
     get:
       tags:
@@ -405,10 +424,11 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SchemaDefinition"
+
     post:
       tags:
         - Schema
-      summary: Creates the schema in a project
+      summary: Creates the given schema in a project
       operationId: createSchema
       parameters:
         - $ref: '#/components/parameters/projectId'
@@ -419,8 +439,13 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: "#/components/schemas/SchemaDefinition"
                 - $ref: "#/components/schemas/Resource"
+                - $ref: "#/components/schemas/SchemaDefinition"
+            examples:
+              SimpleStructureDefinitionExample:
+                $ref: "#/components/examples/SimpleStructureDefinitionExample"
+              StructureDefinitionExample:
+                $ref: "#/components/examples/StructureDefinitionExample"
         description: Schema data to be created
       responses:
         '200':
@@ -429,11 +454,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SchemaDefinition"
+
   /projects/{projectId}/schemas/{schemaId}:
     get:
       tags:
         - Schema
-      summary: Gets the specified schema in a project
+      summary: Gets the specified schema in the project
       operationId: getSchema
       parameters:
         - $ref: '#/components/parameters/projectId'
@@ -448,6 +474,7 @@ paths:
                 $ref: "#/components/schemas/SchemaDefinition"
         '404':
           $ref: '#/components/responses/404NotFound'
+
     put:
       tags:
         - Schema
@@ -474,6 +501,7 @@ paths:
           $ref: '#/components/responses/400BadRequest'
         '404':
           $ref: '#/components/responses/404NotFound'
+
     delete:
       tags:
         - Schema
@@ -487,11 +515,12 @@ paths:
           description: Successful operation
         '404':
           $ref: '#/components/responses/404NotFound'
+
   /projects/{projectId}/schemas/infer:
     post:
       tags:
         - Schema
-      summary: Route to infer a schema
+      summary: Infers a schema from the given data
       operationId: inferSchema
       parameters:
         - $ref: "#/components/parameters/projectId"
@@ -511,11 +540,12 @@ paths:
                 $ref: "#/components/schemas/SchemaDefinition"
         '400':
           $ref: '#/components/responses/400BadRequest'
+
   /projects/{projectId}/schemas/redcap:
     post:
       tags:
         - Schema
-      summary: Route to import a REDCap data dictionary file
+      summary: Gets the REDCap Data Dictionary file
       operationId: importREDCapDataDictionary
       parameters:
         - $ref: '#/components/parameters/projectId'
@@ -543,11 +573,12 @@ paths:
         '400':
           $ref: '#/components/responses/400BadRequest'
 
+  # Beginning of the Mappings tag
   /projects/{projectId}/mappings:
     get:
       tags:
         - Mapping
-      summary: Get all mappings for a project
+      summary: Gets all mappings in the project
       parameters:
         - $ref: '#/components/parameters/projectId'
       responses:
@@ -561,10 +592,11 @@ paths:
                   $ref: "#/components/schemas/FhirMapping"
         '400':
           $ref: '#/components/responses/400BadRequest'
+
     post:
       tags:
         - Mapping
-      summary: Create a mapping in a project
+      summary: Creates a mapping in the project
       parameters:
         - $ref: '#/components/parameters/projectId'
       requestBody:
@@ -587,11 +619,12 @@ paths:
           $ref: '#/components/responses/415UnsupportedMediaType'
         '409':
           $ref: '#/components/responses/409AlreadyExists'
+
   /projects/{projectId}/mappings/{mappingId}:
     get:
       tags:
         - Mapping
-      summary: Gets a specified mapping
+      summary: Gets the specified mapping
       parameters:
         - $ref: '#/components/parameters/projectId'
         - $ref: '#/components/parameters/mappingId'
@@ -610,7 +643,7 @@ paths:
     put:
       tags:
         - Mapping
-      summary: Update the mapping with the given body
+      summary: Updates the mapping with the given body
       parameters:
         - $ref: '#/components/parameters/projectId'
         - $ref: '#/components/parameters/mappingId'
@@ -649,12 +682,12 @@ paths:
         '404':
           $ref: '#/components/responses/404NotFound'
 
-
+  # Beginning of the Job tag
   /projects/{projectId}/jobs:
     get:
       tags:
         - Job
-      summary: Get all mapping jobs
+      summary: Gets all mapping jobs in the project
       parameters:
         - $ref: "#/components/parameters/projectId"
       responses:
@@ -668,10 +701,11 @@ paths:
                   $ref: "#/components/schemas/FhirMappingJob"
         '400':
           $ref: '#/components/responses/400BadRequest'
+
     post:
       tags:
         - Job
-      summary: Create a new mapping job
+      summary: Creates a new mapping job
       parameters:
         - $ref: "#/components/parameters/projectId"
       requestBody:
@@ -697,7 +731,7 @@ paths:
     get:
       tags:
         - Job
-      summary: Get a specific mapping job
+      summary: Gets the specified mapping job
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -710,10 +744,11 @@ paths:
                 $ref: "#/components/schemas/FhirMappingJob"
         '404':
           $ref: '#/components/responses/404NotFound'
+
     put:
       tags:
         - Job
-      summary: Update a mapping job
+      summary: Updates the mapping job with the given body
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -735,7 +770,7 @@ paths:
     delete:
       tags:
         - Job
-      summary: Delete a mapping job
+      summary: Deletes the mapping job
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -751,7 +786,7 @@ paths:
     post:
       tags:
         - Job
-      summary: Run a mapping job
+      summary: Runs the mapping job
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: '#/components/parameters/jobId'
@@ -770,7 +805,7 @@ paths:
     get:
       tags:
         - Job
-      summary: Check whether a mapping job is running
+      summary: Checks whether the mapping job is running or not
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: '#/components/parameters/jobId'
@@ -784,7 +819,7 @@ paths:
     post:
       tags:
         - Job
-      summary: Test a mapping with mapping job configurations
+      summary: Tests the mapping job with the given configurations
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -797,11 +832,12 @@ paths:
         '200':
           description: Test completed successfully
 
+  # Beginning of the Execution tag
   /projects/{projectId}/jobs/{jobId}/executions:
     get:
       tags:
         - Execution
-      summary: Get executions of a mapping job
+      summary: Gets executions of the mapping job
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -839,10 +875,11 @@ paths:
             application/json:
               schema:
                 type: object
+
     delete:
       tags:
         - Execution
-      summary: Stop executions of a mapping job
+      summary: Stops executions of the mapping job
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -857,7 +894,7 @@ paths:
     get:
       tags:
         - Execution
-      summary: Get details of a specific job execution
+      summary: Gets the details of the specified execution
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -872,7 +909,7 @@ paths:
     get:
       tags:
         - Execution
-      summary: Get execution logs
+      summary: Gets execution logs
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -887,7 +924,7 @@ paths:
     post:
       tags:
         - Execution
-      summary: Continue a job execution
+      summary: Continues the job execution
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -900,11 +937,12 @@ paths:
       responses:
         '200':
           description: Job execution runned successfully
+
   /projects/{projectId}/jobs/{jobId}/executions/{executionId}/stop:
     delete:
       tags:
         - Execution
-      summary: Stop a job execution
+      summary: Stops the job execution
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
@@ -922,16 +960,17 @@ paths:
         - $ref: "#/components/parameters/jobId"
         - $ref: "#/components/parameters/executionId"
         - $ref: "#/components/parameters/mappingUrl"
-      summary: Stop an individual mapping task inside a job
+      summary: Stops the individual mapping task inside the job
       responses:
         '200':
           description: Mapping execution stopped successfully
 
+  # Beginning of the Mapping Context tag
   /projects/{projectId}/mapping-contexts:
     get:
       tags:
         - Mapping Context
-      summary: Get all mapping contexts
+      summary: Gets all mapping contexts in the project
       parameters:
         - $ref: "#/components/parameters/projectId"
       responses:
@@ -947,7 +986,7 @@ paths:
     post:
       tags:
         - Mapping Context
-      summary: Create a new mapping context
+      summary: Creates a new mapping context
       parameters:
         - $ref: "#/components/parameters/projectId"
       requestBody:
@@ -971,7 +1010,7 @@ paths:
     delete:
       tags:
         - Mapping Context
-      summary: Delete a mapping context
+      summary: Deletes the mapping context
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/mappingContextId"
@@ -985,7 +1024,7 @@ paths:
     post:
       tags:
         - Mapping Context
-      summary: Upload a mapping context file
+      summary: Uploads the given mapping context file
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/mappingContextId"
@@ -1007,7 +1046,7 @@ paths:
     get:
       tags:
         - Mapping Context
-      summary: Download a mapping context file
+      summary: Downloads the mapping context file
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/mappingContextId"
@@ -1023,11 +1062,12 @@ paths:
         '404':
           $ref: "#/components/responses/404NotFound"
 
+  # Beginning of the Fhir Definition tag
   /fhir-definitions:
     get:
       tags:
         - Fhir Definition
-      summary: Get FHIR Definitions
+      summary: Gets FHIR Definitions
       parameters:
         - $ref: "#/components/parameters/q"
         - $ref: "#/components/parameters/rtype"
@@ -1048,7 +1088,7 @@ paths:
     post:
       tags:
         - Fhir Definition
-      summary: Validate a FHIR resource
+      summary: Validates the FHIR resource whose validation url is given
       parameters:
         - $ref: "#/components/parameters/fhirValidationUrl"
       requestBody:
@@ -1071,11 +1111,13 @@ paths:
           description: Missing query parameter
         '500':
           description: Proxy request failed
+
+  # Beginning of the Fhir Path Functions tag
   /fhir-path-functions:
     get:
       tags:
         - Fhir Path Functions
-      summary: Returns the documentations of FhirPath functions
+      summary: Returns the documentations of Fhir path functions
       responses:
         '200':
           description: Successful operation
@@ -1088,9 +1130,8 @@ paths:
                   $ref: "#/components/examples/FhirPathFunctionsExample"
 
 
-
-
 components:
+  # Type definitions for the objects used
   schemas:
     TerminologySystem:
       type: object
@@ -1119,6 +1160,7 @@ components:
           items:
             $ref: "#/components/schemas/TerminologyCodeSystem"
           description: "Version of the terminology system"
+
     TerminologyConceptMap:
       type: object
       required:
@@ -1147,6 +1189,7 @@ components:
           type: string
           description: "URL of the target value set"
           example: "http://snomed.info/sct?fhir_vs"
+
     TerminologyCodeSystem:
       type: object
       required:
@@ -1282,6 +1325,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SimpleStructureDefinition'
+
     DataTypeWithProfiles:
       type: "object"
       required:
@@ -1293,6 +1337,7 @@ components:
           type: array
           items:
             type: string
+
     ConstraintDefinition:
       type: object
       required:
@@ -1306,6 +1351,7 @@ components:
           type: string
         isWarning:
           type: boolean
+
     SliceDefinition:
       type: object
       required:
@@ -1321,6 +1367,7 @@ components:
           type: boolean
         rule:
           type: string
+
     SliceDiscriminator:
       type: object
       required:
@@ -1331,6 +1378,7 @@ components:
           type: string
         path:
           type: string
+
     Resource:
       type: object
       required:
@@ -1382,8 +1430,36 @@ components:
             element:
               type: "array"
               items:
-                # FIX THIS
-                $ref: "#/components/schemas/SimpleStructureDefinition"
+                $ref: "#/components/schemas/ElementDefinition"
+
+    ElementDefinition:
+      type: object
+      description: "The definition of an element in a resource or an extension"
+      properties:
+        id:
+          type: string
+        path:
+          type: string
+        min:
+          type: string
+        max:
+          type: string
+        definition:
+          type: string
+        short:
+          type: string
+        type:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              profile:
+                type: array
+                items:
+                  type: string
+
     InferTask:
       type: object
       properties:
@@ -1402,6 +1478,7 @@ components:
         - name
         - sourceSettings
         - sourceContext
+
     DataSourceSettings:
       type: object
       description: Factory class for creating a data source from a JSON object"
@@ -1492,6 +1569,7 @@ components:
               type: boolean
           required:
             - bootstrapServers
+
     MappingBase:
       type: object
       properties:
@@ -1511,6 +1589,7 @@ components:
           description: "Indicates Spark options for the mapping"
       required:
         - jsonClass
+
     FileSystemSource:
       description: "Defines file system source configurations of a mapping in the mapping-job"
       allOf:
@@ -1531,6 +1610,7 @@ components:
               description: "File format of configured file inside of the data folder"
           required:
             - path
+
     SqlSource:
       description: "Defines SQL source configurations of a mapping in the mapping-job"
       allOf:
@@ -1545,6 +1625,7 @@ components:
               type: string
               description: "Query to execute in the database"
               example: "SELECT * FROM table1"
+
     KafkaSource:
       description: "Defines Kafka source configurations of a mapping in the mapping-job"
       allOf:
@@ -1719,7 +1800,6 @@ components:
       required:
         - type
 
-
     FhirMappingJob:
       type: object
       properties:
@@ -1762,6 +1842,7 @@ components:
       oneOf:
         - $ref: "#/components/schemas/FhirRepositorySinkSettings"
         - $ref: "#/components/schemas/FileSystemSinkSettings"
+
     FileSystemSinkSettings:
       type: object
       description: "Settings to write mapped FHIR resources to file system"
@@ -1784,6 +1865,7 @@ components:
       required:
         - jsonClass
         - path
+
     FhirRepositorySinkSettings:
       type: object
       description: "Settings for a FHIR repository to store the mapped resources"
@@ -1839,6 +1921,7 @@ components:
         - clientSecret
         - requiredScopes
         - authzServerTokenEndpoint
+
     BasicAuthenticationSettings:
       type: object
       description: "Security settings for FHIR API access via basic authentication"
@@ -1855,6 +1938,7 @@ components:
       required:
         - username
         - password
+
     FixedTokenAuthenticationSettings:
       type: object
       description: "Security settings for FHIR API access via fixed token"
@@ -1890,6 +1974,7 @@ components:
             $ref: '#/components/schemas/CodeSystemFile'
       required:
         - folderPath
+
     ConceptMapFile:
       type: object
       description: "Metadata for a Concept map file for toFhir local terminology service"
@@ -1914,6 +1999,7 @@ components:
         - conceptMapUrl
         - sourceValueSetUrl
         - targetValueSetUrl
+
     CodeSystemFile:
       type: object
       description: "Metadata for a code system file  for toFhir local terminology service"
@@ -1949,7 +2035,6 @@ components:
                 - $ref: "#/components/schemas/FileSystemSource"
                 - $ref: "#/components/schemas/SqlSource"
                 - $ref: "#/components/schemas/KafkaSource"
-
 
     SchedulingSettings:
       type: object
@@ -2042,10 +2127,7 @@ components:
           items:
             type: string
 
-
-
-
-
+  # HTTP responses for requests
   responses:
     400BadRequest:
       description: "Bad or Invalid request"
@@ -2056,6 +2138,7 @@ components:
     415UnsupportedMediaType:
       description: "Given resource is not a valid application/json instance"
 
+  # Path and query parameters for requests
   parameters:
     projectId:
       in: path
@@ -2066,6 +2149,7 @@ components:
         format: uuid
         pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
       description: "Identifier of the project"
+
     schemaId:
       in: path
       name: "schemaId"
@@ -2075,6 +2159,7 @@ components:
         format: uuid
         pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
       description: "Identifier of the schema"
+
     format:
       in: query
       name: "format"
@@ -2082,6 +2167,7 @@ components:
         type: string
         enum: [ "StructureDefinition", "SimpleStructureDefinition" ]
       description: "Requested format of the schema"
+
     schemaUrl:
       in: query
       name: url
@@ -2090,6 +2176,7 @@ components:
         format: url
       description: "Url of the schema"
       example: "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-anesthesia-observations"
+
     rootUrl:
       in: query
       name: "rootUrl"
@@ -2098,6 +2185,7 @@ components:
         format: url
       required: true
       description: "The root url of schemas to be created"
+
     mappingId:
       in: path
       name: "mappingId"
@@ -2105,6 +2193,7 @@ components:
         type: string
       required: true
       description: "Identifier of the mapping"
+
     jobId:
       in: path
       name: "jobId"
@@ -2112,12 +2201,14 @@ components:
         type: string
       required: true
       description: "Identifier of the job"
+
     executionId:
       name: executionId
       in: path
       required: true
       schema:
         type: string
+
     mappingUrl:
       in: path
       name: "mappingUrl"
@@ -2126,6 +2217,7 @@ components:
         format: url
       required: true
       description: "Url of a mapping"
+
     mappingContextId:
       in: path
       name: "mappingContextId"
@@ -2134,6 +2226,7 @@ components:
         format: file name
       required: true
       description: "Identifier of the mapping context"
+
     terminologyId:
       in: path
       name: "terminologyId"
@@ -2141,6 +2234,7 @@ components:
       schema:
         type: string
       description: "Identifier of the terminology"
+
     conceptMapId:
       in: path
       name: "conceptMapId"
@@ -2148,6 +2242,7 @@ components:
       schema:
         type: string
       description: "Identifier of the concept map"
+
     codeSystemId:
       in: path
       name: "codeSystemId"
@@ -2155,6 +2250,7 @@ components:
       schema:
         type: string
       description: "Identifier of the code system"
+
     q:
       name: q
       in: query
@@ -2162,18 +2258,21 @@ components:
       description: Query parameter
       schema:
         type: string
+
     rtype:
       name: rtype
       in: query
       description: Resource type (required for profiles query)
       schema:
         type: string
+
     profile:
       name: profile
       in: query
       description: Profile URL (required for elements query)
       schema:
         type: string
+
     fhirValidationUrl:
       name: fhirValidationUrl
       in: query
@@ -2182,9 +2281,9 @@ components:
       schema:
         type: string
 
-
-
+  # Examples to use in the swagger api
   examples:
+    # Example for FhirMappingExpression structure
     FhirExpressionExample:
       value:
         name: "result"
@@ -2213,6 +2312,7 @@ components:
               system: http://unitsofmeasure.org
               code: '{{mpp:getConcept(%anstObsConceptMap, %ind, ''target_unit'')}}'
 
+    # Example response for the path: POST, /projects/{projectId}/jobs/{jobId}/test
     FhirValidationExample:
       value:
         resourceType: OperationOutcome
@@ -2226,6 +2326,8 @@ components:
             diagnostics: '[Validating against ''https://aiccelerate.eu/fhir/StructureDefinition/AIC-AnesthesiaObservation''] => Constraint ''dom-6'' is not satisfied for the given value! Constraint Description: ''A resource should have narrative for robust management''. FHIR Path expression: ''text.`div`.exists()'''
             expression:
               - $this
+
+    # Example response for the path: GET, /fhir-path-functions
     FhirPathFunctionsExample:
       value:
         - documentation: Generates an UUID
@@ -2245,3 +2347,141 @@ components:
             - string
           inputType:
             - string
+
+    # A simple structure definition example for schema post
+    SimpleStructureDefinitionExample:
+      value:
+        id: Ext-plt1-condition-test
+        url: https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-condition-test
+        type: Ext-plt1-condition-test
+        name: Ext-plt1-condition-test
+        rootDefinition:
+          id: Ext-plt1-condition-test
+          path: Ext-plt1-condition-test
+          dataTypes:
+            - dataType: Element
+          isPrimitive: false
+          isChoiceRoot: false
+          isArray: false
+          minCardinality: 0
+        fieldDefinitions:
+          - id: pid
+            path: Ext-plt1-condition-test.pid
+            dataTypes:
+              - dataType: id
+                profiles:
+                  - http://hl7.org/fhir/StructureDefinition/id
+            isPrimitive: true
+            isChoiceRoot: false
+            isArray: false
+            minCardinality: 1
+            maxCardinality: 1
+            short: Patient identifier
+            definition: Unique patient identifier  (a pseudoynm)
+          - id: code
+            path: Ext-plt1-condition-test.code
+            dataTypes:
+              - dataType: code
+                profiles:
+                  - http://hl7.org/fhir/StructureDefinition/code
+            isPrimitive: true
+            isChoiceRoot: false
+            isArray: false
+            minCardinality: 1
+            maxCardinality: 1
+            short: Condition code
+            definition: ICD-10 code for diagnosis
+          - id: codeDisplay
+            path: Ext-plt1-condition-test.codeDisplay
+            dataTypes:
+              - dataType: string
+                profiles:
+                  - http://hl7.org/fhir/StructureDefinition/string
+            isPrimitive: true
+            isChoiceRoot: false
+            isArray: false
+            minCardinality: 0
+            maxCardinality: 1
+            short: Condition name
+            definition: Name of the diagnosis
+          - id: onsetDateTime
+            path: Ext-plt1-condition-test.onsetDateTime
+            dataTypes:
+              - dataType: dateTime
+                profiles:
+                  - http://hl7.org/fhir/StructureDefinition/dateTime
+            isPrimitive: true
+            isChoiceRoot: false
+            isArray: false
+            minCardinality: 1
+            maxCardinality: 1
+            short: Condition start date
+            definition: 'When this condition is started or diagnosis is set. '
+          - id: abatementDateTime
+            path: Ext-plt1-condition-test.abatementDateTime
+            dataTypes:
+              - dataType: dateTime
+                profiles:
+                  - http://hl7.org/fhir/StructureDefinition/dateTime
+            isPrimitive: true
+            isChoiceRoot: false
+            isArray: false
+            minCardinality: 0
+            maxCardinality: 1
+            short: Condition abatement date
+            definition: If the disease is resolved/no longer active, the end date.
+          - id: encounterId
+            path: Ext-plt1-condition-test.encounterId
+            dataTypes:
+              - dataType: id
+                profiles:
+                  - http://hl7.org/fhir/StructureDefinition/id
+            isPrimitive: true
+            isChoiceRoot: false
+            isArray: false
+            minCardinality: 0
+            maxCardinality: 1
+            short: Encounter
+            definition: Unique identifier of the visit/encounter that this diagnosis is set (if exists and related)
+
+    # A structure definition example for schema post
+    StructureDefinitionExample:
+      value:
+        resourceType: StructureDefinition
+        url: https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-operation-episode
+        name: Ext-plt1-operation-episode
+        status: draft
+        fhirVersion: 4.0.1
+        kind: logical
+        abstract: false
+        type: Ext-plt1-operation-episode
+        baseDefinition: http://hl7.org/fhir/StructureDefinition/Element
+        derivation: specialization
+        differential:
+          element:
+            - id: Ext-plt1-operation-episode
+              path: Ext-plt1-operation-episode
+              min: 0
+              max: '*'
+              type:
+                - code: Element
+            - id: Ext-plt1-operation-episode.pid
+              path: Ext-plt1-operation-episode.pid
+              short: Patient identifier
+              definition: Unique patient identifier  (a pseudoynm)
+              min: 1
+              max: '1'
+              type:
+                - code: id
+                  profile:
+                    - http://hl7.org/fhir/StructureDefinition/id
+            - id: Ext-plt1-operation-episode.episodeId
+              path: Ext-plt1-operation-episode.episodeId
+              short: Episode identifier
+              definition: Unique identifier of the episode of care that surgery is performed
+              min: 1
+              max: '1'
+              type:
+                - code: id
+                  profile:
+                    - http://hl7.org/fhir/StructureDefinition/id
