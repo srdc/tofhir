@@ -149,17 +149,17 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * Get structure definition resource of the schema
    * @param projectId project containing the schema definition
    * @param id id of the requested schema
-   * @return Structure definition of the schema
+   * @return Structure definition of the schema converted into StructureDefinition Resource
    */
-  def getSchemaWithStructureDefinition(projectId: String, id: String): Future[Option[Resource]] = {
+  def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[Resource]] = {
     schemaRepository.getSchemaAsStructureDefinition(projectId, id)
   }
 
   /**
    * Save the schema by using its StructureDefinition
-   * @param projectId
+   * @param projectId Identifier of the project in which the schema will be created
    * @param structureDefinitionResource schema definition in the form of Structure Definition resource
-   * @return
+   * @return the SchemaDefinition of the created schema
    */
   def createSchemaFromStructureDefinition(projectId: String, structureDefinitionResource: Resource): Future[SchemaDefinition] = {
     schemaRepository.saveSchemaByStructureDefinition(projectId, structureDefinitionResource)

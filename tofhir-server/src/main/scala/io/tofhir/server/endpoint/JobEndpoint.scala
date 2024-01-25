@@ -196,7 +196,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
    * */
   private def getExecutions(projectId: String, id: String): Route = {
     get {
-      parameterMap { queryParams => // page is supported for now (e.g. page=1)
+      parameterMap { queryParams => // page and some filter options available. (page, dateBefore, dateAfter, errorStatuses, rowPerPage)
         onComplete(executionService.getExecutions(projectId, id, queryParams)) {
           case util.Success(response) =>
             val headers = List(
