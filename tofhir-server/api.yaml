@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   description: "Lists the REST APIs provided by a toFHIR server"
-  version: "3.9.0"
+  version: "1.1"
   title: "toFHIR REST API"
 
 servers:
@@ -872,9 +872,11 @@ paths:
         '200':
           description: Successful operation
           content:
-            application/json:
-              schema:
-                type: object
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Execution"
 
     delete:
       tags:
@@ -902,6 +904,10 @@ paths:
       responses:
         '200':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Execution"
         '404':
           $ref: "#/components/responses/404NotFound"
 
@@ -917,6 +923,12 @@ paths:
       responses:
         '200':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Log"
         '404':
           $ref: "#/components/responses/404NotFound"
 
@@ -2080,6 +2092,139 @@ components:
           type: array
           items:
             type: string
+
+    Execution:
+      type: object
+      description: Executions of a mapping job
+      properties:
+        id:
+          type: string
+          description: "Identifier of the execution"
+          example: "c531d5b0-40fc-42a9-8f2d-c6105e3a5d39"
+        mappingUrls:
+          type: array
+          items:
+            type: string
+            description: "Url of the mapping runned in the execution"
+            example: "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping"
+        startTime:
+          type: string
+          description: "Start time of the execution"
+          example: "2024-01-26T10:19:39.538+03:00"
+        errorStatus:
+          type: string
+          description: "Result of the the mapping job"
+          enum:
+            - "SUCCESS"
+            - "FAILURE"
+            - "PARTIAL_SUCCESS"
+            - "STARTED"
+    Log:
+      type: object
+      description: "Logs of the individual executions"
+      properties:
+        "@timestamp":
+          type: string
+          description: "Timestamp of the event"
+          example: "2024-01-26T10:19:39.538+03:00"
+        errorCode:
+          type: string
+          description: "Error code, if any"
+        errorDesc:
+          type: string
+          description: "Error description, if any"
+        errorExpr:
+          type: string
+          description: "Expression that causes error, if any"
+        eventId:
+          type: string
+          description: "Identifier of the event"
+          example: "MAPPING_JOB_RESULT"
+        executionId:
+          type: string
+          description: "Identifier of the execution"
+          example: "c531d5b0-40fc-42a9-8f2d-c6105e3a5d39"
+        jobId:
+          type: string
+          description: "Identifier of the job"
+          example: "pilot1"
+        level:
+          type: string
+          description: "Level of the log"
+          example: "INFO"
+        logger_name:
+          type: string
+          description: "Name of the logger"
+          example: "io.tofhir.engine.mapping.FhirMappingJobManager"
+        mappedResource:
+          type: string
+          description: "Mapped resource, if any"
+        mappingExpr:
+          type: string
+          description: "Mapping expression, if any"
+        mappingUrl:
+          type: string
+          description: "URL of the mapping"
+          example: "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping"
+        message:
+          type: string
+          description: "Log message"
+          example: "toFHIR batch mapping result (STARTED) for execution 'c531d5b0-40fc-42a9-8f2d-c6105e3a5d39' of job 'pilot1' in project 'pilot1'"
+        numOfFailedWrites:
+          type: integer
+          description: "Number of failed writes, -1 if there is an error"
+          example: -1
+        numOfFhirResources:
+          type: integer
+          description: "Number of written FHIR resources, -1 if there is an error"
+          example: -1
+        numOfInvalids:
+          type: integer
+          description: "Number of invalid rows, -1 if there is an error"
+          example: -1
+        numOfNotMapped:
+          type: integer
+          description: "Number of not mapped rows, -1 if there is an error"
+          example: -1
+        projectId:
+          type: string
+          description: "Identifier of the project"
+          example: "pilot1"
+        result:
+          type: string
+          description: "Result of the mapping job"
+          example: "STARTED"
+        source:
+          type: string
+          description: "Source of the error, if any"
+        stack_trace:
+          type: string
+          description: "Stack trace of the error, if any"
+        error_logs:
+          type: array
+          description: "Logs of the errors, if any"
+          items:
+            $ref: "#/components/schemas/ErrorLog"
+    ErrorLog:
+      type: object
+      description: "Logs of the errors"
+      properties:
+        errorCode:
+          type: string
+          description: "Error code"
+          example: "mapping_error"
+        errorDesc:
+          type: string
+          description: "Error description"
+          example: "FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression"
+        message:
+          type: string
+          description: "Detailed error message"
+          example: "Mapping failure (mapping_error) for job 'pilot1' and mapping 'https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping' within expression 'Expression: result. Error: FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression' execution 'c531d5b0-40fc-42a9-8f2d-c6105e3a5d39'!\n\tSource: {\"pid\":\"p1\",\"code\":\"J13\",\"codeDisplay\":\"Pneumonia due to Streptococcus pneumoniae\",\"onsetDateTime\":\"2012-10-15\",\"abatementDateTime\":null,\"encounterId\":null,\"diagnosisType\":\"main\",\"isProlonged\":true,\"certainity\":\"confirmed\",\"asserter\":null}\n\tError: FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression\n\tExpression: Hello"
+        mappingUrl:
+          type: string
+          description: "URL of the mapping"
+          example: "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping"
 
     TestResourceCreationRequest:
       type: object

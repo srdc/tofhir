@@ -1,1031 +1,243 @@
 openapi: 3.0.2
 info:
-  description: "Lists the REST APIs provided by a toFHIR server"
-  version: "1.0.0"
-  title: "toFHIR REST API"
+  description: "Lists the REST APIs provided by a toFHIR log server"
+  version: "1.1"
+  title: "toFHIR-log-server REST API"
 
 servers:
-  - url: http://localhost:8085/tofhir
-    description: Local deployment of the toFHIR server
+  - url: "http://localhost:8086/tofhir-logs"
+    description: Local deployment of the toFHIR log server
+
 
 tags:
-  - name: "Project"
+  - name: "Execution"
     description: "Represents a logical grouping for project entities"
-  - name: "Schema"
-    description: "Represents a logical grouping for schema entities"
-  - name: "Terminology"
-    description: "Represents a logical grouping for terminolgy entities with concept maps and code systems"
+
 
 paths:
-  /terminologies:
+  # Beginning of the Execution tag
+  /projects/{projectId}/jobs/{jobId}/executions:
     get:
       tags:
-        - "Terminology"
-      summary: "Gets all terminologies"
-      operationId: "getTerminologies"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TerminologySystem"
-    post:
-      tags:
-        - "Terminology"
-      summary: "Creates a new terminology"
-      operationId: "createTerminology"
-      requestBody:
-        description: "Terminology details"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TerminologySystem"
-      responses:
-        '201':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologySystem"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '409':
-          $ref: '#/components/responses/409AlreadyExists'
-  /terminologies/{terminologyId}:
-    get:
-      tags:
-        - "Terminology"
-      summary: "Gets the specified terminology"
-      operationId: "getTerminology"
+        - Execution
+      summary: Gets executions of the mapping job
       parameters:
-        - in: path
-          name: "terminologyId"
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/jobId"
+        # Filter parameters for lazy load
+        - name: page
+          in: query
           required: true
+          description: requested page of the executions
           schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologySystem"
-        '404':
-          $ref: "#/components/responses/404NotFound"
-    put:
-      tags:
-        - "Terminology"
-      summary: "Updates the specified terminology"
-      operationId: "updateTerminology"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-      requestBody:
-        description: "Terminology details"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TerminologySystem"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologySystem"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-    delete:
-      tags:
-        - "Terminology"
-      summary: "Deletes the specified terminology"
-      operationId: "deleteTerminology"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-      responses:
-        '204':
-          description: "Successful operation"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '404':
-          $ref: '#/components/responses/404NotFound'
-  /terminologies/{terminologyId}/concept-maps/:
-    get:
-      tags:
-        - "Terminology"
-      summary: "Gets all concept maps for the specified terminology"
-      operationId: "getConceptMaps"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TerminologyConceptMap"
-    post:
-      tags:
-        - "Terminology"
-      summary: "Creates a new concept map for the specified terminology"
-      operationId: "createConceptMap"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-      requestBody:
-        description: "Concept map details"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TerminologyConceptMap"
-      responses:
-        '201':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologyConceptMap"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '409':
-          $ref: '#/components/responses/409AlreadyExists'
-  /terminologies/{terminologyId}/concept-maps/{conceptMapId}:
-    get:
-      tags:
-        - "Terminology"
-      summary: "Gets the specified concept map for the specified terminology"
-      operationId: "getConceptMap"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "conceptMapId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the concept map"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologyConceptMap"
-        '404':
-          $ref: "#/components/responses/404NotFound"
-    put:
-      tags:
-        - "Terminology"
-      summary: "Updates the specified concept map for the specified terminology"
-      operationId: "updateConceptMap"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "conceptMapId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the concept map"
-      requestBody:
-        description: "Concept map details"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TerminologyConceptMap"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologyConceptMap"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-    delete:
-      tags:
-        - "Terminology"
-      summary: "Deletes the specified concept map for the specified terminology"
-      operationId: "deleteConceptMap"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "conceptMapId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the concept map"
-      responses:
-        '204':
-          description: "Successful operation"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '404':
-          $ref: '#/components/responses/404NotFound'
-  /terminologies/{terminologyId}/concept-maps/{conceptMapId}/content:
-    get:
-      tags:
-        - "Terminology"
-      summary: "Gets the content of the specified concept map for the specified terminology"
-      operationId: "getConceptMapContent"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "conceptMapId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the concept map"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            text/csv:
-              schema:
-                type: string
-                format: binary
-                example: "source_system,source_code,target_system,target_code,target_display,equivalence\n
-                          http://terminology.hl7.org/CodeSystem/v2-0487,ACNE,http://snomed.info/sct,309068002,Specimen from skin,equivalent\n
-                          http://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323008,Pus specimen,equivalent\n
-                          http://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323009,Pus specimen 2,equivalent\n
-                          http://terminology.hl7.org/CodeSystem/v2-0487,BULLA,http://snomed.info/sct,258482009,Pus specimen 2,narrower"
-        '404':
-          $ref: "#/components/responses/404NotFound"
-    post:
-      tags:
-        - "Terminology"
-      summary: "Updates the content of the specified concept map for the specified terminology"
-      operationId: "updateConceptMapContent"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "conceptMapId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the concept map"
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                # 'attachment' will be the field name in this multipart request
-                attachment:
-                  type: string
-                  format: binary
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "OK"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '404':
-          $ref: "#/components/responses/404NotFound"
-  /terminologies/{terminologyId}/code-systems:
-    get:
-      tags:
-        - "Terminology"
-      summary: "Gets the code systems for the specified terminology"
-      operationId: "getCodeSystems"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TerminologyCodeSystem"
-        '404':
-          $ref: "#/components/responses/404NotFound"
-    post:
-      tags:
-        - "Terminology"
-      summary: "Creates a new code system for the specified terminology"
-      operationId: "createCodeSystem"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-      requestBody:
-        description: "Code system details"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TerminologyCodeSystem"
-      responses:
-        '201':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologyCodeSystem"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '409':
-          $ref: '#/components/responses/409AlreadyExists'
-  /terminologies/{terminologyId}/code-systems/{codeSystemId}:
-    get:
-      tags:
-        - "Terminology"
-      summary: "Gets the specified code system for the specified terminology"
-      operationId: "getCodeSystem"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "codeSystemId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the code system"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologyCodeSystem"
-        '404':
-          $ref: "#/components/responses/404NotFound"
-    put:
-      tags:
-        - "Terminology"
-      summary: "Updates the specified code system for the specified terminology"
-      operationId: "updateCodeSystem"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "codeSystemId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the code system"
-      requestBody:
-        description: "Code system details"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TerminologyCodeSystem"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TerminologyCodeSystem"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '404':
-          $ref: "#/components/responses/404NotFound"
-    delete:
-      tags:
-        - "Terminology"
-      summary: "Deletes the specified code system for the specified terminology"
-      operationId: "deleteCodeSystem"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "codeSystemId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the code system"
-      responses:
-        '204':
-          description: "Successful operation"
-        '404':
-          $ref: "#/components/responses/404NotFound"
-  /terminologies/{terminologyId}/code-systems/{codeSystemId}/content:
-    get:
-      tags:
-        - "Terminology"
-      summary: "Gets the content for the specified code system for the specified terminology"
-      operationId: "getCodeSystemContent"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "codeSystemId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the code system"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            text/csv:
-              schema:
-                type: string
-                format: binary
-                example: "code,display,fr,de\n
-                          309068002,Specimen from skin,Spécimen de peau,Probe von der Haut\n
-                          119323008,Pus specimen,Spécimen de pus,Eiterprobe"
-        '404':
-          $ref: "#/components/responses/404NotFound"
-    post:
-      tags:
-        - "Terminology"
-      summary: "Creates the content for the specified code system for the specified terminology"
-      operationId: "createCodeSystemContent"
-      parameters:
-        - in: path
-          name: "terminologyId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the terminology"
-        - in: path
-          name: "codeSystemId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the code system"
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                # 'attachment' will be the field name in this multipart request
-                attachment:
-                  type: string
-                  format: binary
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "OK"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '404':
-          $ref: "#/components/responses/404NotFound"
-  #Paths on projects
-  /projects:
-    post:
-      tags:
-        - "Project"
-      summary: "Creates a new project"
-      operationId: "createProject"
-      requestBody:
-        description: "Project details"
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Project"
-            example:
-              id: "e456fdfe-d039-432c-9077-74308286f763"
-              name: "Project name"
-              description: "Project description"
-      responses:
-        '201':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Project"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-    get:
-      tags:
-        - "Project"
-      summary: "Gets all projects"
-      operationId: "getProjects"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Project"
-  /projects/{projectId}:
-    get:
-      tags:
-        - "Project"
-      summary: "Gets the specified project"
-      operationId: "getProject"
-      parameters:
-        - in: path
-          name: "projectId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the project"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Project"
-    patch:
-      tags:
-        - "Project"
-      summary: "Updates the project with the given patch"
-      operationId: "patchProject"
-      parameters:
-        - in: path
-          name: "projectId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the project"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Project"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-    delete:
-      tags:
-        - "Project"
-      summary: "Deletes the specified project"
-      operationId: "deleteProject"
-      parameters:
-        - in: path
-          name: "projectId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the project"
-      responses:
-        '204':
-          description: "Successful operation"
-  /projects/{projectId}/schemas:
-    get:
-      tags:
-        - "Schema"
-      summary: "Gets all schemas in a project or by URL if specified"
-      operationId: "getSchemas"
-      parameters:
-        - in: query
-          name: "url"
+            type: integer
+            example: 1
+        - name: dateBefore
+          in: query
           required: false
+          description: Executions started before this date
           schema:
             type: string
-            format: url
-          description: "URL identifying the schema"
+        - name: dateAfter
+          in: query
+          required: false
+          description: Executions started after this date
+          schema:
+            type: string
+        - name: errorStatuses
+          in: query
+          required: false
+          description: Request type of executions written as comma seperated
+          schema:
+            type: string
+
       responses:
         '200':
-          description: "Successful operation"
+          description: Successful operation
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/SchemaDefinition"
-    post:
-      tags:
-        - "Schema"
-      summary: "Creates the schema in a project"
-      operationId: "createSchema"
-      parameters:
-        - in: path
-          name: "projectId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the project"
-      responses:
-        '200':
-          description: "Successful operation"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SchemaDefinition"
-  /projects/{projectId}/schemas/{schemaId}:
+                  $ref: "#/components/schemas/Execution"
+
+  /projects/{projectId}/jobs/{jobId}/executions/{executionId}:
     get:
       tags:
-        - "Schema"
-      summary: "Gets the specified schema in a project"
-      operationId: "getSchema"
+        - Execution
+      summary: Gets the details of the specified execution
       parameters:
-        - in: path
-          name: "projectId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the project"
-        - in: path
-          name: "schemaId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the schema"
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/jobId"
+        - $ref: "#/components/parameters/executionId"
       responses:
         '200':
-          description: "Successful operation"
+          description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SchemaDefinition"
-    put:
+                $ref: "#/components/schemas/Execution"
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+  /projects/{projectId}/jobs/{jobId}/executions/{executionId}/logs:
+    get:
       tags:
-        - "Schema"
-      summary: "Updates the schema with the given body"
-      operationId: "putSchema"
+        - Execution
+      summary: Gets execution logs
       parameters:
-        - in: path
-          name: "projectId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the project"
-        - in: path
-          name: "schemaId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the schema"
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/jobId"
+        - $ref: "#/components/parameters/executionId"
       responses:
         '200':
-          description: "Successful operation"
+          description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SchemaDefinition"
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-    delete:
-      tags:
-        - "Schema"
-      summary: "Deletes the specified schema"
-      operationId: "deleteSchema"
-      parameters:
-        - in: path
-          name: "projectId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the project"
-        - in: path
-          name: "schemaId"
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "Identifier of the schema"
-      responses:
-        '204':
-          description: "Successful operation"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Log"
+        '404':
+          $ref: "#/components/responses/404NotFound"
 
 
 components:
   schemas:
-    TerminologySystem:
+    Execution:
       type: object
-      required:
-        - name
-        - description
+      description: Executions of a mapping job
       properties:
         id:
           type: string
-          description: "Identifier of the terminology system"
-          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-        name:
-          type: string
-          description: "Name of the terminology system"
-        description:
-          type: string
-          description: "Description of the terminology system"
-          example: "SNOMED CT is a terminology system for clinical health care"
-        conceptMaps:
+          description: "Identifier of the execution"
+          example: "c531d5b0-40fc-42a9-8f2d-c6105e3a5d39"
+        mappingUrls:
           type: array
           items:
-            $ref: "#/components/schemas/TerminologyConceptMap"
-          description: "URL of the terminology system"
-        codeSystems:
-          type: array
-          items:
-            $ref: "#/components/schemas/TerminologyCodeSystem"
-          description: "Version of the terminology system"
-    TerminologyConceptMap:
+            type: string
+            description: "Url of the mapping runned in the execution"
+            example: "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping"
+        startTime:
+          type: string
+          description: "Start time of the execution"
+          example: "2024-01-26T10:19:39.538+03:00"
+        errorStatus:
+          type: string
+          description: "Result of the the mapping job"
+          enum:
+            - "SUCCESS"
+            - "FAILURE"
+            - "PARTIAL_SUCCESS"
+            - "STARTED"
+    Log:
       type: object
-      required:
-        - name
-        - conceptMapUrl
-        - sourceValueSetUrl
-        - targetValueSetUrl
+      description: "Logs of the individual executions"
       properties:
-        id:
+        "@timestamp":
           type: string
-          description: "Identifier of the terminology concept map"
-          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-        name:
+          description: "Timestamp of the event"
+          example: "2024-01-26T10:19:39.538+03:00"
+        errorCode:
           type: string
-          description: "Name of the terminology concept map"
-        conceptMapUrl:
+          description: "Error code, if any"
+        errorDesc:
           type: string
-          description: "URL of the terminology concept map"
-          example: "http://example.com/fhir/ConceptMap/sample1"
-        sourceValueSetUrl:
+          description: "Error description, if any"
+        errorExpr:
           type: string
-          description: "URL of the source value set"
-          example: "http://terminology.hl7.org/ValueSet/v2-0487"
-        targetValueSetUrl:
+          description: "Expression that causes error, if any"
+        eventId:
           type: string
-          description: "URL of the target value set"
-          example: "http://snomed.info/sct?fhir_vs"
-    TerminologyCodeSystem:
-      type: object
-      required:
-        - name
-        - codeSystemUrl
-        - valueSetUrl
-      properties:
-        id:
+          description: "Identifier of the event"
+          example: "MAPPING_JOB_RESULT"
+        executionId:
           type: string
-          description: "Identifier of the terminology code system"
-          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-        name:
+          description: "Identifier of the execution"
+          example: "c531d5b0-40fc-42a9-8f2d-c6105e3a5d39"
+        jobId:
           type: string
-          description: "Name of the terminology code system"
-        codeSystem:
+          description: "Identifier of the job"
+          example: "pilot1"
+        level:
           type: string
-          description: "Code system of the terminology code system"
-          example: "http://snomed.info/sct"
-    Project:
-      type: "object"
-      required:
-        - "id"
-        - "name"
-      properties:
-        id:
-          type: "string"
+          description: "Level of the log"
+          example: "INFO"
+        logger_name:
+          type: string
+          description: "Name of the logger"
+          example: "io.tofhir.engine.mapping.FhirMappingJobManager"
+        mappedResource:
+          type: string
+          description: "Mapped resource, if any"
+        mappingExpr:
+          type: string
+          description: "Mapping expression, if any"
+        mappingUrl:
+          type: string
+          description: "URL of the mapping"
+          example: "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping"
+        message:
+          type: string
+          description: "Log message"
+          example: "toFHIR batch mapping result (STARTED) for execution 'c531d5b0-40fc-42a9-8f2d-c6105e3a5d39' of job 'pilot1' in project 'pilot1'"
+        numOfFailedWrites:
+          type: integer
+          description: "Number of failed writes, -1 if there is an error"
+          example: -1
+        numOfFhirResources:
+          type: integer
+          description: "Number of written FHIR resources, -1 if there is an error"
+          example: -1
+        numOfInvalids:
+          type: integer
+          description: "Number of invalid rows, -1 if there is an error"
+          example: -1
+        numOfNotMapped:
+          type: integer
+          description: "Number of not mapped rows, -1 if there is an error"
+          example: -1
+        projectId:
+          type: string
           description: "Identifier of the project"
-          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-        name:
-          type: "string"
-          description: "Name of the project"
-          example: "Project name"
-        description:
-          type: "string"
-          description: "Description of the project"
-    SchemaDefinition:
-      type: "object"
-      required:
-        - "url"
-        - "type"
-        - "name"
+          example: "pilot1"
+        result:
+          type: string
+          description: "Result of the mapping job"
+          example: "STARTED"
+        source:
+          type: string
+          description: "Source of the error, if any"
+        stack_trace:
+          type: string
+          description: "Stack trace of the error, if any"
+        error_logs:
+          type: array
+          description: "Logs of the errors, if any"
+          items:
+            $ref: "#/components/schemas/ErrorLog"
+    ErrorLog:
+      type: object
+      description: "Logs of the errors"
       properties:
-        id:
-          type: "string"
-          description: "Identifier of the schema"
-          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-        url:
-          type: "string"
-          description: "Url of the schema"
-          example: "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-anesthesia-observations"
-        type:
-          type: "string"
-          description: "Type of the schema"
-          example: "Ext-plt1-anesthesia-observations"
-        name:
-          type: "string"
-          description: "Name of the project"
-          example: "Ext-plt1-anesthesia-observations"
-        rootDefinition:
-          $ref: '#/components/schemas/SimpleStructureDefinition'
+        errorCode:
+          type: string
+          description: "Error code"
+          example: "mapping_error"
+        errorDesc:
+          type: string
+          description: "Error description"
+          example: "FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression"
+        message:
+          type: string
+          description: "Detailed error message"
+          example: "Mapping failure (mapping_error) for job 'pilot1' and mapping 'https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping' within expression 'Expression: result. Error: FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression' execution 'c531d5b0-40fc-42a9-8f2d-c6105e3a5d39'!\n\tSource: {\"pid\":\"p1\",\"code\":\"J13\",\"codeDisplay\":\"Pneumonia due to Streptococcus pneumoniae\",\"onsetDateTime\":\"2012-10-15\",\"abatementDateTime\":null,\"encounterId\":null,\"diagnosisType\":\"main\",\"isProlonged\":true,\"certainity\":\"confirmed\",\"asserter\":null}\n\tError: FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression\n\tExpression: Hello"
+        mappingUrl:
+          type: string
+          description: "URL of the mapping"
+          example: "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping"
 
-        fieldDefinitions:
-          type: array
-          items:
-            $ref: '#/components/schemas/SimpleStructureDefinition'
-    SimpleStructureDefinition:
-      type: "object"
-      required:
-        - "id"
-        - "path"
-        - "isPrimitive"
-        - "isChoiceRoot"
-        - "isArray"
-        - "minCardinality"
-      properties:
-        id:
-          type: string
-        path:
-          type: string
-        dataTypes:
-          type: array
-          items:
-            $ref: '#/components/schemas/DataTypeWithProfiles'
-        isPrimitive:
-          type: boolean
-        isChoiceRoot:
-          type: boolean
-        isArray:
-          type: boolean
-        minCardinality:
-          type: integer
-        maxCardinality:
-          type: integer
-        boundToValueSet:
-          type: string
-        isValueSetBindingRequired:
-          type: boolean
-        referencableProfiles:
-          type: array
-          items:
-            type: string
-        constraintDefinitions:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConstraintDefinition'
-        sliceDefinition:
-          $ref: '#/components/schemas/SliceDefinition'
-        sliceName:
-          type: string
-        fixedValue:
-          type: string
-        patternValue:
-          type: string
-        referringTo:
-          type: string
-        short:
-          type: string
-        definition:
-          type: string
-        comment:
-          type: string
-        elements:
-          type: array
-          items:
-            $ref: '#/components/schemas/SimpleStructureDefinition'
-    DataTypeWithProfiles:
-      type: "object"
-      required:
-        - "dataType"
-      properties:
-        dataType:
-          type: "string"
-        profiles:
-          type: array
-          items:
-            type: string
-    ConstraintDefinition:
-      type: object
-      required:
-        - key
-        - desc
-        - isWarning
-      properties:
-        key:
-          type: string
-        desc:
-          type: string
-        isWarning:
-          type: boolean
-    SliceDefinition:
-      type: object
-      required:
-        - discriminators
-        - ordered
-        - rule
-      properties:
-        discriminators:
-          type: array
-          items:
-            $ref: '#/components/schemas/SliceDiscriminator'
-        ordered:
-          type: boolean
-        rule:
-          type: string
-    SliceDiscriminator:
-      type: object
-      required:
-        - type
-        - path
-      properties:
-        type:
-          type: string
-        path:
-          type: string
-
+  # HTTP responses for requests
   responses:
     400BadRequest:
       description: "Bad or Invalid request"
@@ -1033,3 +245,39 @@ components:
       description: "Given object already exists"
     404NotFound:
       description: "Given resource does not exist"
+
+  # Path and query parameters for requests
+  parameters:
+    projectId:
+      in: path
+      name: "projectId"
+      required: true
+      schema:
+        type: string
+        format: uuid
+        pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      description: "Identifier of the project"
+
+    jobId:
+      in: path
+      name: "jobId"
+      schema:
+        type: string
+      required: true
+      description: "Identifier of the job"
+
+    executionId:
+      name: executionId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    mappingUrl:
+      in: path
+      name: "mappingUrl"
+      schema:
+        type: string
+        format: url
+      required: true
+      description: "Url of a mapping"
