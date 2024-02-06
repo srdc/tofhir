@@ -40,7 +40,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private val logger: Logger = Logger(this.getClass)
 
   private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(
-    fhirStandardZipFilePath = Some("r5-definitions.json.zip"),
+    fhirVersion = ToFhirConfig.engineConfig.fhirVersion,
     profilesPath = Some(FileUtils.getPath(schemaRepositoryFolderPath).toString))
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
   private val baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)

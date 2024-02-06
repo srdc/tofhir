@@ -67,7 +67,10 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
         }
       })
 
-      new FSConfigReader(profilesPath = profilesPath, codeSystemsPath = codeSystemsPath, valueSetsPath = valueSetsPath)
+      new FSConfigReader(fhirVersion = ToFhirConfig.engineConfig.fhirVersion,
+                         profilesPath = profilesPath,
+                         codeSystemsPath = codeSystemsPath,
+                         valueSetsPath = valueSetsPath)
   }
 
 

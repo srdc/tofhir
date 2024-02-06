@@ -7,6 +7,7 @@ import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthoriza
 import io.tofhir.engine.util.FhirClientUtil
 import io.tofhir.engine.Execution.actorSystem
 import actorSystem.dispatcher
+import io.tofhir.engine.config.ToFhirConfig
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{Await, TimeoutException}
@@ -19,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 class FhirEndpointResourceReader(fhirDefinitionsConfig: FhirDefinitionsConfig) extends IFhirConfigReader {
 
   // So that we can read the base definitions from the standard's bundle file which is available in onfhir-server-r4
-  val fsConfigReader: IFhirConfigReader = new FSConfigReader(fhirStandardZipFilePath = Some("r5-definitions.json.zip"))
+  val fsConfigReader: IFhirConfigReader = new FSConfigReader(fhirVersion = ToFhirConfig.engineConfig.fhirVersion)
 
   val fhirClient: OnFhirNetworkClient = createOnFhirClient
 
