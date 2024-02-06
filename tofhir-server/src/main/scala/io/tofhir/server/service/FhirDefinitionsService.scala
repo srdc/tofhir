@@ -11,14 +11,13 @@ import org.json4s.jackson.JsonMethods.compact
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
 import io.onfhir.r4.config.FhirR4Configurator
 import io.onfhir.r5.config.FhirR5Configurator
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.{FileUtils, MajorFhirVersion}
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
 import io.tofhir.common.model.SimpleStructureDefinition
 import org.json4s.JsonAST.JObject
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.server.common.model.BadRequest
 
 import java.net.{MalformedURLException, URL}
@@ -67,17 +66,17 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
         }
       })
 
-      new FSConfigReader(fhirVersion = ToFhirConfig.engineConfig.fhirVersion,
+      new FSConfigReader(fhirVersion = fhirDefinitionsConfig.majorFhirVersion,
                          profilesPath = profilesPath,
                          codeSystemsPath = codeSystemsPath,
                          valueSetsPath = valueSetsPath)
   }
 
 
-  val baseFhirConfig: BaseFhirConfig = ToFhirConfig.engineConfig.fhirVersion match {
-    case "R4" =>
+  val baseFhirConfig: BaseFhirConfig = fhirDefinitionsConfig.majorFhirVersion match {
+    case MajorFhirVersion.R4 =>
       new FhirR4Configurator().initializePlatform(fhirConfigReader)
-    case "R5" =>
+    case MajorFhirVersion.R5 =>
       new FhirR5Configurator().initializePlatform(fhirConfigReader)
     case _ =>
       throw new RuntimeException("Unsupported FHIR version.")

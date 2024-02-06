@@ -12,9 +12,6 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   /** A path to a context file/directory from where any kind of file system reading should start. */
   lazy val contextPath: String = Try(toFhirEngineConfig.getString("context-path")).getOrElse(".")
 
-  /** Major FHIR version (R4 or R5) */
-  lazy val fhirVersion: String = toFhirEngineConfig.getString("fhir-version")
-
   /** Path to the folder where the mappings are kept. */
   lazy val mappingRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mappings.repository.folder-path")).getOrElse("mappings")
 
@@ -23,6 +20,9 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
 
   /** Path to the folder where the schema definitions are kept. */
   lazy val schemaRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mappings.schemas.repository.folder-path")).getOrElse("schemas")
+
+  /** Specific FHIR version for schemas in the schema repository. Represents fhirVersion field in the standard StructureDefinition */
+  lazy val schemaRepositoryFhirVersion: String = Try(toFhirEngineConfig.getString("mappings.schemas.fhir-version")).getOrElse("4.0.1")
 
   /** Path to the folder where the job definitions are kept. */
   lazy val jobRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mapping-jobs.repository.folder-path")).getOrElse("mapping-jobs")

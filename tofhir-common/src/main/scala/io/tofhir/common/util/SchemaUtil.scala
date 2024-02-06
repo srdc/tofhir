@@ -4,7 +4,6 @@ import io.onfhir.api.Resource
 import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
 import org.json4s.JArray
 import org.json4s.JsonDSL._
-import io.tofhir.engine.config.ToFhirConfig
 
 /**
  * Utility class providing a function to convert a {@link SchemaDefinition} to {@link Resource}
@@ -16,8 +15,7 @@ object SchemaUtil {
    * @param schemaDefinition the schema
    * @return
    */
-  def convertToStructureDefinitionResource(schemaDefinition: SchemaDefinition): Resource = {
-    val fhirVersion = if (ToFhirConfig.engineConfig.fhirVersion == "R5") "5.0.0" else "4.0.1"
+  def convertToStructureDefinitionResource(schemaDefinition: SchemaDefinition, fhirVersion: String): Resource = {
     val structureDefinitionResource: Resource =
       ("id" -> schemaDefinition.id) ~
         ("resourceType" -> "StructureDefinition") ~

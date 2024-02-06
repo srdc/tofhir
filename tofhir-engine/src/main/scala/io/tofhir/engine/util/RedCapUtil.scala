@@ -3,6 +3,7 @@ package io.tofhir.engine.util
 import io.onfhir.api.{FHIR_DATA_TYPES, FHIR_FOUNDATION_RESOURCES, FHIR_ROOT_URL_FOR_DEFINITIONS, Resource}
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.common.util.SchemaUtil
+import io.tofhir.engine.config.ToFhirConfig
 
 import javax.ws.rs.BadRequestException
 
@@ -21,7 +22,7 @@ object RedCapUtil {
   def extractSchemas(content: Seq[Map[String, String]], definitionRootUrl: String): Seq[Resource] = {
     val schemaDefinitions: Seq[SchemaDefinition] = extractSchemasAsSchemaDefinitions(content, definitionRootUrl)
     // convert it to FHIR Resources
-    schemaDefinitions.map(definition =>  SchemaUtil.convertToStructureDefinitionResource(definition))
+    schemaDefinitions.map(definition =>  SchemaUtil.convertToStructureDefinitionResource(definition, ToFhirConfig.engineConfig.schemaRepositoryFhirVersion))
   }
 
   /**

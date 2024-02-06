@@ -39,7 +39,7 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
   val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepo)
 
   //Repository for source data schemas
-  val schemaLoader: IFhirSchemaLoader = schemaRepository.getOrElse(new SchemaFolderLoader(FileUtils.getPath(engineConfig.schemaRepositoryFolderPath).toUri, engineConfig.fhirVersion))
+  val schemaLoader: IFhirSchemaLoader = schemaRepository.getOrElse(new SchemaFolderLoader(FileUtils.getPath(engineConfig.schemaRepositoryFolderPath).toUri))
 
   // Function libraries containing context-independent, built-in libraries and libraries passed externally
   val functionLibraries: Map[String, IFhirPathFunctionLibraryFactory] = initializeFunctionLibraries()
