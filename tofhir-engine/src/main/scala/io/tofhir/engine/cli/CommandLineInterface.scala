@@ -125,13 +125,7 @@ object CommandLineInterface {
         Await.result(f, Duration.Inf)
       }
     } else {
-      if (toFhirDbFolderPath.isEmpty) {
-        throw new IllegalArgumentException("runJob is called with a scheduled mapping job, but toFhir.db is not configured.");
-      }
-
-      val scheduler = new Scheduler()
-      val toFhirDbURI: URI = Paths.get(toFhirDbFolderPath, "scheduler").toUri
-      val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDbURI)
+      val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler.instance(toFhirDbFolderPath)
 
       val fhirMappingJobManager =
         new FhirMappingJobManager(toFhirEngine.mappingRepo,
@@ -150,7 +144,7 @@ object CommandLineInterface {
           terminologyServiceSettings = mappingJob.terminologyServiceSettings,
           identityServiceSettings = mappingJob.getIdentityServiceSettings()
         )
-      scheduler.start()
+      mappingJobScheduler.scheduler.start()
     }
 
   }

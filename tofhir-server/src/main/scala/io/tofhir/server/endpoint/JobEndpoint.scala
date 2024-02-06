@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.stream.StreamTcpException
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST, SEGMENT_DESCHEDULE}
 import io.tofhir.server.model.Json4sSupport._
 import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest}
 import io.tofhir.server.service.{ExecutionService, JobService}
@@ -63,6 +63,10 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
             } ~ pathPrefix(SEGMENT_STOP) { // jobs/<jobId>/executions/<executionId>/stop
               pathEndOrSingleSlash {
                 stopJobExecution(jobId, executionId)
+              }
+            } ~ pathPrefix(SEGMENT_DESCHEDULE) { // jobs/<jobId>/executions/<executionId>/deschedule
+              pathEndOrSingleSlash {
+                descheduleJobExecution(jobId, executionId)
               }
             } ~ pathPrefix(SEGMENT_MAPPINGS) { // jobs/<jobId>/executions/<executionId>/mappings
               pathPrefix(Segment) { mappingUrl: String => // jobs/<jobId>/executions/<executionId>/mappings/<mappingUrl>
@@ -284,6 +288,21 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
   }
 
   /**
+   * Route to deschedule a mapping job execution.
+   *
+   * @param jobId       Identifier of the job
+   * @param executionId Identifier of job execution
+   * @return
+   */
+  private def descheduleJobExecution(jobId: String, executionId: String): Route = {
+    delete {
+      complete {
+        executionService.descheduleJobExecution(jobId, executionId).map(_ => StatusCodes.OK)
+      }
+    }
+  }
+
+  /**
    * Route to stop an individual mapping task inside a job.
    *
    * @param jobId      Identifier of the job containing the mapping.
@@ -318,5 +337,6 @@ object JobEndpoint {
   val SEGMENT_LOGS = "logs"
   val SEGMENT_TEST = "test"
   val SEGMENT_STOP = "stop"
+  val SEGMENT_DESCHEDULE = "deschedule"
   val SEGMENT_MAPPINGS = "mappings"
 }

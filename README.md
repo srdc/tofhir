@@ -276,25 +276,40 @@ We can give a table name with the `tableName` field, as well as write a query wi
 ```
 
 Also, toFHIR supports running scheduled jobs with defined time ranges.
-To do so, you need to specify a cron expression and an optional initial time in the mapping job definitions.
+To do so, you need to specify a cron expression in the mapping job definitions.
 toFHIR uses [cron4j](https://www.sauronsoftware.it/projects/cron4j/) library to handle scheduled jobs.
 Scheduled patterns for the expression can be found in the documentation section of cron4j.
 
-If your data has time or date information, and you want to pull data at time intervals according to schedule,
-you can do something like this:
+You can schedule a mapping job as follows:
 
 mapping-job.json
 ```json
 {
   ...
   "schedulingSettings": {
+    "jsonClass": "SchedulingSettings",
+    "cronExpression": "59 11 * * *",
+  },
+  ...
+}
+```
+`59 11 * * *` pattern causes a task to be launched at 11:59AM every day.
+
+Moreover, if your data source is SQL-based and contains time or date information, and you want to pull data at time intervals according to schedule,
+you can specify the initial time in your mapping job definition as follows:
+
+mapping-job.json
+```json
+{
+  ...
+  "schedulingSettings": {
+    "jsonClass": "SQLSchedulingSettings",
     "cronExpression": "59 11 * * *",
     "initialTime": "2000-01-01T00:00:00"
   },
   ...
 }
 ```
-`59 11 * * *` pattern causes a task to be launched at 11:59AM every day.
 
 mapping.json
 ```json

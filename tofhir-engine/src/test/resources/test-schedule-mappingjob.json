@@ -1,6 +1,7 @@
 {
   "id": "test-schedule-mapping-job",
   "schedulingSettings": {
+    "jsonClass": "SQLSchedulingSettings",
     "cronExpression": "* * * * *",
     "initialTime": "2007-10-12T10:00:00"
   },

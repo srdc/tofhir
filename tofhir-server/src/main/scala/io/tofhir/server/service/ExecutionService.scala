@@ -18,6 +18,7 @@ import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.server.util.{DataFrameUtil, LogServiceClient}
+import io.tofhir.engine.mapping.MappingJobScheduler
 import org.apache.commons.io
 import org.json4s.JsonAST.{JBool, JObject, JValue}
 import org.json4s.JsonDSL.jobject2assoc
@@ -103,6 +104,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       }
     }
 
+    // create an instance of MappingJobScheduler
+    val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler.instance(ToFhirConfig.engineConfig.toFhirDbFolderPath)
+
     // create execution
     val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), job = mappingJob,
       projectId = projectId, mappingTasks = mappingTasks)
@@ -111,7 +115,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       toFhirEngine.contextLoader,
       toFhirEngine.schemaLoader,
       toFhirEngine.functionLibraries,
-      toFhirEngine.sparkSession
+      toFhirEngine.sparkSession,
+      Some(mappingJobScheduler)
     )
 
     // Streaming jobs
@@ -142,21 +147,45 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
       // Batch jobs
       else {
-        val executionFuture: Future[Unit] = fhirMappingJobManager
-          .executeMappingJob(
-            mappingJobExecution = mappingJobExecution,
-            sourceSettings = mappingJob.sourceSettings,
-            sinkSettings = mappingJob.sinkSettings,
-            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-            identityServiceSettings = mappingJob.getIdentityServiceSettings()
-          )
+        // run the mapping job with scheduler
+        if(mappingJob.schedulingSettings.nonEmpty){
+          // check whether the job execution is already scheduled
+          if(executionId.nonEmpty && toFhirEngine.runningJobRegistry.isScheduled(mappingJob.id,executionId.get)){
+            throw BadRequest("The mapping job execution is already scheduled!", s"The mapping job execution is already scheduled!")
+          }
+          // schedule the mapping job
+          fhirMappingJobManager
+            .scheduleMappingJob(
+              mappingJobExecution = mappingJobExecution,
+              sourceSettings = mappingJob.sourceSettings,
+              sinkSettings = mappingJob.sinkSettings,
+              schedulingSettings = mappingJob.schedulingSettings.get,
+              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+              identityServiceSettings = mappingJob.getIdentityServiceSettings()
+            )
+          // start scheduler
+          mappingJobScheduler.scheduler.start()
+          // register the job to the registry
+          toFhirEngine.runningJobRegistry.registerSchedulingJob(mappingJobExecution,mappingJobScheduler.scheduler)
+        }
 
-        // Register the job to the registry
-        toFhirEngine.runningJobRegistry.registerBatchJob(
-          mappingJobExecution,
-          executionFuture,
-          s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
-        )
+        // run the batch job without scheduling
+        else {
+          val executionFuture: Future[Unit] = fhirMappingJobManager
+            .executeMappingJob(
+              mappingJobExecution = mappingJobExecution,
+              sourceSettings = mappingJob.sourceSettings,
+              sinkSettings = mappingJob.sinkSettings,
+              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+              identityServiceSettings = mappingJob.getIdentityServiceSettings()
+            )
+          // Register the job to the registry
+          toFhirEngine.runningJobRegistry.registerBatchJob(
+            mappingJobExecution,
+            Some(executionFuture),
+            s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
+          )
+        }
       }
     }
     submittedJob
@@ -263,8 +292,10 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
           val ret = paginatedLogsResponse._1.map(log => {
             val logJson: JObject = log.asInstanceOf[JObject]
+            val executionId: String = (logJson \ "id").extract[String]
             JObject(
-              logJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains((logJson \ "id").extract[String])))
+              logJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains(executionId))) :+
+                ("scheduled" -> JBool(toFhirEngine.runningJobRegistry.isScheduled(jobId, executionId)))
             )
           })
           (ret, paginatedLogsResponse._2)
@@ -290,7 +321,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         logServiceClient.getExecutionById(projectId, jobId, executionId).map(executionJson=> {
           logger.debug(s"Retrieved execution for projectId: $projectId, jobId: $jobId, executionId: $executionId")
           // Add runningStatus field to the JSON object
-          executionJson ~ ("runningStatus" -> JBool(toFhirEngine.runningJobRegistry.getRunningExecutions(jobId).contains(executionId)))
+          executionJson ~ ("runningStatus" -> JBool(toFhirEngine.runningJobRegistry.getRunningExecutions(jobId).contains(executionId))) ~ ("scheduled" -> JBool(toFhirEngine.runningJobRegistry.isScheduled(jobId, executionId)))
         })
       case None =>
         throw ResourceNotFound("Mapping job does not exist.", s"A mapping job with id $jobId does not exist")
@@ -312,6 +343,25 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         throw ResourceNotFound("Job execution does not exists.", s"A job execution with jobId: $jobId, executionId: $executionId does not exists.")
       }
 
+    }
+  }
+
+  /**
+   * Deschedules a job execution.
+   *
+   * @param jobId       The ID of the job.
+   * @param executionId The ID of the job execution.
+   * @return A Future[Unit] representing the descheduling process.
+   * @throws ResourceNotFound if the specified job execution is not scheduled.
+   */
+  def descheduleJobExecution(jobId: String, executionId: String): Future[Unit] = {
+    Future {
+      if (toFhirEngine.runningJobRegistry.isScheduled(jobId, executionId)) {
+        toFhirEngine.runningJobRegistry.descheduleJobExecution(jobId, executionId)
+        logger.debug(s"Job execution descheduled. jobId: $jobId, execution: $executionId")
+      } else {
+        throw ResourceNotFound("Job is not scheduled.", s"There is no scheduled job execution with jobId: $jobId, executionId: $executionId.")
+      }
     }
   }
 
