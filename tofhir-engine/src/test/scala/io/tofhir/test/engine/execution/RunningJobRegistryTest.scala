@@ -90,9 +90,9 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
   "it" should "register batch jobs" in {
     val input = getTestInput("j4", "e", Seq("m1", "m2"), false)
-    runningTaskRegistry.registerBatchJob(input._1, Future.apply(
+    runningTaskRegistry.registerBatchJob(input._1, Some(Future.apply(
       Thread.sleep(1000)
-    ), "")
+    )), "")
     runningTaskRegistry.getRunningExecutions()("j4").head._2 shouldEqual Seq("m1", "m2")
 
     val booleanCapturer: ArgumentCaptor[Boolean] = ArgumentCaptor.forClass(classOf[Boolean])

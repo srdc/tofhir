@@ -62,7 +62,7 @@ trait IFhirMappingJobManager {
   def scheduleMappingJob(mappingJobExecution:FhirMappingJobExecution,
                          sourceSettings: Map[String, DataSourceSettings],
                          sinkSettings: FhirSinkSettings,
-                         schedulingSettings: SchedulingSettings,
+                         schedulingSettings: BaseSchedulingSettings,
                          terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                          identityServiceSettings: Option[IdentityServiceSettings] = None): Unit
 

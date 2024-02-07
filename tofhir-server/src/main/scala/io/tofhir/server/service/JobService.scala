@@ -2,8 +2,10 @@ package io.tofhir.server.service
 
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
+import io.tofhir.server.common.model.BadRequest
 import io.tofhir.server.service.job.IJobRepository
 
+import javax.ws.rs.BadRequestException
 import scala.concurrent.Future
 
 class JobService(jobRepository: IJobRepository) extends LazyLogging {
@@ -22,9 +24,17 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
    * @param projectId project id the job will belong to
    * @param job job to create
    * @return
+   * @throws BadRequest if the mapping job is not valid
    */
   def createJob(projectId: String, job: FhirMappingJob): Future[FhirMappingJob] = {
-    jobRepository.createJob(projectId, job)
+    try{
+      // validate the mapping job definition
+      job.validate()
+      // create the job
+      jobRepository.createJob(projectId, job)
+    } catch {
+      case _: BadRequestException => throw BadRequest("Invalid mapping job!","Streaming jobs cannot be scheduled.")
+    }
   }
 
   /**
@@ -43,9 +53,17 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
    * @param id job id
    * @param job job to update
    * @return
+   * @throws BadRequest when the mapping job is not valid
    */
   def updateJob(projectId: String, id: String, job: FhirMappingJob): Future[FhirMappingJob] = {
-    jobRepository.putJob(projectId, id, job)
+    try{
+      // validate the mapping job definition
+      job.validate()
+      // update the job
+      jobRepository.putJob(projectId, id, job)
+    } catch {
+      case _: BadRequestException => throw BadRequest("Invalid mapping job!", "Streaming jobs cannot be scheduled.")
+    }
   }
 
   /**

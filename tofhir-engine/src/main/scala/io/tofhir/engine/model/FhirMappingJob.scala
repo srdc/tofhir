@@ -3,6 +3,7 @@ package io.tofhir.engine.model
 import org.json4s.JsonAST.{JObject, JString}
 
 import java.util.UUID
+import javax.ws.rs.BadRequestException
 
 /**
  * A mapping job including one or more mapping tasks from a configured data source to a configured sink
@@ -25,10 +26,20 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
                           terminologyServiceSettings:Option[TerminologyServiceSettings] = None,
                           identityServiceSettings: Option[IdentityServiceSettings] = None,
                           mappings: Seq[FhirMappingTask],
-                          schedulingSettings: Option[SchedulingSettings] = None,
+                          schedulingSettings: Option[BaseSchedulingSettings] = None,
                           dataProcessingSettings: DataProcessingSettings = DataProcessingSettings(),
                           useFhirSinkAsIdentityService:Boolean = false
                          ) {
+  /**
+   * Validates the mapping job
+   *
+   * @throws BadRequestException if a streaming job is attempted to be scheduled.
+   */
+  def validate(): Unit = {
+    if(sourceSettings.exists(_._2.asStream) && schedulingSettings.nonEmpty){
+      throw new BadRequestException("Streaming jobs cannot be scheduled.")
+    }
+  }
   /**
    * Return the final identity service settings
    * @return
@@ -54,10 +65,28 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
 }
 
 /**
- * Cron expression showing the times of scheduled task needed. More info: https://www.sauronsoftware.it/projects/cron4j/
+ * Interface defining scheduling settings for mapping jobs.
+ */
+trait BaseSchedulingSettings {
+  /**
+   * Specifies a UNIX crontab-like pattern split into five space-separated parts.
+   * For more details, refer to: https://www.sauronsoftware.it/projects/cron4j/
+   */
+  val cronExpression: String
+}
+
+/**
+ * Represents scheduling settings for mapping jobs.
  *
- * @param cronExpression A UNIX crontab-like pattern is a string split in five space separated parts
+ * @param cronExpression A UNIX crontab-like pattern split into five space-separated parts.
+ */
+case class SchedulingSettings(cronExpression: String) extends BaseSchedulingSettings
+
+/**
+ * Represents scheduling settings for SQL data sources.
+ *
+ * @param cronExpression A UNIX crontab-like pattern split into five space-separated parts.
  * @param initialTime    If not specified, toFhir generates a time range between Java beginning (January 1, 1970) and next run time of task
  *                       If specified, toFhir generates a time range between initial time and next run time of task
  */
-case class SchedulingSettings(cronExpression: String, initialTime: Option[String])
+case class SQLSchedulingSettings(cronExpression: String, initialTime: Option[String]) extends BaseSchedulingSettings

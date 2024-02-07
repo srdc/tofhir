@@ -37,7 +37,7 @@ class Run extends Command {
                   )
               context.toFhirEngine.runningJobRegistry.registerBatchJob(
                 mappingJobExecution,
-                f,
+                Some(f),
                 s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
               )
             } else {
@@ -70,7 +70,7 @@ class Run extends Command {
                     )
                 context.toFhirEngine.runningJobRegistry.registerBatchJob(
                   mappingJobExecution,
-                  f,
+                  Some(f),
                   s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
                 )
               }
