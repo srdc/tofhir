@@ -21,6 +21,9 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   /** Path to the folder where the schema definitions are kept. */
   lazy val schemaRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mappings.schemas.repository.folder-path")).getOrElse("schemas")
 
+  /** Specific FHIR version for schemas in the schema repository. Represents fhirVersion field in the standard StructureDefinition */
+  lazy val schemaRepositoryFhirVersion: String = Try(toFhirEngineConfig.getString("mappings.schemas.fhir-version")).getOrElse("4.0.1")
+
   /** Path to the folder where the job definitions are kept. */
   lazy val jobRepositoryFolderPath: String = Try(toFhirEngineConfig.getString("mapping-jobs.repository.folder-path")).getOrElse("mapping-jobs")
 

@@ -11,16 +11,16 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.common.util.SchemaUtil
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.mapping.{AbstractFhirSchemaLoader, SchemaConverter}
+import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.mapping.SchemaConverter
 import io.tofhir.engine.model.FhirMappingException
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.{FhirVersionUtil, FileUtils}
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
 import io.tofhir.server.model.Project
 import io.tofhir.server.service.SimpleStructureDefinitionService
 import io.tofhir.server.service.project.ProjectFolderRepository
 import org.apache.spark.sql.types.StructType
-import org.json4s.{Extraction, JBool, JObject}
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
@@ -28,7 +28,6 @@ import java.util.UUID
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
-import scala.util.Try
 
 /**
  * Folder/Directory based schema repository implementation.
@@ -41,6 +40,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private val logger: Logger = Logger(this.getClass)
 
   private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(
+    fhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion),
     profilesPath = Some(FileUtils.getPath(schemaRepositoryFolderPath).toString))
   // BaseFhirConfig will act as a cache by holding the ProfileDefinitions in memory
   private val baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
@@ -107,7 +107,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       // Validate
       var structureDefinitionResource:Resource = null
       try{
-        structureDefinitionResource = SchemaUtil.convertToStructureDefinitionResource(schemaDefinition)
+        structureDefinitionResource = SchemaUtil.convertToStructureDefinitionResource(schemaDefinition, ToFhirConfig.engineConfig.schemaRepositoryFhirVersion)
       } catch {
         case _: IllegalArgumentException => throw BadRequest("Missing data type.", s"A field definition must have at least one data type. Element rootPath: ${schemaDefinition.`type`}")
       }
@@ -140,7 +140,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     // Validate
     var structureDefinitionResource:Resource = null
     try{
-      structureDefinitionResource = SchemaUtil.convertToStructureDefinitionResource(schemaDefinition)
+      structureDefinitionResource = SchemaUtil.convertToStructureDefinitionResource(schemaDefinition, ToFhirConfig.engineConfig.schemaRepositoryFhirVersion)
     } catch {
       case _: IllegalArgumentException => throw BadRequest("Missing data type.", s"A field definition must have at least one data type. Element rootPath: ${schemaDefinition.`type`}")
     }
@@ -313,8 +313,8 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       .flatMap(_.values) // Flatten all the schemas managed for all projects
       .find(_.url.contentEquals(schemaUrl)) // Find the desired url
       .map(s => {
-        val decomposedSchema: Resource = SchemaUtil.convertToStructureDefinitionResource(s) // Schema definition in the FHIR Resource representation
-        new SchemaConverter(fhirVersion).convertSchema(decomposedSchema)
+        val decomposedSchema: Resource = SchemaUtil.convertToStructureDefinitionResource(s, ToFhirConfig.engineConfig.schemaRepositoryFhirVersion) // Schema definition in the FHIR Resource representation
+        new SchemaConverter(FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion)).convertSchema(decomposedSchema)
       })
   }
 
@@ -345,7 +345,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   override def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[Resource]] = {
     getSchema(projectId, id).map {
       case Some(schemaStructureDefinition) =>
-        Some(SchemaUtil.convertToStructureDefinitionResource(schemaStructureDefinition))
+        Some(SchemaUtil.convertToStructureDefinitionResource(schemaStructureDefinition, ToFhirConfig.engineConfig.schemaRepositoryFhirVersion))
       case None =>
         None
     }

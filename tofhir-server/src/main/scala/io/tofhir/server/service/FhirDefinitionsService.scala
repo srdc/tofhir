@@ -10,7 +10,8 @@ import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.JsonMethods.compact
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
 import io.onfhir.r4.config.FhirR4Configurator
-import io.tofhir.engine.util.FileUtils
+import io.onfhir.r5.config.FhirR5Configurator
+import io.tofhir.engine.util.{FileUtils, MajorFhirVersion}
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
 import io.tofhir.common.model.SimpleStructureDefinition
 import org.json4s.JsonAST.JObject
@@ -65,10 +66,22 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
         }
       })
 
-      new FSConfigReader(profilesPath = profilesPath, codeSystemsPath = codeSystemsPath, valueSetsPath = valueSetsPath)
+      new FSConfigReader(fhirVersion = fhirDefinitionsConfig.majorFhirVersion,
+                         profilesPath = profilesPath,
+                         codeSystemsPath = codeSystemsPath,
+                         valueSetsPath = valueSetsPath)
   }
 
-  val baseFhirConfig: BaseFhirConfig = new FhirR4Configurator().initializePlatform(fhirConfigReader)
+
+  val baseFhirConfig: BaseFhirConfig = fhirDefinitionsConfig.majorFhirVersion match {
+    case MajorFhirVersion.R4 =>
+      new FhirR4Configurator().initializePlatform(fhirConfigReader)
+    case MajorFhirVersion.R5 =>
+      new FhirR5Configurator().initializePlatform(fhirConfigReader)
+    case _ =>
+      throw new RuntimeException("Unsupported FHIR version.")
+  }
+
   val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
 
   val profilesCache: mutable.Map[String, Set[String]] = mutable.HashMap()

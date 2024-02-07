@@ -7,6 +7,7 @@ import io.onfhir.r4.parsers.R4Parser
 import io.onfhir.validation.{ArrayRestriction, CardinalityMinRestriction, TypeRestriction}
 import io.tofhir.common.model.{DataTypeWithProfiles, SimpleStructureDefinition}
 import io.tofhir.engine.model.FhirMappingException
+import io.tofhir.engine.util.MajorFhirVersion
 import org.apache.spark.sql.types._
 
 /**
@@ -96,7 +97,8 @@ class SchemaConverter(majorFhirVersion: String) {
 
   private def getFoundationResourceParser(): IFhirFoundationResourceParser = {
     majorFhirVersion match {
-      case "R4" => new R4Parser()
+      case MajorFhirVersion.R4 => new R4Parser()
+      case MajorFhirVersion.R5 => new R4Parser()
       case _ => throw new NotImplementedError()
     }
   }

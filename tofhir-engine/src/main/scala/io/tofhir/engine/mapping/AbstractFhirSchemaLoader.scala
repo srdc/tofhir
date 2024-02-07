@@ -1,6 +1,7 @@
 package io.tofhir.engine.mapping
 
 import io.onfhir.api.Resource
+import io.tofhir.engine.util.MajorFhirVersion
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -8,7 +9,7 @@ import org.apache.spark.sql.types.StructType
  *
  * @param majorFhirVersion FHIR version to be used to initialize the underlying FHIR parser.
  */
-abstract class AbstractFhirSchemaLoader(majorFhirVersion: String = "R4") extends IFhirSchemaLoader {
+abstract class AbstractFhirSchemaLoader(majorFhirVersion: String = MajorFhirVersion.R4) extends IFhirSchemaLoader {
   /**
    * Load the schema from the url and return parsed JSON
    *

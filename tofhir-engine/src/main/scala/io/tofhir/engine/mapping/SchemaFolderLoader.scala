@@ -6,6 +6,7 @@ import io.onfhir.api.util.{FHIRUtil, IOUtil}
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.model.FhirMappingException
 import io.tofhir.engine.util.FileUtils.FileExtensions
+import io.tofhir.engine.util.MajorFhirVersion
 import org.apache.spark.sql.types.StructType
 
 import java.io.File
@@ -18,7 +19,7 @@ import scala.io.Source
  *
  * @param folderUri URI of the folder
  */
-class SchemaFolderLoader(folderUri: URI, majorFhirVersion: String = "R4") extends IFhirSchemaLoader {
+class SchemaFolderLoader(folderUri: URI, majorFhirVersion: String = MajorFhirVersion.R4) extends IFhirSchemaLoader {
   private val logger: Logger = Logger(this.getClass)
 
   private val schemas: Map[String, Resource] = loadSchemas()

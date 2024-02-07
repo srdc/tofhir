@@ -7,6 +7,8 @@ import scala.util.Try
 
 class FhirDefinitionsConfig(fhirDefinitionsConfig: Config) {
 
+  /** Major FHIR version (R4 or R5) */
+  lazy val majorFhirVersion: String = Try(fhirDefinitionsConfig.getString("fhir-version")).getOrElse("R4")
   /**
    * List of root URLs while retrieving the definitions (profiles, valuesets, codesystems).
    * The definitions below the given root URLs will be retrieved from the configured paths or FHIR endpoints.

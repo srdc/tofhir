@@ -7,15 +7,16 @@ import io.tofhir.server.config.SparkConfig
 import io.tofhir.server.model.InferTask
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
-import io.tofhir.engine.model.FhirMappingException
+import io.tofhir.engine.model.{FhirMappingException, FileSystemSource}
 import io.tofhir.server.service.mapping.IMappingRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import io.tofhir.engine.config.ToFhirConfig
 import io.onfhir.api.Resource
-import io.tofhir.engine.util.{CsvUtil, RedCapUtil}
+import io.tofhir.engine.util.{CsvUtil, FhirVersionUtil, RedCapUtil}
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 
 class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
@@ -116,7 +117,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
     // Create unnamed Schema definition by infer the schema from DataFrame
     val unnamedSchema = {
       // Schema converter object for mapping spark data types to fhir data types
-      val schemaConverter = new SchemaConverter(majorFhirVersion = "R4")
+      val schemaConverter = new SchemaConverter(majorFhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion))
       // Map SQL DataTypes to Fhir DataTypes
       var fieldDefinitions = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
       // Remove INPUT_VALIDITY_ERROR fieldDefinition that is added by SourceHandler

@@ -15,14 +15,14 @@ object SchemaUtil {
    * @param schemaDefinition the schema
    * @return
    */
-  def convertToStructureDefinitionResource(schemaDefinition: SchemaDefinition): Resource = {
+  def convertToStructureDefinitionResource(schemaDefinition: SchemaDefinition, fhirVersion: String): Resource = {
     val structureDefinitionResource: Resource =
       ("id" -> schemaDefinition.id) ~
         ("resourceType" -> "StructureDefinition") ~
         ("url" -> schemaDefinition.url) ~
         ("name" -> schemaDefinition.name) ~
         ("status" -> "draft") ~
-        ("fhirVersion" -> "4.0.1") ~
+        ("fhirVersion" -> fhirVersion) ~
         ("kind" -> "logical") ~
         ("abstract" -> false) ~
         ("type" -> schemaDefinition.`type`) ~
