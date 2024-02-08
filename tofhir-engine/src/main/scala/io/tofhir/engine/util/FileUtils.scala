@@ -9,12 +9,13 @@ import java.nio.file.{Path, Paths}
 object FileUtils {
 
   /**
-   * Given a list of paths, construct a single path by appending them from left to right by starting from
-   * #ToFhirConfig.mappingJobFileContextPath which is used as the root context path for any kind of file access within
-   * toFHIR.
+   * Constructs a single path by appending the given paths from left to right. If the initial path is relative,
+   * it is appended to the root context path defined by [[ToFhirConfig.engineConfig.contextPath]].
+   * This method is used for file access within toFHIR.
    *
-   * @param paths
-   * @return
+   * @param path  The initial path to start with.
+   * @param paths Additional paths to be appended to the initial path.
+   * @return The constructed path.
    */
   def getPath(path: String, paths: String*): Path = {
     val givenPath =

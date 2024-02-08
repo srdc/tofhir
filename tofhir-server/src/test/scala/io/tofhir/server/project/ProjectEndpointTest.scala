@@ -17,7 +17,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
   // second project to be created
   val project2: Project = Project(name = "second example", url = "https://www.secondexample.com", description = Some("second example project"))
   // patch to be applied to the existing project
-  val projectPatch = ProjectEditableFields.DESCRIPTION -> "updated description"
+  val projectPatch: (String, String) = ProjectEditableFields.DESCRIPTION -> "updated description"
   // schema definition
   val schemaDefinition: SchemaDefinition = SchemaDefinition("id", "https://example.com/fhir/StructureDefinition/schema", "ty", "name", None, None)
 
@@ -105,7 +105,6 @@ class ProjectEndpointTest extends BaseEndpointTest {
 
         // validate the project file has been deleted under the schemas folder
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile shouldNot exist
-        FileUtils.getPath(toFhirEngineConfig.contextPath, project1.id).toFile shouldNot exist
       }
       // delete a non-existent project
       Delete(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
