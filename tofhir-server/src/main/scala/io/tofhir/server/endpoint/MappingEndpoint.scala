@@ -8,7 +8,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.MappingEndpoint.SEGMENT_MAPPINGS
-import io.tofhir.server.model.Json4sSupport._
+import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.service.MappingService
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository

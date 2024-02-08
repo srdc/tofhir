@@ -15,7 +15,7 @@ import io.tofhir.engine.util.{FileUtils, MajorFhirVersion}
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
 import io.tofhir.common.model.SimpleStructureDefinition
 import org.json4s.JsonAST.JObject
-import io.tofhir.server.model.Json4sSupport._
+import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.BadRequest

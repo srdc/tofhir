@@ -2,7 +2,7 @@ package io.tofhir.server.service
 
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMappingJobResult
-import io.tofhir.log.server.model.Json4sSupport.formats
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.log.server.service.ExecutionService
 import org.json4s.JsonAST.JArray
 import org.scalatest.BeforeAndAfterAll

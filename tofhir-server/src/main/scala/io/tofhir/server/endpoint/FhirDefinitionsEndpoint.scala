@@ -10,7 +10,7 @@ import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUER
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.service.FhirDefinitionsService
 
-import io.tofhir.server.model.Json4sSupport._
+import io.tofhir.common.model.Json4sSupport._
 
 class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) extends LazyLogging {
 

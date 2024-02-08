@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.FhirPathFunctionsEndpoint.SEGMENT_FHIR_PATH_FUNCTIONS
-import io.tofhir.server.model.Json4sSupport._
+import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.service.FhirPathFunctionsService
 
 /**

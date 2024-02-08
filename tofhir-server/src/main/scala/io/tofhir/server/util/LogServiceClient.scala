@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.interceptor.ICORSHandler
-import io.tofhir.server.model.Json4sSupport.formats
+import io.tofhir.common.model.Json4sSupport.formats
 import org.json4s.JValue
 import org.json4s.JsonAST.JObject
 import org.json4s.jackson.JsonMethods

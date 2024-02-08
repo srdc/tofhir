@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
-import io.tofhir.server.model.Json4sSupport._
+import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.model.InferTask
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.schema.ISchemaRepository
