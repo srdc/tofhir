@@ -140,16 +140,6 @@
             <artifactId>akka-stream-typed_${scala.binary.version}</artifactId>
         </dependency>
 
-        <!-- onFHIR Dependencies -->
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-config_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>onfhir-server-r4_${scala.binary.version}</artifactId>
-        </dependency>
-
         <!-- toFHIR dependencies -->
         <dependency>
             <groupId>io.onfhir</groupId>
@@ -157,15 +147,7 @@
         </dependency>
         <dependency>
             <groupId>io.onfhir</groupId>
-            <artifactId>tofhir-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
             <artifactId>tofhir-server-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.onfhir</groupId>
-            <artifactId>tofhir-rxnorm_2.13</artifactId>
         </dependency>
 
         <!-- For Unit testing -->
@@ -174,31 +156,7 @@
             <artifactId>scalatest_${scala.binary.version}</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-scala_2.13</artifactId>
-            <scope>test</scope>
-        </dependency>
 
-        <!-- Testkit for Akka Stream-->
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-stream-testkit_${scala.binary.version}</artifactId>
-            <version>${akka.version}</version>
-        </dependency>
-        <!-- Testkit for Akka Http-->
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http-testkit_${scala.binary.version}</artifactId>
-            <version>${akka-http.version}</version>
-        </dependency>
-
-        <!-- For database testing -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
 </project>
