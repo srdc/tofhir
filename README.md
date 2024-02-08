@@ -429,3 +429,15 @@ The json keys in the `expression.value` represent the FHIR resource attributes. 
 by providing the values through a template language where we can access the fields of the source data as defined by its schema.
 On the value sides, onfhir-template-engine is used to interpret the source data. You can get more information how template engine works on the GitHub page.
 
+## Modules
+The project consists of several modules:
+- **tofhir-common:**  Contains model and utility classes shared across various modules.
+- **tofhir-engine:** Command-line interface for interacting with toFHIR.
+- **tofhir-log-server:** Server responsible for managing the logs of mapping job executions within tofhir-server.
+- **tofhir-rxnorm:** Provides a client implementation to access the RxNorm API and a FHIR Path Function library to utilize its API functionalities in mapping definitions.
+- **tofhir-server:** toFHIR Server, building upon the capabilities of tofhir-engine.
+- **tofhir-server-common:** Holds common files like server configuration or errors for server implementations.
+
+For a visual representation of the dependencies between these modules, refer to the diagram below:
+
+![module-component-diagram.png](readme-assets%2Fmodule-component-diagram.png)
