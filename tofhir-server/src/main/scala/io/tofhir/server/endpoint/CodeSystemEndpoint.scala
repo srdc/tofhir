@@ -8,7 +8,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
-import io.tofhir.server.model.Json4sSupport._
+import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.service.CodeSystemService
 import io.tofhir.server.service.terminology.codesystem.ICodeSystemRepository
 

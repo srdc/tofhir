@@ -1,4 +1,4 @@
-package io.tofhir.server.util
+package io.tofhir.common.util
 
 import org.json4s.CustomSerializer
 import org.json4s.JsonAST.{JNull, JString}
@@ -8,7 +8,7 @@ import java.time.{LocalDate, LocalDateTime}
 
 object JavaDateTimeSerializers {
 
-  val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy[-MM[-dd['T'HH[:mm[:ss[.SSS][XXX]]]]]]")
+  private val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy[-MM[-dd['T'HH[:mm[:ss[.SSS][XXX]]]]]]")
 
   case object LocalDateTimeSerializer extends CustomSerializer[LocalDateTime](format => ( {
     case JString(s) =>
