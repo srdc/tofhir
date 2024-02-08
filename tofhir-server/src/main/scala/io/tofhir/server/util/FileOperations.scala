@@ -3,7 +3,6 @@ package io.tofhir.server.util
 import akka.stream.scaladsl.FileIO
 import akka.util.ByteString
 import com.typesafe.scalalogging.Logger
-import io.onfhir.util.JsonFormatter._
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils.FileExtensions
