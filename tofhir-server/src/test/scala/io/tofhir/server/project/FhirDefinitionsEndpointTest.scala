@@ -1,14 +1,10 @@
 package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
-import io.onfhir.api.Resource
-import io.onfhir.util.JsonFormatter._
-import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.BaseEndpointTest
 import org.json4s.JsonAST.{JString, JValue}
 import org.json4s._
 import org.json4s.jackson.JsonMethods
-import org.json4s.jackson.Serialization.writePretty
 
 import scala.io.Source
 
@@ -18,11 +14,11 @@ import scala.io.Source
 class FhirDefinitionsEndpointTest extends BaseEndpointTest {
 
   // Bundle with three patients: 1 is valid, 1 has an invalid birthdate, and 1 has an invalid active field
-  val patientBundleJson: Resource = Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/patient-bundle.json")).mkString.parseJson
+  val patientBundleJson: String = Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/patient-bundle.json")).mkString
   // Valid condition resource
-  val conditionResourceJson: Resource = Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/condition-resource.json")).mkString.parseJson
+  val conditionResourceJson: String = Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/condition-resource.json")).mkString
   // Condition resource with missing subject
-  val invalidConditionResourceJson: Resource = Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/invalid-condition-resource.json")).mkString.parseJson
+  val invalidConditionResourceJson: String = Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/invalid-condition-resource.json")).mkString
 
   "The endpoint" should {
 
@@ -33,22 +29,22 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest {
       assume(fhirServerIsAvailable)
 
       // Validate the resource without providing a FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate", HttpEntity(ContentTypes.`application/json`, writePretty(conditionResourceJson))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
 
       // Validate the resource with an invalid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=test-url", HttpEntity(ContentTypes.`application/json`, writePretty(conditionResourceJson))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=test-url", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, writePretty(conditionResourceJson))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, writePretty(invalidConditionResourceJson))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, invalidConditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Convert the JSON response to a JValue
@@ -63,7 +59,7 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest {
       }
 
       // Validate a bundle of resources
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl", HttpEntity(ContentTypes.`application/json`, writePretty(patientBundleJson))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl", HttpEntity(ContentTypes.`application/json`, patientBundleJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Convert the JSON response to a JValue
