@@ -29,4 +29,6 @@ object SparkConfig {
   private lazy val sparkConf: SparkConf = new SparkConf()
     .setAppName(sparkAppName)
     .setMaster(sparkMaster)
+    // Enable case sensitivity to treat schema column names as case-sensitive to avoid potential conflicts
+    .set("spark.sql.caseSensitive", "true")
 }
