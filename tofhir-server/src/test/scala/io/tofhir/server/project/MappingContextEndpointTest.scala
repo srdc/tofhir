@@ -1,7 +1,7 @@
 package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
-import io.onfhir.util.JsonFormatter.formats
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.util.{FileOperations, TestUtil}

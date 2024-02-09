@@ -7,7 +7,7 @@ import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionReq
 import io.onfhir.api.model.OutcomeIssue
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
-import io.onfhir.util.JsonFormatter._
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.model._
@@ -253,7 +253,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         s"!!!There is an error while writing resources to the FHIR Repository.\n" +
           s"\tRepository URL: ${sinkSettings.fhirRepoUrl}\n" +
           s"\tBundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
-          s"\tBundle response: ${responseBundle.bundle.toJson}"
+          s"\tBundle response: ${Serialization.write(responseBundle.bundle)}"
 
       responseBundle
         .responses

@@ -5,6 +5,8 @@ import io.onfhir.config.BaseFhirConfig
 import io.onfhir.validation._
 import io.tofhir.common.model._
 import io.tofhir.server.model.CountingMap
+import io.tofhir.common.model.Json4sSupport.formats
+import org.json4s.jackson.Serialization
 
 class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
@@ -353,14 +355,13 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
           // TODO: Shall we accumulate these constraints or shall we only get the last one?
           constraintDefinitions = constraintDefinitions ++ constraintsRestriction.fhirConstraints.map(fc => ConstraintDefinition(fc.key, fc.desc, fc.isWarning))
         case fixedOrPatternRestriction: FixedOrPatternRestriction =>
-          import io.onfhir.util.JsonFormatter._
           if (fixedOrPatternRestriction.isFixed) {
             if (fixedValue.isEmpty) {
-              fixedValue = Some(fixedOrPatternRestriction.fixedValue.toJson)
+              fixedValue = Some(Serialization.write(fixedOrPatternRestriction.fixedValue))
             }
           } else {
             if (patternValue.isEmpty) {
-              patternValue = Some(fixedOrPatternRestriction.fixedValue.toJson)
+              patternValue = Some(Serialization.write(fixedOrPatternRestriction.fixedValue))
             }
           }
         case unk =>
