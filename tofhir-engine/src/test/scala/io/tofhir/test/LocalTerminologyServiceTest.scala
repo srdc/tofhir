@@ -1,7 +1,7 @@
 package io.tofhir.test
 
 import io.onfhir.api.util.FHIRUtil
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.util.JsonFormatter.formats
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.mapping.LocalTerminologyService
 import io.tofhir.engine.model.{CodeSystemFile, ConceptMapFile, LocalFhirTerminologyServiceSettings}
