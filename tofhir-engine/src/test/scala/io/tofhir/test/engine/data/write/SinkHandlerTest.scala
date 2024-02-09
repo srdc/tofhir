@@ -14,7 +14,7 @@ import scala.language.postfixOps
 
 class SinkHandlerTest extends AnyFlatSpec {
 
-  val sparkSession: SparkSession = SparkSession.builder().config(ToFhirConfig.createSparkConf).getOrCreate()
+  val sparkSession: SparkSession = ToFhirConfig.sparkSession
 
   "SinkHandler" should "continue processing subsequent batches for streaming queries after a batch throws an exception" in {
     // A mock

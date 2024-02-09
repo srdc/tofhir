@@ -3,11 +3,10 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.data.read.SourceHandler
-import io.tofhir.server.config.SparkConfig
 import io.tofhir.server.model.InferTask
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
-import io.tofhir.engine.model.{FhirMappingException, FileSystemSource}
+import io.tofhir.engine.model.FhirMappingException
 import io.tofhir.server.service.mapping.IMappingRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -105,7 +104,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
   def inferSchema(inferTask: InferTask): Future[Option[SchemaDefinition]] = {
     // Execute SQL and get the dataFrame
     val dataFrame = try {
-      SourceHandler.readSource(inferTask.name, SparkConfig.sparkSession,
+      SourceHandler.readSource(inferTask.name, ToFhirConfig.sparkSession,
         inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
     } catch {
       case e: FhirMappingException =>

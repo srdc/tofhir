@@ -1,7 +1,8 @@
 package io.tofhir.log.server.service
 
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.log.server.config.{SparkConfig, ToFhirLogServerConfig}
+import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.log.server.config.ToFhirLogServerConfig
 import io.tofhir.server.common.model.ResourceNotFound
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.functions.col
@@ -30,7 +31,7 @@ class ExecutionService() extends LazyLogging {
   def getExecutionLogs(executionId: String): Future[Seq[JValue]] = {
     Future {
       // read the logs file
-      val dataFrame = SparkConfig.sparkSession.read.json(ToFhirLogServerConfig.mappingLogsFilePath)
+      val dataFrame = ToFhirConfig.sparkSession.read.json(ToFhirLogServerConfig.mappingLogsFilePath)
       // handle the case where no job has been run yet which makes the data frame empty
       if (dataFrame.isEmpty) {
         Seq.empty
@@ -113,7 +114,7 @@ class ExecutionService() extends LazyLogging {
 
     Future {
       // read the logs file
-      val dataFrame = SparkConfig.sparkSession.read.json(ToFhirLogServerConfig.mappingLogsFilePath)
+      val dataFrame = ToFhirConfig.sparkSession.read.json(ToFhirLogServerConfig.mappingLogsFilePath)
       // handle the case where no job has been run yet which makes the data frame empty
       if (dataFrame.isEmpty) {
         (Seq.empty, 0)
@@ -202,7 +203,7 @@ class ExecutionService() extends LazyLogging {
     // Retrieve the job to validate its existence
     Future {
       // Read the logs file
-      val dataFrame = SparkConfig.sparkSession.read.json(ToFhirLogServerConfig.mappingLogsFilePath)
+      val dataFrame = ToFhirConfig.sparkSession.read.json(ToFhirLogServerConfig.mappingLogsFilePath)
       // Filter logs by job and execution ID
       val filteredLogs = dataFrame.filter(s"jobId = '$jobId' and projectId = '$projectId' and executionId = '$executionId'")
       // Check if any logs exist for the given execution

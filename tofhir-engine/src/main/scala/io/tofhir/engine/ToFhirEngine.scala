@@ -6,7 +6,6 @@ import io.tofhir.engine.execution.{FileStreamInputArchiver, RunningJobRegistry}
 import io.tofhir.engine.mapping._
 import io.tofhir.engine.model.EngineInitializationException
 import io.tofhir.engine.util.FileUtils
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -25,12 +24,9 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
     throw EngineInitializationException("Mapping and schema repositories should both empty or non-empty")
   }
 
-  //Spark configurations
-  private val sparkConf: SparkConf = ToFhirConfig.createSparkConf
-
   val engineConfig: ToFhirEngineConfig = ToFhirConfig.engineConfig
 
-  val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+  val sparkSession: SparkSession = ToFhirConfig.sparkSession
 
   //Repository for mapping definitions
   val mappingRepo: IFhirMappingCachedRepository = mappingRepository.getOrElse(new FhirMappingFolderRepository(FileUtils.getPath(engineConfig.mappingRepositoryFolderPath).toUri))

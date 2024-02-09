@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping._
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inside, Inspectors, OptionValues}
@@ -21,12 +20,7 @@ trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspect
   val schemaRepositoryURI: URI = getClass.getResource(ToFhirConfig.engineConfig.schemaRepositoryFolderPath).toURI
   val schemaRepository = new SchemaFolderLoader(schemaRepositoryURI)
 
-  val sparkConf: SparkConf = new SparkConf()
-    .setAppName(ToFhirConfig.sparkAppName)
-    .setMaster(ToFhirConfig.sparkMaster)
-    .set("spark.driver.allowMultipleContexts", "false")
-    .set("spark.ui.enabled", "false")
-  val sparkSession: SparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
+  val sparkSession: SparkSession = ToFhirConfig.sparkSession
 
   val runningJobRegistry: RunningJobRegistry = new RunningJobRegistry(sparkSession)
 
