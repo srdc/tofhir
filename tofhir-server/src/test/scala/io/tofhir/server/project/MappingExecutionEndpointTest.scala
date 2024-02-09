@@ -32,7 +32,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   // first job to be created
   val fsSinkFolderName: String = "fsSink"
   val fsSinkFolder: File = new File(fsSinkFolderName)
-  val sparkSession: SparkSession = SparkSession.builder().config(ToFhirConfig.createSparkConf).getOrCreate()
+  val sparkSession: SparkSession = ToFhirConfig.sparkSession
 
   val resourceFilter: ResourceFilter = ResourceFilter(numberOfRows = 3, order = "start")
 

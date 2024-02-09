@@ -3,6 +3,7 @@ package io.tofhir.engine.config
 import com.typesafe.config.Config
 import io.tofhir.engine.util.FileUtils
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.SparkSession
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -20,28 +21,31 @@ object ToFhirConfig {
   /**
    * Spark configurations
    */
-  lazy val sparkConfig = config.getConfig("spark")
+  private lazy val sparkConfig: Config = config.getConfig("spark")
   /** Application name for Spark */
-  lazy val sparkAppName: String = Try(sparkConfig.getString("app.name")).getOrElse("AICCELERATE Data Integration Suite")
+  private lazy val sparkAppName: String = Try(sparkConfig.getString("app.name")).getOrElse("AICCELERATE Data Integration Suite")
   /** Master url of the Spark cluster */
-  lazy val sparkMaster: String = Try(sparkConfig.getString("master")).getOrElse("local[4]")
+  private lazy val sparkMaster: String = Try(sparkConfig.getString("master")).getOrElse("local[4]")
   /** Directory to keep Spark's checkpoints created  */
   lazy val sparkCheckpointDirectory: String = FileUtils.getPath(Try(sparkConfig.getString("checkpoint-dir")).getOrElse("checkpoint")).toString
   /**
    * Default configurations for spark
    */
-  val sparkConfDefaults: Map[String, String] =
+  private val sparkConfDefaults: Map[String, String] =
     Map(
       "spark.driver.allowMultipleContexts" -> "false",
       "spark.ui.enabled" -> "false",
+      "spark.sql.caseSensitive" -> "true", // Enable case sensitivity to treat schema column names as case-sensitive to avoid potential conflicts
       "spark.sql.files.ignoreCorruptFiles" -> "false", //Do not ignore corrupted files (e.g. CSV missing a field from the given schema) as we want to log them
       "spark.sql.streaming.checkpointLocation" -> sparkCheckpointDirectory, //Checkpoint directory for streaming
       "mapreduce.fileoutputcommitter.marksuccessfuljobs" -> "false", //Do not create _SUCCESS file while writing to csv
     )
+  // Spark session
+  lazy val sparkSession: SparkSession = SparkSession.builder().config(createSparkConf).getOrCreate()
   /**
    * Create spark configuration from this config
    */
-  def createSparkConf: SparkConf = {
+  private def createSparkConf: SparkConf = {
     val sparkConf = new SparkConf()
       .setAppName(sparkAppName)
       .setMaster(sparkMaster)
