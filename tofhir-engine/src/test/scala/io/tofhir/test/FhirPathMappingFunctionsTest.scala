@@ -4,10 +4,10 @@ import io.onfhir.path.FhirPathEvaluator
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.mapping.{FhirMappingFunctionsFactory, MappingContextLoader}
 import io.tofhir.engine.model.{FhirMapping, FhirMappingContextDefinition}
-import org.json4s.{JArray, JNull, JObject, JString}
+import org.json4s.jackson.JsonMethods
+import org.json4s.{JArray, JNull, JObject, JString, JValue}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
-import io.onfhir.util.JsonFormatter._
 
 import scala.concurrent.ExecutionContext
 import scala.io.Source
@@ -16,7 +16,7 @@ class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
 
   implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
   // a simple json on which we can run mpp:nonEmptyLoopedFields function
-  val loopJson = Source.fromInputStream(getClass.getResourceAsStream("/test-data/loop.json")).mkString.parseJson
+  val loopJson: JValue = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/test-data/loop.json")).mkString)
 
   val labResultMapping: FhirMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
   val conceptMapContextDefinition: FhirMappingContextDefinition = labResultMapping.context("obsConceptMap")

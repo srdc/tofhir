@@ -5,7 +5,7 @@ import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.path.FhirPathUtilFunctionsFactory
-import io.onfhir.util.JsonFormatter.formats
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.mapping.FhirMappingJobManager

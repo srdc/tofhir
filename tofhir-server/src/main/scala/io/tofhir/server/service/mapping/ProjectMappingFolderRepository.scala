@@ -1,8 +1,8 @@
 package io.tofhir.server.service.mapping
 
-import com.fasterxml.jackson.core.JsonParseException
 import com.typesafe.scalalogging.Logger
-import io.onfhir.util.JsonFormatter._
+import org.json4s.jackson.JsonMethods
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.util.FileUtils
@@ -237,7 +237,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
         val fileContent = try source.mkString finally source.close()
         // Try to parse the file content as FhirMapping
         try {
-          val fhirMapping = fileContent.parseJson.extract[FhirMapping]
+          val fhirMapping = JsonMethods.parse(fileContent).extract[FhirMapping]
           // discard if the mapping id and file name not match
           if (FileOperations.checkFileNameMatchesEntityId(fhirMapping.id, file, "mapping")) {
             fhirMappingMap.put(fhirMapping.id, fhirMapping)

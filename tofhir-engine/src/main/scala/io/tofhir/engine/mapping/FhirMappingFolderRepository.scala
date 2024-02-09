@@ -2,7 +2,8 @@ package io.tofhir.engine.mapping
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
-import io.onfhir.util.JsonFormatter._
+import org.json4s.jackson.JsonMethods
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.model.{FhirMapping, FhirMappingException}
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import org.json4s.JField
@@ -39,7 +40,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingCachedRepo
       val source = Source.fromFile(f, StandardCharsets.UTF_8.name()) // read the JSON file
       val fileContent = try source.mkString finally source.close()
       val fhirMapping = try {
-        fileContent.parseJson.removeField { // Remove any fields starting with @ from the JSON.
+        JsonMethods.parse(fileContent).removeField { // Remove any fields starting with @ from the JSON.
           case JField(fieldName, _) if fieldName.startsWith("@") => true
           case _ => false
         }.extractOpt[FhirMapping]

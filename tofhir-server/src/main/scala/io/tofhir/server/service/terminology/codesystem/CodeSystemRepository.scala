@@ -2,13 +2,12 @@ package io.tofhir.server.service.terminology.codesystem
 
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
-import io.onfhir.util.JsonFormatter._
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
 import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
 import io.tofhir.server.model._
-import io.tofhir.server.service.terminology.TerminologySystemFolderRepository
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository.getTerminologySystemsJsonPath
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.Serialization.writePretty

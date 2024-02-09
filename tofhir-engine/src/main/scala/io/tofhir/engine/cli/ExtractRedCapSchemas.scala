@@ -3,7 +3,7 @@ package io.tofhir.engine.cli
 import java.io.{FileNotFoundException, FileWriter}
 
 import io.onfhir.api.Resource
-import io.onfhir.util.JsonFormatter.formats
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.util.{CsvUtil, FileUtils, RedCapUtil}
 import org.json4s.jackson.Serialization.writePretty

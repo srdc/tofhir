@@ -4,7 +4,8 @@ import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.FhirClientException
 import io.onfhir.expression.FhirExpressionException
 import io.onfhir.path.FhirPathException
-import io.onfhir.util.JsonFormatter._
+import org.json4s.jackson.Serialization
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.common.util.ExceptionUtil
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
@@ -84,7 +85,7 @@ object MappingTaskExecutor {
                 mappingUrl = fhirMappingService.mappingUrl,
                 mappingExpr = None,
                 timestamp = Timestamp.from(Instant.now()),
-                source = Some(jo.toJson),
+                source = Some(Serialization.write(jo)),
                 error = Some(FhirMappingError(
                   code = FhirMappingErrorCodes.INVALID_INPUT,
                   description = validationError
@@ -145,7 +146,7 @@ object MappingTaskExecutor {
                 mappingUrl = fhirMappingService.mappingUrl,
                 mappingExpr = None,
                 timestamp = Timestamp.from(Instant.now()),
-                source = Some(jo.toJson),
+                source = Some(Serialization.write(jo)),
                 error = Some(FhirMappingError(
                   code = FhirMappingErrorCodes.INVALID_INPUT,
                   description = validationErrors.mkString("\n")
@@ -181,8 +182,8 @@ object MappingTaskExecutor {
               mappingUrl = fhirMappingService.mappingUrl,
               mappingExpr = Some(mappingExpr),
               timestamp = Timestamp.from(Instant.now()),
-              source = Some(jo.toJson),
-              mappedResource = Some(JArray(resources.toList).toJson),
+              source = Some(Serialization.write(jo)),
+              mappedResource = Some(Serialization.write(JArray(resources.toList))),
               fhirInteraction = fhirInteraction,
               executionId = executionId
             ))
@@ -194,8 +195,8 @@ object MappingTaskExecutor {
                 mappingUrl = fhirMappingService.mappingUrl,
                 mappingExpr = Some(mappingExpr),
                 timestamp = Timestamp.from(Instant.now()),
-                source = Some(jo.toJson),
-                mappedResource = Some(r.toJson),
+                source = Some(Serialization.write(jo)),
+                mappedResource = Some(Serialization.write(r)),
                 fhirInteraction = fhirInteraction,
                 executionId = executionId
               )
@@ -224,7 +225,7 @@ object MappingTaskExecutor {
             mappingUrl = fhirMappingService.mappingUrl,
             mappingExpr = Some(mappingExpr),
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(jo.toJson),
+            source = Some(Serialization.write(jo)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = errorDescription,
@@ -238,7 +239,7 @@ object MappingTaskExecutor {
             mappingUrl = fhirMappingService.mappingUrl,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(jo.toJson),
+            source = Some(Serialization.write(jo)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = ExceptionUtil.extractExceptionMessages(e)
@@ -251,7 +252,7 @@ object MappingTaskExecutor {
             mappingUrl = fhirMappingService.mappingUrl,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(jo.toJson),
+            source = Some(Serialization.write(jo)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_TIMEOUT,
               description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.engineConfig.mappingTimeout.toString}!"
@@ -264,7 +265,7 @@ object MappingTaskExecutor {
             mappingUrl = fhirMappingService.mappingUrl,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(jo.toJson),
+            source = Some(Serialization.write(jo)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.UNEXPECTED_PROBLEM,
               description = "Exception:" + oth.getMessage

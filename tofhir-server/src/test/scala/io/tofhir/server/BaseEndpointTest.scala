@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.client.OnFhirNetworkClient
-import io.onfhir.util.JsonFormatter.formats
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import io.tofhir.engine.util.FileUtils

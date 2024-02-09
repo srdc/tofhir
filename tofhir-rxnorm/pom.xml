@@ -65,5 +65,10 @@
             <artifactId>scalatest_${scala.binary.version}</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- toFHIR common-->
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>tofhir-common</artifactId>
+        </dependency>
     </dependencies>
 </project>

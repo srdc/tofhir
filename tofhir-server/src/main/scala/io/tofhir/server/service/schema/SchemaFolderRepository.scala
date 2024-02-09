@@ -171,7 +171,6 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       getFileForSchema(projectId, schemaDefinition.id).map(file => {
 
         val fw = new FileWriter(file)
-        import io.onfhir.util.JsonFormatter._
         fw.write(structureDefinitionResource.toPrettyJson)
         fw.close()
 
