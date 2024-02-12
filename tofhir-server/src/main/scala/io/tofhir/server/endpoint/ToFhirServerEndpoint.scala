@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{HttpMethod, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{RejectionHandler, Route}
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.server.config.LogServiceConfig
+import io.tofhir.server.config.{LogServiceConfig, RedCapServiceConfig}
 import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.common.interceptor.{ICORSHandler, IErrorHandler}
@@ -25,7 +25,7 @@ import java.util.UUID
  * Encapsulates all services and directives
  * Main Endpoint for toFHIR server
  */
-class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig, logServiceConfig: LogServiceConfig) extends ICORSHandler with IErrorHandler {
+class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig, logServiceConfig: LogServiceConfig, redCapServiceConfig: RedCapServiceConfig) extends ICORSHandler with IErrorHandler {
 
   val projectRepository: ProjectFolderRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
   val mappingRepository: ProjectMappingFolderRepository = new ProjectMappingFolderRepository(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
@@ -42,6 +42,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository, logServiceConfig.logServiceEndpoint)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint()
+  val redcapEndpoint = new RedCapEndpoint(redCapServiceConfig)
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, conceptMapRepository, codeSystemRepository, mappingJobRepository)
   // Custom rejection handler to send proper messages to user
   val toFhirRejectionHandler: RejectionHandler = ToFhirRejectionHandler.getRejectionHandler();
@@ -56,7 +57,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
                 val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
                 handleRejections(toFhirRejectionHandler) {
                   handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                    terminologyServiceManagerEndpoint.route(restCall) ~ projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall) ~ fhirPathFunctionsEndpoint.route(restCall)
+                    terminologyServiceManagerEndpoint.route(restCall) ~ projectEndpoint.route(restCall) ~ fhirDefinitionsEndpoint.route(restCall) ~ fhirPathFunctionsEndpoint.route(restCall) ~ redcapEndpoint.route(restCall)
                   }
                 }
               }
