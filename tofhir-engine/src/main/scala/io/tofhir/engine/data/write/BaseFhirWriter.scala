@@ -16,6 +16,12 @@ abstract class BaseFhirWriter(sinkSettings: FhirSinkSettings) extends Serializab
    * @param df
    */
   def write(sparkSession: SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator: CollectionAccumulator[FhirMappingResult]): Unit
+
+  /**
+   * Validates the current FHIR writer. This method should be implemented by concrete subclasses to perform any necessary validation checks.
+   * If the validation fails, an exception should be thrown.
+   */
+  def validate(): Unit
 }
 
 /**

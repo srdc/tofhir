@@ -31,6 +31,13 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
         throw new NotImplementedError()
     }
   }
+
+  /**
+   * Validates the current FHIR writer.
+   *
+   * For the FileSystemWriter, validation is not implemented and this method does nothing.
+   */
+  override def validate(): Unit = {}
 }
 
 object FileSystemWriter {

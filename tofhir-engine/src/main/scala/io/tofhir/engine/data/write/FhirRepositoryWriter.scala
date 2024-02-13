@@ -61,6 +61,35 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
   }
 
   /**
+   * Validates the current FHIR writer. It checks whether the provided FHIR repository URL is valid by attempting to
+   * retrieve the capability statement from the server. If the server does not respond with a successful status code
+   * within the specified timeout period, or if the response indicates an error, an InvalidFhirRepositoryUrlException is
+   * thrown.
+   *
+   * @throws InvalidFhirRepositoryUrlException if the validation fails due to an invalid or unreachable FHIR repository URL.
+   */
+  override def validate(): Unit = {
+    import Execution.actorSystem
+    implicit val ec: ExecutionContext = actorSystem.dispatcher
+    val onFhirClient = sinkSettings.createOnFhirClient
+    try {
+      Await.result(onFhirClient.capabilities().execute()
+        .map(response => {
+          if (!response.httpStatus.isSuccess()) {
+            throw InvalidFhirRepositoryUrlException(s"Failed to retrieve capability statement for the FHIR Server at '${onFhirClient.getBaseUrl()}' which returns ${response.httpStatus}. Please make sure that the URL is correct.")
+          }
+        }), FiniteDuration(10, TimeUnit.SECONDS))
+    } catch {
+      case t: InvalidFhirRepositoryUrlException =>
+        throw t
+      case te: TimeoutException =>
+        throw InvalidFhirRepositoryUrlException(s"Failed to retrieve capability statement for the FHIR Server at '${onFhirClient.getBaseUrl()}' in 10 seconds. Please make sure that the URL is correct.", te)
+      case e: Throwable =>
+        throw InvalidFhirRepositoryUrlException(s"Failed to retrieve capability statement for the FHIR Server at '${onFhirClient.getBaseUrl()}'. Please make sure that the URL is correct.", e)
+    }
+  }
+
+  /**
    * Prepare the batch request from mapping results
    *
    * @param mappingResults Mapping results for this batch

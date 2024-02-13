@@ -58,6 +58,7 @@ class FhirMappingJobManager(
                                  identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    fhirWriter.validate()
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
@@ -109,6 +110,7 @@ class FhirMappingJobManager(
                                      identityServiceSettings: Option[IdentityServiceSettings] = None,
                                     ): Map[String, Future[StreamingQuery]] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    fhirWriter.validate()
     mappingJobExecution.mappingTasks
       .map(t => {
         logger.debug(s"Streaming mapping job ${mappingJobExecution.job.id}, mapping url ${t.mappingRef} is started and waiting for the data...")
@@ -246,6 +248,7 @@ class FhirMappingJobManager(
                                   identityServiceSettings: Option[IdentityServiceSettings] = None,
                                  ): Future[Unit] = {
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
+    fhirWriter.validate()
 
     readSourceAndExecuteTask(mappingJobExecution.job.id, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
       .map {
