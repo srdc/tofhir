@@ -89,6 +89,10 @@ class RunningJobRegistry(spark: SparkSession) {
   //  To resolve this issue, we need to assign a unique Spark job group id at the start of mapping job execution, before registering it with the RunningJobRegistry.
   //  We should call setJobGroup function before Spark tasks begin execution. The ideal location for this call seems to be the readSourceExecuteAndWriteInBatches function,
   //  although thorough testing is required to ensure its effectiveness.
+  //  UPDATE: Although I set the job group id of each thread to the same value, cancelJobGroup does not work as expected
+  //  because it only cancels the active jobs in Spark 3.5 not the future submitted jobs.
+  //  In the main branch of Spark, this method can take a parameter named cancelFutureJobs that can resolve our problem.
+  //  Please see https://github.com/apache/spark/blob/33a153a6bbcba0d9b2ab20404c7d3b6db86d7b4a/core/src/main/scala/org/apache/spark/scheduler/DAGScheduler.scala#L1108
   /**
    * Caches a batch job. This method sets the Spark job group id for further referencing (e.g. cancelling the Spark jobs via the job group).
    * Spark job group manages job groups per different threads. This practically means that for each mapping execution request initiated by a REST call would have a different job group.
