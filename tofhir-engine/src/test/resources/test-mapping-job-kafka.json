@@ -2,7 +2,7 @@
   "id": "kafka-mapping-job",
   "sourceSettings": {
     "source":{
-      "jsonClass": "StreamingSourceSettings",
+      "jsonClass": "KafkaSourceSettings",
       "name": "kafka-source",
       "sourceUri": "https://aiccelerate.eu/data-integration-suite/kafka-data",
       "bootstrapServers": "localhost:9092"
