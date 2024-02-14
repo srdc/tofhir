@@ -306,6 +306,14 @@
                         <groupId>org.apache.logging.log4j</groupId>
                         <artifactId>log4j-slf4j-impl</artifactId>
                     </exclusion>
+                    <!--
+                        Exclude the "org.apache.commons:commons-lang3:jar:3.12.0" dependency to avoid conflicts with the version
+                        "org.apache.commons:commons-lang3:jar:3.14.0" provided by "onfhir".
+                    -->
+                    <exclusion>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-lang3</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
