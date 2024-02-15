@@ -1,0 +1,46 @@
+{
+  "name" : "patient-job-test",
+  "sourceSettings" : {
+	"patient" : {
+	  "jsonClass" : "FileSystemSourceSettings",
+	  "name" : "patient-test-data",
+	  "sourceUri" : "http://test-data",
+	  "dataFolderPath" : "/test-data",
+	  "asStream" : false
+	},
+	"patientGender" : {
+	  "jsonClass" : "FileSystemSourceSettings",
+	  "name" : "patient-gender-test-data",
+	  "sourceUri" : "http://test-data",
+	  "dataFolderPath" : "/test-data-gender",
+	  "asStream" : false
+	}
+  },
+  "sinkSettings" : {
+	"jsonClass" : "FhirRepositorySinkSettings",
+	"fhirRepoUrl" : "http://localhost:8081/fhir",
+	"returnMinimal" : true
+  },
+  "mappings" : [ {
+	"mappingRef" : "http://patient-mapping-with-two-sources",
+	"sourceContext" : {
+	  "patient" : {
+		"jsonClass" : "FileSystemSource",
+		"path" : "patient-simple.csv",
+		"fileFormat" : "csv",
+		"options" : { }
+	  },
+	  "patientGender" : {
+		"jsonClass" : "FileSystemSource",
+		"path" : "patient-gender-simple.csv",
+		"fileFormat" : "csv",
+		"options" : { }
+	  }
+	}
+  } ],
+  "dataProcessingSettings" : {
+	"saveErroneousRecords" : false,
+	"archiveMode" : "off"
+  },
+  "useFhirSinkAsIdentityService" : false
+}

@@ -11,7 +11,7 @@ import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
-import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility}
+import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility, FileUtils}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
 
@@ -94,13 +94,25 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     if (fhirServerIsAvailable) {
       deleteResources()
     }
+    // delete context path
+    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath("").toFile)
     super.afterAll()
+  }
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    // copy test data files to the context path so that 'execute a mapping job with two data sources' test can find
+    // them while running the mapping job
+    copyResourceFile("test-data/patient-simple.csv")
+    copyResourceFile("test-data-gender/patient-gender-simple.csv")
   }
 
   private def deleteResources(): Assertion = {
     // Start delete operation of written resources on the FHIR
     var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
 
+    // delete test-patient
+    batchRequest = batchRequest.entry(_.delete("Patient", "test-patient"))
     // Delete all patients between p1-p10 and related observations
 
     (1 to 10).foreach(i => {
@@ -152,6 +164,19 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       FHIRUtil.extractValue[String](patient10, "gender") shouldBe "female"
       FHIRUtil.extractValue[String](patient10, "birthDate") shouldBe "2003-11"
       FHIRUtil.extractValueOption[String](patient10, "deceasedDateTime").isEmpty shouldBe true
+    }
+  }
+
+  it should "execute a mapping job with two data sources" in {
+    assume(fhirServerIsAvailable)
+    val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(getClass.getResource("/patient-mapping-job-with-two-sources.json").toURI.getPath)
+
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession)
+    fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = mappingJob.mappings, job = mappingJob), sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings) flatMap { _ =>
+      onFhirClient.read("Patient", "test-patient").executeAndReturnResource() flatMap { p1Resource =>
+        (p1Resource \ "id").extract[String] shouldBe "test-patient"
+        (p1Resource \ "gender").extract[String] shouldBe "male"
+      }
     }
   }
 
