@@ -1,0 +1,42 @@
+{
+  "id": "patient-mapping",
+  "url": "http://patient-mapping-with-two-sources",
+  "name": "patient-mapping",
+  "title": "Patient Mapping",
+  "source": [
+	{
+	  "alias": "patient",
+	  "url": "http://patient-schema",
+	  "joinOn": [
+		"pid"
+	  ]
+	},
+	{
+	  "alias": "patientGender",
+	  "url": "http://patient-gender",
+	  "joinOn": [
+		"pid"
+	  ]
+	}
+  ],
+  "context": {},
+  "variable": [],
+  "mapping": [
+	{
+	  "expression": {
+		"name": "patient",
+		"language": "application/fhir-template+json",
+		"value": {
+		  "gender": "{{%patientGender.gender}}",
+		  "id": "{{pid}}",
+		  "meta": {
+			"profile": [
+			  "http://hl7.org/fhir/StructureDefinition/Patient"
+			]
+		  },
+		  "resourceType": "Patient"
+		}
+	  }
+	}
+  ]
+}

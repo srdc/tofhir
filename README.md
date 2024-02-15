@@ -786,6 +786,112 @@ To give any spark option, you can use the `options` field in the source context 
 }
 ```
 
+#### Multiple Data Sources
+
+In a mapping job, you can utilize more than one data source. Let's consider a scenario where you have two files:
+- **patient.csv:** Contains patient identifiers, specifically the "pid" column.
+- **patient-gender.csv:** Contains gender information for patients, including "pid" and "gender" columns.
+
+We'll implement a mapping job that utilizes these two CSV files as data sources and runs a simple patient mapping.
+
+##### 1. Define Source Settings
+
+First, define the source settings pointing to the two different file data sources:
+
+```json
+{
+  "sourceSettings" : {
+    "patient" : {
+      "jsonClass" : "FileSystemSourceSettings",
+      "name" : "patient-test-data",
+      "sourceUri" : "http://test-data",
+      "dataFolderPath" : "/test-data",
+      "asStream" : false
+    },
+    "patientGender" : {
+      "jsonClass" : "FileSystemSourceSettings",
+      "name" : "patient-gender-test-data",
+      "sourceUri" : "http://test-data",
+      "dataFolderPath" : "/test-data-gender",
+      "asStream" : false
+    }
+  }
+}
+```
+The `patient` source points to the `test-data` directory in the file system, while the `patientGender` source points to the `test-data-gender` directory.
+
+##### 2. Specify Source Contexts
+Next, specify the source contexts for your mappings in the job. Here's an example:
+
+```json
+{
+  "mappings" : [ {
+    "mappingRef" : "http://patient-mapping-with-two-sources",
+    "sourceContext" : {
+      "patient" : {
+        "jsonClass" : "FileSystemSource",
+        "path" : "patient-simple.csv",
+        "fileFormat" : "csv",
+        "options" : { }
+      },
+      "patientGender" : {
+        "jsonClass" : "FileSystemSource",
+        "path" : "patient-gender-simple.csv",
+        "fileFormat" : "csv",
+        "options" : { }
+      }
+    }
+  } ]
+}
+```
+In this example, `patient-simple.csv` is used for the `patient` source, while `patient-gender-simple.csv` is used for the `patientGender` source. 
+Ensure that the keys in the `sourceContext` match those in the `sourceSettings` above. Otherwise, if there is no match, the `sourceContext` will use first source 
+specified in `sourceSettings`.
+
+##### 3. Join Data Sources
+Finally, in the mapping definition, join these two data sources:
+
+```json
+{
+  "source": [
+    {
+      "alias": "patient",
+      "url": "http://patient-schema",
+      "joinOn": [
+        "pid"
+      ]
+    },
+    {
+      "alias": "patientGender",
+      "url": "http://patient-gender",
+      "joinOn": [
+        "pid"
+      ]
+    }
+  ]
+}
+```
+Specify the corresponding schema URL for each data source. Use the same source keys (**patient** and **patientGender**) as alias to match schemas with the data sources provided in the mapping 
+job definition. Then, join the two source data using the **pid** column available in both.
+
+The first source i.e. **patient** is called the main schema, and its fields are accessible directly in the mapping. 
+To access attributes of other schemas (side schemas), use the **%** operator (e.g., **%patientGender**).
+
+Here's an example mapping that utilizes the **pid** field from the **patient** source and the **gender** information from the **patientGender** source:
+
+```json
+{
+  "gender": "{{%patientGender.gender}}",
+  "id": "{{pid}}"
+}
+```
+Please refer to the following files for full definitions:
+
+- [patient-simple.csv](tofhir-engine/src/test/resources/test-data/patient-simple.csv)
+- [patient-gender-simple.csv](tofhir-engine/src/test/resources/test-data-gender/patient-gender-simple.csv)
+- [patient-mapping-job-with-two-sources.json](tofhir-engine/src/test/resources/patient-mapping-job-with-two-sources.json)
+- [patient-mapping-with-two-sources.json](tofhir-engine/src/test/resources/test-mappings/patient-mapping-with-two-sources.json)
+
 #### Sink Settings
 
 toFHIR supports persisting the generated FHIR resources to a FHIR repository. The sink settings are defined in the mapping job definition file.
