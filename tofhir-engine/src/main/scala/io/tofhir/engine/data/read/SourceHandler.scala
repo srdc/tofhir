@@ -27,7 +27,7 @@ object SourceHandler {
    * @return
    */
   def readSource[T <: FhirMappingSourceContext, S <: DataSourceSettings](
-                                                                          alias:String,
+                                                                          alias: String,
                                                                           spark: SparkSession,
                                                                           mappingSource: T,
                                                                           sourceSettings: S,
@@ -36,7 +36,7 @@ object SourceHandler {
                                                                           limit: Option[Int] = Option.empty,
                                                                           jobId: Option[String] = Option.empty
                                                                         ): DataFrame = {
-    val reader = try{
+    val reader = try {
       DataSourceReaderFactory
         .apply(spark, mappingSource, sourceSettings)
     }
@@ -44,10 +44,9 @@ object SourceHandler {
       case e: Throwable => throw FhirMappingException(s"Failed to construct reader for mapping source: $mappingSource source settings: $sourceSettings.", e)
     }
 
-
     val sourceData = try {
       reader
-        .read( mappingSource, sourceSettings, schema, timeRange, limit, jobId = jobId)
+        .read(mappingSource, sourceSettings, schema, timeRange, limit, jobId = jobId)
     } catch {
       case e: Throwable => throw FhirMappingException(s"Source cannot be read for mapping source: $mappingSource source settings: $sourceSettings.", e)
     }
@@ -75,9 +74,9 @@ object SourceHandler {
           //TODO handle required fields for non-tabular data (deep fields)
           //Check required columns
           val nullCheck =
-          requiredFields
-            .map(f => col(f).isNull)
-            .reduce((c1, c2) => c1 || c2)
+            requiredFields
+              .map(f => col(f).isNull)
+              .reduce((c1, c2) => c1 || c2)
 
           finalSourceData
             .withColumn(INPUT_VALIDITY_ERROR,
