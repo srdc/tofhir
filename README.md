@@ -4,10 +4,14 @@ various types of sources to HL7 FHIR. It can be used as a library or standalone 
 transformation into HL7 FHIR. The standalone mode accepts command line arguments to either run a batch execution right
 away or to start a command line interface (CLI) to accept certain commands.
 
+toFHIR can read from various data sources such as a file system, relational database or streaming inputs like Apache Kafka.
+toFHIR's mapping language utilizes [onfhir-template-engine](https://github.com/srdc/fhir-template-engine)'s template language and allows 1-to-1, 1-to-many, 
+many-to-1 and many-to-many mappings. By executing the mapping definitions, toFHIR generates HL7 FHIR resources and they can
+be either persisted to a file system or to a running HL7 FHIR endpoint.
+
 ## Modules
 
-toFHIR is built on top of [onfhir](https://github.com/srdc/onfhir) and generated HL7 FHIR resources can be persisted to a file system or
-to a running HL7 FHIR repository directly if needed. toFHIR mainly consists of the following modules:
+toFHIR consists of the following modules:
 - `tofhir-engine`: The core module of toFHIR which includes the main functionality of the tool.
 - `tofhir-server`: A standalone web server module that provides a REST API to run mapping jobs via `tohir-engine` and manage the mapping job definitions.
 - `tofhir-log-server`: A standalone web server module that provides a REST API to query the logs of the mapping job execution results.
@@ -15,8 +19,7 @@ to a running HL7 FHIR repository directly if needed. toFHIR mainly consists of t
 - `tofhir-common`: Contains model and utility classes shared across various modules.
 - `tofhir-rxnorm`: Provides a client implementation to access the RxNorm API and a FHIR Path Function library to utilize its API functionalities in mapping definitions.
 
-
-For a visual representation of the dependencies between these modules, refer to the diagram below:
+For a visual representation of the dependencies between these modules, please refer to the diagram below:
 
 ![module-component-diagram.png](readme-assets%2Fmodule-component-diagram.png)
 
@@ -25,7 +28,7 @@ toFHIR requires the following to run:
 
 * Java 11.0.2
 * Scala 2.13
-* An HL7 FHIR repository if you would like to persist the created resources (e.g., [onfhir](https://github.com/srdc/onfhir))
+* An HL7 FHIR repository if you would like to persist the created resources (e.g., [onFHIR](https://github.com/srdc/onfhir))
 
 ## Supported Data Source Types
 toFHIR can read data from the following data source types:
@@ -37,7 +40,7 @@ toFHIR can read data from the following data source types:
 
 ## Usage
 
-toFHIR can be used either using the `tofhir-engine` alone or via the web server (`tofhir-server`). 
+toFHIR can be used through its standalone `tofhir-engine` or via the web server `tofhir-server`. 
 
 ## toFHIR Engine
 
@@ -788,9 +791,11 @@ To give any spark option, you can use the `options` field in the source context 
 
 #### Multiple Data Sources
 
-In a mapping job, you can utilize more than one data source. Let's consider a scenario where you have two files:
-- **patient.csv:** Contains patient identifiers, specifically the "pid" column.
-- **patient-gender.csv:** Contains gender information for patients, including "pid" and "gender" columns.
+In a mapping job, you can read data from more than one data source. Let's consider a scenario where you have different sources
+- **patient-test-data:** Contains patient identifiers, specifically the "pid" column and this information is in a CSV 
+  file named `patient.csv` under `/test-data` folder.
+- **patient-gender-test-data:** Contains gender information for patients, including "pid" and "gender" columns and this
+  information is served from a Postgres database.
 
 We'll implement a mapping job that utilizes these two CSV files as data sources and runs a simple patient mapping.
 
@@ -809,20 +814,70 @@ First, define the source settings pointing to the two different file data source
       "asStream" : false
     },
     "patientGender" : {
+      "jsonClass" : "SqlSourceSettings",
+      "name" : "patient-gender-test-data",
+      "sourceUri" : "http://test-data-gender",
+      "databaseUrl" : "jdbc:postgresql://localhost:5432/test-data-gender",
+      "username" : "user",
+      "password" : "pass"
+    }
+  }
+}
+
+```
+The `patient` source points to the `test-data` directory in the file system, while the `patientGender` source points to a relational
+database, actually a query result or a table name. It is important to note that the mapping definitions are not directly connected to
+the data sources. `patientGender` source can point to a folder which means that the same mapping can be executed on the 
+data read from different sources. 
+
+```json
+{
+  "sourceSettings" : {
+    "patient" : {
+      "jsonClass" : "FileSystemSourceSettings",
+      "name" : "patient-test-data",
+      "sourceUri" : "http://test-data",
+      "dataFolderPath" : "/test-data",
+      "asStream" : false
+    },
+    "patientGender" : {
       "jsonClass" : "FileSystemSourceSettings",
       "name" : "patient-gender-test-data",
-      "sourceUri" : "http://test-data",
+      "sourceUri" : "http://test-data-gender",
       "dataFolderPath" : "/test-data-gender",
       "asStream" : false
     }
   }
 }
 ```
-The `patient` source points to the `test-data` directory in the file system, while the `patientGender` source points to the `test-data-gender` directory.
 
 ##### 2. Specify Source Contexts
 Next, specify the source contexts for your mappings in the job. Here's an example:
 
+```json
+{
+  "mappings" : [ {
+    "mappingRef" : "http://patient-mapping-with-two-sources",
+    "sourceContext" : {
+      "patient" : {
+        "jsonClass" : "FileSystemSource",
+        "path" : "patient-simple.csv",
+        "fileFormat" : "csv",
+        "options" : { }
+      },
+      "patientGender" : {
+        "jsonClass" : "SqlSource",
+        "query" : "SELECT pid, gender FROM patient_gender"
+      }
+    }
+  } ]
+}
+```
+In this example, `patient-simple.csv` is used for the `patient` source, while an SQL query result is used for the `patientGender` source. 
+Ensure that the keys in the `sourceContext` match those in the `sourceSettings` above! 
+Otherwise, if there is no match, the `sourceContext` will use first source specified in `sourceSettings`.
+
+If the `patientGender` was connected to file system in the job definition, the `sourceContext` parameters would be as in the following:
 ```json
 {
   "mappings" : [ {
@@ -844,9 +899,6 @@ Next, specify the source contexts for your mappings in the job. Here's an exampl
   } ]
 }
 ```
-In this example, `patient-simple.csv` is used for the `patient` source, while `patient-gender-simple.csv` is used for the `patientGender` source. 
-Ensure that the keys in the `sourceContext` match those in the `sourceSettings` above. Otherwise, if there is no match, the `sourceContext` will use first source 
-specified in `sourceSettings`.
 
 ##### 3. Join Data Sources
 Finally, in the mapping definition, join these two data sources:
@@ -871,8 +923,9 @@ Finally, in the mapping definition, join these two data sources:
   ]
 }
 ```
-Specify the corresponding schema URL for each data source. Use the same source keys (**patient** and **patientGender**) as alias to match schemas with the data sources provided in the mapping 
-job definition. Then, join the two source data using the **pid** column available in both.
+Specify the corresponding schema URL for each data source. Use the same source keys (**patient** and **patientGender**) as alias to 
+match schemas with the data sources provided in the mapping job definition. Then, join the two source data using the **pid** 
+column available in both.
 
 The first source i.e. **patient** is called the main schema, and its fields are accessible directly in the mapping. 
 To access attributes of other schemas (side schemas), use the **%** operator (e.g., **%patientGender**).

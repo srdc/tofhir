@@ -367,7 +367,7 @@ class FhirMappingJobManager(
           s.alias, //Alias for the source
           schemaLoader.getSchema(s.url), //URL of the schema for the source
           task.sourceContext(s.alias), //Get source context
-          sourceSettings.get(s.alias).orElse(sourceSettings.get("*")).getOrElse(sourceSettings.head._2), //Get source settings
+          sourceSettings.get(s.alias).orElse(sourceSettings.get("*")).getOrElse(sourceSettings.head._2), //Get source settings from the job definition for that alias or for all aliases (*). If they do not exist, get the first one's settings!!
           timeRange
         ))
     //Read sources into Spark as DataFrame
