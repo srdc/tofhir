@@ -31,7 +31,15 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    * @throws NotImplementedError      If the specified source format is not implemented.
    */
   override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty,jobId: Option[String] = Option.empty): DataFrame = {
-    val finalPath = FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
+    // get format of the file
+    val sourceType = mappingSource.sourceType
+    // append the file format to the path if not exists
+    val sourcePath =
+      if(sourceSettings.asStream || mappingSource.path.endsWith(s".${sourceType}"))
+        mappingSource.path
+      else mappingSource.path.concat(s".${sourceType}")
+
+    val finalPath = FileUtils.getPath(sourceSettings.dataFolderPath, sourcePath).toAbsolutePath.toString
     // validate whether the provided path is a directory when streaming is enabled in the source settings
     if(sourceSettings.asStream && !new File(finalPath).isDirectory){
       throw new IllegalArgumentException(s"$finalPath is not a directory. For streaming job, you should provide a directory.")
@@ -42,9 +50,9 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
     // keeps the names of processed files by Spark
     val processedFiles: mutable.HashSet[String] =mutable.HashSet.empty
     //Based on source type
-    val resultDf = mappingSource.sourceType match {
+    val resultDf = sourceType match {
         case SourceFileFormats.CSV | SourceFileFormats.TSV =>
-          val updatedOptions = mappingSource.sourceType match {
+          val updatedOptions = sourceType match {
             case SourceFileFormats.TSV =>
               // If the file format is tsv, use tab (\t) as separator by default if it is not set explicitly
               mappingSource.options +
