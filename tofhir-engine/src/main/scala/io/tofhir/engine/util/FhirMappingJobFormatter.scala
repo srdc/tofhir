@@ -1,6 +1,6 @@
 package io.tofhir.engine.util
 
-import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirRepositorySinkSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, FixedTokenAuthenticationSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SQLSchedulingSettings, SchedulingSettings, SqlSource, SqlSourceSettings}
+import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirRepositorySinkSettings, FhirServerSource, FhirServerSourceSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, FixedTokenAuthenticationSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SQLSchedulingSettings, SchedulingSettings, SqlSource, SqlSourceSettings}
 import org.json4s.{Formats, ShortTypeHints}
 import org.json4s.jackson.Serialization
 
@@ -24,10 +24,12 @@ object FhirMappingJobFormatter {
           classOf[FileSystemSource],
           classOf[KafkaSource],
           classOf[SqlSource],
+          classOf[FhirServerSource],
           //Source settings
           classOf[FileSystemSourceSettings],
           classOf[SqlSourceSettings],
           classOf[KafkaSourceSettings],
+          classOf[FhirServerSourceSettings],
           // Authorization types
           classOf[BearerTokenAuthorizationSettings],
           classOf[BasicAuthenticationSettings],
