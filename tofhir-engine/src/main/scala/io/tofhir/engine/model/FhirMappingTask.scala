@@ -88,6 +88,15 @@ case class SqlSource(tableName: Option[String] = None, query: Option[String] = N
 case class KafkaSource(topicName: String, groupId: String, startingOffsets: String, override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext
 
 /**
+ * Represents a mapping source context for FHIR server data.
+ *
+ * @param resourceType   The type of FHIR resource to query.
+ * @param query          An optional query string to filter the FHIR resources.
+ * @param preprocessSql  An optional SQL string for preprocessing the data before mapping.
+ */
+case class FhirServerSource(resourceType: String, query: Option[String] = None, override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext
+
+/**
  * List of source file formats supported by tofhir
  */
 object SourceFileFormats {

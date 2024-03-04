@@ -1,6 +1,6 @@
 package io.tofhir.engine.data.read
 
-import io.tofhir.engine.model.{DataSourceSettings, FhirMappingSourceContext, FileSystemSource, FileSystemSourceSettings, KafkaSource, KafkaSourceSettings, SqlSource, SqlSourceSettings}
+import io.tofhir.engine.model.{DataSourceSettings, FhirMappingSourceContext, FhirServerSource, FhirServerSourceSettings, FileSystemSource, FileSystemSourceSettings, KafkaSource, KafkaSourceSettings, SqlSource, SqlSourceSettings}
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -20,6 +20,7 @@ object DataSourceReaderFactory {
       case (_: FileSystemSource, _:FileSystemSourceSettings) => new FileDataSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]
       case (_: SqlSource, _:SqlSourceSettings) => new SqlSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]
       case (_: KafkaSource, _:KafkaSourceSettings) => new KafkaSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]
+      case (_: FhirServerSource, _:FhirServerSourceSettings) => new FhirServerDataSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]
       case _ => throw new NotImplementedError()
     }
   }

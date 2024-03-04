@@ -30,6 +30,7 @@ toFHIR requires the following to run:
 * Scala 2.13
 * An HL7 FHIR repository if you would like to persist the created resources (e.g., [onFHIR](https://github.com/srdc/onfhir))
 
+[//]: # (TODO: Add a section about Fhir Server data source)
 ## Supported Data Source Types
 toFHIR can read data from the following data source types:
 

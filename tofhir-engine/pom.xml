@@ -175,7 +175,10 @@
             <groupId>io.onfhir</groupId>
             <artifactId>onfhir-r4_${scala.binary.version}</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>spark-on-fhir_${scala.binary.version}</artifactId>
+        </dependency>
         <!-- toFHIR dependencies -->
         <dependency>
             <groupId>io.onfhir</groupId>

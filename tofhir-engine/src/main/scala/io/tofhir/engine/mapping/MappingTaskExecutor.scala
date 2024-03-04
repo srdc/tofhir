@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.Logger
 import io.onfhir.api.client.FhirClientException
 import io.onfhir.expression.FhirExpressionException
 import io.onfhir.path.FhirPathException
-import org.json4s.jackson.Serialization
+import org.json4s.jackson.{JsonMethods, Serialization}
 import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.common.util.ExceptionUtil
 import io.tofhir.engine.config.ToFhirConfig
@@ -24,17 +24,30 @@ object MappingTaskExecutor {
   private val logger: Logger = Logger(this.getClass)
 
   /**
-   * Convert input row for mapping to JObject
+   * Converts the input row to a JObject for mapping.
    *
-   * @param row Row to be converted to JObject
-   * @return
+   * If columnToConvert is None, the entire row is converted to JObject using Spark's internal method.
+   * If columnToConvert is specified, only the value of the specified column is converted to JObject.
+   *
+   * @param row             The Row to be converted to JObject.
+   * @param columnToConvert An optional column name to convert to JObject. If None, the entire row is converted.
+   * @return The converted JObject representing the row or the specified column.
    */
-  def convertRowToJObject(row: Row): JObject = {
-    // Row class of Spark has a private method (jsonValue) which transforms a Row into a json4s JObject.
-    // We hacked the class to make it accessible and used it to covert a Row into JObject.
-    val method = row.getClass.getSuperclass.getInterfaces.apply(0).getMethod("jsonValue")
-    method.setAccessible(true)
-    method.invoke(row).asInstanceOf[JObject]
+  private def convertRowToJObject(row: Row, columnToConvert: Option[String]): JObject = {
+    if(columnToConvert.isEmpty){
+      // Row class of Spark has a private method (jsonValue) which transforms a Row into a json4s JObject.
+      // We hacked the class to make it accessible and used it to covert a Row into JObject.
+      val method = row.getClass.getSuperclass.getInterfaces.apply(0).getMethod("jsonValue")
+      method.setAccessible(true)
+      method.invoke(row).asInstanceOf[JObject]
+    } else {
+      // Get the index of the specified column
+      val resourceIndex = row.fieldIndex(columnToConvert.get)
+      // Access the value of the specified column
+      val resourceValue = row.getString(resourceIndex)
+      // Parse the JSON string into a JObject
+      JsonMethods.parse(resourceValue).asInstanceOf[JObject]
+    }
   }
 
   /**
@@ -71,7 +84,7 @@ object MappingTaskExecutor {
       df
         .flatMap(row => {
           val jo =
-            convertRowToJObject(row) //convert the row to JSON object
+            convertRowToJObject(row, fhirMappingService.columnToConvert) //convert the row to JSON object
               .removeField(_._1 == SourceHandler.INPUT_VALIDITY_ERROR) //Remove the extra field appended during validation
               .asInstanceOf[JObject]
 
@@ -119,7 +132,7 @@ object MappingTaskExecutor {
               otherSourceRows.flatMap(rows => rows._2.flatMap(r => Option(r.getAs[String](SourceHandler.INPUT_VALIDITY_ERROR))))
 
           val jo =
-            convertRowToJObject(mainSource) //convert the row to JSON object
+            convertRowToJObject(mainSource, fhirMappingService.columnToConvert) //convert the row to JSON object
               .removeField(f => f._1.startsWith("__")) //Remove the extra field appended during validation and other source objects
               .asInstanceOf[JObject]
           //Parse data coming from other sources as context parameters
@@ -128,7 +141,7 @@ object MappingTaskExecutor {
               .flatMap {
                 case (alias, rows) =>
                   rows
-                    .map(r => convertRowToJObject(r).removeField(f => f._1.startsWith("__"))) match {
+                    .map(r => convertRowToJObject(r, fhirMappingService.columnToConvert).removeField(f => f._1.startsWith("__"))) match {
                     case Nil => None
                     case Seq(o) => Some(alias -> o)
                     case oth => Some(alias -> JArray(oth))
