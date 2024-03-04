@@ -67,7 +67,22 @@ object SourceHandler {
       //If there is a schema and also need validation
       case Some(sc) if reader.needTypeValidation || reader.needCardinalityValidation =>
         //TODO handle type validation
-        val requiredFields = sc.fields.filterNot(_.nullable).map(_.name)
+
+        // Find the required fields
+        // Create a mutable set to store the names of required fields.
+        var requiredFields = sc.fields.filterNot(_.nullable).map(_.name).toSet
+        // Filter the set of required fields to ensure that their parents are also required
+        requiredFields = requiredFields.filter(field => {
+          // Split the field name into parts using dot (.) as the separator.
+          val parts = field.split("\\.")
+          // Check if each part's parent is also required.
+          parts.indices.forall { i =>
+            // Create the parent name by joining the parts up to index 'i' with dots.
+            val parentName = parts.take(i + 1).mkString(".")
+            // Check if the parent is required.
+            requiredFields.contains(parentName)
+          }
+        })
         if (requiredFields.isEmpty)
           finalSourceData.withColumn(INPUT_VALIDITY_ERROR, lit(null).cast(DataTypes.StringType))
         else {
@@ -85,7 +100,7 @@ object SourceHandler {
             )
         }
       //If there is no schema or readers don't need validation, we assume all rows are valid
-      case None =>
+      case _ =>
         finalSourceData.withColumn(INPUT_VALIDITY_ERROR, lit(null).cast(DataTypes.StringType))
     }
   }

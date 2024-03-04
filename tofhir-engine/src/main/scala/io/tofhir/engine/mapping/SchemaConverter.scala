@@ -85,8 +85,8 @@ class SchemaConverter(majorFhirVersion: String) {
             case FHIR_DATA_TYPES.INTEGER | FHIR_DATA_TYPES.POSITIVEINT => IntegerType
             case FHIR_DATA_TYPES.UNSIGNEDINT => LongType
             case FHIR_DATA_TYPES.BOOLEAN => BooleanType
-            case oth =>
-              throw FhirMappingException(s"Given FHIR type $oth cannot be converted to Spark SQL types!")
+            // For complex data types, utilize StringType
+            case _ => StringType
           }
       }
     if (isArray)

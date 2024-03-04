@@ -1,0 +1,43 @@
+{
+  "id": "test-observation-mapping",
+  "url": "https://aiccelerate.eu/fhir/mappings/test-observation-mapping",
+  "name": "test-observation-mapping",
+  "title": "Mapping FHIR Observation Components to Individual Observations",
+  "source": [
+	{
+	  "alias": "source",
+	  "url": "http://hl7.org/fhir/StructureDefinition/Observation"
+	}
+  ],
+  "mapping": [
+	{
+	  "expression": {
+		"name": "result",
+		"language": "application/fhir-template+json",
+		"value": {
+		  "{{#ind}}": "{{utl:evaluateExpression(utl:indices(0, 2).select('iif(component[' & $this.toString() & '].exists(), ' & $this.toString() & ', {})').mkString(' | ')).select('component[' & $this.toString() & ']')}}",
+		  "{{*}}": {
+			"resourceType": "Observation",
+			"id": "{{mpp:getHashedId('Observation', id & %ind)}}",
+			"meta": {
+			  "source": "{{%sourceSystem.sourceUri}}"
+			},
+			"status": "{{status}}",
+			"code": {
+			  "coding": [
+				{
+				  "system": "http://loinc.org",
+				  "code": "{{utl:evaluateExpression(%ind).code.coding[0].code}}",
+				  "display": "{{utl:evaluateExpression(%ind).code.coding[0].display}}"
+				}
+			  ]
+			},
+			"subject": "{{subject}}",
+			"effectiveDateTime": "{{effectiveDateTime}}",
+			"valueQuantity": "{{utl:evaluateExpression(%ind).valueQuantity}}"
+		  }
+		}
+	  }
+	}
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "resourceType": "Observation",
+  "id": "example-observation",
+  "status": "final",
+  "code": {
+	"coding": [
+	  {
+		"system": "http://loinc.org",
+		"code": "8310-5",
+		"display": "Body temperature"
+	  }
+	]
+  },
+  "subject": {
+	"reference": "Patient/example-patient"
+  },
+  "effectiveDateTime": "2023-12-21T08:00:00Z",
+  "component": [
+	{
+	  "code": {
+		"coding": [
+		  {
+			"system": "http://loinc.org",
+			"code": "8310-5",
+			"display": "Body temperature"
+		  }
+		]
+	  },
+	  "valueQuantity": {
+		"value": 37.2,
+		"unit": "Cel",
+		"system": "http://unitsofmeasure.org",
+		"code": "Cel"
+	  }
+	},
+	{
+	  "code": {
+		"coding": [
+		  {
+			"system": "http://loinc.org",
+			"code": "9279-1",
+			"display": "Respiratory rate"
+		  }
+		]
+	  },
+	  "valueQuantity": {
+		"value": 18,
+		"unit": "/min",
+		"system": "http://unitsofmeasure.org",
+		"code": "/min"
+	  }
+	}
+  ]
+}

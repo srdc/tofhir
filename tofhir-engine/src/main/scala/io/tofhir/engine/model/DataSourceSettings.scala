@@ -21,6 +21,13 @@ trait DataSourceSettings {
    * Whether the data is coming in streaming mode
    */
   val asStream:Boolean = false
+
+  /**
+   * The name of the column in the source DataFrame to be converted to JObject i.e. input to the mapping executor.
+   * If not specified (None), the entire row will be converted.
+   */
+  val columnToConvert: Option[String] = None
+
   /**
    * Return the context params that will be supplied to mapping tasks
    *
@@ -62,3 +69,16 @@ case class KafkaSourceSettings(name: String = "", sourceUri: String = "", bootst
   override val asStream: Boolean = true
 }
 
+/**
+ * Settings for configuring a FHIR server data source.
+ *
+ * @param name      The name of the FHIR server source.
+ * @param sourceUri The URI of the FHIR server source.
+ * @param serverUrl The URL of the FHIR server.
+ */
+case class FhirServerSourceSettings(name: String, sourceUri: String, serverUrl: String) extends DataSourceSettings {
+  /**
+   * The "resource" column in the source DataFrame will be converted to a JObject i.e. input to the mapping executor.
+   */
+  override val columnToConvert: Option[String] = Some("resource")
+}
