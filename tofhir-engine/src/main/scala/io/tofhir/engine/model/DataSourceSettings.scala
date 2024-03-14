@@ -75,8 +75,9 @@ case class KafkaSourceSettings(name: String = "", sourceUri: String = "", bootst
  * @param name      The name of the FHIR server source.
  * @param sourceUri The URI of the FHIR server source.
  * @param serverUrl The URL of the FHIR server.
+ * @param securitySettings Security settings if the FHIR Server is secured
  */
-case class FhirServerSourceSettings(name: String, sourceUri: String, serverUrl: String) extends DataSourceSettings {
+case class FhirServerSourceSettings(name: String, sourceUri: String, serverUrl: String, securitySettings: Option[IFhirRepositorySecuritySettings] = None) extends DataSourceSettings {
   /**
    * The "resource" column in the source DataFrame will be converted to a JObject i.e. input to the mapping executor.
    */
