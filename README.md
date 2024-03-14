@@ -4,7 +4,7 @@ various types of sources to HL7 FHIR. It can be used as a library or standalone 
 transformation into HL7 FHIR. The standalone mode accepts command line arguments to either run a batch execution right
 away or to start a command line interface (CLI) to accept certain commands.
 
-toFHIR can read from various data sources such as a file system, relational database or streaming inputs like Apache Kafka.
+toFHIR can read from various data sources such as a file system, relational database, streaming inputs like Apache Kafka or a FHIR Server.
 toFHIR's mapping language utilizes [onfhir-template-engine](https://github.com/srdc/fhir-template-engine)'s template language and allows 1-to-1, 1-to-many, 
 many-to-1 and many-to-many mappings. By executing the mapping definitions, toFHIR generates HL7 FHIR resources and they can
 be either persisted to a file system or to a running HL7 FHIR endpoint.
@@ -30,7 +30,6 @@ toFHIR requires the following to run:
 * Scala 2.13
 * An HL7 FHIR repository if you would like to persist the created resources (e.g., [onFHIR](https://github.com/srdc/onfhir))
 
-[//]: # (TODO: Add a section about Fhir Server data source)
 ## Supported Data Source Types
 toFHIR can read data from the following data source types:
 
@@ -38,6 +37,7 @@ toFHIR can read data from the following data source types:
 * RDMS (PostgreSQL)
 * Apache Kafka
 * REDCap
+* FHIR Server (OnFHIR, Firely Server etc.)
 
 ## Usage
 
@@ -761,6 +761,42 @@ Utilize the same configuration approach as described for Kafka, with a few key c
 the [tofhir-redcap integration module](https://github.com/srdc/tofhir-redcap) for the corresponding RedCAP project. 
 For detailed instructions, refer to the [README](https://github.com/srdc/tofhir-redcap/blob/main/README.md) file of the integration module.
 
+##### FHIR Server
+
+Below is an example configuration for mapping jobs using a FHIR Server data source:
+
+```json
+{
+  "sourceSettings" : {
+    "source" : {
+      "jsonClass" : "FhirServerSourceSettings",
+      "name" : "pilot1-source",
+      "sourceUri" : "https://aiccelerate.eu/data-integration-suite/pilot1-data",
+      "serverUrl" : "http://localhost:8082",
+      "securitySettings": {
+        "jsonClass": "BasicAuthenticationSettings",
+        "username": "username",
+        "password": "password"
+      }
+    }
+  }
+}
+```
+In addition to specifying the server URL (**serverUrl**), you can configure security settings via the **securitySettings** field.
+
+Within the mapping source, you can define the resource type (e.g., Patient, Observation) and apply filters using a query string:
+```json
+{
+  "mappingRef" : "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
+  "sourceContext" : {
+    "source" : {
+      "jsonClass" : "FhirServerSource",
+      "resourceType" : "Patient",
+      "query": "gender=male&birtdate=ge1970"
+    }
+  }
+}
+```
 #### Custom Options
 
 Since toFHIR uses Apache Spark in its core, you can give any option that is supported by Apache Spark.
