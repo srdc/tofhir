@@ -31,7 +31,15 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    * @throws NotImplementedError      If the specified source format is not implemented.
    */
   override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty,jobId: Option[String] = Option.empty): DataFrame = {
-    val finalPath = FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
+
+    // Do not add absolute path if it is a hadoop path
+    val finalPath = if (sourceSettings.dataFolderPath.startsWith("hdfs://")) {
+      sourceSettings.dataFolderPath + "/" + mappingSource.path
+    } else {
+      FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
+    }
+
+
     // validate whether the provided path is a directory when streaming is enabled in the source settings
     if(sourceSettings.asStream && !new File(finalPath).isDirectory){
       throw new IllegalArgumentException(s"$finalPath is not a directory. For streaming job, you should provide a directory.")
