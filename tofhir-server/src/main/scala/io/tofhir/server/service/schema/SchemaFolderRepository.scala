@@ -216,7 +216,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     // delete schema definitions for the project
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(schemaRepositoryFolderPath, projectId).toFile)
     // remove profile restrictions of project schemas
-    val schemaUrls:Set[String] = schemaDefinitions(projectId)
+    val schemaUrls:Set[String] = schemaDefinitions.getOrElse(projectId, mutable.Map.empty)
       .values.map(definition => definition.url)
       .toSet
     baseFhirConfig.profileRestrictions --= schemaUrls
