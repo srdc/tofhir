@@ -92,8 +92,7 @@
         <!-- This is a special placeholder to manage the version from a single property throughout the parent and child modules. No other property name can be used. -->
         <!-- https://maven.apache.org/maven-ci-friendly.html -->
         <revision>1.1-SNAPSHOT</revision>
-
-        <scala.version>2.13.12</scala.version>
+        <scala.version>2.13.8</scala.version>
         <scala.binary.version>2.13</scala.binary.version>
 
         <!--Dependency versions-->
@@ -103,7 +102,7 @@
         <json4s.version>3.7.0-M11</json4s.version>
         <com.fasterxml.version>2.15.1</com.fasterxml.version>
         <scalatest.version>3.2.17</scalatest.version>
-        <spark.version>3.5.0</spark.version>
+        <spark.version>3.5.1</spark.version>
         <jackson.version>2.15.1</jackson.version>
         <logback.version>1.2.11</logback.version>
         <logstash-logback-encoder.version>7.2</logstash-logback-encoder.version>

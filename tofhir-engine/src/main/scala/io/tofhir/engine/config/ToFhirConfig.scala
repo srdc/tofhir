@@ -56,7 +56,7 @@ object ToFhirConfig {
           .entrySet()
           .asScala
           .filter(e => e.getKey != "app.name" && e.getKey != "master")
-          .map(e => e.getKey -> e.getValue.render())
+          .map(e => e.getKey -> e.getValue.unwrapped().toString)
           .toMap
 
     sparkConfEntries
