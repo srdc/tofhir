@@ -36,13 +36,6 @@ object ToFhirConfig {
       "spark.driver.allowMultipleContexts" -> "false",
       "spark.ui.enabled" -> "false",
       "spark.sql.caseSensitive" -> "true", // Enable case sensitivity to treat schema column names as case-sensitive to avoid potential conflicts
-//      "spark.submit.deployMode" -> "cluster",
-//      "spark.driver.host" -> "192.168.1.124",
-//      "spark.driver.cores" -> "8",
-//      "spark.driver.memory" -> "12g",
-//      "spark.executor.cores" -> "8",
-//      "spark.executor.memory" -> "14g",
-//      "spark.network.timeout" -> "600s",
       "spark.sql.files.ignoreCorruptFiles" -> "false", //Do not ignore corrupted files (e.g. CSV missing a field from the given schema) as we want to log them
       "spark.sql.streaming.checkpointLocation" -> sparkCheckpointDirectory, //Checkpoint directory for streaming
       "mapreduce.fileoutputcommitter.marksuccessfuljobs" -> "false", //Do not create _SUCCESS file while writing to csv
@@ -56,7 +49,6 @@ object ToFhirConfig {
     val sparkConf = new SparkConf()
       .setAppName(sparkAppName)
       .setMaster(sparkMaster)
-//    .setJars(Array[String]("tofhir-server-standalone.jar"))
 
     val sparkConfEntries =
       sparkConfDefaults ++ //Defaults plus provided entries
@@ -64,7 +56,7 @@ object ToFhirConfig {
           .entrySet()
           .asScala
           .filter(e => e.getKey != "app.name" && e.getKey != "master")
-          .map(e => e.getKey -> e.getValue.render())
+          .map(e => e.getKey -> e.getValue.unwrapped().toString)
           .toMap
 
     sparkConfEntries
