@@ -7,6 +7,26 @@ import org.json4s.JsonAST.{JArray, JDouble, JObject, JString}
 import org.json4s._
 import io.onfhir.util.JsonFormatter._
 
+/**
+ * Handles the extraction of NDC (National Drug Codes) from a given CSV file (prescriptions.csv) and retrieves
+ * corresponding drug information from the RxNorm API. The extracted data is then compiled into a new CSV file
+ * named ndcToMedDetails.csv. This approach prevents HTTP 429 errors (Too Many Requests) by caching necessary
+ * drug information locally, facilitating efficient data mapping without direct RxNorm API calls for each request.
+ * The ndcToMedDetails.csv serves as a resource for the prescriptions-mapping-without-rxn mapping within
+ * the Mimic dataset.
+ *
+ * Inputs:
+ * - rxNormApiClient: Configured client for RxNorm API requests, including endpoint and timeout settings.
+ * - csvFilePath: File path to the prescription data CSV, containing NDC codes for querying the RxNorm API.
+ *
+ * Output:
+ * - Creates ndcToMedDetails.csv: A CSV file containing drug details mapped from NDC codes, with columns for:
+ *   NDC, dose form RxNorm code (doseFormRxcui), dose form name (doseFormName), active ingredient RxNorm code
+ *   (activeIngredientRxcui), active ingredient name (activeIngredientName), numerator unit, numerator value,
+ *   denominator unit, and denominator value. These columns are used by the prescriptions-mapping-without-rxn
+ *   mapping in the Mimic dataset.
+ */
+
 object PullRxNormNdcMedDetails extends App {
   // RxNorm Api client for calls
   val rxNormApiClient = RxNormApiClient("https://rxnav.nlm.nih.gov", 10)
