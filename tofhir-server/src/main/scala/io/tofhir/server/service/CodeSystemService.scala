@@ -77,8 +77,8 @@ class CodeSystemService(codeSystemRepository: ICodeSystemRepository) extends Laz
    * @param codeSystemId id of the code system
    * @return Source of the csv file
    */
-  def downloadCodeSystemFile(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]] = {
-    codeSystemRepository.getCodeSystemContent(terminologyId, codeSystemId)
+  def downloadCodeSystemFile(terminologyId: String, codeSystemId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
+    codeSystemRepository.getCodeSystemContent(terminologyId, codeSystemId, pageNumber, pageSize)
   }
 
 }

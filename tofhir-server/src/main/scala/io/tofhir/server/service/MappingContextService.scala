@@ -49,8 +49,8 @@ class MappingContextService(mappingContextRepository: IMappingContextRepository)
    * @param byteSource mapping context content to save
    * @return
    */
-  def uploadMappingContextFile(projectId: String, id: String, byteSource: Source[ByteString, Any]): Future[Unit] = {
-    mappingContextRepository.saveMappingContextContent(projectId, id, byteSource)
+  def uploadMappingContextFile(projectId: String, id: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit] = {
+    mappingContextRepository.saveMappingContextContent(projectId, id, byteSource, pageNumber, pageSize)
   }
 
   /**
@@ -59,8 +59,8 @@ class MappingContextService(mappingContextRepository: IMappingContextRepository)
    * @param id mapping context id
    * @return
    */
-  def downloadMappingContextFile(projectId: String, id: String): Future[Source[ByteString, Any]] = {
-    mappingContextRepository.getMappingContextContent(projectId, id)
+  def downloadMappingContextFile(projectId: String, id: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
+    mappingContextRepository.getMappingContextContent(projectId, id, pageNumber, pageSize)
   }
 
 }

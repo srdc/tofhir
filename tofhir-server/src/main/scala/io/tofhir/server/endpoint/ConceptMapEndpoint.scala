@@ -1,5 +1,6 @@
 package io.tofhir.server.endpoint
 
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -86,9 +87,18 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
           }
       }
     } ~ get {
-      complete {
-        service.downloadConceptMapFile(terminologyId, conceptMapId) map { byteSource =>
-          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+      parameterMap { queryParams =>
+        complete {
+          val pageNumber = queryParams.getOrElse("page", "1").toInt
+          val pageSize = queryParams.getOrElse("size", "10").toInt
+          service.downloadConceptMapFile(terminologyId, conceptMapId, pageNumber, pageSize) map {
+            case (byteSource, totalRecords) =>
+              HttpResponse(
+                StatusCodes.OK,
+                headers = List(RawHeader("X-Total-Count", totalRecords.toString)),
+                entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource)
+              )
+          }
         }
       }
     }

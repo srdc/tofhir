@@ -1,17 +1,16 @@
 package io.tofhir.server.endpoint
 
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CONTENT, SEGMENT_CONTEXTS}
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.service.MappingContextService
 import io.tofhir.server.service.mappingcontext.IMappingContextRepository
-import io.tofhir.server.service.project.IProjectRepository
 
 class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository) extends LazyLogging {
 
@@ -92,18 +91,32 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
-          complete {
-            service.uploadMappingContextFile(projectId, id, byteSource) map {
-              _ => StatusCodes.OK
+          parameterMap { queryParams =>
+            complete {
+              val pageNumber = queryParams.getOrElse("page", "1").toInt
+              val pageSize = queryParams.getOrElse("size", "10").toInt
+              service.uploadMappingContextFile(projectId, id, byteSource, pageNumber, pageSize) map {
+                _ => StatusCodes.OK
+              }
             }
           }
       }
     } ~ get {
-      complete {
-        service.downloadMappingContextFile(projectId, id) map { byteSource =>
-          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+      parameterMap { queryParams =>
+        complete {
+          val pageNumber = queryParams.getOrElse("page", "1").toInt
+          val pageSize = queryParams.getOrElse("size", "10").toInt
+          service.downloadMappingContextFile(projectId, id, pageNumber, pageSize) map {
+            case (byteSource, totalRecords) =>
+              HttpResponse(
+                StatusCodes.OK,
+                headers = List(RawHeader("X-Total-Count", totalRecords.toString)),
+                entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource)
+              )
+          }
         }
       }
+
     }
   }
 

@@ -61,6 +61,6 @@ trait IConceptMapRepository {
    * @param conceptMapId id of the concept map
    * @return content of the csv file
    */
-  def getConceptMapContent(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]]
+  def getConceptMapContent(terminologyId: String, conceptMapId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)]
 
 }
