@@ -4,11 +4,11 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
+import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_IMPORT, SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
 import io.tofhir.common.model.Json4sSupport._
-import io.tofhir.server.model.InferTask
+import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
 import io.tofhir.server.service.SchemaDefinitionService
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
@@ -35,6 +35,8 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
         inferSchema()
       } ~ pathPrefix(SEGMENT_REDCAP) { // import a REDCap data dictionary file
         importREDCapDataDictionary(projectId)
+      } ~ pathPrefix(SEGMENT_IMPORT) { // import a schema from a Fhir Server
+        importFromFhirServer(projectId)
       } ~ pathPrefix(Segment) { id: String => // Operations on a single schema identified by its id
         getSchema(projectId, id) ~ updateSchema(projectId, id) ~ deleteSchema(projectId, id)
       }
@@ -172,12 +174,26 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
       }
     }
   }
+
+  /**
+   * Route to import a schema i.e. FHIR Structure Definition from the given FHIR Server.
+   * */
+  private def importFromFhirServer(projectId: String): Route = {
+    post {
+      entity(as[ImportSchemaSettings]) { importSchemaSettings =>
+        complete {
+          service.importSchema(projectId, importSchemaSettings)
+        }
+      }
+    }
+  }
 }
 
 object SchemaDefinitionEndpoint {
   val SEGMENT_SCHEMAS = "schemas"
   val SEGMENT_INFER = "infer"
   val SEGMENT_REDCAP = "redcap"
+  val SEGMENT_IMPORT = "import"
 }
 
 /**

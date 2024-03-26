@@ -3,7 +3,7 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.data.read.SourceHandler
-import io.tofhir.server.model.InferTask
+import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
 import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.mapping.SchemaConverter
 import io.tofhir.engine.model.FhirMappingException
@@ -15,8 +15,10 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import io.tofhir.engine.config.ToFhirConfig
 import io.onfhir.api.Resource
-import io.tofhir.engine.util.{CsvUtil, FhirVersionUtil, RedCapUtil}
+import io.tofhir.engine.Execution.actorSystem
+import io.tofhir.engine.util.{CsvUtil, FhirClientUtil, FhirVersionUtil, RedCapUtil}
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
+import org.apache.hadoop.shaded.org.apache.http.HttpStatus
 
 class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
@@ -124,6 +126,28 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
       SchemaDefinition(url = defaultName, `type` = defaultName, name = defaultName, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))
     }
     Future.apply(Some(unnamedSchema))
+  }
+
+  /**
+   * Imports a schema from the specified FHIR server using the provided settings.
+   *
+   * @param projectId The ID of the project.
+   * @param settings  The settings for importing the schema.
+   * @return A Future containing the imported SchemaDefinition.
+   * @throws BadRequest if the resource identifier is invalid or does not exist.
+   */
+  @throws[BadRequest]
+  def importSchema(projectId: String, settings: ImportSchemaSettings): Future[SchemaDefinition] = {
+    // get the OnFhir Client using the given settings
+    val onFhirClient = FhirClientUtil.createOnFhirClient(settings.baseUrl, settings.securitySettings)
+    // fetch the structure definition
+    onFhirClient.read("StructureDefinition", settings.resourceId).execute() flatMap { response =>
+      // the requested resource does not exist
+      if (response.httpStatus.intValue() == HttpStatus.SC_NOT_FOUND)
+        throw BadRequest("Invalid resource identifier!", s"Structure Definition with id '${settings.resourceId}' does not exist.")
+      // save the schema
+      schemaRepository.saveSchemaByStructureDefinition(projectId, response.responseBody.get)
+    }
   }
 
   /**
