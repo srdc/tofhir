@@ -8,6 +8,8 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import java.io.File
+import java.net.URI
+import java.nio.file.Paths
 import java.time.LocalDateTime
 import scala.collection.mutable
 
@@ -32,9 +34,9 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    */
   override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty,jobId: Option[String] = Option.empty): DataFrame = {
 
-    // Do not add absolute path if it is a hadoop path
+    // Do not add context path if it is a hadoop path
     val finalPath = if (sourceSettings.dataFolderPath.startsWith("hdfs://")) {
-      sourceSettings.dataFolderPath + "/" + mappingSource.path
+      new URI(s"${sourceSettings.dataFolderPath.stripSuffix("/")}/${mappingSource.path.stripPrefix("/")}").toString
     } else {
       FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
     }
