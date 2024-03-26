@@ -77,8 +77,8 @@ class ConceptMapService(conceptMapRepository: IConceptMapRepository) extends Laz
    * @param conceptMapId id of the concept map
    * @return content of the csv file
    */
-  def downloadConceptMapFile(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]] = {
-    conceptMapRepository.getConceptMapContent(terminologyId, conceptMapId)
+  def downloadConceptMapFile(terminologyId: String, conceptMapId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
+    conceptMapRepository.getConceptMapContent(terminologyId, conceptMapId, pageNumber, pageSize)
   }
 
 }

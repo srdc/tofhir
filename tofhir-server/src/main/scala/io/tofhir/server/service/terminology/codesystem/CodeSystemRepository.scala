@@ -9,7 +9,7 @@ import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFoun
 import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
 import io.tofhir.server.model._
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository.getTerminologySystemsJsonPath
-import io.tofhir.server.util.FileOperations
+import io.tofhir.server.util.{CsvUtil, FileOperations}
 import org.json4s.jackson.Serialization.writePretty
 
 import java.io.FileWriter
@@ -194,23 +194,21 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    * @param codeSystemId  id of the code system
    * @return Source of the csv file
    */
-  override def getCodeSystemContent(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]] = {
-    Future {
+  override def getCodeSystemContent(terminologyId: String, codeSystemId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
       // check if code system id exists in json file
-      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
-      val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
+    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
+    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
 
-      localTerminology.find(_.id == terminologyId) match {
-        case Some(t) =>
-          if (!t.codeSystems.exists(_.id == codeSystemId)) {
-            throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
-          }
-          // get code system file
-          val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId)
-          FileIO.fromPath(codeSystemFile)
-        case None =>
-          throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
-      }
+    localTerminology.find(_.id == terminologyId) match {
+      case Some(t) =>
+        if (!t.codeSystems.exists(_.id == codeSystemId)) {
+          throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
+        }
+        // get code system file
+        val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId).toFile
+        CsvUtil.getPaginatedCsvContent(codeSystemFile, pageNumber, pageSize)
+      case None =>
+        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
     }
   }
 }
