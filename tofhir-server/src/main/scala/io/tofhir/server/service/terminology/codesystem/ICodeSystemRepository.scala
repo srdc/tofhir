@@ -61,6 +61,6 @@ trait ICodeSystemRepository {
    * @param codeSystemId id of the code system
    * @return Source of the csv file
    */
-  def getCodeSystemContent(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]]
+  def getCodeSystemContent(terminologyId: String, codeSystemId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)]
 
 }
