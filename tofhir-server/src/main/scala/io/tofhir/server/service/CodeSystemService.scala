@@ -67,8 +67,8 @@ class CodeSystemService(codeSystemRepository: ICodeSystemRepository) extends Laz
    * @param byteSource Source of the csv file
    * @return
    */
-  def uploadCodeSystemFile(terminologyId: String, codeSystemId: String, byteSource: Source[ByteString, Any]): Future[Unit] = {
-    codeSystemRepository.saveCodeSystemContent(terminologyId, codeSystemId, byteSource)
+  def uploadCodeSystemFile(terminologyId: String, codeSystemId: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit] = {
+    codeSystemRepository.saveCodeSystemContent(terminologyId, codeSystemId, byteSource, pageNumber, pageSize)
   }
 
   /**

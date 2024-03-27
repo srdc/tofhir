@@ -170,7 +170,7 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    * @param content       Source of the csv file
    * @return
    */
-  override def saveCodeSystemContent(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any]): Future[Unit] = {
+  override def saveCodeSystemContent(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit] = {
     //check if code system id exists in json file
     val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
     val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
@@ -181,7 +181,7 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
         }
         // save code system file
         val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId).toFile
-        FileOperations.saveFileContent(codeSystemFile, content)
+        CsvUtil.writePaginatedCsvContent(codeSystemFile, content, pageNumber, pageSize)
       case None =>
         throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
     }

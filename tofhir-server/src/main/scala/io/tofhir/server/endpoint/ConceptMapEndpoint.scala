@@ -80,9 +80,13 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
-          complete {
-            service.uploadConceptMapFile(terminologyId, conceptMapId, byteSource) map {
-              _ => StatusCodes.OK
+          parameterMap { queryParams =>
+            complete {
+              val pageNumber = queryParams.getOrElse("page", "1").toInt
+              val pageSize = queryParams.getOrElse("size", "10").toInt
+              service.uploadConceptMapFile(terminologyId, conceptMapId, byteSource, pageNumber, pageSize) map {
+                _ => StatusCodes.OK
+              }
             }
           }
       }

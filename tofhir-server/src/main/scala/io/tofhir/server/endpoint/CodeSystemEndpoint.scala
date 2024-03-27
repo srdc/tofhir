@@ -80,9 +80,13 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
-          complete {
-            service.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource) map {
-              _ => StatusCodes.OK
+          parameterMap { queryParams =>
+            complete {
+              val pageNumber = queryParams.getOrElse("page", "1").toInt
+              val pageSize = queryParams.getOrElse("size", "10").toInt
+              service.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource, pageNumber, pageSize) map {
+                _ => StatusCodes.OK
+              }
             }
           }
       }

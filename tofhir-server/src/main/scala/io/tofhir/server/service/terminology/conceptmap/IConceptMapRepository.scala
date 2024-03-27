@@ -53,7 +53,7 @@ trait IConceptMapRepository {
    * @param content       content of the csv file
    * @return
    */
-  def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any]): Future[Unit]
+  def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit]
 
   /**
    * Retrieve the content of a concept map csv file within a terminology
