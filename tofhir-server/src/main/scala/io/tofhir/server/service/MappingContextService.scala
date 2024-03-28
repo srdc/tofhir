@@ -49,7 +49,7 @@ class MappingContextService(mappingContextRepository: IMappingContextRepository)
    * @param byteSource mapping context content to save
    * @return
    */
-  def uploadMappingContextFile(projectId: String, id: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit] = {
+  def uploadMappingContextFile(projectId: String, id: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
     mappingContextRepository.saveMappingContextContent(projectId, id, byteSource, pageNumber, pageSize)
   }
 

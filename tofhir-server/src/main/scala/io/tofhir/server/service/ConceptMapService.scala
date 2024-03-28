@@ -67,7 +67,7 @@ class ConceptMapService(conceptMapRepository: IConceptMapRepository) extends Laz
    * @param byteSource content of the csv file
    * @return
    */
-  def uploadConceptMapFile(terminologyId: String, conceptMapId: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit] = {
+  def uploadConceptMapFile(terminologyId: String, conceptMapId: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
     conceptMapRepository.saveConceptMapContent(terminologyId, conceptMapId, byteSource, pageNumber, pageSize)
   }
 
