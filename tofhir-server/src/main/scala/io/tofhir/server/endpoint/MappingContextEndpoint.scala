@@ -95,8 +95,11 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
             complete {
               val pageNumber = queryParams.getOrElse("page", "1").toInt
               val pageSize = queryParams.getOrElse("size", "10").toInt
-              service.uploadMappingContextFile(projectId, id, byteSource, pageNumber, pageSize) map {
-                _ => StatusCodes.OK
+              service.uploadMappingContextFile(projectId, id, byteSource, pageNumber, pageSize) map { totalRecords =>
+                HttpResponse(
+                  StatusCodes.OK,
+                  headers = List(RawHeader("X-Total-Count", totalRecords.toString)),
+                )
               }
             }
           }

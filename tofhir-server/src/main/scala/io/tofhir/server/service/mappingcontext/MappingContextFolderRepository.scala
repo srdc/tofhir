@@ -121,18 +121,14 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @param content   mapping context content to save
    * @return
    */
-  override def saveMappingContextContent(projectId: String, id: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit] = {
+  override def saveMappingContextContent(projectId: String, id: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
     if (!mappingContextExists(projectId, id)) {
       throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Write content to the related file in the repository
-    getFileForMappingContext(projectId, id).map(file => {
-      saveFileContent(file, content, pageNumber, pageSize)
+    getFileForMappingContext(projectId, id).flatMap(file => {
+      CsvUtil.writeCsvAndReturnRowNumber(file, content, pageNumber, pageSize)
     })
-  }
-
-  private def saveFileContent(file: File, content: akka.stream.scaladsl.Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit] = {
-    CsvUtil.writePaginatedCsvContent(file, content, pageNumber, pageSize)
   }
 
   /**

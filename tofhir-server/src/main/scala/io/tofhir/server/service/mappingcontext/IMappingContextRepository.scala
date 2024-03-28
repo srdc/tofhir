@@ -47,7 +47,7 @@ trait IMappingContextRepository {
    * @param content mapping context content to save
    * @return
    */
-  def saveMappingContextContent(projectId: String, id: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit]
+  def saveMappingContextContent(projectId: String, id: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long]
 
   /**
    * Get the mapping context content by its id

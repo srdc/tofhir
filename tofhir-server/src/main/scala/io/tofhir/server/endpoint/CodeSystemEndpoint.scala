@@ -84,8 +84,11 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
             complete {
               val pageNumber = queryParams.getOrElse("page", "1").toInt
               val pageSize = queryParams.getOrElse("size", "10").toInt
-              service.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource, pageNumber, pageSize) map {
-                _ => StatusCodes.OK
+              service.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource, pageNumber, pageSize) map { totalRecords =>
+                HttpResponse(
+                  StatusCodes.OK,
+                  headers = List(RawHeader("X-Total-Count", totalRecords.toString)),
+                )
               }
             }
           }

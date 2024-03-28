@@ -53,7 +53,7 @@ trait ICodeSystemRepository {
    * @param content Source of the csv file
    * @return
    */
-  def saveCodeSystemContent(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit]
+  def saveCodeSystemContent(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long]
 
   /**
    * Retrieve the content of a code system csv file within a terminology
