@@ -173,7 +173,7 @@ class ConceptMapRepository(terminologySystemFolderPath: String) extends IConcept
    * @param content       content of the csv file
    * @return
    */
-  override def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Unit] = {
+  override def saveConceptMapContent(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
     //check if concept map id exists in json file
     val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
     val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
@@ -184,7 +184,7 @@ class ConceptMapRepository(terminologySystemFolderPath: String) extends IConcept
         }
         // save concept map file
         val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMapId).toFile
-        CsvUtil.writePaginatedCsvContent(conceptMapFile, content, pageNumber, pageSize)
+        CsvUtil.writeCsvAndReturnRowNumber(conceptMapFile, content, pageNumber, pageSize)
       case None =>
         throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
     }
