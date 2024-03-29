@@ -263,7 +263,7 @@
             </dependency>
             <dependency>
                 <groupId>io.onfhir</groupId>
-                <artifactId>spark-on-fhir_${scala.binary.version}</artifactId>
+                <artifactId>fhir-api-spark-source_${scala.binary.version}</artifactId>
                 <version>${spark-on-fhir.version}</version>
             </dependency>
 
