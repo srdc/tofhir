@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.ToFhirRestCall
-import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CONTENT, SEGMENT_CONTEXTS}
+import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CONTENT, SEGMENT_CONTEXTS, SEGMENT_HEADER}
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.service.MappingContextService
 import io.tofhir.server.service.mappingcontext.IMappingContextRepository
@@ -28,6 +28,10 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
           } ~ pathPrefix(SEGMENT_CONTENT) {
             pathEndOrSingleSlash {
               uploadDownloadMappingContextRoute(projectId, id) // Upload/download a mapping context file content
+            }
+          } ~ pathPrefix(SEGMENT_HEADER) { // mapping-contexts/<mapping-context-id>/header
+            pathEndOrSingleSlash {
+              updateMappingContextHeader(projectId, id)
             }
           }
         }
@@ -81,6 +85,24 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
   }
 
   /**
+   * Route to update the mapping context header
+   * @param projectId project id
+   * @param id mapping context id
+   * @return
+   */
+  private def updateMappingContextHeader(projectId: String, id: String): Route = {
+    post {
+      entity(as[Seq[String]]) { headers =>
+        complete {
+          service.updateMappingContextHeader(projectId, id, headers) map { _ =>
+            StatusCodes.OK
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Route to upload/download a mapping context file
    *
    * @param projectId project id
@@ -128,6 +150,7 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
 object MappingContextEndpoint {
   val SEGMENT_CONTEXTS = "mapping-contexts"
   val SEGMENT_CONTENT = "content"
+  val SEGMENT_HEADER = "header"
   val ATTACHMENT = "attachment"
 }
 

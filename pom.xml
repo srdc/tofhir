@@ -116,6 +116,7 @@
         <akka.version>2.8.5</akka.version>
         <akka-http.version>10.5.3</akka-http.version>
         <reflections.version>0.10.2</reflections.version>
+        <opencsv.version>5.8</opencsv.version>
     </properties>
 
     <build>
@@ -488,6 +489,12 @@
                 <groupId>org.reflections</groupId>
                 <artifactId>reflections</artifactId>
                 <version>${reflections.version}</version>
+            </dependency>
+            <!-- For CSV reading -->
+            <dependency>
+                <groupId>com.opencsv</groupId>
+                <artifactId>opencsv</artifactId>
+                <version>${opencsv.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

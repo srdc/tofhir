@@ -61,6 +61,17 @@ class CodeSystemService(codeSystemRepository: ICodeSystemRepository) extends Laz
   }
 
   /**
+   * Update the code system header by its id
+   * @param terminologyId terminology id the code system belongs to
+   * @param codeSystemId code system id e.g. icd9-to-icd10.csv
+   * @param headers new headers to update
+   * @return
+   */
+  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[String]): Future[Unit] = {
+    codeSystemRepository.updateCodeSystemHeader(terminologyId, codeSystemId, headers)
+  }
+
+  /**
    * Upload a CodeSystem csv file for a terminology
    * @param terminologyId id of the terminology
    * @param codeSystemId id of the code system

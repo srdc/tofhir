@@ -8,6 +8,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import java.io.File
 import java.nio.file.StandardOpenOption
 import scala.concurrent.Future
+import com.opencsv.CSVParserBuilder
 
 object CsvUtil {
 
@@ -23,6 +24,55 @@ object CsvUtil {
       .filterNot(_.isEmpty)
       .drop(1)
       .runFold(0L)((count, _) => count + 1)
+  }
+
+  /**
+   * Overwrite headers string to the first line of the CSV file
+   * Adjust the rows to match the new headers if necessary e.g.
+   * - if a column removed, remove the column from the rows
+   * - if a new column name recognized, add the column to the rows with a default value (<column_name>)
+   * - order of the columns are preserved according to the newHHeaders
+   * @param file CSV file
+   * @param newHeaders Headers to write to the file
+   * @return
+   */
+  def writeCsvHeaders(file: File, newHeaders: Seq[String]): Future[Unit] = {
+    // Create a CSVParser to handle double quotes
+    val parser = new CSVParserBuilder().withSeparator(',').withQuoteChar('"').build()
+
+    // Read the existing CSV file into a list of list where each map is a row
+    val existingContentFuture = FileIO.fromPath(file.toPath)
+      .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
+      .map(_.utf8String)
+      .filterNot(_.isEmpty)
+      .runWith(Sink.seq)
+      .map { lines =>
+        val oldHeaders = parser.parseLine(lines.head.trim)
+        lines.tail.map { line =>
+          oldHeaders.zip(parser.parseLine(line.trim)).toSeq
+        }
+
+      }
+
+    // here existingContent looks like
+    // [
+    //   [ "header1" -> "value1", "header2" -> "value2" ],
+    //   [ "header1" -> "value3", "header2" -> "value4" ]
+    // ]
+    existingContentFuture.map { existingContent =>
+      // Create a new list of lists where each list is a row and the first element is the header
+      val updatedContent = existingContent.map { row =>
+        newHeaders.map { header =>
+          header -> row.find(_._1 == header).map(_._2).getOrElse(s"<$header>")
+        }
+      }
+
+      //Convert the list of lists back to a CSV format
+      val csvContent = (newHeaders.mkString(",") +: updatedContent.map(_.map(x => s"\"${x._2}\"").mkString(","))).map(ByteString(_))
+      // Write the updated CSV content back to the file
+      Source(csvContent).intersperse(ByteString("\n"))
+        .runWith(FileIO.toPath(file.toPath, Set(StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)))
+    }
   }
 
   /**

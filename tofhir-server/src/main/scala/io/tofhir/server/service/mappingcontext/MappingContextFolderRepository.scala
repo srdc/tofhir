@@ -114,6 +114,23 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   }
 
   /**
+   * Update the mapping context header by its id
+   * @param projectId project id the mapping context belongs to
+   * @param id mapping context id
+   * @param headers mapping context headers
+   * @return
+   */
+  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[String]): Future[Unit] = {
+    if (!mappingContextExists(projectId, id)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // Write headers to the first row in the related file in the repository
+    getFileForMappingContext(projectId, id).map(file => {
+      CsvUtil.writeCsvHeaders(file, headers)
+    })
+  }
+
+  /**
    * Save the mapping context content to the repository
    *
    * @param projectId project id the mapping context belongs to

@@ -25,9 +25,13 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
       } ~ pathPrefix(Segment) { codeSystemId =>
         pathEndOrSingleSlash {
           getCodeSystemRoute(terminologyId, codeSystemId)
-        } ~ pathPrefix(SEGMENT_CONTENT) {
+        } ~ pathPrefix(SEGMENT_CONTENT) { // code-systems/<code-system-id>/content
           pathEndOrSingleSlash {
             uploadDownloadCodeSystemFileRoute(terminologyId, codeSystemId)
+          }
+        } ~ pathPrefix(SEGMENT_HEADER) { // code-systems/<code-system-id>/content
+          pathEndOrSingleSlash {
+            updateCodeSystemHeader(terminologyId, codeSystemId)
           }
         }
       }
@@ -63,6 +67,24 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
           case Some(codeSystem) => StatusCodes.OK -> codeSystem
           case None => StatusCodes.NotFound -> {
             throw ResourceNotFound("Code system not found", s"Code system with id $codeSystemId not found")
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to update code system csv header
+   * @param terminologyId terminology id
+   * @param codeSystemId code system id
+   * @return
+   */
+  private def updateCodeSystemHeader(terminologyId: String, codeSystemId: String): Route = {
+    post {
+      entity(as[Seq[String]]) { headers =>
+        complete {
+          service.updateCodeSystemHeader(terminologyId, codeSystemId, headers) map { _ =>
+            StatusCodes.OK
           }
         }
       }

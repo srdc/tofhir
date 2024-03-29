@@ -25,9 +25,13 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
       } ~ pathPrefix(Segment) { conceptMapId =>
         pathEndOrSingleSlash {
           getConceptMapRoute(terminologyId, conceptMapId)
-        } ~ pathPrefix(SEGMENT_CONTENT) {
+        } ~ pathPrefix(SEGMENT_CONTENT) { // concept-maps/<concept-map-id>/content
           pathEndOrSingleSlash {
             uploadDownloadConceptMapFileRoute(terminologyId, conceptMapId)
+          }
+        } ~ pathPrefix(SEGMENT_HEADER) { // concept-maps/<concept-map-id>/header
+          pathEndOrSingleSlash {
+            updateConceptMapHeader(terminologyId, conceptMapId)
           }
         }
       }
@@ -63,6 +67,24 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
           case Some(conceptMap) => StatusCodes.OK -> conceptMap
           case None => StatusCodes.NotFound -> {
             throw ResourceNotFound("Concept map not found", s"Concept map  with id $conceptMapId not found")
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to update concept map csv header
+   * @param terminologyId terminology id
+   * @param conceptMapId concept map id
+   * @return
+   */
+  private def updateConceptMapHeader(terminologyId: String, conceptMapId: String): Route = {
+    post {
+      entity(as[Seq[String]]) { headers =>
+        complete {
+          service.updateConceptMapHeader(terminologyId, conceptMapId, headers) map { _ =>
+            StatusCodes.OK
           }
         }
       }

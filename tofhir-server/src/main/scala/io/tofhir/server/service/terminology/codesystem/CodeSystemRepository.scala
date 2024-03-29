@@ -162,6 +162,31 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
       }
     }
   }
+
+  /**
+   * Update the code system header by its id
+   * @param terminologyId terminology id the code system belongs to
+   * @param codeSystemId code system id
+   * @param headers new headers to update
+   * @return
+   */
+  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[String]): Future[Unit] = {
+    //check if code system id exists in json file
+    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
+    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
+    localTerminology.find(_.id == terminologyId) match {
+      case Some(t) =>
+        if (!t.codeSystems.exists(_.id == codeSystemId)) {
+          throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
+        }
+        // get file and update headers
+        val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId).toFile
+        CsvUtil.writeCsvHeaders(codeSystemFile, headers)
+      case None =>
+        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
+    }
+  }
+
   /**
    * Retrieve and save the content of a code system csv file within a terminology
    *

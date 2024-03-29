@@ -47,6 +47,15 @@ trait IConceptMapRepository {
   def removeConceptMap(terminologyId: String, conceptMapId: String): Future[Unit]
 
   /**
+   * Update the concept map header by its id
+   * @param terminologyId terminology id the concept map belongs to
+   * @param conceptMapId concept map id e.g. icd9-to-icd10.csv
+   * @param headers new headers to update
+   * @return
+   */
+  def updateConceptMapHeader(terminologyId: String, conceptMapId: String, headers: Seq[String]): Future[Unit]
+
+  /**
    * Retrieve and save the content of a concept map csv file within a terminology
    * @param terminologyId id of the terminology
    * @param conceptMapId  id of the concept map

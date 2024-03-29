@@ -41,6 +41,15 @@ trait IMappingContextRepository {
   def deleteProjectMappingContexts(projectId: String): Unit
 
   /**
+   * Update the mapping context header by its id
+   * @param projectId project id the mapping context belongs to
+   * @param id mapping context id
+   * @param headers mapping context headers
+   * @return
+   */
+  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[String]): Future[Unit]
+
+  /**
    * Save the mapping context content to the repository
    * @param projectId project id the mapping context belongs to
    * @param id mapping context id

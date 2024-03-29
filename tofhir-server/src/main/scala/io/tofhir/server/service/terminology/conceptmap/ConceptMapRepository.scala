@@ -166,6 +166,31 @@ class ConceptMapRepository(terminologySystemFolderPath: String) extends IConcept
   }
 
   /**
+   * Update the concept map header by its id
+   * @param terminologyId terminology id the concept map belongs to
+   * @param conceptMapId concept map id e.g. icd9-to-icd10.csv
+   * @param headers new headers to update
+   * @return
+   */
+  def updateConceptMapHeader(terminologyId: String, conceptMapId: String, headers: Seq[String]): Future[Unit] = {
+    //check if concept map id exists in json file
+    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
+    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
+    localTerminology.find(_.id == terminologyId) match {
+      case Some(t) =>
+        if (!t.conceptMaps.exists(_.id == conceptMapId)) {
+          throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
+        }
+        // get file and update headers
+        val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMapId).toFile
+        CsvUtil.writeCsvHeaders(conceptMapFile, headers)
+      case None =>
+        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
+    }
+  }
+
+
+  /**
    * Retrieve and save the content of a concept map csv file within a terminology
    *
    * @param terminologyId id of the terminology
