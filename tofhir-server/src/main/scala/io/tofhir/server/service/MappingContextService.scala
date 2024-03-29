@@ -43,6 +43,17 @@ class MappingContextService(mappingContextRepository: IMappingContextRepository)
   }
 
   /**
+  * Update the mapping context header by its id
+  * @param projectId project id the mapping context belongs to
+  * @param id mapping context id
+  * @param headers mapping context headers
+  * @return
+  */
+  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[String]): Future[Unit] = {
+    mappingContextRepository.updateMappingContextHeader(projectId, id, headers)
+  }
+
+  /**
    * Save the mapping context content to the repository
    * @param projectId project id the mapping context belongs to
    * @param id mapping context id

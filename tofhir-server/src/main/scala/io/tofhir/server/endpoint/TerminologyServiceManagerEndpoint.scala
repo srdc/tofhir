@@ -140,5 +140,6 @@ class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminolog
 object TerminologyServiceManagerEndpoint {
   val SEGMENT_TERMINOLOGY = "terminologies"
   val SEGMENT_CONTENT = "content"
+  val SEGMENT_HEADER = "header"
   val ATTACHMENT = "attachment"
 }

@@ -47,6 +47,15 @@ trait ICodeSystemRepository {
   def removeCodeSystem(terminologyId: String, codeSystemId: String): Future[Unit]
 
   /**
+  * Update the code system header by its id
+  * @param terminologyId terminology id the code system belongs to
+  * @param codeSystemId code system id e.g. icd9-to-icd10.csv
+  * @param headers new headers to update
+  * @return
+  */
+  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[String]): Future[Unit]
+
+  /**
    * Retrieve and save the content of a code system csv file within a terminology
    * @param terminologyId id of the terminology
    * @param codeSystemId id of the code system
