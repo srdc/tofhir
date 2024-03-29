@@ -76,12 +76,12 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
    * */
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    assume(sourceServerIsAvailable)
-    sourceOnFhirClient.batch()
-      .entry(_.update(testObservationResource))
-      .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
-      res.httpStatus shouldBe StatusCodes.OK
-    }
+    if(sourceServerIsAvailable)
+      sourceOnFhirClient.batch()
+        .entry(_.update(testObservationResource))
+        .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+        res.httpStatus shouldBe StatusCodes.OK
+      }
   }
 
   /**
@@ -89,12 +89,12 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
    * */
   override protected def afterAll(): Unit = {
     super.afterAll()
-    assume(sourceServerIsAvailable)
-    sourceOnFhirClient.batch()
-      .entry(_.delete("Observation", "example-observation"))
-      .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
-      res.httpStatus shouldBe StatusCodes.OK
-    }
+    if(sourceServerIsAvailable)
+      sourceOnFhirClient.batch()
+        .entry(_.delete("Observation", "example-observation"))
+        .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+        res.httpStatus shouldBe StatusCodes.OK
+      }
   }
 
   /**
