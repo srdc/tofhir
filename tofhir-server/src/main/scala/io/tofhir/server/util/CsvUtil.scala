@@ -1,16 +1,27 @@
 package io.tofhir.server.util
 
-import akka.stream.scaladsl.{Concat, FileIO, Framing, Sink, Source}
+import akka.stream.scaladsl.{Concat, FileIO, Flow, Framing, Sink, Source}
 import akka.util.ByteString
+import com.opencsv.CSVParserBuilder
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.server.common.model.InternalError
 
 import java.io.File
 import java.nio.file.StandardOpenOption
 import scala.concurrent.Future
-import com.opencsv.CSVParserBuilder
 
 object CsvUtil {
+
+  /**
+   * Flow to remove carriage returns from a ByteString
+   */
+  private val removeCarriageReturns: Flow[ByteString, ByteString, _] = Flow[ByteString].map { line =>
+    // Remove \r characters from each line
+    val lineStr = line.utf8String
+    val modifiedLineStr = lineStr.replaceAll("\r", "")
+    ByteString(modifiedLineStr)
+  }
 
   /**
    * Get the total number of rows in a file
@@ -91,26 +102,17 @@ object CsvUtil {
       val csvFile = FileIO.fromPath(file.toPath)
 
       val headerSource = csvFile
-        // Filter out \r characters to avoid issues with Windows line endings
+        .via(removeCarriageReturns) // remove out \r characters to avoid issues with Windows line endings
         .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
         .take(1) // Take only the first line for header
 
       val content = csvFile
+        .via(removeCarriageReturns) // remove out \r characters to avoid issues with Windows line endings
         .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
         .drop(start + 1) // +1 to skip the header
         .take(pageSize)
 
-      val source = Source.combine(headerSource, content)(Concat(_))
-        //.filterNot(x => x == ByteString("\r"))
-        .intersperse(ByteString("\n"))
-        .map { bs =>
-          // If the ByteString ends with a CR character, remove it
-          if (bs.endsWith(ByteString("\r"))) {
-            bs.dropRight(1)
-          } else {
-            bs
-          }
-        }
+      val source = Source.combine(headerSource, content)(Concat(_)).intersperse(ByteString("\n"))
       (source, totalRecords)
     }
   }
@@ -130,6 +132,7 @@ object CsvUtil {
 
     // Convert the content to a list of strings
     val contentFuture: Future[List[String]] = content
+      .via(removeCarriageReturns)
       .map(_.utf8String)
       .filterNot(_.isEmpty)
       .runWith(Sink.seq)
@@ -137,6 +140,7 @@ object CsvUtil {
 
     // Read the existing CSV file into a list of strings
     val existingContentFuture: Future[List[String]] = FileIO.fromPath(file.toPath)
+      .via(removeCarriageReturns)
       .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
       .map(_.utf8String)
       .filterNot(_.isEmpty)
@@ -154,6 +158,22 @@ object CsvUtil {
             _ => getTotalRows(file)
           )
     }
+
+  }
+
+
+  /**
+   * Overwrite the content of a CSV file with the given content
+   * @param file file to be write
+   * @param content content to write
+   */
+  def saveFileContent(file: File, content: akka.stream.scaladsl.Source[ByteString, Any]): Future[Unit] = {
+    content
+      .via(removeCarriageReturns)
+      .runWith(FileIO.toPath(file.toPath))
+      .map(_ => ())
+      .recover(e => throw InternalError("Error while writing file.", e.getMessage))
+
   }
 
 }

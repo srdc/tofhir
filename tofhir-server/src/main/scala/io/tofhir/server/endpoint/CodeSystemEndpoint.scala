@@ -27,11 +27,15 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
           getCodeSystemRoute(terminologyId, codeSystemId)
         } ~ pathPrefix(SEGMENT_CONTENT) { // code-systems/<code-system-id>/content
           pathEndOrSingleSlash {
-            uploadDownloadCodeSystemFileRoute(terminologyId, codeSystemId)
+            getOrSaveCodeSystemFileRoute(terminologyId, codeSystemId)
           }
         } ~ pathPrefix(SEGMENT_HEADER) { // code-systems/<code-system-id>/content
           pathEndOrSingleSlash {
             updateCodeSystemHeader(terminologyId, codeSystemId)
+          }
+        } ~ pathPrefix(SEGMENT_FILE) { // code-systems/<code-system-id>/file
+          pathEndOrSingleSlash {
+            uploadDownloadCodeSystemFileRoute(terminologyId, codeSystemId)
           }
         }
       }
@@ -98,7 +102,7 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
    * @param codeSystemId  id of code system
    * @return
    */
-  private def uploadDownloadCodeSystemFileRoute(terminologyId: String, codeSystemId: String): Route = {
+  private def getOrSaveCodeSystemFileRoute(terminologyId: String, codeSystemId: String): Route = {
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
@@ -106,7 +110,7 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
             complete {
               val pageNumber = queryParams.getOrElse("page", "1").toInt
               val pageSize = queryParams.getOrElse("size", "10").toInt
-              service.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource, pageNumber, pageSize) map { totalRecords =>
+              service.saveCodeSystemContent(terminologyId, codeSystemId, byteSource, pageNumber, pageSize) map { totalRecords =>
                 HttpResponse(
                   StatusCodes.OK,
                   headers = List(RawHeader("X-Total-Count", totalRecords.toString)),
@@ -120,7 +124,7 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
         complete {
           val pageNumber = queryParams.getOrElse("page", "1").toInt
           val pageSize = queryParams.getOrElse("size", "10").toInt
-          service.downloadCodeSystemFile(terminologyId, codeSystemId, pageNumber, pageSize) map {
+          service.getCodeSystemContent(terminologyId, codeSystemId, pageNumber, pageSize) map {
             case (byteSource, totalRecords) =>
               HttpResponse(
                 StatusCodes.OK,
@@ -128,6 +132,32 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
                 entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource)
               )
           }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to get or post a paginated code system content
+   *
+   * @param terminologyId id of code system terminology
+   * @param codeSystemId  id of code system
+   * @return
+   */
+  private def uploadDownloadCodeSystemFileRoute(terminologyId: String, codeSystemId: String): Route = {
+    post {
+      fileUpload(ATTACHMENT) {
+        case (fileInfo, byteSource) =>
+          complete {
+            service.uploadCodeSystemFile(terminologyId, codeSystemId, byteSource) map {
+              _ => StatusCodes.OK
+            }
+          }
+      }
+    } ~ get {
+      complete {
+        service.downloadCodeSystemFile(terminologyId, codeSystemId) map { byteSource =>
+          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
         }
       }
     }

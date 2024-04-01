@@ -239,6 +239,56 @@ class ConceptMapRepository(terminologySystemFolderPath: String) extends IConcept
         throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
     }
   }
+
+  /**
+   * Upload the concept map to the repository
+   * @param terminologyId id of the terminology
+   * @param conceptMapId  id of the concept map
+   * @param content       content of the csv file
+   * @return
+   */
+  override def uploadConceptMap(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any]): Future[Unit] = {
+    //check if concept map id exists in json file
+    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
+    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
+    localTerminology.find(_.id == terminologyId) match {
+      case Some(t) =>
+        if (!t.conceptMaps.exists(_.id == conceptMapId)) {
+          throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
+        }
+        // save concept map file
+        val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMapId).toFile
+        CsvUtil.saveFileContent(conceptMapFile, content)
+      case None =>
+        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
+    }
+  }
+
+  /**
+   * Download the content of a concept map csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param conceptMapId  id of the concept map
+   * @return content of the csv file
+   */
+  override def downloadConceptMap(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]] = {
+    Future {
+      // check if concept map id exists in json file
+      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
+      val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
+
+      localTerminology.find(_.id == terminologyId) match {
+        case Some(t) =>
+          if (!t.conceptMaps.exists(_.id == conceptMapId)) {
+            throw ResourceNotFound("Local terminology concept map not found.", s"Local terminology concept map with id $conceptMapId not found.")
+          }
+          // get concept map file
+          val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMapId)
+          FileIO.fromPath(conceptMapFile)
+        case None =>
+          throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
+      }
+    }
+  }
 }
 
 

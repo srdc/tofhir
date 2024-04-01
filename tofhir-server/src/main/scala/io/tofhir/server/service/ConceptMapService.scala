@@ -78,7 +78,7 @@ class ConceptMapService(conceptMapRepository: IConceptMapRepository) extends Laz
    * @param byteSource content of the csv file
    * @return
    */
-  def uploadConceptMapFile(terminologyId: String, conceptMapId: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
+  def saveConceptMapContent(terminologyId: String, conceptMapId: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
     conceptMapRepository.saveConceptMapContent(terminologyId, conceptMapId, byteSource, pageNumber, pageSize)
   }
 
@@ -88,8 +88,29 @@ class ConceptMapService(conceptMapRepository: IConceptMapRepository) extends Laz
    * @param conceptMapId id of the concept map
    * @return content of the csv file
    */
-  def downloadConceptMapFile(terminologyId: String, conceptMapId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
+  def getConceptMapContent(terminologyId: String, conceptMapId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
     conceptMapRepository.getConceptMapContent(terminologyId, conceptMapId, pageNumber, pageSize)
+  }
+
+  /**
+   * Retrieve and save the content of a concept map csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param conceptMapId id of the concept map
+   * @param byteSource content of the csv file
+   * @return
+   */
+  def uploadConceptMapFile(terminologyId: String, conceptMapId: String, byteSource: Source[ByteString, Any]): Future[Unit] = {
+    conceptMapRepository.uploadConceptMap(terminologyId, conceptMapId, byteSource)
+  }
+
+  /**
+   * Retrieve the content of a concept map csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param conceptMapId id of the concept map
+   * @return content of the csv file
+   */
+  def downloadConceptMapFile(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]] = {
+    conceptMapRepository.downloadConceptMap(terminologyId, conceptMapId)
   }
 
 }

@@ -106,18 +106,6 @@ object FileOperations {
   }
 
   /**
-   * Write content to a file by using akka streams
-   * @param file File to be saved
-   * @param content Content of the file
-   */
-  def saveFileContent(file: File, content: akka.stream.scaladsl.Source[ByteString, Any]): Future[Unit] = {
-    content.runWith(FileIO.toPath(file.toPath))
-      .map(_ => {})
-      .recover(e => throw InternalError("Error while writing file.", e.getMessage))
-
-  }
-
-  /**
    * Check whether the file name matches with the entity id
    * @param entityId id of the entity e.g. job id, mapping id
    * @param file file to whose name will be checked
