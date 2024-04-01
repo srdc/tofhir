@@ -65,4 +65,23 @@ trait IMappingContextRepository {
    * @return
    */
   def getMappingContextContent(projectId: String, id: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)]
+
+  /**
+   * Upload the mapping context content to the repository
+   *
+   * @param projectId project id the mapping context belongs to
+   * @param id        mapping context id
+   * @param content   mapping context content to save
+   * @return
+   */
+  def uploadMappingContext(projectId: String, id: String, content: Source[ByteString, Any]): Future[Unit]
+
+  /**
+   * Download the mapping context content by its id
+   *
+   * @param projectId project id the mapping context belongs to
+   * @param id        mapping context id
+   * @return
+   */
+  def downloadMappingContext(projectId: String, id: String): Future[Source[ByteString, Any]]
 }

@@ -27,11 +27,15 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
           getConceptMapRoute(terminologyId, conceptMapId)
         } ~ pathPrefix(SEGMENT_CONTENT) { // concept-maps/<concept-map-id>/content
           pathEndOrSingleSlash {
-            uploadDownloadConceptMapFileRoute(terminologyId, conceptMapId)
+            getOrSaveConceptMapFileRoute(terminologyId, conceptMapId)
           }
         } ~ pathPrefix(SEGMENT_HEADER) { // concept-maps/<concept-map-id>/header
           pathEndOrSingleSlash {
             updateConceptMapHeader(terminologyId, conceptMapId)
+          }
+        } ~ pathPrefix(SEGMENT_FILE) { // code-systems/<concept-map-id>/file
+          pathEndOrSingleSlash {
+            uploadDownloadConceptMapFileRoute(terminologyId, conceptMapId)
           }
         }
       }
@@ -98,7 +102,7 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
    * @param conceptMapId  id of concept map
    * @return
    */
-  private def uploadDownloadConceptMapFileRoute(terminologyId: String, conceptMapId: String): Route = {
+  private def getOrSaveConceptMapFileRoute(terminologyId: String, conceptMapId: String): Route = {
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
@@ -106,7 +110,7 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
             complete {
               val pageNumber = queryParams.getOrElse("page", "1").toInt
               val pageSize = queryParams.getOrElse("size", "10").toInt
-              service.uploadConceptMapFile(terminologyId, conceptMapId, byteSource, pageNumber, pageSize) map { totalRecords =>
+              service.saveConceptMapContent(terminologyId, conceptMapId, byteSource, pageNumber, pageSize) map { totalRecords =>
                 HttpResponse(
                   StatusCodes.OK,
                   headers = List(RawHeader("X-Total-Count", totalRecords.toString)),
@@ -120,7 +124,7 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
         complete {
           val pageNumber = queryParams.getOrElse("page", "1").toInt
           val pageSize = queryParams.getOrElse("size", "10").toInt
-          service.downloadConceptMapFile(terminologyId, conceptMapId, pageNumber, pageSize) map {
+          service.getConceptMapContent(terminologyId, conceptMapId, pageNumber, pageSize) map {
             case (byteSource, totalRecords) =>
               HttpResponse(
                 StatusCodes.OK,
@@ -128,6 +132,32 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
                 entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource)
               )
           }
+        }
+      }
+    }
+  }
+
+  /**
+   * Route to upload/download a concept map file
+   *
+   * @param terminologyId id of concept map terminology
+   * @param conceptMapId  id of concept map
+   * @return
+   */
+  private def uploadDownloadConceptMapFileRoute(terminologyId: String, conceptMapId: String): Route = {
+    post {
+      fileUpload(ATTACHMENT) {
+        case (fileInfo, byteSource) =>
+          complete {
+            service.uploadConceptMapFile(terminologyId, conceptMapId, byteSource) map {
+              _ => StatusCodes.OK
+            }
+          }
+      }
+    } ~ get {
+      complete {
+        service.downloadConceptMapFile(terminologyId, conceptMapId) map { byteSource =>
+          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
         }
       }
     }

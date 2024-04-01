@@ -72,4 +72,21 @@ trait IConceptMapRepository {
    */
   def getConceptMapContent(terminologyId: String, conceptMapId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)]
 
+  /**
+   * Upload the concept map to the repository
+   * @param terminologyId id of the terminology
+   * @param conceptMapId  id of the concept map
+   * @param content       content of the csv file
+   * @return
+   */
+  def uploadConceptMap(terminologyId: String, conceptMapId: String, content: Source[ByteString, Any]): Future[Unit]
+
+  /**
+   * Download the content of a concept map csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param conceptMapId  id of the concept map
+   * @return content of the csv file
+   */
+  def downloadConceptMap(terminologyId: String, conceptMapId: String): Future[Source[ByteString, Any]]
+
 }

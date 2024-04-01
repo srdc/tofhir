@@ -141,5 +141,6 @@ object TerminologyServiceManagerEndpoint {
   val SEGMENT_TERMINOLOGY = "terminologies"
   val SEGMENT_CONTENT = "content"
   val SEGMENT_HEADER = "header"
+  val SEGMENT_FILE = "file"
   val ATTACHMENT = "attachment"
 }

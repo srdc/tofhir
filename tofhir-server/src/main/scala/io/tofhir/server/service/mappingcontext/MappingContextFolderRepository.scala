@@ -166,6 +166,41 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   }
 
   /**
+   * Upload the mapping context content to the repository
+   *
+   * @param projectId project id the mapping context belongs to
+   * @param id        mapping context id
+   * @param content   mapping context content to save
+   * @return
+   */
+  override def uploadMappingContext(projectId: String, id: String, content: Source[ByteString, Any]): Future[Unit] = {
+    if (!mappingContextExists(projectId, id)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // Write content to the related file in the repository
+    getFileForMappingContext(projectId, id).map(file => {
+      CsvUtil.saveFileContent(file, content)
+    })
+  }
+
+  /**
+   * Download the mapping context content by its id
+   *
+   * @param projectId project id the mapping context belongs to
+   * @param id        mapping context id
+   * @return
+   */
+  override def downloadMappingContext(projectId: String, id: String): Future[Source[ByteString, Any]] = {
+    if (!mappingContextExists(projectId, id)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+    }
+    // Read content from the related file in the repository
+    getFileForMappingContext(projectId, id).map(file => {
+      FileIO.fromPath(file.toPath)
+    })
+  }
+
+  /**
    * Checks if the mapping context exists in the repository
    *
    * @param projectId project id the mapping context belongs to

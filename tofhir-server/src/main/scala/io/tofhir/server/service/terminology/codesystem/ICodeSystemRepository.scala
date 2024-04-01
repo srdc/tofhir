@@ -72,4 +72,21 @@ trait ICodeSystemRepository {
    */
   def getCodeSystemContent(terminologyId: String, codeSystemId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)]
 
+  /**
+   * Upload the code system to the repository
+   * @param terminologyId id of the terminology
+   * @param codeSystemId  id of the code system
+   * @param content       Source of the csv file
+   * @return
+   */
+  def uploadCodeSystem(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any]): Future[Unit]
+
+  /**
+   * Download the content of a code system csv file within a terminology
+   * @param terminologyId id of the terminology
+   * @param codeSystemId  id of the code system
+   * @return Source of the csv file
+   */
+  def downloadCodeSystem(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]]
+
 }

@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.ToFhirRestCall
-import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CONTENT, SEGMENT_CONTEXTS, SEGMENT_HEADER}
+import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CONTENT, SEGMENT_CONTEXTS, SEGMENT_FILE, SEGMENT_HEADER}
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.service.MappingContextService
 import io.tofhir.server.service.mappingcontext.IMappingContextRepository
@@ -27,11 +27,15 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
             deleteMappingContext(projectId, id) // Delete a mapping context
           } ~ pathPrefix(SEGMENT_CONTENT) {
             pathEndOrSingleSlash {
-              uploadDownloadMappingContextRoute(projectId, id) // Upload/download a mapping context file content
+              getOrSaveMappingContextContentRoute(projectId, id) // Upload/download a mapping context file content
             }
           } ~ pathPrefix(SEGMENT_HEADER) { // mapping-contexts/<mapping-context-id>/header
             pathEndOrSingleSlash {
               updateMappingContextHeader(projectId, id)
+            }
+          } ~ pathPrefix(SEGMENT_FILE) { // mapping-contexts/<mapping-context-id>/file
+            pathEndOrSingleSlash {
+              uploadDownloadMappingContextRoute(projectId, id)
             }
           }
         }
@@ -103,13 +107,13 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
   }
 
   /**
-   * Route to upload/download a mapping context file
+   * Route to get or post a paginated mapping context content
    *
    * @param projectId project id
    * @param id        mapping context id
    * @return
    */
-  private def uploadDownloadMappingContextRoute(projectId: String, id: String): Route = {
+  private def getOrSaveMappingContextContentRoute(projectId: String, id: String): Route = {
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
@@ -117,7 +121,7 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
             complete {
               val pageNumber = queryParams.getOrElse("page", "1").toInt
               val pageSize = queryParams.getOrElse("size", "10").toInt
-              service.uploadMappingContextFile(projectId, id, byteSource, pageNumber, pageSize) map { totalRecords =>
+              service.saveMappingContextContent(projectId, id, byteSource, pageNumber, pageSize) map { totalRecords =>
                 HttpResponse(
                   StatusCodes.OK,
                   headers = List(RawHeader("X-Total-Count", totalRecords.toString)),
@@ -131,7 +135,7 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
         complete {
           val pageNumber = queryParams.getOrElse("page", "1").toInt
           val pageSize = queryParams.getOrElse("size", "10").toInt
-          service.downloadMappingContextFile(projectId, id, pageNumber, pageSize) map {
+          service.getMappingContextContent(projectId, id, pageNumber, pageSize) map {
             case (byteSource, totalRecords) =>
               HttpResponse(
                 StatusCodes.OK,
@@ -145,12 +149,39 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
     }
   }
 
+  /**
+   * Route to upload/download a mapping context file
+   *
+   * @param projectId project id
+   * @param id        mapping context id
+   * @return
+   */
+  private def uploadDownloadMappingContextRoute(projectId: String, id: String): Route = {
+    post {
+      fileUpload(ATTACHMENT) {
+        case (fileInfo, byteSource) =>
+          complete {
+            service.uploadMappingContextFile(projectId, id, byteSource) map {
+              _ => StatusCodes.OK
+            }
+          }
+      }
+    } ~ get {
+      complete {
+        service.downloadMappingContextFile(projectId, id) map { byteSource =>
+          HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, byteSource))
+        }
+      }
+    }
+  }
+
 }
 
 object MappingContextEndpoint {
   val SEGMENT_CONTEXTS = "mapping-contexts"
   val SEGMENT_CONTENT = "content"
   val SEGMENT_HEADER = "header"
+  val SEGMENT_FILE = "file"
   val ATTACHMENT = "attachment"
 }
 

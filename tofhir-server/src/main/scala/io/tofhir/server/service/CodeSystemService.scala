@@ -78,7 +78,7 @@ class CodeSystemService(codeSystemRepository: ICodeSystemRepository) extends Laz
    * @param byteSource Source of the csv file
    * @return
    */
-  def uploadCodeSystemFile(terminologyId: String, codeSystemId: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
+  def saveCodeSystemContent(terminologyId: String, codeSystemId: String, byteSource: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
     codeSystemRepository.saveCodeSystemContent(terminologyId, codeSystemId, byteSource, pageNumber, pageSize)
   }
 
@@ -88,8 +88,29 @@ class CodeSystemService(codeSystemRepository: ICodeSystemRepository) extends Laz
    * @param codeSystemId id of the code system
    * @return Source of the csv file
    */
-  def downloadCodeSystemFile(terminologyId: String, codeSystemId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
+  def getCodeSystemContent(terminologyId: String, codeSystemId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
     codeSystemRepository.getCodeSystemContent(terminologyId, codeSystemId, pageNumber, pageSize)
+  }
+
+  /**
+   * Upload a CodeSystem csv file for a terminology
+   * @param terminologyId id of the terminology
+   * @param codeSystemId id of the code system
+   * @param byteSource Source of the csv file
+   * @return
+   */
+  def uploadCodeSystemFile(terminologyId: String, codeSystemId: String, byteSource: Source[ByteString, Any]): Future[Unit] = {
+    codeSystemRepository.uploadCodeSystem(terminologyId, codeSystemId, byteSource)
+  }
+
+  /**
+   * Download a CodeSystem csv file for a terminology
+   * @param terminologyId id of the terminology
+   * @param codeSystemId id of the code system
+   * @return Source of the csv file
+   */
+  def downloadCodeSystemFile(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]] = {
+    codeSystemRepository.downloadCodeSystem(terminologyId, codeSystemId)
   }
 
 }
