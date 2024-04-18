@@ -134,11 +134,11 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
     Future {
       terminologySystem.conceptMaps.foreach(conceptMap => {
         val file = FileUtils.getPath(terminologySystemsFolderPath, terminologySystem.id, conceptMap.id).toFile
-        file.createNewFile()
+        FileOperations.writeStringContentToFile(file, TerminologySystemFolderRepository.DEFAULT_CONCEPT_MAP_COLUMNS)
       })
       terminologySystem.codeSystems.foreach(codeSystem => {
         val file = FileUtils.getPath(terminologySystemsFolderPath, terminologySystem.id, codeSystem.id).toFile
-        file.createNewFile()
+        FileOperations.writeStringContentToFile(file, TerminologySystemFolderRepository.DEFAULT_CODE_SYSTEM_COLUMNS)
       })
     }
   }
@@ -178,13 +178,13 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
       conceptMapIdsToAdd.foreach { id =>
         val conceptMap = newTerminologySystem.conceptMaps.find(_.id == id).get
         val file = FileUtils.getPath(terminologySystemsFolderPath, existingTerminologySystem.id, conceptMap.id).toFile
-        file.createNewFile()
+        FileOperations.writeStringContentToFile(file, TerminologySystemFolderRepository.DEFAULT_CONCEPT_MAP_COLUMNS)
       }
       // add code systems
       codeSystemIdsToAdd.foreach { id =>
         val codeSystem = newTerminologySystem.codeSystems.find(_.id == id).get
         val file = FileUtils.getPath(terminologySystemsFolderPath, existingTerminologySystem.id, codeSystem.id).toFile
-        file.createNewFile()
+        FileOperations.writeStringContentToFile(file, TerminologySystemFolderRepository.DEFAULT_CODE_SYSTEM_COLUMNS)
       }
     }
   }
@@ -256,6 +256,9 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
 }
 
 object TerminologySystemFolderRepository {
+  private val DEFAULT_CONCEPT_MAP_COLUMNS = "source_system,source_code,target_system,target_code"
+  private val DEFAULT_CODE_SYSTEM_COLUMNS = "code,system,display"
+
   /**
    * Returns the path for the JSON file keeping the terminology systems
    *

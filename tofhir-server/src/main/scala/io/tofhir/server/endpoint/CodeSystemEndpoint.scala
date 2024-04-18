@@ -29,7 +29,7 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
           pathEndOrSingleSlash {
             getOrSaveCodeSystemFileRoute(terminologyId, codeSystemId)
           }
-        } ~ pathPrefix(SEGMENT_HEADER) { // code-systems/<code-system-id>/content
+        } ~ pathPrefix(SEGMENT_HEADER) { // code-systems/<code-system-id>/header
           pathEndOrSingleSlash {
             updateCodeSystemHeader(terminologyId, codeSystemId)
           }

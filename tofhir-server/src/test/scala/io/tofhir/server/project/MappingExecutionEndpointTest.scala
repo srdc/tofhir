@@ -371,7 +371,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
     val formData = Multipart.FormData(fileData)
     // save a csv file to mapping context
-    Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContextId/content", formData.toEntity()) ~> route ~> check {
+    Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContextId/file", formData.toEntity()) ~> route ~> check {
       status shouldEqual StatusCodes.OK
       responseAs[String] shouldEqual "OK"
     }

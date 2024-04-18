@@ -65,7 +65,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file to mapping context
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContext1/content", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContext1/file", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
         Thread.sleep(5000)
@@ -74,7 +74,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
 
     "download csv content of a mapping context" in {
       // download csv content of the mapping context
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContext1/content") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContext1/file") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]

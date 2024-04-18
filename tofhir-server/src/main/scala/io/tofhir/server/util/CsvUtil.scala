@@ -58,11 +58,14 @@ object CsvUtil {
       .filterNot(_.isEmpty)
       .runWith(Sink.seq)
       .map { lines =>
-        val oldHeaders = parser.parseLine(lines.head.trim)
-        lines.tail.map { line =>
-          oldHeaders.zip(parser.parseLine(line.trim)).toSeq
+        if (lines.nonEmpty) {
+          val oldHeaders = parser.parseLine(lines.head.trim)
+          lines.tail.map { line =>
+            oldHeaders.zip(parser.parseLine(line.trim)).toSeq
+          }
+        } else {
+          List.empty
         }
-
       }
 
     // here existingContent looks like
