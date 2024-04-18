@@ -263,7 +263,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file as a concept map within a terminology system
-      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap1.id}/content", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap1.id}/file", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
         Thread.sleep(5000)
@@ -273,7 +273,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "download csv content of a concept map within a terminology system" in {
       // download csv content of a concept map within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap1.id}/content") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap1.id}/file") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]
@@ -417,7 +417,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file as a concept map within a terminology system
-      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem1.id}/content", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem1.id}/file", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
         Thread.sleep(5000)
@@ -426,7 +426,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "download csv content of a code system within a terminology system" in {
       // download csv content of a code system within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem1.id}/content") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem1.id}/file") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]

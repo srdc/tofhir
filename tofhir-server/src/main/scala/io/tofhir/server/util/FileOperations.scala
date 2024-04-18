@@ -1,7 +1,5 @@
 package io.tofhir.server.util
 
-import akka.stream.scaladsl.FileIO
-import akka.util.ByteString
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
@@ -14,7 +12,6 @@ import io.tofhir.server.common.model.InternalError
 
 import java.io.{File, FileWriter}
 import java.nio.charset.StandardCharsets
-import scala.concurrent.Future
 import scala.io.Source
 
 object FileOperations {
@@ -119,6 +116,17 @@ object FileOperations {
     } else {
       true
     }
+  }
+
+  /**
+   * Write string content to a file
+   * @param file file to be written
+   * @param content content to be written
+   */
+  def writeStringContentToFile(file: File, content: String): Unit = {
+    val fileWriter = new FileWriter(file)
+    fileWriter.write(content)
+    fileWriter.close()
   }
 }
 

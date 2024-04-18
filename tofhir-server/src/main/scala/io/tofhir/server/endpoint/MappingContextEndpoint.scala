@@ -24,10 +24,10 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
       } ~ // Operations on a single mapping contexts identified by its id
         pathPrefix(Segment) { id: String =>
           pathEndOrSingleSlash {
-            deleteMappingContext(projectId, id) // Delete a mapping context
+            deleteMappingContext(projectId, id) // Delete a mapping context: mapping-contexts/<mapping-context-id>
           } ~ pathPrefix(SEGMENT_CONTENT) {
             pathEndOrSingleSlash {
-              getOrSaveMappingContextContentRoute(projectId, id) // Upload/download a mapping context file content
+              getOrSaveMappingContextContentRoute(projectId, id) // mapping-contexts/<mapping-context-id>/content
             }
           } ~ pathPrefix(SEGMENT_HEADER) { // mapping-contexts/<mapping-context-id>/header
             pathEndOrSingleSlash {
