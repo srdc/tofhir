@@ -171,8 +171,111 @@ paths:
     get:
       tags:
         - "Terminology"
-      summary: "Gets the content of the specified concept map for the specified terminology"
+      summary: "Gets the paginated content of a specified concept map CSV for the specified terminology"
       operationId: "getConceptMapContent"
+      parameters:
+        - $ref: "#/components/parameters/terminologyId"
+        - $ref: "#/components/parameters/conceptMapId"
+        - in: query
+          name: page
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: size
+          schema:
+            type: string
+          required: false
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+                example: "source_system,source_code,target_system,target_code,target_display,equivalence\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNE,http://snomed.info/sct,309068002,Specimen from skin,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323008,Pus specimen,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323009,Pus specimen 2,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,BULLA,http://snomed.info/sct,258482009,Pus specimen 2,narrower"
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+    post:
+      tags:
+        - "Terminology"
+      summary: "Updates the paginated content of the specified concept map CSV for the specified terminology"
+      operationId: "updateConceptMapContent"
+      parameters:
+        - $ref: "#/components/parameters/terminologyId"
+        - $ref: "#/components/parameters/conceptMapId"
+        - in: query
+          name: page
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: size
+          schema:
+            type: string
+          required: false
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                # 'attachment' will be the field name in this multipart request
+                attachment:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+  /terminologies/{terminologyId}/concept-maps/{conceptMapId}/header:
+    post:
+      tags:
+        - "Terminology"
+      summary: "Updates the header of the specified concept map CSV for the specified terminology"
+      operationId: "updateConceptMapHeader"
+      parameters:
+        - $ref: "#/components/parameters/terminologyId"
+        - $ref: "#/components/parameters/conceptMapId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+            example:
+              ["column-name1", "column-name2", "column-name3"]
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+  /terminologies/{terminologyId}/concept-maps/{conceptMapId}/file:
+    get:
+      tags:
+        - "Terminology"
+      summary: "Gets the whole content of a specified concept map for the specified terminology"
+      operationId: "getConceptMapFile"
       parameters:
         - $ref: "#/components/parameters/terminologyId"
         - $ref: "#/components/parameters/conceptMapId"
@@ -191,8 +294,8 @@ paths:
     post:
       tags:
         - "Terminology"
-      summary: "Updates the content of the specified concept map for the specified terminology"
-      operationId: "updateConceptMapContent"
+      summary: "Updates the whole content of the specified concept map for the specified terminology"
+      operationId: "updateConceptMapFile"
       parameters:
         - $ref: "#/components/parameters/terminologyId"
         - $ref: "#/components/parameters/conceptMapId"
@@ -258,12 +361,115 @@ paths:
         '404':
           $ref: "#/components/responses/404NotFound"
 
-  /terminologies/{terminologyId}/code-systems/{codeSystemId}/content:
+  /terminologies/{terminologyId}/code-systems/{conceptMapId}/content:
     get:
       tags:
         - "Terminology"
-      summary: "Gets the content for the specified code system for the specified terminology"
+      summary: "Gets the paginated content of a specified code system CSV for the specified terminology"
       operationId: "getCodeSystemContent"
+      parameters:
+        - $ref: "#/components/parameters/terminologyId"
+        - $ref: "#/components/parameters/conceptMapId"
+        - in: query
+          name: page
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: size
+          schema:
+            type: string
+          required: false
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+                example: "source_system,source_code,target_system,target_code,target_display,equivalence\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNE,http://snomed.info/sct,309068002,Specimen from skin,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323008,Pus specimen,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323009,Pus specimen 2,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,BULLA,http://snomed.info/sct,258482009,Pus specimen 2,narrower"
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+    post:
+      tags:
+        - "Terminology"
+      summary: "Updates the paginated content of the specified code system CSV for the specified terminology"
+      operationId: "updateCodeSystemContent"
+      parameters:
+        - $ref: "#/components/parameters/terminologyId"
+        - $ref: "#/components/parameters/conceptMapId"
+        - in: query
+          name: page
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: size
+          schema:
+            type: string
+          required: false
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                # 'attachment' will be the field name in this multipart request
+                attachment:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+  /terminologies/{terminologyId}/code-systems/{codeSystemId}/header:
+    post:
+      tags:
+        - "Terminology"
+      summary: "Updates the header of the specified code system CSV for the specified terminology"
+      operationId: "getCodeSystemHeader"
+      parameters:
+        - $ref: "#/components/parameters/terminologyId"
+        - $ref: "#/components/parameters/codeSystemId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+            example:
+              ["column-name1", "column-name2", "column-name3"]
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+  /terminologies/{terminologyId}/code-systems/{codeSystemId}/file:
+    get:
+      tags:
+        - "Terminology"
+      summary: "Gets the whole content for the specified code system for the specified terminology"
+      operationId: "getCodeSystemFile"
       parameters:
         - $ref: "#/components/parameters/terminologyId"
         - $ref: "#/components/parameters/codeSystemId"
@@ -282,8 +488,8 @@ paths:
     post:
       tags:
         - "Terminology"
-      summary: "Creates the content for the specified code system for the specified terminology"
-      operationId: "createCodeSystemContent"
+      summary: "Updates the whole content for the specified code system for the specified terminology"
+      operationId: "updateCodeSystemFile"
       parameters:
         - $ref: "#/components/parameters/terminologyId"
         - $ref: "#/components/parameters/codeSystemId"
@@ -872,11 +1078,11 @@ paths:
         '200':
           description: Successful operation
           content:
-              application/json:
-                schema:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/Execution"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Execution"
 
     delete:
       tags:
@@ -1033,6 +1239,110 @@ paths:
           $ref: "#/components/responses/404NotFound"
 
   /projects/{projectId}/mapping-contexts/{mappingContextId}/content:
+    get:
+      tags:
+        - "Mapping Context"
+      summary: "Gets the paginated content of a mapping context CSV"
+      operationId: "getMappingContextContent"
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/mappingContextId"
+        - in: query
+          name: page
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: size
+          schema:
+            type: string
+          required: false
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+                example: "source_system,source_code,target_system,target_code,target_display,equivalence\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNE,http://snomed.info/sct,309068002,Specimen from skin,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323008,Pus specimen,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,ACNFLD,http://snomed.info/sct,119323009,Pus specimen 2,equivalent\nhttp://terminology.hl7.org/CodeSystem/v2-0487,BULLA,http://snomed.info/sct,258482009,Pus specimen 2,narrower"
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+    post:
+      tags:
+        - "Mapping Context"
+      summary: "Updates the paginated content of a mapping context CSV"
+      operationId: "updateMappingContextContent"
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/mappingContextId"
+        - in: query
+          name: page
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: size
+          schema:
+            type: string
+          required: false
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                # 'attachment' will be the field name in this multipart request
+                attachment:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+  /projects/{projectId}/mapping-contexts/{mappingContextId}/header:
+    post:
+      tags:
+        - "Mapping Context"
+      summary: "Updates the header of mapping context CSV"
+      operationId: "updateMappingContextHeader"
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/mappingContextId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+            example:
+              ["column-name1", "column-name2", "column-name3"]
+      responses:
+        '200':
+          description: "Successful operation"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: "#/components/responses/404NotFound"
+
+
+  /projects/{projectId}/mapping-contexts/{mappingContextId}/file:
     post:
       tags:
         - Mapping Context
