@@ -27,13 +27,13 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
             deleteMappingContext(projectId, id) // Delete a mapping context: mapping-contexts/<mapping-context-id>
           } ~ pathPrefix(SEGMENT_CONTENT) {
             pathEndOrSingleSlash {
-              getOrSaveMappingContextContentRoute(projectId, id) // mapping-contexts/<mapping-context-id>/content
+              getOrSaveMappingContextContentRoute(projectId, id) // mapping-contexts/<mapping-context-id>/content (paginated operations)
             }
-          } ~ pathPrefix(SEGMENT_HEADER) { // mapping-contexts/<mapping-context-id>/header
+          } ~ pathPrefix(SEGMENT_HEADER) { // mapping-contexts/<mapping-context-id>/header (CSV headers update)
             pathEndOrSingleSlash {
-              updateMappingContextHeader(projectId, id)
+              updateMappingContextHeaderRoute(projectId, id)
             }
-          } ~ pathPrefix(SEGMENT_FILE) { // mapping-contexts/<mapping-context-id>/file
+          } ~ pathPrefix(SEGMENT_FILE) { // mapping-contexts/<mapping-context-id>/file (import/export as whole CSV file)
             pathEndOrSingleSlash {
               uploadDownloadMappingContextRoute(projectId, id)
             }
@@ -89,12 +89,24 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
   }
 
   /**
-   * Route to update the mapping context header
+   * Route to update the mapping context CSV headers
+   *
+   * Headers are passed as a list of strings and overwrite the existing headers in the first line of the CSV file
+   * Compare existing columns names are new names and adjust the rows to match the new headers if necessary
+   *
+   * e.g. 1:
+   * Existing headers in a CSV: "header1", "header2" --> New headers: "header1", "header2", "header3"
+   * Rows belonging to the header1 and header2 are preserved and only header3 is added with a default value for each row (<header3>)
+   *
+   * e.g. 2:
+   * Existing headers in a CSV: "header1", "header2" --> New headers: "header2", "header3"
+   * Rows belonging to the header1 are removed, header2 is preserved and shifted to the first column with its values
+   * and header3 is added as second column with a default value for each row (<header3>)
    * @param projectId project id
    * @param id mapping context id
    * @return
    */
-  private def updateMappingContextHeader(projectId: String, id: String): Route = {
+  private def updateMappingContextHeaderRoute(projectId: String, id: String): Route = {
     post {
       entity(as[Seq[String]]) { headers =>
         complete {
@@ -109,11 +121,21 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
   /**
    * Route to get or post a paginated mapping context content
    *
+   * File to be updated is found by project id and context id
+   * It updates/returns only the part of the CSV that corresponds to that page information. e.g:
+   * If the CSV has 1000 records and the page size is 10, then the first page will have records from 1 to 10 excluding the header.
+   * If the page number is 2, then the records from 11 to 20 will be returned/updated.
+   *
    * @param projectId project id
    * @param id        mapping context id
    * @return
    */
   private def getOrSaveMappingContextContentRoute(projectId: String, id: String): Route = {
+    /**
+     * POST request to update part of the mapping context content
+     * byteSource contains the CSV content to be updated
+     * Returns empty body with a total records header in case of success
+     */
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
@@ -130,6 +152,10 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
             }
           }
       }
+      /**
+       * GET request to get a paginated mapping context content
+       * Returns the paginated CSV content with a total records header
+       */
     } ~ get {
       parameterMap { queryParams =>
         complete {
@@ -151,7 +177,9 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
 
   /**
    * Route to upload/download a mapping context file
-   *
+   * File to be uploaded/downloaded is found by project id and mapping context id
+   * It uploads/downloads the whole CSV file as a single operation
+   * Operations with large files may take a long time to complete
    * @param projectId project id
    * @param id        mapping context id
    * @return

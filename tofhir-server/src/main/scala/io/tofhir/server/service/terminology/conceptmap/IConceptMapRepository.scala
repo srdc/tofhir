@@ -27,7 +27,7 @@ trait IConceptMapRepository {
    * @param conceptMapId id of the concept map
    * @return TerminologyConceptMap if found
    */
-  def getConceptMap(terminologyId: String, conceptMapId: String): Future[Option[TerminologyConceptMap]]
+  def getConceptMap(terminologyId: String, conceptMapId: String): Future[TerminologyConceptMap]
 
   /**
    * Update a concept map within a terminology

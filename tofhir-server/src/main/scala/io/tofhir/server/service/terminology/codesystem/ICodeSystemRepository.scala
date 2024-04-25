@@ -27,7 +27,7 @@ trait ICodeSystemRepository {
    * @param codeSystemId id of the code system
    * @return TerminologyCodeSystem if found
    */
-  def getCodeSystem(terminologyId: String, codeSystemId: String): Future[Option[TerminologyCodeSystem]]
+  def getCodeSystem(terminologyId: String, codeSystemId: String): Future[TerminologyCodeSystem]
 
   /**
    * Update a code system within a terminology
