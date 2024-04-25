@@ -25,15 +25,15 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
       } ~ pathPrefix(Segment) { conceptMapId =>
         pathEndOrSingleSlash {
           getConceptMapRoute(terminologyId, conceptMapId)
-        } ~ pathPrefix(SEGMENT_CONTENT) { // concept-maps/<concept-map-id>/content
+        } ~ pathPrefix(SEGMENT_CONTENT) { // concept-maps/<concept-map-id>/content (paginated operations)
           pathEndOrSingleSlash {
-            getOrSaveConceptMapFileRoute(terminologyId, conceptMapId)
+            getOrSaveConceptMapContentRoute(terminologyId, conceptMapId)
           }
-        } ~ pathPrefix(SEGMENT_HEADER) { // concept-maps/<concept-map-id>/header
+        } ~ pathPrefix(SEGMENT_HEADER) { // concept-maps/<concept-map-id>/header (CSV headers update)
           pathEndOrSingleSlash {
-            updateConceptMapHeader(terminologyId, conceptMapId)
+            updateConceptMapHeaderRoute(terminologyId, conceptMapId)
           }
-        } ~ pathPrefix(SEGMENT_FILE) { // code-systems/<concept-map-id>/file
+        } ~ pathPrefix(SEGMENT_FILE) { // code-systems/<concept-map-id>/file (import/export as whole CSV file)
           pathEndOrSingleSlash {
             uploadDownloadConceptMapFileRoute(terminologyId, conceptMapId)
           }
@@ -67,23 +67,30 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
   private def getConceptMapRoute(terminologyId: String, conceptMapId: String): Route = {
     get {
       complete {
-        service.getConceptMap(terminologyId, conceptMapId) map {
-          case Some(conceptMap) => StatusCodes.OK -> conceptMap
-          case None => StatusCodes.NotFound -> {
-            throw ResourceNotFound("Concept map not found", s"Concept map  with id $conceptMapId not found")
-          }
-        }
+        service.getConceptMap(terminologyId, conceptMapId)
       }
     }
   }
 
   /**
    * Route to update concept map csv header
+   *
+   * Headers are passed as a list of strings and overwrite the existing headers in the first line of the CSV file
+   * Compare existing columns names are new names and adjust the rows to match the new headers if necessary
+   *
+   * e.g. 1:
+   * Existing headers in a CSV: "header1", "header2" --> New headers: "header1", "header2", "header3"
+   * Rows belonging to the header1 and header2 are preserved and only header3 is added with a default value for each row (<header3>)
+   *
+   * e.g. 2:
+   * Existing headers in a CSV: "header1", "header2" --> New headers: "header2", "header3"
+   * Rows belonging to the header1 are removed, header2 is preserved and shifted to the first column with its values
+   * and header3 is added as second column with a default value for each row (<header3>)
    * @param terminologyId terminology id
    * @param conceptMapId concept map id
    * @return
    */
-  private def updateConceptMapHeader(terminologyId: String, conceptMapId: String): Route = {
+  private def updateConceptMapHeaderRoute(terminologyId: String, conceptMapId: String): Route = {
     post {
       entity(as[Seq[String]]) { headers =>
         complete {
@@ -96,13 +103,22 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
   }
 
   /**
-   * Route to upload/download a concept map file
+   * Route to update or get a paginated concept map content
+   * File to be updated is found by terminology id and concept map id
+   * It updates/returns only the part of the CSV that corresponds to that page information. e.g:
+   * If the CSV has 1000 records and the page size is 10, then the first page will have records from 1 to 10 excluding the header.
+   * If the page number is 2, then the records from 11 to 20 will be returned/updated.
    *
    * @param terminologyId id of concept map terminology
    * @param conceptMapId  id of concept map
    * @return
    */
-  private def getOrSaveConceptMapFileRoute(terminologyId: String, conceptMapId: String): Route = {
+  private def getOrSaveConceptMapContentRoute(terminologyId: String, conceptMapId: String): Route = {
+    /**
+     * POST request to update part of the concept map content
+     * byteSource contains the CSV content to be updated
+     * Returns empty body with a total records header in case of success
+     */
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
@@ -119,6 +135,11 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
             }
           }
       }
+
+    /**
+     * GET request to get a paginated concept map content
+     * Returns the paginated CSV content with a total records header
+     */
     } ~ get {
       parameterMap { queryParams =>
         complete {
@@ -138,8 +159,10 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
   }
 
   /**
-   * Route to upload/download a concept map file
-   *
+   * Route to upload/download a concept map content
+   * File to be uploaded/downloaded is found by terminology id and code system id
+   * It uploads/downloads the whole CSV file as a single operation
+   * Operations with large files may take a long time to complete
    * @param terminologyId id of concept map terminology
    * @param conceptMapId  id of concept map
    * @return

@@ -14,27 +14,37 @@ import scala.concurrent.Future
 object CsvUtil {
 
   /**
+   * Flow to split a ByteString into lines
+   * The maximum length of a line is set to 1024 characters
+   * We cannot set an unlimited frame length because it could potentially lead to memory issues.
+   * If the data stream contains a very long line (or a line without a delimiter),
+   * it could cause the application to run out of memory while trying to buffer the entire line.
+   * allowTruncation indicates that we don't require an explicit line ending even for the last message
+   */
+  private val lineDelimiterFlow: Flow[ByteString, ByteString, _] = Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true)
+
+  /**
    * Flow to remove carriage returns from a ByteString
+   * \r characters are removed to avoid issues with Windows line endings
    */
   private val removeCarriageReturns: Flow[ByteString, ByteString, _] = Flow[ByteString].map { line =>
-    // Remove \r characters from each line
-    val lineStr = line.utf8String
-    val modifiedLineStr = lineStr.replaceAll("\r", "")
-    ByteString(modifiedLineStr)
+    val lineStr = line.utf8String // convert ByteString to String
+    val modifiedLineStr = lineStr.replaceAll("\r", "") // remove \r characters
+    ByteString(modifiedLineStr) // convert the modified String back to ByteString
   }
 
   /**
    * Get the total number of rows in a file
+   *
    * @param file file to count the rows
    * @return Future[Long] total number of rows in the file
    */
   private def getTotalRows(file: File): Future[Long] = {
     FileIO.fromPath(file.toPath)
-      .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
-      // filter out empty lines
-      .filterNot(_.isEmpty)
-      .drop(1)
-      .runFold(0L)((count, _) => count + 1)
+      .via(lineDelimiterFlow) // split the file content by lines
+      .filterNot(_.isEmpty) // filter out empty lines
+      .drop(1) // skip first line which is the header
+      .runFold(0L)((count, _) => count + 1) // count the number of lines
   }
 
   /**
@@ -48,40 +58,54 @@ object CsvUtil {
    * @return
    */
   def writeCsvHeaders(file: File, newHeaders: Seq[String]): Future[Unit] = {
-    // Create a CSVParser to handle double quotes
+    // Used external CSV Parser library to handle double quotes in the CSV file
     val parser = new CSVParserBuilder().withSeparator(',').withQuoteChar('"').build()
 
-    // Read the existing CSV file into a list of list where each map is a row
+    // Read the existing CSV file into a list of list where each list represents a row
     val existingContentFuture = FileIO.fromPath(file.toPath)
-      .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
-      .map(_.utf8String)
-      .filterNot(_.isEmpty)
+      .via(lineDelimiterFlow) // split the file content by lines
+      .map(_.utf8String) // convert ByteString to String
+      .filterNot(_.isEmpty) // filter out empty lines
       .runWith(Sink.seq)
       .map { lines =>
-        if (lines.nonEmpty) {
-          val oldHeaders = parser.parseLine(lines.head.trim)
-          lines.tail.map { line =>
-            oldHeaders.zip(parser.parseLine(line.trim)).toSeq
+        if (lines.nonEmpty) { // check if csv is empty
+          val oldHeaders = parser.parseLine(lines.head.trim) // parse the first line as headers
+          lines.tail.map { line => // parse the rest of the lines as rows
+            // for each row this returns a list of tuples where the first element in tuple is the header
+            oldHeaders.zip(parser.parseLine(line.trim)).toSeq // e.g. Seq(("header1", "value1"), ("header2", "value2"))
           }
         } else {
-          List.empty
+          Seq.empty
         }
       }
 
-    // here existingContent looks like
+    // here an example existingContent looks like:
     // [
     //   [ "header1" -> "value1", "header2" -> "value2" ],
     //   [ "header1" -> "value3", "header2" -> "value4" ]
     // ]
+    //
+    // an example newHeaders looks like:
+    // [ "header2", "header3" ]
     existingContentFuture.map { existingContent =>
-      // Create a new list of lists where each list is a row and the first element is the header
-      val updatedContent = existingContent.map { row =>
-        newHeaders.map { header =>
+      // Create a new list of lists where each list is a row and the first element in the tuples is the header
+      val updatedContent = existingContent.map { row => // iterate each row
+        newHeaders.map { header => // iterate each new header
+          // if the header already exists, use its value (header2 -> value2)
+          // otherwise, use a default value (header3 -> <header3>)
           header -> row.find(_._1 == header).map(_._2).getOrElse(s"<$header>")
         }
       }
 
-      //Convert the list of lists back to a CSV format
+      // here an example updatedContent looks like:
+      // [
+      //   [ "header2" -> "value2", "header3" -> "<header3>" ],
+      //   [ "header2" -> "value4", "header3" -> "<header3>" ]
+      // ]
+
+      // create a header line by joining the new headers with a comma
+      // create row content by using the second element of the tuple and joining them with a comma
+      // finally merge the header and row content with a comma
       val csvContent = (newHeaders.mkString(",") +: updatedContent.map(_.map(x => s"\"${x._2}\"").mkString(","))).map(ByteString(_))
       // Write the updated CSV content back to the file
       Source(csvContent).intersperse(ByteString("\n"))
@@ -100,21 +124,22 @@ object CsvUtil {
     val totalRecordsFuture: Future[Long] = this.getTotalRows(file)
 
     totalRecordsFuture.map { totalRecords =>
+      // calculate the start and end index of the CSV file
       val start = (pageNumber - 1) * pageSize
-      val end = start + pageSize
       val csvFile = FileIO.fromPath(file.toPath)
 
       val headerSource = csvFile
         .via(removeCarriageReturns) // remove out \r characters to avoid issues with Windows line endings
-        .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
+        .via(lineDelimiterFlow) // split the file content by lines
         .take(1) // Take only the first line for header
 
       val content = csvFile
         .via(removeCarriageReturns) // remove out \r characters to avoid issues with Windows line endings
-        .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
-        .drop(start + 1) // +1 to skip the header
-        .take(pageSize)
+        .via(lineDelimiterFlow) // split the file content by lines
+        .drop(start + 1) // start from "start" value and +1 to skip the header
+        .take(pageSize) // get page size number of lines
 
+      // Combine the header and paginated content and return together with the total number of records
       val source = Source.combine(headerSource, content)(Concat(_)).intersperse(ByteString("\n"))
       (source, totalRecords)
     }
@@ -131,32 +156,34 @@ object CsvUtil {
    */
   def writeCsvAndReturnRowNumber(file: File, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
     val start = (pageNumber - 1) * pageSize + 1 // +1 to skip the header
-    val end = start + pageSize
 
-    // Convert the content to a list of strings
-    val contentFuture: Future[List[String]] = content
-      .via(removeCarriageReturns)
-      .map(_.utf8String)
-      .filterNot(_.isEmpty)
-      .runWith(Sink.seq)
-      .map(_.toList)
+    // Convert the CSV content to a list of strings
+    val contentFuture: Future[Seq[String]] = content
+      .via(removeCarriageReturns) // remove out \r chars to avoid issues with Windows line endings
+      .map(_.utf8String) // convert ByteString to String
+      .filterNot(_.isEmpty) // filter out empty lines
+      // collect values emitted from the stream into a collection, the collection is available through a Future
+      // when the stream is run with Sink.seq (materialized), it will consume all the elements of the stream and return a Future[Seq[T]]
+      .runWith(Sink.seq[String])
 
-    // Read the existing CSV file into a list of strings
-    val existingContentFuture: Future[List[String]] = FileIO.fromPath(file.toPath)
-      .via(removeCarriageReturns)
-      .via(Framing.delimiter(ByteString("\n"), maximumFrameLength = 1024, allowTruncation = true))
-      .map(_.utf8String)
-      .filterNot(_.isEmpty)
-      .runWith(Sink.seq)
-      .map(_.toList)
+    // Convert the CSV content to a list of strings
+    val existingContentFuture: Future[Seq[String]] = FileIO.fromPath(file.toPath)
+      .via(removeCarriageReturns) // remove out \r chars to avoid issues with Windows line endings
+      .via(lineDelimiterFlow) // split the file content by lines
+      .map(_.utf8String) // convert ByteString to String
+      .filterNot(_.isEmpty) // filter out empty lines
+      .runWith(Sink.seq[String])
 
-    Future.sequence(List(contentFuture, existingContentFuture)).flatMap {
-      case List(newContent, existingContent) =>
-        // Replace the rows in the existing CSV file list with the new content
-        val updatedContent = existingContent.patch(start, newContent, end - start)
-        // Write the updated list back to the CSV file
+    Future.sequence(Seq(contentFuture, existingContentFuture)).flatMap {
+      case Seq(newContent, existingContent) =>
+        // Replace the rows in the existing CSV file with the new content starting from 'start' and number of 'pageSize' rows
+        val updatedContent = existingContent.patch(start, newContent, pageSize)
+        // Write the updated list back to the CSV file by
+        // converting each line to ByteString and adding a newline character at the end
+        // and then write line by line to the file
         val byteSource = Source(updatedContent).map(s => ByteString(s + "\n")).filterNot(_.isEmpty)
         byteSource.runWith(FileIO.toPath(file.toPath, Set(StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)))
+          // flatMap is applied to the Future returned by runWith to get the total number of rows in the file in the end
           .flatMap(
             _ => getTotalRows(file)
           )
@@ -172,9 +199,9 @@ object CsvUtil {
    */
   def saveFileContent(file: File, content: akka.stream.scaladsl.Source[ByteString, Any]): Future[Unit] = {
     content
-      .via(removeCarriageReturns)
-      .runWith(FileIO.toPath(file.toPath))
-      .map(_ => ())
+      .via(removeCarriageReturns) // remove out \r chars to avoid issues with Windows line endings
+      .runWith(FileIO.toPath(file.toPath)) // use FileIO as a Sink to write the content to the file
+      .map(_ => ()) // map the result of Future to Unit
       .recover(e => throw InternalError("Error while writing file.", e.getMessage))
 
   }

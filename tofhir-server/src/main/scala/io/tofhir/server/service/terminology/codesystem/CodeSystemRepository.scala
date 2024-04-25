@@ -23,9 +23,7 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    */
   override def getCodeSystems(terminologyId: String): Future[Seq[TerminologyCodeSystem]] = {
     Future {
-      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
-      val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-      localTerminology.find(_.id == terminologyId).map(_.codeSystems).getOrElse(Seq.empty)
+      findLocalTerminologyById(terminologyId).codeSystems
     }
   }
 
@@ -74,11 +72,9 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    * @param codeSystemId  id of the code system
    * @return TerminologyCodeSystem if found
    */
-  override def getCodeSystem(terminologyId: String, codeSystemId: String): Future[Option[TerminologyCodeSystem]] = {
+  override def getCodeSystem(terminologyId: String, codeSystemId: String): Future[TerminologyCodeSystem] = {
     Future {
-      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
-      val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-      localTerminology.find(_.id == terminologyId).flatMap(_.codeSystems.find(_.id == codeSystemId))
+      findCodeSystemById(terminologyId, codeSystemId)
     }
   }
 
@@ -171,20 +167,10 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    * @return
    */
   def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[String]): Future[Unit] = {
-    //check if code system id exists in json file
-    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
-    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-    localTerminology.find(_.id == terminologyId) match {
-      case Some(t) =>
-        if (!t.codeSystems.exists(_.id == codeSystemId)) {
-          throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
-        }
-        // get file and update headers
-        val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId).toFile
-        CsvUtil.writeCsvHeaders(codeSystemFile, headers)
-      case None =>
-        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
-    }
+    val codeSystem = findCodeSystemById(terminologyId, codeSystemId)
+    // get file and update headers
+    val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystem.id).toFile
+    CsvUtil.writeCsvHeaders(codeSystemFile, headers)
   }
 
   /**
@@ -196,20 +182,10 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    * @return
    */
   override def saveCodeSystemContent(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
-    //check if code system id exists in json file
-    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
-    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-    localTerminology.find(_.id == terminologyId) match {
-      case Some(t) =>
-        if (!t.codeSystems.exists(_.id == codeSystemId)) {
-          throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
-        }
-        // save code system file
-        val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId).toFile
-        CsvUtil.writeCsvAndReturnRowNumber(codeSystemFile, content, pageNumber, pageSize)
-      case None =>
-        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
-    }
+    val codeSystem = findCodeSystemById(terminologyId, codeSystemId)
+    // save code system file
+    val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystem.id).toFile
+    CsvUtil.writeCsvAndReturnRowNumber(codeSystemFile, content, pageNumber, pageSize)
   }
 
   /**
@@ -220,21 +196,10 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    * @return Source of the csv file
    */
   override def getCodeSystemContent(terminologyId: String, codeSystemId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
-      // check if code system id exists in json file
-    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
-    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-
-    localTerminology.find(_.id == terminologyId) match {
-      case Some(t) =>
-        if (!t.codeSystems.exists(_.id == codeSystemId)) {
-          throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
-        }
-        // get code system file
-        val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId).toFile
-        CsvUtil.getPaginatedCsvContent(codeSystemFile, pageNumber, pageSize)
-      case None =>
-        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
-    }
+    val codeSystem = findCodeSystemById(terminologyId, codeSystemId)
+    // get code system file
+    val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystem.id).toFile
+    CsvUtil.getPaginatedCsvContent(codeSystemFile, pageNumber, pageSize)
   }
 
   /**
@@ -245,20 +210,10 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    * @return
    */
   override def uploadCodeSystem(terminologyId: String, codeSystemId: String, content: Source[ByteString, Any]): Future[Unit] = {
-    //check if code system id exists in json file
-    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
-    val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-    localTerminology.find(_.id == terminologyId) match {
-      case Some(t) =>
-        if (!t.codeSystems.exists(_.id == codeSystemId)) {
-          throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
-        }
-        // save code system file
-        val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId).toFile
-        CsvUtil.saveFileContent(codeSystemFile, content)
-      case None =>
-        throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
-    }
+    val codeSystem = findCodeSystemById(terminologyId, codeSystemId)
+    // save code system file
+    val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystem.id).toFile
+    CsvUtil.saveFileContent(codeSystemFile, content)
   }
 
   /**
@@ -269,23 +224,52 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    */
   override def downloadCodeSystem(terminologyId: String, codeSystemId: String): Future[Source[ByteString, Any]] = {
     Future {
-      // check if code system id exists in json file
-      val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
-      val localTerminology = FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
-
-      localTerminology.find(_.id == terminologyId) match {
-        case Some(t) =>
-          if (!t.codeSystems.exists(_.id == codeSystemId)) {
-            throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
-          }
-          // get code system file
-          val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystemId)
-          FileIO.fromPath(codeSystemFile)
-        case None =>
-          throw BadRequest("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
-      }
+      val codeSystem = findCodeSystemById(terminologyId, codeSystemId)
+      // get code system file
+      val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystem.id)
+      FileIO.fromPath(codeSystemFile)
     }
   }
+
+  /**
+   * Find local terminology by id from json file
+   * JSON file contains a list of [[TerminologySystem]]
+   * If not found, throw ResourceNotFound
+   * @param terminologyId id of the terminology
+   * @return
+   */
+  private def findLocalTerminologyById(terminologyId: String): TerminologySystem = {
+    val localTerminologies = getLocalTerminologiesFromFile
+    localTerminologies.find(_.id == terminologyId) match {
+      case Some(t) => t
+      case None => throw ResourceNotFound("Local terminology id does not exist.", s"Id $terminologyId does not exist.")
+    }
+  }
+
+  /**
+   * Find code system by id from a local terminology
+   * If either terminology or code system not found, throw ResourceNotFound
+   * @param terminologyId id of the terminology
+   * @param codeSystemId code system id to find inside the terminology
+   * @return
+   */
+  private def findCodeSystemById(terminologyId: String, codeSystemId: String): TerminologyCodeSystem = {
+    val localTerminology = findLocalTerminologyById(terminologyId)
+    localTerminology.codeSystems.find(_.id == codeSystemId) match {
+      case Some(cs) => cs
+      case None => throw ResourceNotFound("Local terminology code system not found.", s"Local terminology code system with id $codeSystemId not found.")
+    }
+  }
+
+  /**
+   * Read terminology systems JSON and return as a list of [[TerminologySystem]]
+   * @return
+   */
+  private def getLocalTerminologiesFromFile: Seq[TerminologySystem] = {
+    val localTerminologyFile = FileUtils.getPath(getTerminologySystemsJsonPath(terminologySystemFolderPath)).toFile
+    FileOperations.readJsonContent[TerminologySystem](localTerminologyFile)
+  }
+
 }
 
 

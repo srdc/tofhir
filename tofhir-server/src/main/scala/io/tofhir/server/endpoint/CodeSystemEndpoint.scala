@@ -25,15 +25,15 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
       } ~ pathPrefix(Segment) { codeSystemId =>
         pathEndOrSingleSlash {
           getCodeSystemRoute(terminologyId, codeSystemId)
-        } ~ pathPrefix(SEGMENT_CONTENT) { // code-systems/<code-system-id>/content
+        } ~ pathPrefix(SEGMENT_CONTENT) { // code-systems/<code-system-id>/content (paginated operations)
           pathEndOrSingleSlash {
-            getOrSaveCodeSystemFileRoute(terminologyId, codeSystemId)
+            getOrSaveCodeSystemContentRoute(terminologyId, codeSystemId)
           }
-        } ~ pathPrefix(SEGMENT_HEADER) { // code-systems/<code-system-id>/header
+        } ~ pathPrefix(SEGMENT_HEADER) { // code-systems/<code-system-id>/header (CSV headers update)
           pathEndOrSingleSlash {
-            updateCodeSystemHeader(terminologyId, codeSystemId)
+            updateCodeSystemHeaderRoute(terminologyId, codeSystemId)
           }
-        } ~ pathPrefix(SEGMENT_FILE) { // code-systems/<code-system-id>/file
+        } ~ pathPrefix(SEGMENT_FILE) { // code-systems/<code-system-id>/file (import/export as whole CSV file)
           pathEndOrSingleSlash {
             uploadDownloadCodeSystemFileRoute(terminologyId, codeSystemId)
           }
@@ -67,23 +67,30 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
   private def getCodeSystemRoute(terminologyId: String, codeSystemId: String): Route = {
     get {
       complete {
-        service.getCodeSystem(terminologyId, codeSystemId) map {
-          case Some(codeSystem) => StatusCodes.OK -> codeSystem
-          case None => StatusCodes.NotFound -> {
-            throw ResourceNotFound("Code system not found", s"Code system with id $codeSystemId not found")
-          }
-        }
+        service.getCodeSystem(terminologyId, codeSystemId)
       }
     }
   }
 
   /**
-   * Route to update code system csv header
+   * Route to update code system csv headers
+   * Headers are passed as a list of strings and overwrite the existing headers in the first line of the CSV file
+   * Compare existing columns names are new names and adjust the rows to match the new headers if necessary
+   *
+   * e.g. 1:
+   * Existing headers in a CSV: "header1", "header2" --> New headers: "header1", "header2", "header3"
+   * Rows belonging to the header1 and header2 are preserved and only header3 is added with a default value for each row (<header3>)
+   *
+   * e.g. 2:
+   * Existing headers in a CSV: "header1", "header2" --> New headers: "header2", "header3"
+   * Rows belonging to the header1 are removed, header2 is preserved and shifted to the first column with its values
+   * and header3 is added as second column with a default value for each row (<header3>)
+   *
    * @param terminologyId terminology id
    * @param codeSystemId code system id
    * @return
    */
-  private def updateCodeSystemHeader(terminologyId: String, codeSystemId: String): Route = {
+  private def updateCodeSystemHeaderRoute(terminologyId: String, codeSystemId: String): Route = {
     post {
       entity(as[Seq[String]]) { headers =>
         complete {
@@ -96,13 +103,22 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
   }
 
   /**
-   * Route to upload/download a code system file
+   * Route to update or get a paginated code system content
+   * File to be updated is found by terminology id and code system id
+   * It updates/returns only the part of the CSV that corresponds to that page information. e.g:
+   * If the CSV has 1000 records and the page size is 10, then the first page will have records from 1 to 10 excluding the header.
+   * If the page number is 2, then the records from 11 to 20 will be returned/updated.
    *
    * @param terminologyId id of code system terminology
    * @param codeSystemId  id of code system
    * @return
    */
-  private def getOrSaveCodeSystemFileRoute(terminologyId: String, codeSystemId: String): Route = {
+  private def getOrSaveCodeSystemContentRoute(terminologyId: String, codeSystemId: String): Route = {
+    /**
+     * POST request to update part of the code system content
+     * byteSource contains the CSV content to be updated
+     * Returns empty body with a total records header in case of success
+     */
     post {
       fileUpload(ATTACHMENT) {
         case (fileInfo, byteSource) =>
@@ -119,6 +135,11 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
             }
           }
       }
+
+    /**
+     * GET request to get a paginated code system content
+     * Returns the paginated CSV content with a total records header
+     */
     } ~ get {
       parameterMap { queryParams =>
         complete {
@@ -138,7 +159,10 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
   }
 
   /**
-   * Route to get or post a paginated code system content
+   * Route to upload/download code system content
+   * File to be uploaded/downloaded is found by terminology id and code system id
+   * It uploads/downloads the whole CSV file as a single operation
+   * Operations with large files may take a long time to complete
    *
    * @param terminologyId id of code system terminology
    * @param codeSystemId  id of code system

@@ -35,7 +35,7 @@ class ConceptMapService(conceptMapRepository: IConceptMapRepository) extends Laz
    * @param conceptMapId id of the concept map
    * @return TerminologyConceptMap if found
    */
-  def getConceptMap(terminologyId: String, conceptMapId: String): Future[Option[TerminologyConceptMap]] = {
+  def getConceptMap(terminologyId: String, conceptMapId: String): Future[TerminologyConceptMap] = {
     conceptMapRepository.getConceptMap(terminologyId, conceptMapId)
   }
 
