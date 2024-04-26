@@ -88,8 +88,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       ),
       dataProcessingSettings = DataProcessingSettings())
 
-  implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
-
   override protected def afterAll(): Unit = {
     if (fhirServerIsAvailable) {
       deleteResources()
@@ -107,7 +105,9 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     copyResourceFile("test-data-gender/patient-gender-simple.csv")
   }
 
-  private def deleteResources(): Assertion = {
+  private def deleteResources()(): Assertion = {
+    // define an implicit ExecutionContext which is required for FhirSearchRequestBuilder.executeAndReturnBundle method
+    implicit val executionContext: ExecutionContext = actorSystem.getDispatcher
     // Start delete operation of written resources on the FHIR
     var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
 
@@ -116,8 +116,11 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     // Delete all patients between p1-p10 and related observations
 
     (1 to 10).foreach(i => {
+      // add Delete Patient request to the batch
       batchRequest = batchRequest.entry(_.delete("Patient", FhirMappingUtility.getHashedId("Patient", "p" + i)))
       val patientReference = FhirMappingUtility.getHashedReference("Patient", "p" + i)
+      // search for the patient's Observation and MedicationAdministration resources
+      // and add Delete requests for these resources to the batch
       val f = onFhirClient.search("Observation").where("subject", patientReference).executeAndReturnBundle() map { observationBundle =>
         observationBundle.searchResults.foreach(obs =>
           batchRequest = batchRequest.entry(_.delete("Observation", (obs \ "id").extract[String]))

@@ -9,12 +9,10 @@ import org.json4s.{JArray, JNull, JObject, JString, JValue}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
 
-import scala.concurrent.ExecutionContext
 import scala.io.Source
 
 class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
 
-  implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
   // a simple json on which we can run mpp:nonEmptyLoopedFields function
   val loopJson: JValue = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/test-data/loop.json")).mkString)
 

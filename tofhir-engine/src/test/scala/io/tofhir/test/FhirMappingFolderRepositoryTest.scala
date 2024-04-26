@@ -6,11 +6,8 @@ import io.tofhir.engine.model.{ConceptMapContext, FhirMappingException, UnitConv
 import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.io.File
-import scala.concurrent.ExecutionContext
 
 class FhirMappingFolderRepositoryTest extends AsyncFlatSpec with ToFhirTestSpec {
-
-  implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   "A FhirMappingRepository" should "correctly read and parse the mapping files under the given mappings folder" in {
     val patientMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/patient-mapping")
