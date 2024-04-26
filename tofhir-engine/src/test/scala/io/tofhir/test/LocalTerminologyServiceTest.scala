@@ -10,10 +10,9 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.Await
 
 class LocalTerminologyServiceTest extends AsyncFlatSpec with ToFhirTestSpec {
-  implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   val terminologyServiceFolderPath: String = Paths.get(getClass.getResource("/terminology-service").toURI).normalize().toAbsolutePath.toString
   val settings: LocalFhirTerminologyServiceSettings = LocalFhirTerminologyServiceSettings(terminologyServiceFolderPath,

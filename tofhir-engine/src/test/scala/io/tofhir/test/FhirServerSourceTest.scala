@@ -18,7 +18,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.Await
 import scala.io.Source
 import scala.util.Try
 
@@ -26,9 +26,6 @@ import scala.util.Try
  * Test suite for verifying the behavior of FhirServerSource.
  */
 class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
-
-  // Define implicit execution context for asynchronous operations
-  implicit override val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   // Sink Settings of mapping job
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"))
