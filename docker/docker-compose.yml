@@ -1,21 +1,10 @@
 version: '3.9'
 services:
-  tofhir-log-server:
-    image: srdc/tofhir-log-server:latest
-    container_name: tofhir-log-server
-    hostname: tofhir-log-server
-    ports:
-      - "8086:8086"
-    networks:
-      - tofhir-network
-    volumes:
-      - './tofhir-docker-logs:/usr/local/tofhir/logs'
   tofhir-server:
     image: srdc/tofhir-server:latest
     container_name: tofhir-server
     hostname: tofhir-server
     environment:
-      - LOG_SERVICE_ENDPOINT=http://tofhir-log-server:8086/tofhir-logs
       - FHIR_DEFINITIONS_ENDPOINT=http://onfhir:8080/fhir
       - FHIR_REPO_URL=http://onfhir:8080/fhir
       - APP_CONF_FILE=/usr/local/tofhir/conf/docker/tofhir-server.conf
@@ -34,7 +23,44 @@ services:
       - "8087:80"
     networks:
       - tofhir-network
+ # Elasticsearch, Fluentd and Kibana stack for mapping job log management
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    networks:
+      - tofhir-network
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+  fluentd:
+    build: ./fluentd
+    container_name: fluentd
+    volumes:
+      - ./fluentd/conf:/fluentd/etc
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      - tofhir-network
+  # TODO: Investigate if it's possible to populate predefined Kibana visualizations, dashboards, and indexes
+  # using Docker. This could involve making API calls or utilizing volumes.
+  # The current approach is the utilize Kibana UI as described in the README file.
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.2
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    networks:
+      - tofhir-network
+    depends_on:
+      - elasticsearch
 networks:
   tofhir-network:
     name: onfhir-network
     external: true
+volumes:
+  elasticsearch_data:
+    driver: local

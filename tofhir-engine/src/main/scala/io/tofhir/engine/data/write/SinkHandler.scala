@@ -90,18 +90,18 @@ object SinkHandler {
 
     //Log the job result
     val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfWritten, numOfNotWritten)
-    logger.info(jobResult.toLogstashMarker, jobResult.toString)
+    logger.info(jobResult.toMapMarker, jobResult.toString)
 
     // Log the mapping and invalid input errors
     if (numOfNotMapped > 0 || numOfInvalids > 0) {
       mappingErrors.union(invalidInputs).foreach(r =>
-        logger.warn(r.copy(executionId = Some(mappingJobExecution.id)).toLogstashMarker,
+        logger.warn(r.copy(executionId = Some(mappingJobExecution.id)).toMapMarker,
           r.copy(executionId = Some(mappingJobExecution.id)).toString)
       )
     }
     if (numOfNotWritten > 0)
       notWrittenResources.forEach(r =>
-        logger.warn(r.copy(executionId = Some(mappingJobExecution.id)).toLogstashMarker,
+        logger.warn(r.copy(executionId = Some(mappingJobExecution.id)).toMapMarker,
           r.copy(executionId = Some(mappingJobExecution.id)).toString)
       )
   }

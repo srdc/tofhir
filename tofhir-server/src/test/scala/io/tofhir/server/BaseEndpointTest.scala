@@ -8,7 +8,7 @@ import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.config.{LogServiceConfig, RedCapServiceConfig}
+import io.tofhir.server.config.RedCapServiceConfig
 import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
 import io.tofhir.server.fhir.FhirDefinitionsConfig
@@ -32,7 +32,6 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   val toFhirEngineConfig: ToFhirEngineConfig = new ToFhirEngineConfig(system.settings.config.getConfig("tofhir"))
   val webServerConfig = new WebServerConfig(system.settings.config.getConfig("webserver"))
   val fhirDefinitionsConfig = new FhirDefinitionsConfig(system.settings.config.getConfig("fhir"))
-  val logServiceConfig = new LogServiceConfig(system.settings.config.getConfig("log-service"))
   val redCapServiceConfig = new RedCapServiceConfig(system.settings.config.getConfig("tofhir-redcap"))
   // route endpoint
   var route: Route = _
@@ -82,7 +81,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     FileUtils.getPath(fhirDefinitionsConfig.codesystemsPath.get).toFile.mkdirs()
     FileUtils.getPath(fhirDefinitionsConfig.valuesetsPath.get).toFile.mkdirs()
     // initialize endpoint and route
-    val endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, logServiceConfig, redCapServiceConfig)
+    val endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, redCapServiceConfig)
     route = endpoint.toFHIRRoute
   }
 

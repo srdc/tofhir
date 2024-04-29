@@ -14,7 +14,6 @@ be either persisted to a file system or to a running HL7 FHIR endpoint.
 toFHIR consists of the following modules:
 - `tofhir-engine`: The core module of toFHIR which includes the main functionality of the tool.
 - `tofhir-server`: A standalone web server module that provides a REST API to run mapping jobs via `tohir-engine` and manage the mapping job definitions.
-- `tofhir-log-server`: A standalone web server module that provides a REST API to query the logs of the mapping job execution results.
 - `tofhir-server-common`: Holds common files like server configuration or errors for server implementations.
 - `tofhir-common`: Contains model and utility classes shared across various modules.
 - `tofhir-rxnorm`: Provides a client implementation to access the RxNorm API and a FHIR Path Function library to utilize its API functionalities in mapping definitions.
@@ -271,11 +270,6 @@ webserver = {
     # Password of the keystore for enabling ssl for toFHIR server
     password = null
   }
-}
-
-# The service from where tofhir-server will read the logs.
-log-service = {
-  endpoint = "http://localhost:8086/tofhir-logs"
 }
 ```
 
@@ -1221,3 +1215,32 @@ Or both. This will delete the source files after processing/mapping and save the
 While `archiveMode` works on a file-based basis, `saveErroneousRecords` works for each record/row in the source data.
 
 Please also note that, the `archiveMode` config is only applicable for the file system source type.
+
+## Mapping Job Results with EFK Stack
+This project utilizes the EFK Stack (Elasticsearch, Fluentd, and Kibana) to visualize the results of mapping job executions. 
+Once the EFK Stack is started using the provided [docker-compose.yml](docker/docker-compose.yml), Kibana can be accessed at http://localhost:5601.
+### Initializing Kibana
+Follow these steps to initialize Kibana with predefined configurations, dashboards, and indexes:
+#### Importing Visualizations, Dashboards, and Indexes
+1. Navigate to http://localhost:5601/app/management/kibana/objects
+2. Click on the `Import` button and import [export.ndjson](docker/kibana-data/export.ndjson)
+
+![Importing Objects](readme-assets%2Fkibana-saved-objects.png)
+#### Creating an Index Template for 'ignore_above' Properties of Strings
+To handle potentially long log messages, increase the default value of `ignore_above` for string properties.
+
+1. Go to http://localhost:5601/app/dev_tools#/console
+2. Copy and paste the contents of [index_template.txt](docker/kibana-data/index_template.txt) into the console and execute the request.
+
+![Index Template API Response](readme-assets%2Fkibana-index-template.png)
+
+### Kibana Dashboards
+After running mapping jobs, you can view their logs via Kibana dashboards.
+### Executions Dashboard
+This dashboard provides an overview of each execution's result.
+![Executions Dashboard](readme-assets%2Fkibana-executions-dashboard.png)
+To analyze a specific execution, hover over the execution ID and click on the plus icon next to it. Then, select the `Go to Dashboard` option as shown below:
+![Go to Dashboard](readme-assets%2Fkibana-go-to-dashboard.png)
+### Execution Details Dashboard
+This dashboard displays the results of individual mapping tasks and any corresponding errors.
+![Execution Details Dashboard](readme-assets%2Fkibana-execution-details.png)

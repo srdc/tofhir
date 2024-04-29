@@ -78,7 +78,6 @@
     <modules>
         <module>tofhir-engine</module>
         <module>tofhir-server</module>
-        <module>tofhir-log-server</module>
         <module>tofhir-common</module>
         <module>tofhir-server-common</module>
         <module>tofhir-rxnorm</module>
@@ -101,6 +100,8 @@
         <onfhir-template-engine.version>1.1-SNAPSHOT</onfhir-template-engine.version>
         <spark-on-fhir.version>1.0-SNAPSHOT</spark-on-fhir.version>
         <json4s.version>3.7.0-M11</json4s.version>
+        <logback-more-appenders.version>1.8.8</logback-more-appenders.version>
+        <fluent-logger.version>0.3.4</fluent-logger.version>
         <com.fasterxml.version>2.15.1</com.fasterxml.version>
         <scalatest.version>3.2.17</scalatest.version>
         <spark.version>3.5.1</spark.version>
@@ -280,6 +281,22 @@
 <!--                    </exclusion>-->
 <!--                </exclusions>-->
             </dependency>
+            <!-- Dependency for Fluentd-Logback Integration -->
+            <!-- This library provides additional appenders (namely, ch.qos.logback.more.appenders.DataFluentAppender)
+             for Logback, extending its capabilities.-->
+            <dependency>
+                <groupId>com.sndyuk</groupId>
+                <artifactId>logback-more-appenders</artifactId>
+                <version>${logback-more-appenders.version}</version>
+            </dependency>
+            <!-- This dependency provides access to the Fluentd Logger Library, which allows the applications to easily
+             send logs to Fluentd-->
+            <dependency>
+                <groupId>org.fluentd</groupId>
+                <artifactId>fluent-logger</artifactId>
+                <version>${fluent-logger.version}</version>
+            </dependency>
+            <!-- The end of dependencies for Fluentd-Logback Integration-->
 
             <!-- These are required for Spark and resolving among different versions coming from akka and json4s -->
             <!-- Dependency from jackson-dataformat-csv and logstash-logback-encoder-->
@@ -416,11 +433,6 @@
             <dependency>
                 <groupId>io.onfhir</groupId>
                 <artifactId>tofhir-server-common_2.13</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.onfhir</groupId>
-                <artifactId>tofhir-log-server-common_2.13</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

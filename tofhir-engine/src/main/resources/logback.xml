@@ -45,6 +45,9 @@
                 <levelValue>[ignore]</levelValue>
             </fieldNames>
         </encoder>
+        <!-- Encoder to map MapMarker to LogstashMarker
+             Without this encoder, RollingFileAppender will ignore the markers -->
+        <encoder class="io.tofhir.engine.logback.MapMarkerToLogstashMarkerEncoder" />
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <FileNamePattern>logs/tofhir-mappings.%i.log.zip</FileNamePattern>
@@ -55,6 +58,19 @@
         <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
             <MaxFileSize>10MB</MaxFileSize>
         </triggeringPolicy>
+    </appender>
+
+    <!-- Appender for Fluentd -->
+    <appender name="FLUENT" class="ch.qos.logback.more.appenders.DataFluentAppender">
+        <!-- Configure the host and port for fluentd -->
+        <remoteHost>localhost</remoteHost>
+        <port>24224</port>
+        <!-- We need only INFO logs. -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <!-- If true, Map Marker is expanded instead of nesting in the marker name -->
+        <flattenMapMarker>true</flattenMapMarker>
     </appender>
 
     <appender name="ASYNC-AUDIT" class="ch.qos.logback.classic.AsyncAppender">
@@ -69,6 +85,7 @@
 
     <logger name="io.tofhir.engine.data.write.SinkHandler" level="INFO">
         <appender-ref ref="ASYNC-AUDIT" />
+        <appender-ref ref="FLUENT" />
     </logger>
 
     <!-- Give me DEBUG level logs from io.tofhir package because the default is set to ERROR at root (above) -->

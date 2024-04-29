@@ -74,11 +74,6 @@ if [ ! -z "$WEBSERVER_BASEURI" ]; then
   JAVA_CMD+="-Dwebserver.base-uri=$WEBSERVER_BASEURI "
 fi
 
-# Configure log service
-if [ ! -z "$LOG_SERVICE_ENDPOINT" ]; then
-  JAVA_CMD+="-Dlog-service.endpoint=$LOG_SERVICE_ENDPOINT "
-fi
-
 # Delay the execution for this amount of seconds
 if [ ! -z "$DELAY_EXECUTION" ]; then
   sleep $DELAY_EXECUTION
