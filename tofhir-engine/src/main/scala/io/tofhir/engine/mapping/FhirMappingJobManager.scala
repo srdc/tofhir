@@ -62,7 +62,7 @@ class FhirMappingJobManager(
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
-        logger.info(jobResult.toLogstashMarker, jobResult.toString)
+        logger.info(jobResult.toMapMarker, jobResult.toString)
 
         readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
           fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
@@ -70,7 +70,7 @@ class FhirMappingJobManager(
         // Check whether the job is stopped
         case se: SparkThrowable if se.getMessage.contains("cancelled part of cancelled job group") =>
           val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.STOPPED))
-          logger.info(jobResult.toLogstashMarker, jobResult.toString)
+          logger.info(jobResult.toMapMarker, jobResult.toString)
           throw FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project ${mappingJobExecution.projectId}' terminated manually!")
         // Exceptions from Spark executors are wrapped inside a SparkException, which are caught below
         case se: SparkThrowable =>
@@ -78,17 +78,17 @@ class FhirMappingJobManager(
             // log the mapping job result and exception for the errors encountered while reading the schema or writing the FHIR Resources
             case _ =>
               val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.FAILURE))
-              logger.error(jobResult.toLogstashMarker, jobResult.toString, se)
+              logger.error(jobResult.toMapMarker, jobResult.toString, se)
           }
         // Pass the stop exception to the upstream Futures in the chain laid out by foldLeft above
         case t: FhirMappingJobStoppedException =>
           val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.SKIPPED))
-          logger.info(jobResult.toLogstashMarker, jobResult.toString)
+          logger.info(jobResult.toMapMarker, jobResult.toString)
           throw t
         case e: Throwable =>
           // log the mapping job result and exception
           val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef), status = Some(FhirMappingJobResult.FAILURE))
-          logger.error(jobResult.toLogstashMarker, jobResult.toString, e)
+          logger.error(jobResult.toMapMarker, jobResult.toString, e)
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.job.id}.") }
   }
@@ -115,7 +115,7 @@ class FhirMappingJobManager(
       .map(t => {
         logger.debug(s"Streaming mapping job ${mappingJobExecution.job.id}, mapping url ${t.mappingRef} is started and waiting for the data...")
         val jobResult = FhirMappingJobResult(mappingJobExecution, Some(t.mappingRef))
-        logger.info(jobResult.toLogstashMarker, jobResult.toString)
+        logger.info(jobResult.toMapMarker, jobResult.toString)
 
         // Construct a tuple of (mapping url, Future[StreamingQuery])
         t.mappingRef ->
@@ -126,7 +126,7 @@ class FhirMappingJobManager(
             .recover {
               case e: Throwable =>
                 val jobResult = FhirMappingJobResult(mappingJobExecution, Some(t.mappingRef), status = Some(FhirMappingJobResult.FAILURE))
-                logger.error(jobResult.toLogstashMarker, jobResult.toString,e)
+                logger.error(jobResult.toMapMarker, jobResult.toString,e)
                 throw e
             }
       })

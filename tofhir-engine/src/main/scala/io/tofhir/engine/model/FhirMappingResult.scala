@@ -1,9 +1,8 @@
 package io.tofhir.engine.model
 
-import net.logstash.logback.marker.LogstashMarker
+import ch.qos.logback.more.appenders.marker.MapMarker
 
 import java.sql.Timestamp
-import net.logstash.logback.marker.Markers._
 
 
 /**
@@ -38,25 +37,29 @@ case class FhirMappingResult(
   }
 
   /**
+   * Converts the FhirMappingResult to a MapMarker.
    *
-   * @return
+   * @return The MapMarker object representing the FhirMappingResult.
    */
-  def toLogstashMarker:LogstashMarker = {
-    val marker:LogstashMarker =
-      append("jobId", jobId)
-        .and(append("executionId", executionId.getOrElse(""))
-          .and(append("mappingUrl", mappingUrl)
-            .and(append("mappingExpr", mappingExpr.orElse(null))
-              .and(appendRaw("source", source.get)
-                .and(append("errorCode", error.get.code)
-                  .and(append("errorDesc", error.get.description)
-                    .and(append("errorExpr", error.get.expression.orElse(null))
-                      .and(append("eventId", eventId)))))))))
-
-    if(mappedResource.isDefined && error.get.code == FhirMappingErrorCodes.INVALID_RESOURCE)
-      marker.and(appendRaw("mappedResource", mappedResource.get))
-    else
-     marker
+  def toMapMarker: MapMarker = {
+    // create a new HashMap to store the marker attributes
+    val markerMap: java.util.Map[String, Any] = new java.util.HashMap[String, Any]()
+    // add attributes to the marker map
+    markerMap.put("jobId", jobId)
+    markerMap.put("executionId", executionId.getOrElse(""))
+    markerMap.put("mappingUrl", mappingUrl)
+    markerMap.put("mappingExpr", mappingExpr.orElse(null))
+    markerMap.put("source", source.get)
+    markerMap.put("errorCode", error.get.code)
+    markerMap.put("errorDesc", error.get.description)
+    markerMap.put("errorExpr", error.get.expression.orElse(null))
+    markerMap.put("eventId", eventId)
+    // create a new MapMarker using the marker map
+    val marker: MapMarker = new MapMarker("marker", markerMap)
+    // add mappedResource to the marker map if error code is INVALID_RESOURCE
+    if (mappedResource.isDefined && error.get.code == FhirMappingErrorCodes.INVALID_RESOURCE)
+      markerMap.put("mappedResource", mappedResource.get)
+    marker
   }
 
 }

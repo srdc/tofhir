@@ -17,11 +17,10 @@ import io.tofhir.server.model.{ExecuteJobTask, TestResourceCreationRequest}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
 import io.tofhir.server.service.schema.ISchemaRepository
-import io.tofhir.server.util.{DataFrameUtil, LogServiceClient}
+import io.tofhir.server.util.DataFrameUtil
 import io.tofhir.engine.mapping.MappingJobScheduler
 import org.apache.commons.io
 import org.json4s.JsonAST.{JBool, JObject, JValue}
-import org.json4s.JsonDSL.jobject2assoc
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JString}
 
@@ -36,9 +35,8 @@ import scala.concurrent.{ExecutionContext, Future}
  * @param jobRepository
  * @param mappingRepository
  * @param schemaRepository
- * @param logServiceEndpoint
  */
-class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository, logServiceEndpoint: String) extends LazyLogging {
+class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
 
   val externalMappingFunctions: Map[String, IFhirPathFunctionLibraryFactory] = Map(
     "rxn" -> new RxNormApiFunctionLibraryFactory("https://rxnav.nlm.nih.gov", 2),
@@ -46,7 +44,6 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   )
   // TODO do not define engine and client as a global variable inside the class. (Testing becomes impossible)
   val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository), externalMappingFunctions)
-  val logServiceClient = new LogServiceClient(logServiceEndpoint)
 
   import Execution.actorSystem
   implicit val ec: ExecutionContext = actorSystem.dispatcher
@@ -237,94 +234,37 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   }
 
   /**
-   * Returns the logs of mapping tasks ran in the given execution.
-   *
-   * @param executionId the identifier of mapping job execution.
-   * @return the logs of mapping tasks
-   * */
-  def getExecutionLogs(projectId: String, jobId: String, executionId: String): Future[Seq[JValue]] = {
-    logServiceClient.getExecutionLogs(projectId, jobId, executionId)
-      .map(mappingTasksLogsResponse => {
-        logger.debug(s"Retrieved execution logs for projectId: $projectId, jobId: $jobId, executionId: $executionId")
-        mappingTasksLogsResponse.map(logResponse => {
-          val logResponseObject: JObject = logResponse.asInstanceOf[JObject]
-
-          JObject(
-            logResponseObject.obj :+ ("runningStatus" -> JBool(
-              toFhirEngine.runningJobRegistry.executionExists((logResponseObject \ "jobId").extract[String], executionId, (logResponseObject \ "mappingUrl").extractOpt[String])
-            )))
-        })
-      })
-  }
-
-  /**
-   * Returns the list of mapping job executions. It extracts the logs from {@link logs/ tofhir - mappings.log} file for
-   * the given mapping job and groups them by their execution id and returns a single log for each execution. Further,
-   * it applies the pagination to the resulting execution logs.
+   * Returns the ongoing (i.e. running or scheduled) mapping job executions.
    *
    * @param projectId   project id the job belongs to
    * @param jobId       job id
-   * @param queryParams parameters to filter results such as paging
-   * @return a tuple as follows
-   *         first element is the execution logs of mapping job as a JSON array. It returns an empty array if the job has not been run before.
-   *         second element is the total number of executions without applying any filters i.e. query params
+   * @return a list of JSONs indicating the execution id and its status i.e. runningStatus or scheduled
    * @throws ResourceNotFound when mapping job does not exist
    */
-  def getExecutions(projectId: String, jobId: String, queryParams: Map[String, String]): Future[(Seq[JValue], Long)] = {
+  def getExecutions(projectId: String, jobId: String): Future[Seq[JValue]] = {
     // retrieve the job to validate its existence
     jobRepository.getJob(projectId, jobId).flatMap {
       case Some(_) =>
-        // Desired page number
-        val page = queryParams.getOrElse("page", "1")
-        // Request executions before this date
-        val dateBefore = queryParams.getOrElse("dateBefore", "")
-        // Request executions after this date
-        val dateAfter = queryParams.getOrElse("dateAfter", "")
-        // Desired error statuses
-        val errorStatuses = queryParams.getOrElse("errorStatuses", "")
-        // log count per page
-        val rowPerPage = queryParams.getOrElse("rowPerPage", "10")
-
-        logServiceClient.getExecutions(projectId, jobId, page, rowPerPage, dateBefore, dateAfter, errorStatuses).map(paginatedLogsResponse => {
-          logger.debug(s"Retrieved executions for projectId: $projectId, jobId: $jobId, page: $page")
-          // Retrieve the running executions for the given job
-          val jobExecutions: Set[String] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)
-
-          val ret = paginatedLogsResponse._1.map(log => {
-            val logJson: JObject = log.asInstanceOf[JObject]
-            val executionId: String = (logJson \ "id").extract[String]
-            JObject(
-              logJson.obj :+ ("runningStatus" -> JBool(jobExecutions.contains(executionId))) :+
-                ("scheduled" -> JBool(toFhirEngine.runningJobRegistry.isScheduled(jobId, executionId)))
+        // Retrieve the running executions for the given job
+        val runningExecutionsJson: Seq[JValue] = toFhirEngine.runningJobRegistry.getRunningExecutions(jobId)
+          .map(id => JObject(
+            List(
+              "id" -> JString(id),
+              "runningStatus" -> JBool(true)
             )
-          })
-          (ret, paginatedLogsResponse._2)
-        })
+          )).toSeq
+        // Retrieve the scheduled executions for the given job
+        val scheduledExecutionsJson: Seq[JValue] = toFhirEngine.runningJobRegistry.getScheduledExecutions(jobId)
+          .map(id => JObject(
+            List(
+              "id" -> JString(id),
+              "scheduled" -> JBool(true)
+            )
+          )).toSeq
+
+        Future.successful(runningExecutionsJson ++ scheduledExecutionsJson)
 
       case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists")
-    }
-  }
-
-  /**
-   * Returns the execution logs for a specific execution ID.
-   *
-   * @param projectId   project id the job belongs to
-   * @param jobId       job id
-   * @param executionId execution id
-   * @return the execution summary as a JSON object
-   */
-  def getExecutionById(projectId: String, jobId: String, executionId: String): Future[JObject] = {
-    // Retrieve the job to validate its existence
-    jobRepository.getJob(projectId, jobId).flatMap {
-      case Some(_) =>
-        // Get
-        logServiceClient.getExecutionById(projectId, jobId, executionId).map(executionJson=> {
-          logger.debug(s"Retrieved execution for projectId: $projectId, jobId: $jobId, executionId: $executionId")
-          // Add runningStatus field to the JSON object
-          executionJson ~ ("runningStatus" -> JBool(toFhirEngine.runningJobRegistry.getRunningExecutions(jobId).contains(executionId))) ~ ("scheduled" -> JBool(toFhirEngine.runningJobRegistry.isScheduled(jobId, executionId)))
-        })
-      case None =>
-        throw ResourceNotFound("Mapping job does not exist.", s"A mapping job with id $jobId does not exist")
     }
   }
 

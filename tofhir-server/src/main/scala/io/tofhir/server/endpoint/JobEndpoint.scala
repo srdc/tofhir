@@ -1,19 +1,17 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.StreamTcpException
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_LOGS, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST, SEGMENT_DESCHEDULE}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST, SEGMENT_DESCHEDULE}
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest}
 import io.tofhir.server.service.{ExecutionService, JobService}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
-import io.tofhir.server.common.interceptor.ICORSHandler
 import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.service.job.IJobRepository
 import io.tofhir.server.service.mapping.IMappingRepository
@@ -21,10 +19,10 @@ import io.tofhir.server.service.schema.ISchemaRepository
 
 import scala.concurrent.Future
 
-class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository, logServiceEndpoint: String) extends LazyLogging {
+class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
 
   val service: JobService = new JobService(jobRepository)
-  val executionService: ExecutionService = new ExecutionService(jobRepository, mappingRepository, schemaRepository, logServiceEndpoint)
+  val executionService: ExecutionService = new ExecutionService(jobRepository, mappingRepository, schemaRepository)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_JOB) {
@@ -50,13 +48,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
           pathEndOrSingleSlash {
             getExecutions(projectId, jobId) ~ stopExecutions(jobId)
           } ~ pathPrefix(Segment) { executionId: String => // operations on a single execution, jobs/<jobId>/executions/<executionId>
-            pathEndOrSingleSlash {
-              getExecutionById(projectId, jobId, executionId)
-            } ~ pathPrefix(SEGMENT_LOGS) { // logs on a single execution, jobs/<jobId>/executions/<executionId>/logs
-              pathEndOrSingleSlash {
-                getExecutionLogs(projectId, jobId, executionId)
-              }
-            } ~ pathPrefix(SEGMENT_RUN) { // jobs/<jobId>/executions/<executionId>/run
+            pathPrefix(SEGMENT_RUN) { // jobs/<jobId>/executions/<executionId>/run
               pathEndOrSingleSlash {
                 continueJobExecution(projectId, jobId, executionId)
               }
@@ -200,28 +192,8 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
    * */
   private def getExecutions(projectId: String, id: String): Route = {
     get {
-      parameterMap { queryParams => // page and some filter options available. (page, dateBefore, dateAfter, errorStatuses, rowPerPage)
-        onComplete(executionService.getExecutions(projectId, id, queryParams)) {
-          case util.Success(response) =>
-            val headers = List(
-              RawHeader(ICORSHandler.X_TOTAL_COUNT_HEADER, response._2.toString)
-            )
-            respondWithHeaders(headers) {
-              complete(response._1)
-            }
-          case util.Failure(exception) =>
-            exception match {
-              case e:StreamTcpException =>
-                logger.error(s"Failed to retrieve executions for project $projectId job $id",e)
-                complete {
-                  HttpResponse(
-                    status = StatusCodes.GatewayTimeout,
-                    entity = "The toFHIR Log Server is currently unavailable. Please try again later."
-                  )
-                }
-              case t:Throwable => throw t
-            }
-        }
+      complete {
+        executionService.getExecutions(projectId, id)
       }
     }
   }
@@ -235,21 +207,6 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
     delete {
       complete {
         executionService.stopJobExecutions(jobId)
-      }
-    }
-  }
-
-  /**
-   * Route to get execution logs of a mapping job execution
-   * @param projectId
-   * @param jobId
-   * @param executionId
-   * @return
-   */
-  private def getExecutionById(projectId: String, jobId: String, executionId: String): Route = {
-    get {
-      complete {
-        executionService.getExecutionById(projectId, jobId, executionId)
       }
     }
   }
@@ -316,17 +273,6 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
       }
     }
   }
-
-  /**
-   * Route to retrieve execution logs i.e. the logs of mapping task which are ran in the execution
-   * */
-  private def getExecutionLogs(projectId: String, jobId: String, executionId: String): Route = {
-    get {
-      complete {
-        executionService.getExecutionLogs(projectId: String, jobId: String, executionId: String)
-      }
-    }
-  }
 }
 
 object JobEndpoint {
@@ -334,7 +280,6 @@ object JobEndpoint {
   val SEGMENT_RUN = "run"
   val SEGMENT_STATUS = "status"
   val SEGMENT_EXECUTIONS = "executions"
-  val SEGMENT_LOGS = "logs"
   val SEGMENT_TEST = "test"
   val SEGMENT_STOP = "stop"
   val SEGMENT_DESCHEDULE = "deschedule"

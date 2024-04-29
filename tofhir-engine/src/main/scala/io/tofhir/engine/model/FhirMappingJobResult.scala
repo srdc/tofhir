@@ -1,8 +1,6 @@
 package io.tofhir.engine.model
 
-import net.logstash.logback.marker.LogstashMarker
-import net.logstash.logback.marker.Markers.{append}
-
+import ch.qos.logback.more.appenders.marker.MapMarker
 /**
  * Result of a batch mapping job execution
  *
@@ -52,20 +50,26 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
   }
 
   /**
+   * Converts the mapping job execution to a MapMarker object.
    *
-   * @return
+   * @return The MapMarker representing the mapping job execution.
    */
-  def toLogstashMarker: LogstashMarker = {
-    append("jobId", mappingJobExecution.job.id)
-      .and(append("projectId", mappingJobExecution.projectId)
-        .and(append("executionId", mappingJobExecution.id)
-          .and(append("mappingUrl", mappingUrl.orElse(null))
-            .and(append("result", result)
-              .and(append("numOfInvalids", numOfInvalids)
-                .and(append("numOfNotMapped", numOfNotMapped)
-                  .and(append("numOfFhirResources", numOfFhirResources)
-                    .and(append("numOfFailedWrites", numOfFailedWrites)
-                      .and(append("eventId", eventId))))))))))
+  def toMapMarker: MapMarker = {
+    // create a new HashMap to store the marker attributes
+    val markerMap: java.util.Map[String, Any] = new java.util.HashMap[String, Any]()
+    // add attributes to the marker map
+    markerMap.put("jobId", mappingJobExecution.job.id)
+    markerMap.put("projectId", mappingJobExecution.projectId)
+    markerMap.put("executionId", mappingJobExecution.id)
+    markerMap.put("mappingUrl", mappingUrl.orNull)
+    markerMap.put("result", result)
+    markerMap.put("numOfInvalids", numOfInvalids)
+    markerMap.put("numOfNotMapped", numOfNotMapped)
+    markerMap.put("numOfFhirResources", numOfFhirResources)
+    markerMap.put("numOfFailedWrites", numOfFailedWrites)
+    markerMap.put("eventId", eventId)
+    // create a new MapMarker using the marker map
+    new MapMarker("marker", markerMap)
   }
 }
 

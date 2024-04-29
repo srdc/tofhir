@@ -345,6 +345,16 @@ class RunningJobRegistry(spark: SparkSession) {
   }
 
   /**
+   * Gets scheduled executions for the given job
+   *
+   * @param jobId Identifier of the job
+   * @return A set of execution ids
+   */
+  def getScheduledExecutions(jobId: String): Set[String] = {
+    scheduledTasks.get(jobId).map(_.keySet).getOrElse(Set.empty).toSet
+  }
+
+  /**
    * Checks if a job with the given execution ID is scheduled.
    *
    * @param jobId       The ID of the job

@@ -26,13 +26,12 @@ class ProjectEndpoint(schemaRepository: ISchemaRepository,
                       mappingRepository: IMappingRepository,
                       jobRepository: IJobRepository,
                       mappingContextRepository: IMappingContextRepository,
-                      projectRepository: IProjectRepository,
-                      logServiceEndpoint: String) extends LazyLogging {
+                      projectRepository: IProjectRepository) extends LazyLogging {
 
   val service: ProjectService = new ProjectService(projectRepository, jobRepository, mappingRepository, mappingContextRepository, schemaRepository)
   val schemaDefinitionEndpoint: SchemaDefinitionEndpoint = new SchemaDefinitionEndpoint(schemaRepository, mappingRepository)
   val mappingEndpoint: MappingEndpoint = new MappingEndpoint(mappingRepository, jobRepository)
-  val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository, mappingRepository, schemaRepository, logServiceEndpoint)
+  val jobEndpoint: JobEndpoint = new JobEndpoint(jobRepository, mappingRepository, schemaRepository)
   val mappingContextEndpoint: MappingContextEndpoint = new MappingContextEndpoint(mappingContextRepository)
 
   def route(request: ToFhirRestCall): Route = {
