@@ -114,7 +114,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
         throw BadRequest(e.getMessage, e.getCause.toString.capitalize.replace("\n", " "))
     }
     // Default name for undefined information
-    val defaultName: String = "unnamed"
+    val defaultName: String = "Unnamed"
     // Create unnamed Schema definition by infer the schema from DataFrame
     val unnamedSchema = {
       // Schema converter object for mapping spark data types to fhir data types
