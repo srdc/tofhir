@@ -28,6 +28,7 @@ import java.util.UUID
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
+import scala.language.postfixOps
 
 /**
  * Folder/Directory based schema repository implementation.
@@ -119,6 +120,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
       }
 
       checkIfSchemaIsUnique(projectId, schemaDefinition.id, schemaDefinition.url)
+
+    // Check SchemaDefinition type is valid
+    this.validateSchemaDefinitionType(schemaDefinition);
 
     // Write to the repository as a new file and update caches
     writeSchemaAndUpdateCaches(projectId, structureDefinitionResource, schemaDefinition)
@@ -381,6 +385,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     // Remove structure definition from the cache and add it after file writing is done to ensure files and cache are the same
     baseFhirConfig.profileRestrictions -= structureDefinition.url
 
+    // Check SchemaDefinition type is valid.
+    this.validateSchemaDefinitionType(schemaDefinition);
+
     // Write to the repository as a new file and update caches
     writeSchemaAndUpdateCaches(projectId, structureDefinitionResource, schemaDefinition)
   }
@@ -427,6 +434,18 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
 
       schemaDefinition
     })
+  }
+
+  /**
+   * Check SchemaDefinition type starts with uppercase.
+   * @param schemaDefinition Definition of the schema
+   * @return
+   */
+  private def validateSchemaDefinitionType(schemaDefinition: SchemaDefinition): Unit = {
+    val schemaDefinitionType: String = schemaDefinition.`type`;
+    if(schemaDefinitionType.isEmpty || schemaDefinitionType.apply(0).isLower){
+      throw BadRequest("Schema definition is not valid.", s"Schema definition type must starts with uppercase!");
+    }
   }
 }
 
