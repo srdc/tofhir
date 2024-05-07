@@ -3,14 +3,12 @@ package io.tofhir.integrationtest
 import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
-import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.path.FhirPathUtilFunctionsFactory
-import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.ToFhirTestSpec
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model._
-import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import io.tofhir.engine.util.FhirMappingUtility
 import org.apache.commons.io
 import org.apache.kafka.clients.admin.{AdminClient, AdminClientConfig, NewTopic}
@@ -30,14 +28,11 @@ import java.util.concurrent.TimeUnit
 import java.util.{Collections, Properties, UUID}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Future}
-import scala.util.Try
 
 class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with BeforeAndAfterAll {
 
   override protected def afterAll(): Unit = {
-    if(fhirServerIsAvailable) {
-      deleteResources()
-    }
+    deleteResources()
     if (adminClient != null) adminClient.close()
     if (producer != null) producer.close()
     if (consumer != null) consumer.close()
@@ -84,7 +79,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   val streamingSourceSettings: Map[String, KafkaSourceSettings] =
     Map("source" -> KafkaSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort"))
 
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"))
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = onFhirClient.getBaseUrl())
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
@@ -106,11 +101,6 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     sinkSettings = fhirSinkSettings,
     dataProcessingSettings = DataProcessingSettings()
   )
-
-  val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
-  val fhirServerIsAvailable: Boolean =
-    Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
-      .getOrElse(false)
 
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession)
 
@@ -196,7 +186,6 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   }
 
   it should "consume patients, observations and family member history data and map and write to the fhir repository" in {
-    assume(fhirServerIsAvailable)
     val execution: FhirMappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(patientMappingTask, otherObservationMappingTask, familyMemberHistoryMappingTask))
     val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(mappingJobExecution =
       execution,
@@ -248,8 +237,6 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
       foo()
     })
     consumer.unsubscribe()
-
-    assume(fhirServerIsAvailable)
     // modify familyMemberHistoryMappingTask to listen to familyMembersCorrupted topic
     val mappingTask = familyMemberHistoryMappingTask.copy(sourceContext = Map("source" -> KafkaSource(topicName = "familyMembersCorrupted", groupId = "tofhir", startingOffsets = "earliest")))
     val execution: FhirMappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(mappingTask))

@@ -6,7 +6,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.client.OnFhirNetworkClient
 import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.config.RedCapServiceConfig
 import io.tofhir.server.common.config.WebServerConfig
@@ -26,10 +25,6 @@ import org.testcontainers.utility.DockerImageName
 
 import java.io.File
 import java.util.UUID
-import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
-import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
 
 trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
   // toFHIR engine config
