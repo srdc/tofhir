@@ -375,7 +375,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
         sourceSettings = dataSourceSettings,
         sinkSettings = fhirSinkSettings,
         terminologyServiceSettings = Some(terminologyServiceSettings),
-        identityServiceSettings = lMappingJob.getIdentityServiceSettings()) map { res =>
+        identityServiceSettings = lMappingJob.copy(sinkSettings = lMappingJob.sinkSettings.asInstanceOf[FhirRepositorySinkSettings].copy(fhirRepoUrl = onFhirClient.getBaseUrl())).getIdentityServiceSettings()) map { res =>
       res shouldBe a[Unit]
     }
   }
