@@ -5,14 +5,14 @@
 	  "jsonClass" : "FileSystemSourceSettings",
 	  "name" : "patient-test-data",
 	  "sourceUri" : "http://test-data",
-	  "dataFolderPath" : "/test-data",
+	  "dataFolderPath" : "./test-data",
 	  "asStream" : false
 	},
 	"patientGender" : {
 	  "jsonClass" : "FileSystemSourceSettings",
 	  "name" : "patient-gender-test-data",
 	  "sourceUri" : "http://test-data",
-	  "dataFolderPath" : "/test-data-gender",
+	  "dataFolderPath" : "./test-data-gender",
 	  "asStream" : false
 	}
   },
