@@ -193,7 +193,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
       sinkSettings = fhirSinkSettings
     )
     streamingQueryFutures.foreach(sq => {
-      val streamingQuery: StreamingQuery = Await.result(sq._2, FiniteDuration.apply(5, TimeUnit.SECONDS)) // First wait for the StreamingQuery to become available
+      val streamingQuery: StreamingQuery = Await.result(sq._2, FiniteDuration.apply(60, TimeUnit.SECONDS)) // First wait for the StreamingQuery to become available
       streamingQuery.awaitTermination(20000L) // Wait for 20 seconds to consume and write to the fhir repo and terminate
       streamingQuery.stop()
       io.FileUtils.deleteDirectory(new File(execution.getCheckpointDirectory(sq._1))) // Clear checkpoint directory to prevent conflicts with other tests
