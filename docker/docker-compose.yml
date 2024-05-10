@@ -45,11 +45,10 @@ services:
       - "24224:24224/udp"
     networks:
       - tofhir-network
-  # TODO: Investigate if it's possible to populate predefined Kibana visualizations, dashboards, and indexes
-  # using Docker. This could involve making API calls or utilizing volumes.
-  # The current approach is the utilize Kibana UI as described in the README file.
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.15.2
+    build:
+      context: ./kibana
+      dockerfile: ./Dockerfile
     container_name: kibana
     ports:
       - "5601:5601"
