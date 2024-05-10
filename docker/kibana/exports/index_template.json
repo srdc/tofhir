@@ -1,4 +1,3 @@
-PUT _template/ignore_above
 {
   "index_patterns": [
     "fluentd*"
