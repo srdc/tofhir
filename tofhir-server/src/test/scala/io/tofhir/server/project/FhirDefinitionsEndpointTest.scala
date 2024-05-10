@@ -26,7 +26,6 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest {
      * Test case for validating FHIR resources.
      */
     "validate FHIR resources" in {
-      assume(fhirServerIsAvailable)
 
       // Validate the resource without providing a FHIR validation URL
       Post(s"/${webServerConfig.baseUri}/validate", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
@@ -39,12 +38,12 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest {
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=${this.onFhirClient.getBaseUrl()}/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, invalidConditionResourceJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=${this.onFhirClient.getBaseUrl();}/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, invalidConditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Convert the JSON response to a JValue
@@ -59,7 +58,7 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest {
       }
 
       // Validate a bundle of resources
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=$fhirRepoUrl", HttpEntity(ContentTypes.`application/json`, patientBundleJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=${this.onFhirClient.getBaseUrl()}", HttpEntity(ContentTypes.`application/json`, patientBundleJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Convert the JSON response to a JValue

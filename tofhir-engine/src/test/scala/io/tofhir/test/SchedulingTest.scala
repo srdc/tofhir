@@ -3,9 +3,9 @@ package io.tofhir.test
 import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
-import io.onfhir.client.OnFhirNetworkClient
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.tofhir.ToFhirTestSpec
+import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader, MappingJobScheduler}
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirRepositorySinkSettings}
@@ -19,14 +19,10 @@ import java.io.File
 import java.net.URI
 import java.nio.file.{Path, Paths}
 import java.sql.{Connection, DriverManager, Statement}
-import java.util.concurrent.TimeUnit
-import io.onfhir.path.FhirPathUtilFunctionsFactory
-import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
-
+import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
-import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.io.{BufferedSource, Source}
-import scala.util.{Failure, Success, Try, Using}
+import scala.util.{Failure, Success, Using}
 
 class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
 
@@ -41,9 +37,7 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
   }
 
   override protected def afterAll(): Unit = {
-    if(fhirServerIsAvailable) {
-      deleteResources()
-    }
+    deleteResources()
     val sql = readFileContent("/sql/scheduling-drop.sql")
     runSQL(sql)
     super.afterAll()
@@ -89,21 +83,15 @@ class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestS
 
   val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler(scheduler, toFhirDb.toUri)
 
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"))
-
-  val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
-  val fhirServerIsAvailable: Boolean =
-    Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
-      .getOrElse(false)
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = onFhirClient.getBaseUrl())
 
   val testScheduleMappingJobFilePath: String = getClass.getResource("/test-schedule-mappingjob.json").toURI.getPath
 
   it should "schedule a FhirMappingJob with cron and sink settings restored from a file" in {
-    assume(fhirServerIsAvailable)
     val lMappingJob: FhirMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testScheduleMappingJobFilePath)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader(mappingRepository), schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession, Some(mappingJobScheduler))
-    fhirMappingJobManager.scheduleMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = lMappingJob.mappings, job = lMappingJob), sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings, schedulingSettings = lMappingJob.schedulingSettings.get)
+    fhirMappingJobManager.scheduleMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = lMappingJob.mappings, job = lMappingJob), sourceSettings = lMappingJob.sourceSettings, sinkSettings = lMappingJob.sinkSettings.asInstanceOf[FhirRepositorySinkSettings].copy(fhirRepoUrl = onFhirClient.getBaseUrl()), schedulingSettings = lMappingJob.schedulingSettings.get)
     scheduler.start() //job set to run every minute
     Thread.sleep(61000) //wait for the job to be executed once
     scheduler.stop()

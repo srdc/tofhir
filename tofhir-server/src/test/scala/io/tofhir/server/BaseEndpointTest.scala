@@ -6,7 +6,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.onfhir.client.OnFhirNetworkClient
 import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirEngineConfig
-import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.config.RedCapServiceConfig
 import io.tofhir.server.common.config.WebServerConfig
@@ -19,13 +18,13 @@ import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.wait.strategy.Wait
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.utility.DockerImageName
 
 import java.io.File
 import java.util.UUID
-import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
-import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
 
 trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
   // toFHIR engine config
@@ -36,15 +35,23 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   // route endpoint
   var route: Route = _
 
-  // URL for the FHIR repository, defaulting to a local onFHIR if the environment variable is not set
-  val fhirRepoUrl: String = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir")
-  // Instance of OnFhirNetworkClient initialized with the FHIR repository URL
-  private val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirRepoUrl)
-  // Boolean indicating whether the FHIR server is available
-  val fhirServerIsAvailable: Boolean =
-    Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
-      .getOrElse(false)
+  // Instance of OnFhirNetworkClient initialized with onFhir container
+  var onFhirClient: OnFhirNetworkClient = initializeOnFhirClient();
 
+  /**
+   * Deploy an onFhir container for testing purpose
+   * */
+  def initializeOnFhirClient(): OnFhirNetworkClient = {
+    @Container
+    val container: GenericContainer[Nothing] = new GenericContainer(DockerImageName.parse("srdc/onfhir:r4")).withExposedPorts(8081);
+    container.addEnv("DB_EMBEDDED", "true");
+    container.addEnv("SERVER_PORT", "8081");
+    container.addEnv("SERVER_BASE_URI", "fhir");
+    container.addEnv("FHIR_ROOT_URL", s"http://${container.getHost}:8081/fhir");
+    container.waitingFor(Wait.forHttp("/fhir").forStatusCode(200));
+    container.start();
+    OnFhirNetworkClient.apply(s"http://${container.getHost}:${container.getFirstMappedPort}/fhir");
+  }
   /**
    * Identifier of test project which can be used in endpoint tests.
    * Endpoint tests, which require a test project, should call {@link createProject} method to create it

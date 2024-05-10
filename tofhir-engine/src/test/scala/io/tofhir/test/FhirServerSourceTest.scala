@@ -10,17 +10,12 @@ import io.onfhir.util.JsonFormatter._
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model._
-import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import org.json4s.JsonAST.JArray
 import org.json4s.jackson.JsonMethods
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AsyncFlatSpec
 
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.Await
 import scala.io.Source
-import scala.util.Try
 
 /**
  * Test suite for verifying the behavior of FhirServerSource.
@@ -28,10 +23,10 @@ import scala.util.Try
 class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
 
   // Sink Settings of mapping job
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"))
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = onFhirClient.getBaseUrl())
   // Define OnFhir clients for source and target servers
-  val targetOnFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
-  val sourceOnFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply("http://localhost:6080/fhir")
+  val targetOnFhirClient: OnFhirNetworkClient = onFhirClient
+  val sourceOnFhirClient: OnFhirNetworkClient = initializeOnFhirClient()
 
   // Settings of Fhir Server data source
   val fhirServerSourceSettings: Map[String, FhirServerSourceSettings] =
@@ -42,15 +37,6 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
 
   // FhirMappingJobManager to execute mapping job
   val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession)
-
-  // Whether the source onFHIR server is available
-  val sourceServerIsAvailable: Boolean =
-    Try(Await.result(sourceOnFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
-      .getOrElse(false)
-  // Whether the target onFHIR server is available
-  val targetServerIsAvailable: Boolean =
-    Try(Await.result(targetOnFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
-      .getOrElse(false)
 
   // Observation mapping task
   val observationMappingTask: FhirMappingTask = FhirMappingTask(
@@ -73,12 +59,11 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
    * */
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    if(sourceServerIsAvailable)
-      sourceOnFhirClient.batch()
-        .entry(_.update(testObservationResource))
-        .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
-        res.httpStatus shouldBe StatusCodes.OK
-      }
+    sourceOnFhirClient.batch()
+      .entry(_.update(testObservationResource))
+      .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+      res.httpStatus shouldBe StatusCodes.OK
+    }
   }
 
   /**
@@ -86,12 +71,11 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
    * */
   override protected def afterAll(): Unit = {
     super.afterAll()
-    if(sourceServerIsAvailable)
-      sourceOnFhirClient.batch()
-        .entry(_.delete("Observation", "example-observation"))
-        .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
-        res.httpStatus shouldBe StatusCodes.OK
-      }
+    sourceOnFhirClient.batch()
+      .entry(_.delete("Observation", "example-observation"))
+      .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+      res.httpStatus shouldBe StatusCodes.OK
+    }
   }
 
   /**
@@ -99,7 +83,6 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
    * It should produce two observation resources.
    * */
   "Observation mapping" should "should read data from Fhir Server source and map it" in {
-    assume(sourceServerIsAvailable)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(observationMappingTask), job = fhirMappingJob), sourceSettings = fhirServerSourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
         r.mappedResource should not be None
@@ -126,8 +109,6 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
    * There should be two Observation resources on the target onFHIR after the mapping job is completed.
    * */
   it should "map test data and write it to FHIR repo successfully" in {
-    assume(sourceServerIsAvailable)
-    assume(targetServerIsAvailable)
     fhirMappingJobManager
       .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(observationMappingTask), job = fhirMappingJob), sourceSettings = fhirServerSourceSettings, sinkSettings = fhirSinkSettings)
       .flatMap(_ => {

@@ -4,13 +4,11 @@ import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.Resource
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
-import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.path.{FhirPathIdentityServiceFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.util.JsonFormatter._
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
-import io.tofhir.engine.util.FhirMappingJobFormatter.EnvironmentVariable
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility, FileUtils}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}
@@ -20,14 +18,13 @@ import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
-import scala.util.Try
 
 class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
 
   val dataSourceSettings: Map[String, DataSourceSettings] =
     Map("source" ->
       FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data", Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString))
-  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = sys.env.getOrElse(EnvironmentVariable.FHIR_REPO_URL.toString, "http://localhost:8081/fhir"))
+  val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = onFhirClient.getBaseUrl())
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
@@ -69,11 +66,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     sourceContext = Map("source" -> FileSystemSource(path = "patients.tsv"))
   )
 
-  val onFhirClient: OnFhirNetworkClient = OnFhirNetworkClient.apply(fhirSinkSettings.fhirRepoUrl)
-  val fhirServerIsAvailable: Boolean =
-    Try(Await.result(onFhirClient.search("Patient").execute(), FiniteDuration(5, TimeUnit.SECONDS)).httpStatus == StatusCodes.OK)
-      .getOrElse(false)
-
   val testMappingJobFilePath: String = getClass.getResource("/test-mappingjob.json").toURI.getPath
   val testMappingJobWithIdentityServiceFilePath: String = getClass.getResource("/test-mappingjob-using-services.json").toURI.getPath
 
@@ -89,9 +81,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       dataProcessingSettings = DataProcessingSettings())
 
   override protected def afterAll(): Unit = {
-    if (fhirServerIsAvailable) {
-      deleteResources()
-    }
+    deleteResources()
     // delete context path
     org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath("").toFile)
     super.afterAll()
@@ -171,11 +161,10 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "execute a mapping job with two data sources" in {
-    assume(fhirServerIsAvailable)
     val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(getClass.getResource("/patient-mapping-job-with-two-sources.json").toURI.getPath)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession)
-    fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = mappingJob.mappings, job = mappingJob), sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings) flatMap { _ =>
+    fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = mappingJob.mappings, job = mappingJob), sourceSettings = mappingJob.sourceSettings, sinkSettings = mappingJob.sinkSettings.asInstanceOf[FhirRepositorySinkSettings].copy(fhirRepoUrl = onFhirClient.getBaseUrl())) flatMap { _ =>
       onFhirClient.read("Patient", "test-patient").executeAndReturnResource() flatMap { p1Resource =>
         (p1Resource \ "id").extract[String] shouldBe "test-patient"
         (p1Resource \ "gender").extract[String] shouldBe "male"
@@ -184,8 +173,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "execute the mappings with FHIR Path patch" in {
-    assume(fhirServerIsAvailable)
-
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession)
     fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask), job = fhirMappingJob), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings).flatMap(_ =>
       fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientExtraMappingWithPatch), job = fhirMappingJob) , sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
@@ -203,7 +190,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "execute the mappings with conditional FHIR Path patch" in {
-    assume(fhirServerIsAvailable)
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession)
     fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask), job = fhirMappingJob), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings).flatMap(_ =>
       fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientExtraMappingWithConditionalPatch), job = fhirMappingJob), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
@@ -290,8 +276,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
 
   it should "execute the mapping job with multiple mapping tasks and write the results into a FHIR repository" in {
-    assume(fhirServerIsAvailable)
-
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession)
     fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, otherObservationMappingTask), job = fhirMappingJob), sourceSettings = dataSourceSettings, sinkSettings = fhirSinkSettings) flatMap { response =>
       onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p8")).executeAndReturnResource() flatMap { p1Resource =>
@@ -313,8 +297,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "continue execute the mapping job when encounter without an error" in {
-    assume(fhirServerIsAvailable)
-
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession)
 
     val future = fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(
@@ -380,7 +362,6 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   }
 
   it should "execute the FhirMappingJob using an identity service" in {
-    assume(fhirServerIsAvailable)
     val lMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(testMappingJobWithIdentityServiceFilePath)
 
     val terminologyServiceFolderPath = Paths.get(getClass.getResource("/terminology-service").toURI).normalize().toAbsolutePath.toString
@@ -394,7 +375,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
         sourceSettings = dataSourceSettings,
         sinkSettings = fhirSinkSettings,
         terminologyServiceSettings = Some(terminologyServiceSettings),
-        identityServiceSettings = lMappingJob.getIdentityServiceSettings()) map { res =>
+        identityServiceSettings = lMappingJob.copy(sinkSettings = lMappingJob.sinkSettings.asInstanceOf[FhirRepositorySinkSettings].copy(fhirRepoUrl = onFhirClient.getBaseUrl())).getIdentityServiceSettings()) map { res =>
       res shouldBe a[Unit]
     }
   }
