@@ -18,6 +18,9 @@ fi
 if [ ! -z "$LOGBACK_CONF_FILE" ]; then
   JAVA_CMD+="-Dlogback.configurationFile=$LOGBACK_CONF_FILE "
 fi
+if [ ! -z "$FLUENT_HOST" ]; then
+  JAVA_CMD+="-Defk.fluent-host=$FLUENT_HOST "
+fi
 
 # Configure Spark
 if [ ! -z "$SPARK_APPNAME" ]; then

@@ -8,6 +8,7 @@ services:
       - FHIR_DEFINITIONS_ENDPOINT=http://onfhir:8080/fhir
       - FHIR_REPO_URL=http://onfhir:8080/fhir
       - APP_CONF_FILE=/usr/local/tofhir/conf/docker/tofhir-server.conf
+      - FLUENT_HOST=fluentd
       - CONTEXT_PATH=conf
     ports:
       - "8085:8085"
