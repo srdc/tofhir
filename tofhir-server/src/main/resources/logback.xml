@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
+    <!-- Set the host for fluentd, if not given localhost is used -->
+    <property name="FLUENT_HOST" value="${efk.fluent-host:-localhost}"/>
     <!-- Path to folder which keeps the logs -->
     <property name="LOG_FOLDER" value="logs"/>
     <!-- Stop output INFO at start -->
@@ -67,7 +69,7 @@
     <!-- Appender for fluentd -->
     <appender name="FLUENT" class="ch.qos.logback.more.appenders.DataFluentAppender">
         <!-- Configure the host and port for fluentd -->
-        <remoteHost>localhost</remoteHost>
+        <remoteHost>${FLUENT_HOST}</remoteHost>
         <port>24224</port>
         <!-- We need only INFO logs. -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
