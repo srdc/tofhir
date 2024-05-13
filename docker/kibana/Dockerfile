@@ -11,5 +11,5 @@ USER root
 # give access to files
 RUN chmod -R 777 /tmp/sample/*
 # Run 
-CMD ["/bin/bash", "-c", "kibana --allow-root & /tmp/sample/init-script.sh"]
+CMD ["/bin/bash", "-c", "kibana-docker --allow-root & /tmp/sample/init-script.sh"]
 
