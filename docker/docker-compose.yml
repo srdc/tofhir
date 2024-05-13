@@ -39,6 +39,7 @@ services:
   fluentd:
     build: ./fluentd
     container_name: fluentd
+    image: srdc/tofhir-fluentd:latest
     volumes:
       - ./fluentd/conf:/fluentd/etc
     ports:
@@ -50,6 +51,7 @@ services:
     build:
       context: ./kibana
       dockerfile: ./Dockerfile
+    image: srdc/tofhir-kibana:latest
     container_name: kibana
     ports:
       - "5601:5601"
