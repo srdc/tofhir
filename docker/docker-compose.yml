@@ -40,8 +40,10 @@ services:
     build: ./fluentd
     container_name: fluentd
     image: srdc/tofhir-fluentd:latest
-    volumes:
-      - ./fluentd/conf:/fluentd/etc
+    environment:
+      - FORWARD_PORT=24224
+      - HOST=elasticsearch
+      - PORT=9200
     ports:
       - "24224:24224"
       - "24224:24224/udp"

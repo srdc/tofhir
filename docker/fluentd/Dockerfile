@@ -13,3 +13,5 @@ RUN apk add --no-cache --update --virtual .build-deps \
     && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 # Switches back to the fluent user account to run Fluentd.
 USER fluent
+# Copies Fluentd configuration file into the image
+COPY conf/fluent.conf /fluentd/etc/fluent.conf
