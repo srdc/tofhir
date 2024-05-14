@@ -327,6 +327,10 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    * @return
    */
   private def initBaseFhirConfig(fhirConfigReader: IFhirConfigReader): BaseFhirConfig = {
+    val folder = FileUtils.getPath(schemaRepositoryFolderPath).toFile
+    if (!folder.exists()) {
+      folder.mkdirs()
+    }
     var baseFhirConfig: BaseFhirConfig = null
     try {
       baseFhirConfig = fhirConfigurator.initializePlatform(fhirConfigReader)
