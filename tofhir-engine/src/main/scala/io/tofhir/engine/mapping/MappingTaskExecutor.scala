@@ -103,7 +103,8 @@ object MappingTaskExecutor {
                   code = FhirMappingErrorCodes.INVALID_INPUT,
                   description = validationError
                 )),
-                executionId = executionId
+                executionId = executionId,
+                projectId = fhirMappingService.projectId
               ))
           }
         })
@@ -164,7 +165,8 @@ object MappingTaskExecutor {
                   code = FhirMappingErrorCodes.INVALID_INPUT,
                   description = validationErrors.mkString("\n")
                 )),
-                executionId = executionId
+                executionId = executionId,
+                projectId = fhirMappingService.projectId
               ))
           }
         })
@@ -198,7 +200,8 @@ object MappingTaskExecutor {
               source = Some(Serialization.write(jo)),
               mappedResource = Some(Serialization.write(JArray(resources.toList))),
               fhirInteraction = fhirInteraction,
-              executionId = executionId
+              executionId = executionId,
+              projectId = fhirMappingService.projectId
             ))
           //Otherwise return each resource as a separate mapping result
           case (mappingExpr, resources, fhirInteraction) =>
@@ -211,7 +214,8 @@ object MappingTaskExecutor {
                 source = Some(Serialization.write(jo)),
                 mappedResource = Some(Serialization.write(r)),
                 fhirInteraction = fhirInteraction,
-                executionId = executionId
+                executionId = executionId,
+                projectId = fhirMappingService.projectId
               )
             )
         }
@@ -244,7 +248,8 @@ object MappingTaskExecutor {
               description = errorDescription,
               expression = t.expression
             )),
-            executionId = executionId))
+            executionId = executionId,
+            projectId = fhirMappingService.projectId))
         //Other general exceptions
         case e: FhirMappingException =>
           Seq(FhirMappingResult(
@@ -257,7 +262,8 @@ object MappingTaskExecutor {
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = ExceptionUtil.extractExceptionMessages(e)
             )),
-            executionId = executionId))
+            executionId = executionId,
+            projectId = fhirMappingService.projectId))
         case e: TimeoutException =>
           logger.debug("Mapping timeout, continuing the processing of mappings...")
           Seq(FhirMappingResult(
@@ -270,7 +276,8 @@ object MappingTaskExecutor {
               code = FhirMappingErrorCodes.MAPPING_TIMEOUT,
               description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.engineConfig.mappingTimeout.toString}!"
             )),
-            executionId = executionId))
+            executionId = executionId,
+            projectId = fhirMappingService.projectId))
         case oth: Exception =>
           logger.error("Unexpected problem while executing the mappings...", oth)
           Seq(FhirMappingResult(
@@ -283,7 +290,8 @@ object MappingTaskExecutor {
               code = FhirMappingErrorCodes.UNEXPECTED_PROBLEM,
               description = "Exception:" + oth.getMessage
             )),
-            executionId = executionId))
+            executionId = executionId,
+            projectId = fhirMappingService.projectId))
       }
     results
   }

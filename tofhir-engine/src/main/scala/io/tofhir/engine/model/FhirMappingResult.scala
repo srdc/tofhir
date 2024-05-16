@@ -16,6 +16,7 @@ import java.sql.Timestamp
  * @param error             If there is a problem in the process, description of the problem
  * @param fhirInteraction   FHIR interaction details to persist the mapped result
  * @param executionId       Id of FhirMappingJobExecution object
+ * @param projectId                  Project identifier associated with the mapping job
  */
 case class FhirMappingResult(
                               jobId:String,
@@ -26,7 +27,8 @@ case class FhirMappingResult(
                               source:Option[String] = None,
                               error:Option[FhirMappingError] = None,
                               fhirInteraction:Option[FhirInteraction] = None,
-                              executionId: Option[String] = None
+                              executionId: Option[String] = None,
+                              projectId: Option[String] = None
                             ) {
   final val eventId:String = "MAPPING_RESULT"
   override def toString: String = {
@@ -46,6 +48,7 @@ case class FhirMappingResult(
     val markerMap: java.util.Map[String, Any] = new java.util.HashMap[String, Any]()
     // add attributes to the marker map
     markerMap.put("jobId", jobId)
+    markerMap.put("projectId", projectId.getOrElse(""))
     markerMap.put("executionId", executionId.getOrElse(""))
     markerMap.put("mappingUrl", mappingUrl)
     markerMap.put("mappingExpr", mappingExpr.orElse(null))
