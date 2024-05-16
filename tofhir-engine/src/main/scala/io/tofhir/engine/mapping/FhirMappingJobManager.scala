@@ -119,7 +119,7 @@ class FhirMappingJobManager(
 
         // Construct a tuple of (mapping url, Future[StreamingQuery])
         t.mappingRef ->
-          readSourceAndExecuteTask(mappingJobExecution.job.id, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
+          readSourceAndExecuteTask(mappingJobExecution.job.id, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
             .map(ts => {
               SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
             })
@@ -250,7 +250,7 @@ class FhirMappingJobManager(
     val fhirWriter = FhirWriterFactory.apply(sinkSettings)
     fhirWriter.validate()
 
-    readSourceAndExecuteTask(mappingJobExecution.job.id, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
+    readSourceAndExecuteTask(mappingJobExecution.job.id, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
       .map {
         dataset =>
           SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingJobExecution.mappingTasks.head.mappingRef), dataset, fhirWriter)
@@ -267,6 +267,7 @@ class FhirMappingJobManager(
    * @param identityServiceSettings    Identity service settings
    * @param timeRange                  Time range for the source data to load
    * @param executionId                Id of FhirMappingJobExecution object
+   * @param projectId                  Project identifier associated with the mapping job
    * @return
    */
   private def readSourceAndExecuteTask(jobId: String,
@@ -275,12 +276,13 @@ class FhirMappingJobManager(
                                        terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                        identityServiceSettings: Option[IdentityServiceSettings] = None,
                                        timeRange: Option[(LocalDateTime, LocalDateTime)] = None,
-                                       executionId: Option[String] = None
+                                       executionId: Option[String] = None,
+                                       projectId: Option[String] = None
                                       ): Future[Dataset[FhirMappingResult]] = {
     // Using Future.apply to convert the result of readJoinSourceData into a Future
     // ensuring that if there's an error in readJoinSourceData, it will be propagated as a failed future
     Future.apply(readJoinSourceData(task, sourceSettings, timeRange, jobId = Some(jobId))) flatMap {
-        case (fhirMapping, mds, df) => executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId)
+        case (fhirMapping, mds, df) => executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId, projectId = projectId)
       }
   }
 
@@ -312,11 +314,11 @@ class FhirMappingJobManager(
       //If not specify run it as single batch
       case None =>
         logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.job.id} ...")
-        readSourceAndExecuteTask(mappingJobExecution.job.id, mappingTask, sourceSettings, terminologyServiceSettings, identityServiceSettings, timeRange, executionId = Some(mappingJobExecution.id)) // Retrieve the source data and execute the mapping
+        readSourceAndExecuteTask(mappingJobExecution.job.id, mappingTask, sourceSettings, terminologyServiceSettings, identityServiceSettings, timeRange, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId)) // Retrieve the source data and execute the mapping
           .map(dataset => SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
       case Some(batchSize) if sizeOfDf < batchSize =>
         logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.job} ...")
-        readSourceAndExecuteTask(mappingJobExecution.job.id, mappingTask, sourceSettings, terminologyServiceSettings, identityServiceSettings, timeRange, executionId = Some(mappingJobExecution.id)) // Retrieve the source data and execute the mapping
+        readSourceAndExecuteTask(mappingJobExecution.job.id, mappingTask, sourceSettings, terminologyServiceSettings, identityServiceSettings, timeRange, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId)) // Retrieve the source data and execute the mapping
           .map(dataset => SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
       //Otherwise divide the data into batches
       case Some(batchSize) =>
@@ -327,7 +329,7 @@ class FhirMappingJobManager(
           .zipWithIndex
           .foldLeft(Future.apply(())) {
             case (fj, (df, i)) => fj.flatMap(_ =>
-              executeTask(mappingJobExecution.job.id, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id))
+              executeTask(mappingJobExecution.job.id, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
                 .map(dataset => SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter))
                 .map(_ => logger.debug(s"Batch ${i + 1} is completed for mapping  ${mappingTask.mappingRef} within MappingJob: ${mappingJobExecution.job.id}..."))
             )
@@ -399,6 +401,7 @@ class FhirMappingJobManager(
    * @param terminologyServiceSettings Terminology service settings
    * @param identityServiceSettings    Identity service settings
    * @param executionId                Id of FhirMappingJobExecution object
+   * @param projectId                  Project identifier associated with the mapping job
    * @return
    */
   def executeTask(jobId: String,
@@ -407,7 +410,8 @@ class FhirMappingJobManager(
                   mainSourceSettings: DataSourceSettings,
                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                   identityServiceSettings: Option[IdentityServiceSettings] = None,
-                  executionId: Option[String] = None
+                  executionId: Option[String] = None,
+                  projectId: Option[String] = None
                  ): Future[Dataset[FhirMappingResult]] = {
     //Load the contextual data for the mapping
     Future
@@ -420,7 +424,7 @@ class FhirMappingJobManager(
       //Get configuration context
       val configurationContext = mainSourceSettings.toConfigurationContext
       //Construct the mapping service
-      val fhirMappingService = new FhirMappingService(jobId, fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, mainSourceSettings.columnToConvert ,terminologyServiceSettings, identityServiceSettings, functionLibraries)
+      val fhirMappingService = new FhirMappingService(jobId, fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, mainSourceSettings.columnToConvert ,terminologyServiceSettings, identityServiceSettings, functionLibraries,projectId)
       MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, executionId)
     })
   }
@@ -485,7 +489,7 @@ class FhirMappingJobManager(
                                            terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                            identityServiceSettings: Option[IdentityServiceSettings] = None,
                                           ): Future[Seq[FhirMappingResult]] = {
-    readSourceAndExecuteTask(mappingJobExecution.job.id, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id))
+    readSourceAndExecuteTask(mappingJobExecution.job.id, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
       .map { dataFrame =>
         dataFrame
           .collect() // Collect into an Array[String]
