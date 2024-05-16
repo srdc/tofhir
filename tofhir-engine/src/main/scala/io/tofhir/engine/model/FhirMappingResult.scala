@@ -52,7 +52,7 @@ case class FhirMappingResult(
     markerMap.put("source", source.get)
     markerMap.put("errorCode", error.get.code)
     markerMap.put("errorDesc", error.get.description)
-    markerMap.put("errorExpr", error.get.expression.orElse(null))
+    markerMap.put("errorExpr", error.get.expression.getOrElse(""))
     markerMap.put("eventId", eventId)
     // create a new MapMarker using the marker map
     val marker: MapMarker = new MapMarker("marker", markerMap)
