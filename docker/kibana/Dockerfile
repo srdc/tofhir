@@ -3,6 +3,8 @@ FROM docker.elastic.co/kibana/kibana:7.15.2
 RUN mkdir -p /tmp/sample/
 # Copy default dashboards
 COPY ./exports/ /tmp/sample/
+# Copy custom kibana.yml file
+COPY kibana.yml /usr/share/kibana/config/
 # Copy ignore_above template
 #COPY ./exports/index_template.json /tmp/sample/index_template.json
 # Copy initialization script
