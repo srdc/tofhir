@@ -28,6 +28,8 @@ done
 curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" -H 'Content-Type: multipart/form-data' --form file=@/tmp/sample/dashboards.ndjson
 # Send a request to save ignore_above template in Elasticsearch
 curl -X PUT "http://elasticsearch:9200/_template/ignore_above" -H 'Content-Type: application/json' -d @/tmp/sample/index_template.json
+# Disable telemetry i.e. Help us improve the Elastic Stack notification
+curl -X POST "http://localhost:5601/api/telemetry/v2/optIn" -H "kbn-xsrf: true" -H 'Content-Type: application/json' -d '{"enabled":false}'
 
 echo $'\nInitialization complete. Keeping container running for Kibana...'
 tail -f /dev/null

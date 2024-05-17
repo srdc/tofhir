@@ -1,0 +1,10 @@
+# The host of the Kibana server. "0" binds to all network interfaces.
+server.host: "0"
+# The duration for Kibana to wait for in-flight requests before shutting down.
+server.shutdownTimeout: "5s"
+# Elasticsearch hosts Kibana will connect to
+elasticsearch.hosts: [ "http://elasticsearch:9200" ]
+# Enables the monitoring UI in Kibana for Elasticsearch containers
+monitoring.ui.container.elasticsearch.enabled: true
+# Disable insecure cluster warning
+security.showInsecureClusterWarning: false
