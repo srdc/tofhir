@@ -6,6 +6,10 @@ until curl -s http://elasticsearch:9200/_cat/health -o /dev/null; do
     sleep 5
 done
 
+# Send a request to save ignore_above template in Elasticsearch
+# This index template should be established prior to importing the Saved Objects to ensure its configurations are applied to new indexes correctly.
+curl -X PUT "http://elasticsearch:9200/_template/ignore_above" -H 'Content-Type: application/json' -d @/tmp/sample/index_template.json
+
 # Function to check if Kibana is ready
 check_kibana() {
     # Make a request to Kibana's status API and check the response
@@ -26,8 +30,6 @@ done
 
 # Import default dashboards using the Saved Objects API
 curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" -H 'Content-Type: multipart/form-data' --form file=@/tmp/sample/dashboards.ndjson
-# Send a request to save ignore_above template in Elasticsearch
-curl -X PUT "http://elasticsearch:9200/_template/ignore_above" -H 'Content-Type: application/json' -d @/tmp/sample/index_template.json
 # Disable telemetry i.e. Help us improve the Elastic Stack notification
 curl -X POST "http://localhost:5601/api/telemetry/v2/optIn" -H "kbn-xsrf: true" -H 'Content-Type: application/json' -d '{"enabled":false}'
 # Send a dummy data entry to Elasticsearch to initialize the visualizations of "Executions Dashboard".
