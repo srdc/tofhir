@@ -5,8 +5,6 @@ RUN mkdir -p /tmp/sample/
 COPY ./exports/ /tmp/sample/
 # Copy custom kibana.yml file
 COPY kibana.yml /usr/share/kibana/config/
-# Copy ignore_above template
-#COPY ./exports/index_template.json /tmp/sample/index_template.json
 # Copy initialization script
 COPY init-script.sh /tmp/sample/init-script.sh
 USER root
