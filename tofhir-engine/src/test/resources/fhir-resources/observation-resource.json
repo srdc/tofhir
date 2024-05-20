@@ -12,7 +12,7 @@
 	]
   },
   "subject": {
-	"reference": "Patient/example-patient"
+	"reference": "Patient/example-patient-fhir"
   },
   "effectiveDateTime": "2023-12-21T08:00:00Z",
   "component": [

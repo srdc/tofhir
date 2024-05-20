@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path.FhirPathUtilFunctionsFactory
-import io.tofhir.ToFhirTestSpec
+import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
 import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.mapping.FhirMappingJobManager
@@ -29,7 +29,7 @@ import java.util.{Collections, Properties, UUID}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Future}
 
-class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with BeforeAndAfterAll {
+class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with BeforeAndAfterAll with OnFhirTestContainer {
 
   override protected def afterAll(): Unit = {
     deleteResources()

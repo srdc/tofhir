@@ -7,7 +7,7 @@ import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.onfhir.util.JsonFormatter._
-import io.tofhir.ToFhirTestSpec
+import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility}
@@ -20,7 +20,7 @@ import scala.concurrent.Future
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Using}
 
-class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
+class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec with OnFhirTestContainer {
 
   val logger: Logger = Logger(this.getClass)
 

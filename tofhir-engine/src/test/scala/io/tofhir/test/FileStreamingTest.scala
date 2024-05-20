@@ -12,12 +12,12 @@ import org.scalatest.flatspec.AnyFlatSpec
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Future}
 
 class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
 
-  implicit val executionContext: ExecutionContext = actorSystem.getDispatcher
+  import io.tofhir.engine.Execution.actorSystem.dispatcher
 
   val testStreamingMappingJobFilePath: String = getClass.getResource("/streaming-job-example.json").toURI.getPath
 
