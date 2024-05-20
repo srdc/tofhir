@@ -30,6 +30,20 @@ curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" -H
 curl -X PUT "http://elasticsearch:9200/_template/ignore_above" -H 'Content-Type: application/json' -d @/tmp/sample/index_template.json
 # Disable telemetry i.e. Help us improve the Elastic Stack notification
 curl -X POST "http://localhost:5601/api/telemetry/v2/optIn" -H "kbn-xsrf: true" -H 'Content-Type: application/json' -d '{"enabled":false}'
+# Send a dummy data entry to Elasticsearch to initialize the visualizations of "Executions Dashboard".
+# This ensures that the dashboard can refresh.
+# If no initial data is sent, the dashboard will not initialize properly due to the absence of the "executionId" field.
+# This field is crucial for the dashboard's initialization and subsequent refreshing to function correctly.
+# Get the current date in the format YYYY.MM.DD
+current_date=$(date +'%Y.%m.%d')
+# Construct the index name with the current date
+index_name="fluentd-$current_date"
+# Get the current date and time in ISO 8601 format
+current_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.%N%:z")
+# Construct the JSON data with an empty executionId and the current timestamp
+json_data="{\"executionId\": \"\", \"@timestamp\": \"$current_timestamp\"}"
+# Send dummy data to Elasticsearch with the dynamically generated index name and JSON data
+curl -X POST "http://elasticsearch:9200/$index_name/_doc" -H "Content-Type: application/json" -d "$json_data"
 
 echo $'\nInitialization complete. Keeping container running for Kibana...'
 tail -f /dev/null
