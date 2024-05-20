@@ -274,7 +274,6 @@ webserver = {
 ```
 
 After the server is up and running, the engine will be available via the REST API.
-Additionally, there are a separate web server module named `tofhir-log-server` that provides a REST API to query the logs of the mapping job execution results.
 
 With the REST APIs, you are able to do the following operations:
 * Create/edit projects and subsequently create/edit schemas, mappings, mapping contexts, mapping jobs
@@ -283,11 +282,9 @@ With the REST APIs, you are able to do the following operations:
 * Run mapping jobs
 * Query and see the logs of the mapping job execution results
  
-API documentations for both `tofhir-server` and `tofhir-log-server` can be found at the following URLs:  
+API documentations for `tofhir-server` can be found at the following URLs:  
 
 https://app.swaggerhub.com/apis-docs/toFHIR/toFHIR-Server
-
-https://app.swaggerhub.com/apis-docs/toFHIR/toFHIR-Log-Server
 
 ## Definitions Used in toFHIR
 

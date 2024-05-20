@@ -6,7 +6,7 @@ import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path.{FhirPathIdentityServiceFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.util.JsonFormatter._
-import io.tofhir.ToFhirTestSpec
+import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility, FileUtils}
@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
 
-class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
+class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec with OnFhirTestContainer {
 
   val dataSourceSettings: Map[String, DataSourceSettings] =
     Map("source" ->
@@ -95,9 +95,9 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     copyResourceFile("test-data-gender/patient-gender-simple.csv")
   }
 
-  private def deleteResources()(): Assertion = {
+  private def deleteResources(): Assertion = {
     // define an implicit ExecutionContext which is required for FhirSearchRequestBuilder.executeAndReturnBundle method
-    implicit val executionContext: ExecutionContext = actorSystem.getDispatcher
+    import io.tofhir.engine.Execution.actorSystem.dispatcher
     // Start delete operation of written resources on the FHIR
     var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
 

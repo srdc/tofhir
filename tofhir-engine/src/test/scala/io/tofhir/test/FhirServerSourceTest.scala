@@ -7,7 +7,7 @@ import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
 import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.onfhir.util.JsonFormatter._
-import io.tofhir.ToFhirTestSpec
+import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
 import io.tofhir.engine.mapping.FhirMappingJobManager
 import io.tofhir.engine.model._
 import org.json4s.JsonAST.JArray
@@ -20,13 +20,13 @@ import scala.io.Source
 /**
  * Test suite for verifying the behavior of FhirServerSource.
  */
-class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
+class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTestSpec with OnFhirTestContainer {
 
   // Sink Settings of mapping job
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = onFhirClient.getBaseUrl())
   // Define OnFhir clients for source and target servers
   val targetOnFhirClient: OnFhirNetworkClient = onFhirClient
-  val sourceOnFhirClient: OnFhirNetworkClient = initializeOnFhirClient()
+  val sourceOnFhirClient: OnFhirNetworkClient = initializeOnFhirClient // Initialize another OnFhirClient
 
   // Settings of Fhir Server data source
   val fhirServerSourceSettings: Map[String, FhirServerSourceSettings] =
@@ -112,7 +112,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
     fhirMappingJobManager
       .executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(observationMappingTask), job = fhirMappingJob), sourceSettings = fhirServerSourceSettings, sinkSettings = fhirSinkSettings)
       .flatMap(_ => {
-        targetOnFhirClient.search("Observation").where("subject", "Patient/example-patient")
+        targetOnFhirClient.search("Observation").where("subject", "Patient/example-patient-fhir")
           .executeAndReturnBundle() flatMap { obsBundle =>
           obsBundle.searchResults.size shouldBe 2
           var batchRequest: FhirBatchTransactionRequestBuilder = targetOnFhirClient.batch()

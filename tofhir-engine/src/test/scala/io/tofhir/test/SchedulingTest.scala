@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path.FhirPathUtilFunctionsFactory
-import io.tofhir.ToFhirTestSpec
+import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
 import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader, MappingJobScheduler}
@@ -24,11 +24,11 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Using}
 
-class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestSpec {
+class SchedulingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTestSpec with OnFhirTestContainer {
+
+  import io.tofhir.engine.Execution.actorSystem.dispatcher
 
   val DATABASE_URL = "jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE"
-
-  implicit val executionContext: ExecutionContext = actorSystem.getDispatcher
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
