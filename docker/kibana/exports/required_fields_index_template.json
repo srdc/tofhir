@@ -1,0 +1,65 @@
+{
+  "index_patterns": [
+	"fluentd*"
+  ],
+  "mappings": {
+	"properties": {
+	  "executionId": {
+		"type": "text",
+		"fields": {
+		  "keyword": {
+			"type": "keyword"
+		  }
+		}
+	  },
+	  "mappingUrl": {
+		"type": "text",
+		"fields": {
+		  "keyword": {
+			"type": "keyword"
+		  }
+		}
+	  },
+	  "result": {
+		"type": "text",
+		"fields": {
+		  "keyword": {
+			"type": "keyword"
+		  }
+		}
+	  },
+	  "errorCode": {
+		"type": "text",
+		"fields": {
+		  "keyword": {
+			"type": "keyword"
+		  }
+		}
+	  },
+	  "errorDesc": {
+		"type": "text",
+		"fields": {
+		  "keyword": {
+			"type": "keyword"
+		  }
+		}
+	  },
+	  "errorExpr": {
+		"type": "text",
+		"fields": {
+		  "keyword": {
+			"type": "keyword"
+		  }
+		}
+	  },
+	  "source": {
+		"type": "text",
+		"fields": {
+		  "keyword": {
+			"type": "keyword"
+		  }
+		}
+	  }
+	}
+  }
+}
