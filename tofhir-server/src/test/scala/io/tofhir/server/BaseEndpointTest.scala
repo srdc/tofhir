@@ -24,6 +24,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.utility.DockerImageName
 
 import java.io.File
+import java.time.Duration
 import java.util.UUID
 
 trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll {
@@ -36,7 +37,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   var route: Route = _
 
   // Instance of OnFhirNetworkClient initialized with onFhir container
-  var onFhirClient: OnFhirNetworkClient = initializeOnFhirClient();
+  lazy val onFhirClient: OnFhirNetworkClient = initializeOnFhirClient()
 
   /**
    * Deploy an onFhir container for testing purpose
@@ -47,8 +48,10 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     container.addEnv("DB_EMBEDDED", "true");
     container.addEnv("SERVER_PORT", "8081");
     container.addEnv("SERVER_BASE_URI", "fhir");
-    container.addEnv("FHIR_ROOT_URL", s"http://${container.getHost}:8081/fhir");
-    container.waitingFor(Wait.forHttp("/fhir").forStatusCode(200));
+    container.addEnv("FHIR_ROOT_URL", s"http://${container.getHost}:8081/fhir")
+    // The default startup timeout of 60 seconds is not sufficient for OnFhir, as it utilizes an embedded
+    // MongoDB, which requires additional initialization time. Therefore, we increase the timeout to 3 minutes (180 seconds).
+    container.waitingFor(Wait.forHttp("/fhir").forStatusCode(200).withStartupTimeout(Duration.ofSeconds(180)))
     container.start();
     OnFhirNetworkClient.apply(s"http://${container.getHost}:${container.getFirstMappedPort}/fhir");
   }
