@@ -59,6 +59,14 @@
 			"type": "keyword"
 		  }
 		}
+	  },
+	  "throwable": {
+		"type": "text",
+		"fields": {
+		  "keyword": {
+			"type": "keyword"
+		  }
+		}
 	  }
 	}
   }
