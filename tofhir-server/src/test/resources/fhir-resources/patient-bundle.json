@@ -2,83 +2,107 @@
   "resourceType": "Bundle",
   "type": "batch",
   "entry": [
-    {
-      "resource": {
-        "resourceType": "Patient",
-        "id": "34dc88d5972fd5472a942fc80f69f35c",
-        "meta": {
-          "profile": [
-            "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"
-          ],
-          "source": "https://aiccelerate.eu/data-integration-suite/pilot1-data"
-        },
-        "active": true,
-        "identifier": [
-          {
-            "use": "official",
-            "system": "https://aiccelerate.eu/data-integration-suite/pilot1-data",
-            "value": "p1"
-          }
-        ],
-        "gender": "male",
-        "birthDate": "2000-05-10"
-      },
-      "request": {
-        "method": "POST",
-        "url": "Patient/$validate"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "Patient",
-        "id": "34dc88d5972fd5472a942fc80f69f35c",
-        "meta": {
-          "profile": [
-            "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"
-          ],
-          "source": "https://aiccelerate.eu/data-integration-suite/pilot1-data"
-        },
-        "active": 1,
-        "identifier": [
-          {
-            "use": "official",
-            "system": "https://aiccelerate.eu/data-integration-suite/pilot1-data",
-            "value": "p1"
-          }
-        ],
-        "gender": "male",
-        "birthDate": "2000-05-10"
-      },
-      "request": {
-        "method": "POST",
-        "url": "Patient/$validate"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "Patient",
-        "id": "49d3c335681ab7fb2d4cdf19769655db",
-        "meta": {
-          "profile": [
-            "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"
-          ],
-          "source": "https://aiccelerate.eu/data-integration-suite/pilot1-data"
-        },
-        "active": true,
-        "identifier": [
-          {
-            "use": "official",
-            "system": "https://aiccelerate.eu/data-integration-suite/pilot1-data",
-            "value": "p3"
-          }
-        ],
-        "gender": "male",
-        "birthDate": "test"
-      },
-      "request": {
-        "method": "POST",
-        "url": "Patient/$validate"
-      }
-    }
+	{
+	  "resource": {
+		"resourceType": "Parameters",
+		"parameter": [
+		  {
+			"name": "resource",
+			"resource": {
+			  "resourceType": "Patient",
+			  "id": "34dc88d5972fd5472a942fc80f69f35c",
+			  "meta": {
+				"profile": [
+				  "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"
+				],
+				"source": "https://aiccelerate.eu/data-integration-suite/pilot1-data"
+			  },
+			  "active": true,
+			  "identifier": [
+				{
+				  "use": "official",
+				  "system": "https://aiccelerate.eu/data-integration-suite/pilot1-data",
+				  "value": "p1"
+				}
+			  ],
+			  "gender": "male",
+			  "birthDate": "2000-05-10"
+			}
+		  }
+		]
+	  },
+	  "request": {
+		"method": "POST",
+		"url": "Patient/$validate"
+	  }
+	},
+	{
+	  "resource": {
+		"resourceType": "Parameters",
+		"parameter": [
+		  {
+			"name": "resource",
+			"resource": {
+			  "resourceType": "Patient",
+			  "id": "34dc88d5972fd5472a942fc80f69f35c",
+			  "meta": {
+				"profile": [
+				  "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"
+				],
+				"source": "https://aiccelerate.eu/data-integration-suite/pilot1-data"
+			  },
+			  "active": 1,
+			  "identifier": [
+				{
+				  "use": "official",
+				  "system": "https://aiccelerate.eu/data-integration-suite/pilot1-data",
+				  "value": "p1"
+				}
+			  ],
+			  "gender": "male",
+			  "birthDate": "2000-05-10"
+			}
+		  }
+		]
+	  },
+	  "request": {
+		"method": "POST",
+		"url": "Patient/$validate"
+	  }
+	},
+	{
+	  "resource": {
+		"resourceType": "Parameters",
+		"parameter": [
+		  {
+			"name": "resource",
+			"resource": {
+			  "resourceType": "Patient",
+			  "id": "49d3c335681ab7fb2d4cdf19769655db",
+			  "meta": {
+				"profile": [
+				  "https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient"
+				],
+				"source": "https://aiccelerate.eu/data-integration-suite/pilot1-data"
+			  },
+			  "active": true,
+			  "identifier": [
+				{
+				  "use": "official",
+				  "system": "https://aiccelerate.eu/data-integration-suite/pilot1-data",
+				  "value": "p3"
+				}
+			  ],
+			  "gender": "male",
+			  "birthDate": "test"
+			}
+		  }
+		]
+	  },
+	  "request": {
+		"method": "POST",
+		"url": "Patient/$validate"
+	  }
+	}
   ]
 }

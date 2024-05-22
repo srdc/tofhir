@@ -43,18 +43,18 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest {
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=${this.onFhirClient.getBaseUrl();}/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, invalidConditionResourceJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=${this.onFhirClient.getBaseUrl()}/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, invalidConditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Convert the JSON response to a JValue
         val jsonResponse: JValue = JsonMethods.parse(responseAs[String])
 
         // Check the outcome issues
-        val firstIssue = (jsonResponse \ "issue").asInstanceOf[JArray].arr.head
-        (firstIssue \ "severity") should be(JString("error"))
-        (firstIssue \ "code") should be(JString("invalid"))
-        (firstIssue \ "diagnostics") should be(JString("[Validating against 'http://hl7.org/fhir/StructureDefinition/Condition'] => Element 'subject' with data type(s) 'Reference' is required , but does not exist!"))
-        (firstIssue \ "expression").asInstanceOf[JArray].arr.head should be(JString("subject"))
+        val errorIssue = (jsonResponse \ "issue").asInstanceOf[JArray].arr.lift(1).get
+        (errorIssue \ "severity") should be(JString("error"))
+        (errorIssue \ "code") should be(JString("invalid"))
+        (errorIssue \ "diagnostics") should be(JString("[Validating against 'http://hl7.org/fhir/StructureDefinition/Condition'] => Element 'subject' with data type(s) 'Reference' is required , but does not exist!"))
+        (errorIssue \ "expression").asInstanceOf[JArray].arr.head should be(JString("subject"))
       }
 
       // Validate a bundle of resources

@@ -44,14 +44,14 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
    * */
   def initializeOnFhirClient(): OnFhirNetworkClient = {
     @Container
-    val container: GenericContainer[Nothing] = new GenericContainer(DockerImageName.parse("srdc/onfhir:r4")).withExposedPorts(8081);
+    val container: GenericContainer[Nothing] = new GenericContainer(DockerImageName.parse("srdc/onfhir:r5")).withExposedPorts(8081);
     container.addEnv("DB_EMBEDDED", "true");
     container.addEnv("SERVER_PORT", "8081");
     container.addEnv("SERVER_BASE_URI", "fhir");
     container.addEnv("FHIR_ROOT_URL", s"http://${container.getHost}:8081/fhir")
     // The default startup timeout of 60 seconds is not sufficient for OnFhir, as it utilizes an embedded
     // MongoDB, which requires additional initialization time. Therefore, we increase the timeout to 3 minutes (180 seconds).
-    container.waitingFor(Wait.forHttp("/fhir").forStatusCode(200).withStartupTimeout(Duration.ofSeconds(180)))
+    container.waitingFor(Wait.forHttp("/fhir/metadata").forStatusCode(200).withStartupTimeout(Duration.ofSeconds(180)))
     container.start();
     OnFhirNetworkClient.apply(s"http://${container.getHost}:${container.getFirstMappedPort}/fhir");
   }
