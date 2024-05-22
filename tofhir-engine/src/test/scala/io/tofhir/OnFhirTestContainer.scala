@@ -18,13 +18,13 @@ object OnFhirTestContainer {
   private val TIMEOUT_SECONDS = 180 // Timeout in seconds for container startup
 
   private lazy val container: GenericContainer[_] = {
-    val container: GenericContainer[Nothing] = new GenericContainer(DockerImageName.parse("srdc/onfhir:r4")).withExposedPorts(ONFHIR_TESTCONTAINER_PORT)
+    val container: GenericContainer[Nothing] = new GenericContainer(DockerImageName.parse("srdc/onfhir:r5")).withExposedPorts(ONFHIR_TESTCONTAINER_PORT)
     container.addEnv("DB_EMBEDDED", "true")
     container.addEnv("SERVER_PORT", ONFHIR_TESTCONTAINER_PORT.toString)
     container.addEnv("SERVER_BASE_URI", "fhir")
     container.addEnv("FHIR_ROOT_URL", s"http://${container.getHost}:$ONFHIR_TESTCONTAINER_PORT/fhir")
     container.withReuse(true)
-    container.waitingFor(Wait.forHttp("/fhir").forStatusCode(200).withStartupTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
+    container.waitingFor(Wait.forHttp("/fhir/metadata").forStatusCode(200).withStartupTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
     container.start()
     container
   }

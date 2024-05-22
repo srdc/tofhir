@@ -1,21 +1,31 @@
 {
-  "code": {
-    "coding": [
-      {
-        "system": "http://hl7.org/fhir/sid/icd-10",
-        "code": "I21"
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "resource",
+      "resource": {
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10",
+              "code": "I21"
+            }
+          ]
+        },
+        "onsetDateTime": "2019-10-04T00:00:00Z",
+        "encounter": {
+          "reference": "Encounter/d7c7ca69ad2bf6b357a1c2ab2a331544"
+        },
+        "id": "745d5452af9baed370610eaf90be307d",
+        "clinicalStatus": {
+          "coding": [{
+            "system":"http://terminology.hl7.org/CodeSystem/condition-clinical",
+            "code":"active",
+            "display":"Active"
+          }]
+        },
+        "resourceType": "Condition"
       }
-    ]
-  },
-  "onsetDateTime": "2019-10-04T00:00:00Z",
-  "encounter": {
-    "reference": "Encounter/d7c7ca69ad2bf6b357a1c2ab2a331544"
-  },
-  "id": "745d5452af9baed370610eaf90be307d",
-  "meta": {
-    "profile": [
-      "https://datatools4heart.eu/fhir/StructureDefinition/DT4H-Condition"
-    ]
-  },
-  "resourceType": "Condition"
+    }
+  ]
 }

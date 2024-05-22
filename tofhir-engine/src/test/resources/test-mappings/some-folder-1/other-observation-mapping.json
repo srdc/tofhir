@@ -175,27 +175,31 @@
             "source": "{{%sourceSystem.sourceUri}}"
           },
           "status": "completed",
-          "category": {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/medication-admin-category",
-                "code": "inpatient",
-                "display": "Inpatient"
-              }
-            ]
-          },
-          "medicationCodeableConcept": {
-            "coding": [
-              {
-                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-                "code": "{{code}}",
-                "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
-              }
-            ]
+          "category": [
+            {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/medication-admin-category",
+                  "code": "inpatient",
+                  "display": "Inpatient"
+                }
+              ]
+            }
+          ],
+          "medication": {
+            "concept": {
+              "coding": [
+                {
+                  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  "code": "{{code}}",
+                  "display": "{{mpp:getConcept(%obsConceptMap, code, 'source_display')}}"
+                }
+              ]
+            }
           },
           "subject": "{{mpp:createFhirReferenceWithHashedId('Patient', pid)}}",
-          "context": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
-          "effectiveDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
+          "encounter": "{{? mpp:createFhirReferenceWithHashedId('Encounter', encounterId)}}",
+          "occurenceDateTime": "{{time.utl:toFhirDateTime('yyyy-MM-dd HH:mm:ss')}}",
           "dosage": {
             "dose": {
               "value": "{{value.toDecimal()}}",
