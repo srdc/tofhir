@@ -263,6 +263,12 @@
             <artifactId>kafka</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- For MongoDB test container -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mongodb</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- onFhir test container-->
         <dependency>
             <groupId>org.testcontainers</groupId>

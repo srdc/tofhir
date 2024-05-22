@@ -2,7 +2,7 @@ package io.tofhir
 
 import io.onfhir.client.OnFhirNetworkClient
 import io.tofhir.engine.Execution.actorSystem
-import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.{GenericContainer, MongoDBContainer, Network}
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
 
@@ -18,8 +18,19 @@ object OnFhirTestContainer {
   private val TIMEOUT_SECONDS = 180 // Timeout in seconds for container startup
 
   private lazy val container: GenericContainer[_] = {
+    // initialize a Testcontainers network
+    val network = Network.newNetwork()
+    // Start a MongoDB container and attach it to the created network
+    new MongoDBContainer("mongo:7.0")
+      .withNetwork(network)
+      .withNetworkAliases("mongoDB")
+      .start()
+    // Create a generic container for onFHIR
     val container: GenericContainer[Nothing] = new GenericContainer(DockerImageName.parse("srdc/onfhir:r5")).withExposedPorts(ONFHIR_TESTCONTAINER_PORT)
-    container.addEnv("DB_EMBEDDED", "true")
+    container.withNetwork(network) // attach the onFHIR container to the same network
+    container.withNetworkAliases("onFhir")
+    container.addEnv("DB_EMBEDDED", "false") // disable embedded database
+    container.addEnv("DB_HOST", s"mongoDB:27017") // connect to MongoDB
     container.addEnv("SERVER_PORT", ONFHIR_TESTCONTAINER_PORT.toString)
     container.addEnv("SERVER_BASE_URI", "fhir")
     container.addEnv("FHIR_ROOT_URL", s"http://${container.getHost}:$ONFHIR_TESTCONTAINER_PORT/fhir")
