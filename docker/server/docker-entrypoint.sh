@@ -84,6 +84,17 @@ if [ ! -z "$WEBSERVER_BASEURI" ]; then
   JAVA_CMD+="-Dwebserver.base-uri=$WEBSERVER_BASEURI "
 fi
 
+# Configure tofhir-redcap
+if [ ! -z "$TOFHIR_REDCAP_ENDPOINT" ]; then
+  JAVA_CMD+="-Dtofhir-redcap.endpoint=$TOFHIR_REDCAP_ENDPOINT "
+fi
+if [ ! -z "$TOFHIR_REDCAP_NOTIFICATION_PATH" ]; then
+  JAVA_CMD+="-Dtofhir-redcap.paths.notification=$TOFHIR_REDCAP_NOTIFICATION_PATH "
+fi
+if [ ! -z "$TOFHIR_REDCAP_PROJECTS_PATH" ]; then
+  JAVA_CMD+="-Dtofhir-redcap.paths.projects=$TOFHIR_REDCAP_PROJECTS_PATH "
+fi
+
 # Delay the execution for this amount of seconds
 if [ ! -z "$DELAY_EXECUTION" ]; then
   sleep $DELAY_EXECUTION
