@@ -257,7 +257,7 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
 
 object TerminologySystemFolderRepository {
   private val DEFAULT_CONCEPT_MAP_COLUMNS = "source_system,source_code,target_system,target_code"
-  private val DEFAULT_CODE_SYSTEM_COLUMNS = "code,system,display"
+  private val DEFAULT_CODE_SYSTEM_COLUMNS = "code,display"
 
   /**
    * Returns the path for the JSON file keeping the terminology systems
