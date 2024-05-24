@@ -1,5 +1,8 @@
 FROM openjdk:11-jre-slim
 
+# We need curl for healthcheck
+RUN apt -y update; apt -y install curl
+
 ENV TOFHIR_HOME /usr/local/tofhir
 RUN mkdir -p "$TOFHIR_HOME"
 WORKDIR $TOFHIR_HOME
