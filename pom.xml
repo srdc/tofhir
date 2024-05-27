@@ -141,6 +141,8 @@
                             <id>scala-compile-first</id>
                             <phase>process-resources</phase>
                             <goals>
+                                <!-- Configures the POM to include additional source directories containing Scala code.
+                                This plugin ensures that Maven recognizes and compiles these directories along with the main source code. -->
                                 <goal>add-source</goal>
                                 <goal>compile</goal>
                             </goals>
@@ -584,8 +586,10 @@
                         <executions>
                             <execution>
                                 <id>attach-source</id>
-                                <phase>compile</phase>
                                 <goals>
+                                    <!-- Creates a JAR file containing the source code of a Maven project
+                                    Unlike the regular jar goal, jar-no-fork does not fork a new JVM (Java Virtual Machine) process to execute the goal.
+                                    This means it runs within the same JVM as the Maven build process, which can have implications for performance and memory usage.-->
                                     <goal>jar-no-fork</goal>
                                 </goals>
                             </execution>
@@ -598,6 +602,7 @@
                             <execution>
                                 <id>attach-javadocs</id>
                                 <goals>
+                                    <!-- Generates Javadoc documentation and packages it into a JAR file containing HTML files. -->
                                     <goal>doc-jar</goal>
                                 </goals>
                             </execution>

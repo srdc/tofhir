@@ -69,6 +69,14 @@
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-http-core_${scala.binary.version}</artifactId>
         </dependency>
+        <!--- To resolve the missing symbol error ('Symbol 'term akka.stream' is missing from the classpath.') when
+        executing the `scala-maven-plugin:doc-jar` goal, include the `akka-stream-typed` dependency.
+        However, as this dependency is only necessary during compilation, apply the `provided` scope. -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream-typed_${scala.binary.version}</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- Scala Logging -->
         <dependency>
             <groupId>com.typesafe.scala-logging</groupId>
