@@ -83,7 +83,7 @@ class MappingService(mappingRepository: IMappingRepository, jobRepository: IJobR
       val mappingUrl = mapping.getOrElse(
         throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $id does not exists in the mapping repository.")
       ).url
-      jobRepository.getJobsReferencingMapping(projectId, mappingUrl).map { jobs =>
+      jobRepository.getJobsReferencingMapping(projectId, mappingUrl).flatMap { jobs =>
         if (jobs.isEmpty)
           mappingRepository.deleteMapping(projectId, id)
         else
