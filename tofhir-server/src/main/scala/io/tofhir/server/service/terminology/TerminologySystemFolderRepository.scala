@@ -75,28 +75,27 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
    * @return updated TerminologySystem
    */
   override def updateTerminologySystem(id: String, terminologySystem: TerminologySystem): Future[TerminologySystem] = {
-    Future {
-      //cross check ids
-      if (id != terminologySystem.id) {
-        throw BadRequest("Terminology System IDs do not match.", s"Id $id does not match with the id in the body ${terminologySystem.id}.")
-      }
-      this.validate(terminologySystem)
-      // find the terminology system
-      this.terminologySystemMap.get(id) match {
-        case Some(foundTerminology) =>
-          // update the terminology system metadata in the database
-          val updatedLocalTerminologies = this.terminologySystemMap.values.map {
-            case t if t.id == id => terminologySystem
-            case t => t
-          }.toSeq
-          this.updateTerminologySystemsDBFile(updatedLocalTerminologies)
-          // update concept maps/code systems files
-          this.updateConceptMapAndCodeSystemFiles(foundTerminology, terminologySystem)
+    //cross check ids
+    if (id != terminologySystem.id) {
+      throw BadRequest("Terminology System IDs do not match.", s"Id $id does not match with the id in the body ${terminologySystem.id}.")
+    }
+    this.validate(terminologySystem)
+    // find the terminology system
+    this.terminologySystemMap.get(id) match {
+      case Some(foundTerminology) =>
+        // update the terminology system metadata in the database
+        val updatedLocalTerminologies = this.terminologySystemMap.values.map {
+          case t if t.id == id => terminologySystem
+          case t => t
+        }.toSeq
+        this.updateTerminologySystemsDBFile(updatedLocalTerminologies)
+        // update concept maps/code systems files
+        this.updateConceptMapAndCodeSystemFiles(foundTerminology, terminologySystem) map(_ => {
           // update the terminology service in the map
           this.terminologySystemMap.put(id, terminologySystem)
           terminologySystem
-        case None => throw ResourceNotFound("Terminology system not found.", s"Terminology system with id $id not found.")
-      }
+        })
+      case None => throw ResourceNotFound("Terminology system not found.", s"Terminology system with id $id not found.")
     }
   }
 
