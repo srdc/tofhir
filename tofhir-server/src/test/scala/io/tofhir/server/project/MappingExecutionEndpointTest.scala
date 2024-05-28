@@ -190,7 +190,10 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
           erroneousRecordsFolder.toFile.exists() && {
             val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
             val csvFile = jobFolder.listFiles().head.listFiles().head.listFiles().head
-            csvFile.exists() && {
+            // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
+            // the files are moved from "_temporary" to the parent output directory, and "_temporary" is deleted. This
+            // intermediate step can be observed during testing, which is why we check if the file is a CSV.
+            csvFile.exists() && csvFile.getName.endsWith(".csv") && {
               val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.getPath)
               csvFileContent.count() == 1
             }
