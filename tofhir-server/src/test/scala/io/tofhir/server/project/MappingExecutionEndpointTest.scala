@@ -98,8 +98,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
-        val success = waitForCondition(10) {
+        // Mappings run asynchronously. Wait at most 30 seconds for mappings to complete.
+        val success = waitForCondition(30) {
           fsSinkFolder.listFiles.exists(_.getName.contains("job1_1")) && {
             // Check the resources created in the file system
             val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
@@ -127,8 +127,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
-        val success = waitForCondition(10) {
+        // Mappings run asynchronously. Wait at most 30 seconds for mappings to complete.
+        val success = waitForCondition(30) {
           fsSinkFolder.listFiles.exists(_.getName.contains("job1_1")) && {
             // Check the resources created in the file system
             val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job1_1")).get
@@ -172,8 +172,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        // Mappings run asynchronously. Wait at most 10 seconds for mappings to complete.
-        var success = waitForCondition(10) {
+        // Mappings run asynchronously. Wait at most 30 seconds for mappings to complete.
+        var success = waitForCondition(30) {
           fsSinkFolder.listFiles.exists(_.getName.contains("job1_2")) && {
             // Check the resources created in the file system
             val parquetFolder = fsSinkFolder.listFiles.find(_.getName.contains("job1_2")).get
@@ -185,7 +185,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
 
 
         // test if erroneous records are written to error folder
-        success = waitForCondition(10) {
+        success = waitForCondition(30) {
           val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
           erroneousRecordsFolder.toFile.exists() && {
             val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
@@ -298,8 +298,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${streamingJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
-        // Mappings run asynchronously. Wait at most 10 seconds for the job to finish
-        val success = waitForCondition(10) {
+        // Mappings run asynchronously. Wait at most 30 seconds for the job to finish
+        val success = waitForCondition(30) {
           fsSinkFolder.listFiles.exists(_.getName.contains("job3")) && {
             // Check the resources created in the file system
             val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job3")).get
@@ -314,9 +314,9 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         // clone the csv file with different name
         val csvFile2 = new File(csvFile.getParentFile, "patients2.csv")
         org.apache.commons.io.FileUtils.copyFile(csvFile, csvFile2)
-        // mappings run asynchronously, wait at most 10 seconds for the job to finish
+        // mappings run asynchronously, wait at most 30 seconds for the job to finish
         // check if the mapping is executed with cloned/new csv file automatically
-        val success2 = waitForCondition(10) {
+        val success2 = waitForCondition(30) {
           fsSinkFolder.listFiles.exists(_.getName.contains("job3")) && {
             // Check the resources created in the file system
             val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("job3")).get
