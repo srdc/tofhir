@@ -1,0 +1,35 @@
+services:
+ # Elasticsearch, Fluentd and Kibana stack for mapping job log management
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+  fluentd:
+    build: ./fluentd
+    container_name: fluentd
+    image: srdc/tofhir-fluentd:latest
+    environment:
+      - FORWARD_PORT=24224
+      - HOST=elasticsearch
+      - PORT=9200
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+  kibana:
+    build:
+      context: ./kibana
+      dockerfile: ./Dockerfile
+    image: srdc/tofhir-kibana:latest
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+volumes:
+  elasticsearch_data:
+    driver: local
