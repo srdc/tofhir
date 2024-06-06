@@ -1451,6 +1451,23 @@ paths:
                 FhirPathFunctionsExample:
                   $ref: "#/components/examples/FhirPathFunctionsExample"
 
+  # Beginning of the File System Path tag
+  /file-system-path:
+    get:
+      tags:
+        - File System Path
+      summary: Returns a tree structure of the file system, with the root being the context path where toFHIR runs.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilePathNode"
+              examples:
+                FilePathNodeExample:
+                  $ref: "#/components/examples/FilePathNodeExample"
+
 
 components:
   # Type definitions for the objects used
@@ -2582,6 +2599,20 @@ components:
           items:
             type: string
 
+    FilePathNode:
+      type: object
+      description: "Represent each file/folder in the file system, with the root being the context path where toFHIR runs."
+      properties:
+        label:
+          type: string
+        isFolder:
+          type: boolean
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilePathNode'
+
+
   # HTTP responses for requests
   responses:
     400BadRequest:
@@ -2802,6 +2833,31 @@ components:
             - string
           inputType:
             - string
+
+    # Example response for the path: GET, /file-system-path
+    FilePathNodeExample:
+      value:
+        label: test-data
+        isFolder: true
+        children:
+          - label: icrc
+            isFolder: true
+            children:
+              - label: encounters.csv
+                isFolder: false
+                children: []
+              - label: patients.csv
+                isFolder: false
+                children: []
+          - label: ucl
+            isFolder: true
+            children:
+              - label: OBSERVATION.csv
+                isFolder: false
+                children: []
+              - label: PERSON.csv
+                isFolder: false
+                children: []
 
     # A simple structure definition example for schema post
     SimpleStructureDefinitionExample:
