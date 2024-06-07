@@ -21,7 +21,7 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest with OnFhirTestContai
   // Condition resource with missing subject
   val invalidConditionResourceJson: String = Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/invalid-condition-resource.json")).mkString
 
-  "The endpoint" should {
+  "Fhir definitions endpoint" should {
 
     /**
      * Test case for validating FHIR resources.
