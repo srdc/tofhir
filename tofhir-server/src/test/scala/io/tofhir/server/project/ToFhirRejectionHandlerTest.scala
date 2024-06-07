@@ -3,6 +3,7 @@ package io.tofhir.server.project
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.endpoint.ProjectEndpoint
 import io.tofhir.server.model.Project
 import org.json4s.jackson.Serialization.writePretty
 
@@ -10,11 +11,11 @@ import org.json4s.jackson.Serialization.writePretty
 class ToFhirRejectionHandlerTest extends BaseEndpointTest {
   val project1: Project = Project(name = "example", url = "https://www.example.com", description = Some("example project"))
 
-  " ToFhirRejectionHandler" should {
+  "ToFhirRejectionHandler" should {
 
     "create an HTTP response with unsupported media type status for invalid content type" in {
       // Send a POST request without changing the contentType to application/json
-      Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(writePretty(project1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}", akka.http.scaladsl.model.HttpEntity.apply(writePretty(project1))) ~> route ~> check {
         status shouldEqual StatusCodes.UnsupportedMediaType
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/UnsupportedMediaType")
@@ -25,7 +26,7 @@ class ToFhirRejectionHandlerTest extends BaseEndpointTest {
       // Send a POST request with a project without URL
       val projectWithoutUrl = Map("name" -> "example3",
         "description" -> Some("example project"))
-      Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectWithoutUrl))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectWithoutUrl))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/BadRequest")
@@ -35,7 +36,7 @@ class ToFhirRejectionHandlerTest extends BaseEndpointTest {
 
     "create an HTTP response with method not allowed status for requests initiated with an unsupported method" in {
       // Send a PUT request to projects which is not applicable
-      Put(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
         status shouldEqual StatusCodes.MethodNotAllowed
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/MethodForbidden")

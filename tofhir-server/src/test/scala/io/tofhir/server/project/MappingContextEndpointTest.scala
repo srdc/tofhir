@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCode
 import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.endpoint.{MappingContextEndpoint, ProjectEndpoint}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
@@ -20,7 +21,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
 
     "create a mapping context within project" in {
       // create the first mapping context
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts", HttpEntity(ContentTypes.`text/plain(UTF-8)`, mappingContext1)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}", HttpEntity(ContentTypes.`text/plain(UTF-8)`, mappingContext1)) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping context is updated in projects.json file
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -29,7 +30,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
         FileUtils.getPath(toFhirEngineConfig.mappingContextRepositoryFolderPath, projectId, mappingContext1).toFile should exist
       }
       // create the second mapping context
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts", HttpEntity(ContentTypes.`text/plain(UTF-8)`, mappingContext2)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}", HttpEntity(ContentTypes.`text/plain(UTF-8)`, mappingContext2)) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping context is updated in projects.json file
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -39,7 +40,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
     }
 
     "get all mapping contexts within a project" in {
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         val mappingContexts = JsonMethods.parse(responseAs[String]).extract[List[String]]
         mappingContexts.length shouldEqual 2
@@ -49,7 +50,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
     }
 
     "delete a mapping context within a project" in {
-      Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContext2") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}/$mappingContext2") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that mapping context is updated in projects.json file
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -65,7 +66,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file to mapping context
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContext1/file", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}/$mappingContext1/${MappingContextEndpoint.SEGMENT_FILE}", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
         Thread.sleep(5000)
@@ -74,7 +75,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
 
     "download csv content of a mapping context" in {
       // download csv content of the mapping context
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContext1/file") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}/$mappingContext1/${MappingContextEndpoint.SEGMENT_FILE}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]

@@ -5,6 +5,7 @@ import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.endpoint.{ProjectEndpoint, SchemaDefinitionEndpoint}
 import io.tofhir.server.model.{Project, ProjectEditableFields}
 import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
@@ -26,14 +27,14 @@ class ProjectEndpointTest extends BaseEndpointTest {
     "create a project" in {
       // create the first project
       // note that in the initialization of database, a dummy project is already created due to the schemas defined in test resources
-      Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         projects.arr.length shouldEqual 1
       }
       // create the second project
-      Post(s"/${webServerConfig.baseUri}/projects", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(project2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -43,7 +44,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
 
     "get all projects" in {
       // retrieve all projects
-      Get(s"/${webServerConfig.baseUri}/projects") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns two projects
         val projects: Seq[Project] = JsonMethods.parse(responseAs[String]).extract[Seq[Project]]
@@ -53,7 +54,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
 
     "get a project" in {
       // get a project
-      Get(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved project
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
@@ -62,14 +63,14 @@ class ProjectEndpointTest extends BaseEndpointTest {
         project.url shouldEqual project1.url
       }
       // get a project with invalid id
-      Get(s"/${webServerConfig.baseUri}/projects/123123") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "patch a project" in {
       // patch a project
-      Patch(s"/${webServerConfig.baseUri}/projects/${project1.id}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
+      Patch(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${project1.id}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned project includes the update
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
@@ -79,14 +80,14 @@ class ProjectEndpointTest extends BaseEndpointTest {
         (projects.arr.find(p => (p \ "id").extract[String] == project1.id).get \ "description").extract[String] shouldEqual "updated description"
       }
       // patch a project with invalid id
-      Patch(s"/${webServerConfig.baseUri}/projects/123123", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
+      Patch(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/123123", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectPatch))) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "delete a project" in {
       // first create a schema to trigger creation of the project folder under the schemas folder
-      Post(s"/${webServerConfig.baseUri}/projects/${project1.id}/schemas", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${project1.id}/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(schemaDefinition))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that projects metadata file is updated for the first project
         val firstProject = TestUtil.getProjectJsonFile(toFhirEngineConfig).arr
@@ -97,7 +98,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
       }
 
       // delete a project
-      Delete(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that projects metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)

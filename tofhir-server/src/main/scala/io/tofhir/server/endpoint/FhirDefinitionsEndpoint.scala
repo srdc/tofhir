@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
 import io.tofhir.server.common.model.{BadRequest, ToFhirRestCall}
-import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_FHIR_DEFINITIONS, SEGMENT_VALIDATE}
+import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_FHIR_DEFINITIONS, SEGMENT_VALIDATE, QUERY_PARAM_FHIRVALIDATIONURL}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.service.FhirDefinitionsService
 
@@ -55,7 +55,7 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
   private def validateResource(): Route = {
     post {
       parameterMap { paramMap =>
-        paramMap.get("fhirValidationUrl") match {
+        paramMap.get(QUERY_PARAM_FHIRVALIDATIONURL) match {
           case Some(fhirValidationUrl) =>
             entity(as[Resource]) { requestBody =>
               // call the API and return the response
@@ -81,6 +81,7 @@ object FhirDefinitionsEndpoint {
   val QUERY_PARAM_Q = "q"
   val QUERY_PARAM_RTYPE = "rtype"
   val QUERY_PARAM_PROFILE = "profile"
+  val QUERY_PARAM_FHIRVALIDATIONURL = "fhirValidationUrl"
 
   object DefinitionsQuery extends Enumeration {
     type DefinitionsQuery = Value
