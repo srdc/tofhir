@@ -1,6 +1,7 @@
 package io.tofhir.server.project
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import io.tofhir.OnFhirTestContainer
 import io.tofhir.server.BaseEndpointTest
 import org.json4s.JsonAST.{JString, JValue}
 import org.json4s._
@@ -11,7 +12,7 @@ import scala.io.Source
 /**
  * Test class for the FhirDefinitionsEndpoint.
  */
-class FhirDefinitionsEndpointTest extends BaseEndpointTest {
+class FhirDefinitionsEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
 
   // Bundle with three patients: 1 is valid, 1 has an invalid birthdate, and 1 has an invalid active field
   val patientBundleJson: String = Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/patient-bundle.json")).mkString

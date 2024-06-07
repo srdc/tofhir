@@ -37,38 +37,6 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   // route endpoint
   var route: Route = _
 
-  private val ONFHIR_TESTCONTAINER_PORT = 9281 // Port number of the OnFhir instance to be created for testing.
-
-  // Instance of OnFhirNetworkClient initialized with onFhir container
-  lazy val onFhirClient: OnFhirNetworkClient = initializeOnFhirClient()
-
-  /**
-   * Deploy an onFhir container for testing purpose
-   * */
-  def initializeOnFhirClient(): OnFhirNetworkClient = {
-    @Container
-    // initialize a Testcontainers network
-    val network = Network.newNetwork()
-    // Start a MongoDB container and attach it to the created network
-    new MongoDBContainer("mongo:7.0")
-      .withNetwork(network)
-      .withNetworkAliases("mongoDB")
-      .start()
-    // Create a generic container for onFHIR
-    val container: GenericContainer[Nothing] = new GenericContainer(DockerImageName.parse("srdc/onfhir:r5")).withExposedPorts(ONFHIR_TESTCONTAINER_PORT)
-    container.withNetwork(network) // attach the onFHIR container to the same network
-    container.withNetworkAliases("onFhir")
-    container.addEnv("DB_EMBEDDED", "false") // disable embedded database
-    container.addEnv("DB_HOST", s"mongoDB:27017") // connect to MongoDB
-    container.addEnv("SERVER_PORT", ONFHIR_TESTCONTAINER_PORT.toString)
-    container.addEnv("SERVER_BASE_URI", "fhir")
-    container.addEnv("FHIR_ROOT_URL", s"http://${container.getHost}:$ONFHIR_TESTCONTAINER_PORT/fhir")
-    // The default startup timeout of 60 seconds is not sufficient for OnFhir, as it utilizes an embedded
-    // MongoDB, which requires additional initialization time. Therefore, we increase the timeout to 3 minutes (180 seconds).
-    container.waitingFor(Wait.forHttp("/fhir/metadata").forStatusCode(200).withStartupTimeout(Duration.ofSeconds(180)))
-    container.start();
-    OnFhirNetworkClient.apply(s"http://${container.getHost}:${container.getFirstMappedPort}/fhir");
-  }
   /**
    * Identifier of test project which can be used in endpoint tests.
    * Endpoint tests, which require a test project, should call {@link createProject} method to create it
