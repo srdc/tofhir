@@ -61,7 +61,7 @@ class MappingContextEndpointTest extends BaseEndpointTest {
 
     "upload a csv content to a mapping context" in {
       // get file from resources
-      val file: File = FileOperations.getFileIfExists(getClass.getResource("/sample-unit-conversion.csv").getPath)
+      val file: File = FileOperations.getFileIfExists(getClass.getResource("/test-mapping-context/sample-unit-conversion.csv").getPath)
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file to mapping context

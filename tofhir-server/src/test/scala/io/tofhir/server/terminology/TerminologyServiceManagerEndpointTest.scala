@@ -259,7 +259,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "upload a csv content as a concept map within a terminology system" in {
       // get file from resources
-      val file: File = FileOperations.getFileIfExists(getClass.getResource("/sample-concept-map.csv").getPath)
+      val file: File = FileOperations.getFileIfExists(getClass.getResource("/test-terminology-service/sample-concept-map.csv").getPath)
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file as a concept map within a terminology system
@@ -413,7 +413,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "upload a csv content as a code system within a terminology system" in {
       // get file from resources
-      val file: File = FileOperations.getFileIfExists(getClass.getResource("/sample-code-system.csv").getPath)
+      val file: File = FileOperations.getFileIfExists(getClass.getResource("/test-terminology-service/sample-code-system.csv").getPath)
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file as a concept map within a terminology system
