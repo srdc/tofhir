@@ -281,12 +281,12 @@
                 <groupId>org.json4s</groupId>
                 <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
                 <version>${json4s.version}</version>
-<!--                <exclusions>-->
-<!--                    <exclusion>-->
-<!--                        <groupId>com.fasterxml.jackson.core</groupId>-->
-<!--                        <artifactId>jackson-databind</artifactId>-->
-<!--                    </exclusion>-->
-<!--                </exclusions>-->
+                <!--                <exclusions>-->
+                <!--                    <exclusion>-->
+                <!--                        <groupId>com.fasterxml.jackson.core</groupId>-->
+                <!--                        <artifactId>jackson-databind</artifactId>-->
+                <!--                    </exclusion>-->
+                <!--                </exclusions>-->
             </dependency>
             <!-- Dependency for Fluentd-Logback Integration -->
             <!-- This library provides additional appenders (namely, ch.qos.logback.more.appenders.DataFluentAppender)
@@ -312,11 +312,11 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-<!--            <dependency>-->
-<!--                <groupId>com.fasterxml.jackson.module</groupId>-->
-<!--                <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>-->
-<!--                <version>${com.fasterxml.version}</version>-->
-<!--            </dependency>-->
+            <!--            <dependency>-->
+            <!--                <groupId>com.fasterxml.jackson.module</groupId>-->
+            <!--                <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>-->
+            <!--                <version>${com.fasterxml.version}</version>-->
+            <!--            </dependency>-->
 
             <!-- Spark dependencies -->
             <dependency>

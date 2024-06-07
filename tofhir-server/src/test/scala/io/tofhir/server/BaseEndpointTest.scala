@@ -39,12 +39,12 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
 
   /**
    * Identifier of test project which can be used in endpoint tests.
-   * Endpoint tests, which require a test project, should call {@link createProject} method to create it
+   * Endpoint tests, which require a test project, should call [[createProject]] method to create it
    * */
   var projectId: String = _
 
   /**
-   * Creates a test project whose identifier is stored in {@link projectId}.
+   * Creates a test project whose identifier is stored in [[projectId]].
    * */
   def createProject(id: Option[String] = None): Unit = {
     val project1: Project = Project(id = id.getOrElse(UUID.randomUUID().toString), name = "example", url = "https://www.example.com", description = Some("example project"))
