@@ -46,7 +46,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
     sourceContext = Map("source" -> FileSystemSource(path = "patients.csv")),
-    mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/patient-mapping.json").getPath)))
+    mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))
   )
   val batchJob: FhirMappingJob = FhirMappingJob(
     id = job1Id,
@@ -70,7 +70,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   val patientStreamingMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://some-url-for-streaming-patient-mapping",
     sourceContext = Map("source" -> FileSystemSource(path = s"$patientStreamingFolderName", fileFormat = Some(SourceFileFormats.CSV))),
-    mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/patient-mapping.json").getPath)))
+    mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))
   )
 
   val streamingJob: FhirMappingJob = FhirMappingJob(
@@ -148,10 +148,10 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
      */
     "run a job with a mapping and context map that are created after the server is up" in {
       // Create context map for the global project
-      createContextMapAndVerify("other-observation-concept-map.csv", "other-observation-concept-map.csv")
+      createContextMapAndVerify("test-mappings/other-observation-concept-map.csv", "other-observation-concept-map.csv")
 
       // Create a new mapping
-      createMappingAndVerify("other-observation-mapping2.json", 1)
+      createMappingAndVerify("test-mappings/other-observation-mapping2.json", 1)
 
       // Update the job with the new mapping and new sink configuration
       val observationsMappingTask: FhirMappingTask = FhirMappingTask(
@@ -218,13 +218,13 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
 
       // Create the schema
-      createSchemaAndVerify("patient-schema.json", 1)
+      createSchemaAndVerify("test-schemas/patient-schema.json", 1)
 
       // Run mapping and verify results
       initializeTestMappingQuery(job2.id,
         "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
         Map("source" -> FileSystemSource(path = "patients.csv")),
-        Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/patient-mapping.json").getPath)))) ~> check {
+        Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))) ~> check {
 
         status shouldEqual StatusCodes.OK
         val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
@@ -241,7 +241,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
 
     "execute a mapping within a job without passing the mapping in the mapping task" in {
       // create the mapping that will be tested
-      createMappingAndVerify("patient-mapping2.json", 2)
+      createMappingAndVerify("test-mappings/patient-mapping2.json", 2)
 
       initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping2", Map("source" -> FileSystemSource(path = "patients.csv"))) ~> check {
         status shouldEqual StatusCodes.OK
@@ -265,8 +265,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
      * 3) Mapping is run via the test endpoint
      */
     "execute a mapping with a context within a job" in {
-      createSchemaAndVerify("other-observation-schema.json", 2)
-      createMappingAndVerify("other-observation-mapping.json", 3)
+      createSchemaAndVerify("test-schemas/other-observation-schema.json", 2)
+      createMappingAndVerify("test-mappings/other-observation-mapping.json", 3)
 
       // test a mapping
       initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/other-observation-mapping", Map("source" -> FileSystemSource(path = "other-observations.csv"))) ~> check {

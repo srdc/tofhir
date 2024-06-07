@@ -15,7 +15,7 @@ class FileSystemTreeStructureService {
    */
   private def shouldBeExcluded(path: Path): Boolean = {
     val fileName = path.getFileName.toString
-    Files.isHidden(path) || fileName.startsWith(".")
+    Files.isHidden(path) || fileName.startsWith(".") // Exclude hidden files and folders
   }
 
   /**
@@ -29,9 +29,9 @@ class FileSystemTreeStructureService {
       val children = if (Files.isDirectory(path)) {
         Files.list(path).iterator().asScala
           .filter(p => includeFiles || Files.isDirectory(p))
-          .filterNot(p => shouldBeExcluded(p)) // Filter out hidden and specific folders
-          .toList
+          .filterNot(shouldBeExcluded) // Filter out hidden and specific folders
           .map(buildNode)
+          .toList
       } else {
         List.empty[FilePathNode]
       }

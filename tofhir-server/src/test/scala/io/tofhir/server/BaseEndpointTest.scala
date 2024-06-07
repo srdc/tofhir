@@ -37,7 +37,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   // route endpoint
   var route: Route = _
 
-  private val ONFHIR_TESTCONTAINER_PORT = 8081 // Port number of the OnFhir instance to be created for testing.
+  private val ONFHIR_TESTCONTAINER_PORT = 9281 // Port number of the OnFhir instance to be created for testing.
 
   // Instance of OnFhirNetworkClient initialized with onFhir container
   lazy val onFhirClient: OnFhirNetworkClient = initializeOnFhirClient()

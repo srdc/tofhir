@@ -428,7 +428,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
       val bloodPressureSchemaName: String = "blood-pressure-schema"
 
       // read the StructureDefinition of the schema from file
-      val schemaResource: Some[Resource] = Some(FileOperations.readJsonContentAsObject[Resource](FileOperations.getFileIfExists(getClass.getResource("/blood-pressure.json").getPath)))
+      val schemaResource: Some[Resource] = Some(FileOperations.readJsonContentAsObject[Resource](FileOperations.getFileIfExists(getClass.getResource("/test-schemas/blood-pressure-schema.json").getPath)))
 
       // create a schema by using StructureDefinition
       Post(s"/tofhir/projects/${projectId}/schemas?format=${SchemaFormats.STRUCTURE_DEFINITION}", HttpEntity(ContentTypes.`application/json`, writePretty(schemaResource))) ~> route ~> check {
