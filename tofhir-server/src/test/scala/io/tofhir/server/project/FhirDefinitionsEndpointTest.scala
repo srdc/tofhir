@@ -3,6 +3,7 @@ package io.tofhir.server.project
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import io.tofhir.OnFhirTestContainer
 import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.endpoint.FhirDefinitionsEndpoint
 import org.json4s.JsonAST.{JString, JValue}
 import org.json4s._
 import org.json4s.jackson.JsonMethods
@@ -29,22 +30,22 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest with OnFhirTestContai
     "validate FHIR resources" in {
 
       // Validate the resource without providing a FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${FhirDefinitionsEndpoint.SEGMENT_VALIDATE}", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
 
       // Validate the resource with an invalid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=test-url", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${FhirDefinitionsEndpoint.SEGMENT_VALIDATE}?${FhirDefinitionsEndpoint.QUERY_PARAM_FHIRVALIDATIONURL}=test-url", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=${this.onFhirClient.getBaseUrl()}/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${FhirDefinitionsEndpoint.SEGMENT_VALIDATE}?${FhirDefinitionsEndpoint.QUERY_PARAM_FHIRVALIDATIONURL}=${this.onFhirClient.getBaseUrl()}/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, conditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
       }
 
       // Validate the resource with a valid FHIR validation URL
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=${this.onFhirClient.getBaseUrl()}/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, invalidConditionResourceJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${FhirDefinitionsEndpoint.SEGMENT_VALIDATE}?${FhirDefinitionsEndpoint.QUERY_PARAM_FHIRVALIDATIONURL}=${this.onFhirClient.getBaseUrl()}/Condition/$$validate", HttpEntity(ContentTypes.`application/json`, invalidConditionResourceJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Convert the JSON response to a JValue
@@ -59,7 +60,7 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest with OnFhirTestContai
       }
 
       // Validate a bundle of resources
-      Post(s"/${webServerConfig.baseUri}/validate?fhirValidationUrl=${this.onFhirClient.getBaseUrl()}", HttpEntity(ContentTypes.`application/json`, patientBundleJson)) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${FhirDefinitionsEndpoint.SEGMENT_VALIDATE}?${FhirDefinitionsEndpoint.QUERY_PARAM_FHIRVALIDATIONURL}=${this.onFhirClient.getBaseUrl()}", HttpEntity(ContentTypes.`application/json`, patientBundleJson)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Convert the JSON response to a JValue

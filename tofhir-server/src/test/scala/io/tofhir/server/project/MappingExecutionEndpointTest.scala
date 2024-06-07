@@ -12,6 +12,7 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.endpoint.{JobEndpoint, MappingContextEndpoint, MappingEndpoint, ProjectEndpoint, SchemaDefinitionEndpoint}
 import io.tofhir.server.model.{ResourceFilter, TestResourceCreationRequest}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.apache.spark.sql.SparkSession
@@ -85,7 +86,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
   "The service" should {
     "run a job including a mapping" in {
       // Create the job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(batchJob))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(batchJob))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -95,7 +96,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
 
       // Run the job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${batchJob.id}/${JobEndpoint.SEGMENT_RUN}", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 30 seconds for mappings to complete.
@@ -115,16 +116,14 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
 
       var firstId: Option[String] = Option.empty
 
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/executions?page=1") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${batchJob.id}/${JobEndpoint.SEGMENT_EXECUTIONS}?page=1") ~> route ~> check {
         // Get id of previous execution
-
         val jValue = JsonMethods.parse(responseAs[String])
-
         firstId = (jValue.asInstanceOf[JArray].arr.head.asInstanceOf[JObject] \ "id").extractOpt[String]
       }
 
       // Rerun the previous job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/executions/${firstId.get}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${batchJob.id}/${JobEndpoint.SEGMENT_EXECUTIONS}/${firstId.get}/${JobEndpoint.SEGMENT_RUN}", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 30 seconds for mappings to complete.
@@ -161,7 +160,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_2", Some(SinkFileFormats.NDJSON))
       val job1Updated = batchJob.copy(mappings = Seq(observationsMappingTask), sinkSettings = sinkSettings, name = Some("updatedJob"))
 
-      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/$job1Id", HttpEntity(ContentTypes.`application/json`, writePretty(job1Updated))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/$job1Id", HttpEntity(ContentTypes.`application/json`, writePretty(job1Updated))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the updated job
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
@@ -169,7 +168,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
 
       // Run the job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${batchJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${batchJob.id}/${JobEndpoint.SEGMENT_RUN}", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 30 seconds for mappings to complete.
@@ -208,7 +207,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
 
     "execute a mapping that is included in the mapping task" in {
       // create the job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(job2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -288,7 +287,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
      */
     "run a streaming job including a mapping" in {
       // Create the streaming job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(streamingJob))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(streamingJob))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -298,7 +297,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
       }
 
       // Run the job
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${streamingJob.id}/run", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${streamingJob.id}/${JobEndpoint.SEGMENT_RUN}", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
 
         // Mappings run asynchronously. Wait at most 30 seconds for the job to finish
@@ -343,7 +342,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     val otherObservationSourceSchema: SchemaDefinition = FileOperations.readJsonContentAsObject[SchemaDefinition](otherObservationSchemaFile)
 
     // create the schema that the mapping uses
-    Post(s"/tofhir/projects/${projectId}/schemas", HttpEntity(ContentTypes.`application/json`, writePretty(otherObservationSourceSchema))) ~> route ~> check {
+    Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(otherObservationSourceSchema))) ~> route ~> check {
       status shouldEqual StatusCodes.Created
       // validate that schema metadata file is updated
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -361,7 +360,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
    */
   private def createContextMapAndVerify(conceptMapResourceFile: String, mappingContextId: String): Unit = {
     // upload the concept map inside the project
-    Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts", HttpEntity(ContentTypes.`text/plain(UTF-8)`, mappingContextId)) ~> route ~> check {
+    Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}", HttpEntity(ContentTypes.`text/plain(UTF-8)`, mappingContextId)) ~> route ~> check {
       status shouldEqual StatusCodes.Created
       // validate that mapping context is updated in projects.json file
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -391,7 +390,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     val mapping: FhirMapping = FileOperations.readJsonContentAsObject[FhirMapping](mappingFile)
 
     // create the mapping that will be tested
-    Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping))) ~> route ~> check {
+    Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping))) ~> route ~> check {
       status shouldEqual StatusCodes.Created
       // validate that mapping metadata file is updated
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -422,13 +421,14 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     )
 
     // test a mapping
-    Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/$jobId/test", HttpEntity(ContentTypes.`application/json`, writePretty(createTestResourcesRequest))) ~> route
+    Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/$jobId/${JobEndpoint.SEGMENT_TEST}", HttpEntity(ContentTypes.`application/json`, writePretty(createTestResourcesRequest))) ~> route
   }
 
   /**
    * Define a function to wait for a condition with a timeout
+   *
    * @param timeoutSeconds timeout in seconds to wait for the condition
-   * @param condition condition to be checked
+   * @param condition      condition to be checked
    * @return
    */
   private def waitForCondition(timeoutSeconds: Int)(condition: => Boolean): Boolean = {

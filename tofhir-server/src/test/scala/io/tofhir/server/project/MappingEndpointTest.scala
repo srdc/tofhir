@@ -3,15 +3,14 @@ package io.tofhir.server.project
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.util.FileOperations
-
 import io.tofhir.engine.model.{FhirMapping, FhirMappingContextDefinition, FhirMappingJob, FhirMappingTask, FhirSinkSettings, FileSystemSinkSettings}
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
-
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.server.endpoint.{JobEndpoint, MappingEndpoint, ProjectEndpoint}
 import org.json4s.jackson.Serialization.writePretty
 
 
@@ -34,7 +33,7 @@ class MappingEndpointTest extends BaseEndpointTest {
 
     "create a mapping within project" in {
       // create the first mapping
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -43,7 +42,7 @@ class MappingEndpointTest extends BaseEndpointTest {
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, s"${mapping1.id}${FileExtensions.JSON}").toFile should exist
       }
       // create the second mapping
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that mapping metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -54,7 +53,7 @@ class MappingEndpointTest extends BaseEndpointTest {
 
     "get all mappings in a project" in {
       // get all mappings within a project
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns two mappings
         val mappings: Seq[FhirMapping] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMapping]]
@@ -64,7 +63,7 @@ class MappingEndpointTest extends BaseEndpointTest {
 
     "get a mapping in a project" in {
       // get a mapping
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/${mapping1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved mapping
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
@@ -75,14 +74,14 @@ class MappingEndpointTest extends BaseEndpointTest {
         mapping.context("practitionerConceptMap").url.get shouldEqual "$CONTEXT_REPO/pilot1/practitioner-concept-map.csv"
       }
       // get a mapping with invalid id
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "update a mapping in a project" in {
       // update a mapping
-      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = "http://example.com/mapping3")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = "http://example.com/mapping3")))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned mapping includes the update
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
@@ -97,18 +96,18 @@ class MappingEndpointTest extends BaseEndpointTest {
           .extract[String] shouldEqual "http://example.com/mapping3"
       }
       // update a mapping with invalid id
-      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(id = "123123")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/123123", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(id = "123123")))) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
       // update a mapping with existing url
-      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = mapping2.url)))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/${mapping1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping1.copy(url = mapping2.url)))) ~> route ~> check {
         status shouldEqual StatusCodes.Conflict
       }
     }
 
     "delete a mapping from a project" in {
       // delete a mapping
-      Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/${mapping1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that mapping metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -118,38 +117,38 @@ class MappingEndpointTest extends BaseEndpointTest {
         FileUtils.getPath(toFhirEngineConfig.mappingRepositoryFolderPath, projectId, s"${mapping1.id}${FileExtensions.JSON}").toFile shouldNot exist
       }
       // delete a mapping with invalid id
-      Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/123123") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "cannot delete a mapping from a project if it is referenced by some jobs" in {
       // create a job using mapping1
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(job))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(job))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // check job folder is created
         FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${job.id}${FileExtensions.JSON}").toFile should exist
       }
       // delete a mapping
-      Delete(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping2.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/${mapping2.id}") ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
 
     "cannot create a mapping with the existing ID or URL" in {
       // create the mapping with existing id
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2))) ~> route ~> check {
         status shouldEqual StatusCodes.Conflict
       }
       // create the mapping with existing url
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2.copy(id = "id-updated")))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2.copy(id = "id-updated")))) ~> route ~> check {
         status shouldEqual StatusCodes.Conflict
       }
     }
 
     "update each job referencing a mapping whose url is updated" in {
       // update a mapping
-      Put(s"/${webServerConfig.baseUri}/projects/${projectId}/mappings/${mapping2.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2.copy(url = "http://example.com/mapping4")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/${mapping2.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2.copy(url = "http://example.com/mapping4")))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned mapping includes the update
         val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
