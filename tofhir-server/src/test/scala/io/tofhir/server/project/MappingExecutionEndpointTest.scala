@@ -28,7 +28,7 @@ import scala.util.control.Breaks.{break, breakable}
 
 class MappingExecutionEndpointTest extends BaseEndpointTest {
   // default timeout is 1 seconds, which is not enough for some tests
-  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(new DurationInt(60).second.dilated(system))
+  implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(new DurationInt(60).second.dilated(system))
 
   // first job to be created
   val fsSinkFolderName: String = "fsSink"
@@ -358,7 +358,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
    * @param conceptMapResourceFile File to read the content of the test concept map
    * @param mappingContextId       Name of the mapping context. This id is also used as the name of the file keeping the concept map as maintained by the repository.
    */
-  private def createContextMapAndVerify(conceptMapResourceFile: String, mappingContextId: String): Unit = {
+   def createContextMapAndVerify(conceptMapResourceFile: String, mappingContextId: String): Unit = {
     // upload the concept map inside the project
     Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}", HttpEntity(ContentTypes.`text/plain(UTF-8)`, mappingContextId)) ~> route ~> check {
       status shouldEqual StatusCodes.Created
@@ -373,7 +373,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
     val formData = Multipart.FormData(fileData)
     // save a csv file to mapping context
-    Post(s"/${webServerConfig.baseUri}/projects/${projectId}/mapping-contexts/$mappingContextId/file", formData.toEntity()) ~> route ~> check {
+    Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingContextEndpoint.SEGMENT_CONTEXTS}/$mappingContextId/file", formData.toEntity()) ~> route ~> check {
       status shouldEqual StatusCodes.OK
       responseAs[String] shouldEqual "OK"
     }
@@ -406,7 +406,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
    * @param jobId         Identifier of the job for which the test will be run
    * @param mappingRef    Url of the mapping to be tested
    * @param sourceContext A map of defining the sources from which the test data will be read e.g. Map("source" -> FileSystemSource(path = "patients.csv"))
-   * @param mapping       Mapping itself to be tested. If the mapping itself is not provided, it is resolved via the [[mappingRef]]
+   * @param mapping       Mapping itself to be tested. If the mapping itself is not provided, it is resolved via the mappingRef
    * @return
    */
   private def initializeTestMappingQuery(jobId: String, mappingRef: String, sourceContext: Map[String, FhirMappingSourceContext], mapping: Option[FhirMapping] = None): RouteTestResult = {

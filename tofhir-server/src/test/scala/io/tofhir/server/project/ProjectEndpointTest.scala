@@ -108,7 +108,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, project1.id).toFile shouldNot exist
       }
       // delete a non-existent project
-      Delete(s"/${webServerConfig.baseUri}/projects/${project1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${project1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }

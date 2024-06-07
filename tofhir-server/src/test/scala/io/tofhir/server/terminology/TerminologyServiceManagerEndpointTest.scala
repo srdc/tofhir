@@ -7,6 +7,7 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.endpoint._
 import io.tofhir.server.model.TerminologySystem
 import io.tofhir.server.model.TerminologySystem.{TerminologyCodeSystem, TerminologyConceptMap}
 import io.tofhir.server.service.terminology.TerminologySystemFolderRepository.getTerminologySystemsJsonPath
@@ -125,7 +126,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
   "The terminology concept map service" should {
     "create a job and reference to a terminology system" in {
-      Post(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs", HttpEntity(ContentTypes.`application/json`, writePretty(jobTest))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(jobTest))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -140,7 +141,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "create a concept map within a terminology system" in {
       // create a concept map
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned concept map included in the terminologySystem
         updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -152,7 +153,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       // add a concept map to the terminology system object
       updatedTerminology = updatedTerminology.copy(conceptMaps = updatedTerminology.conceptMaps :+ conceptMap2)
       // create a second concept map within same terminology
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned concept map included in the terminologySystem
         updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -166,7 +167,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get concept maps within a terminology system" in {
       // get a concept map list within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns one concept maps
         val conceptMaps: Seq[TerminologyConceptMap] = JsonMethods.parse(responseAs[String]).extract[Seq[TerminologyConceptMap]]
@@ -176,7 +177,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get a concept map within a terminology system" in {
       // get a concept map within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS}/${conceptMap1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the concept map
         val conceptMap: TerminologyConceptMap = JsonMethods.parse(responseAs[String]).extract[TerminologyConceptMap]
@@ -184,14 +185,14 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       }
 
       // try to get a non-existent concept map within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/Non-existent") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS}/Non-existent") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "get the job in a project to verify terminology system is updated with new conceptMaps" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes new conceptMaps
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
@@ -206,7 +207,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       // update concept maps in the terminology system object
       updatedTerminology = updatedTerminology.copy(conceptMaps = updatedTerminology.conceptMaps.map(conceptMap => conceptMap.copy(name = conceptMap.name + "Updated")))
       // update concept maps within same terminology
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the updated conceptMaps included in the terminologySystem
         updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -219,7 +220,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with updated conceptMap name" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes updated conceptMaps
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
@@ -234,7 +235,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       // delete a concept map in the terminology system object
       updatedTerminology = updatedTerminology.copy(conceptMaps = Seq(updatedTerminology.conceptMaps.head))
       // delete the concept map within same terminology
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned only first concept map in the terminologySystem
         updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -247,7 +248,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with deleted conceptMap" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes only first conceptMap
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
@@ -263,7 +264,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file as a concept map within a terminology system
-      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap1.id}/file", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS}/${conceptMap1.id}/${TerminologyServiceManagerEndpoint.SEGMENT_FILE}", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
         Thread.sleep(5000)
@@ -273,7 +274,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "download csv content of a concept map within a terminology system" in {
       // download csv content of a concept map within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/concept-maps/${conceptMap1.id}/file") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS}/${conceptMap1.id}/${TerminologyServiceManagerEndpoint.SEGMENT_FILE}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]
@@ -294,7 +295,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "create a code system within a terminology system" in {
       // create a code system
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned code system included in the terminologySystem
         updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -306,7 +307,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       // add a code system to the terminology system object
       updatedTerminology = updatedTerminology.copy(codeSystems = updatedTerminology.codeSystems :+ codeSystem2)
       // create a second code system within same terminology
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned code system included in the terminologySystem
         updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -320,7 +321,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get code systems within a terminology system" in {
       // get a code system list within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns one code systems
         val codeSystems: Seq[TerminologyCodeSystem] = JsonMethods.parse(responseAs[String]).extract[Seq[TerminologyCodeSystem]]
@@ -330,7 +331,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get a code system within a terminology system" in {
       // get a code system within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem1.id}").addHeader(RawHeader("Content-Type", "application/json")) ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS}/${codeSystem1.id}").addHeader(RawHeader("Content-Type", "application/json")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the code system
         val codeSystem: TerminologyCodeSystem = JsonMethods.parse(responseAs[String]).extract[TerminologyCodeSystem]
@@ -338,14 +339,14 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       }
 
       // try to get a non-existent code system within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/Non-existent").addHeader(RawHeader("Content-Type", "application/json")) ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS}/Non-existent").addHeader(RawHeader("Content-Type", "application/json")) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "get the job in a project to verify terminology system is updated with new codeSystems" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes new codeSystems
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
@@ -360,7 +361,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       // update code systems in the terminology system object
       updatedTerminology = updatedTerminology.copy(codeSystems = updatedTerminology.codeSystems.map(codeSystem => codeSystem.copy(name = codeSystem.name + "Updated")))
       // update code systems within same terminology
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the updated codeSystems included in the terminologySystem
         updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -373,7 +374,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with updated codeSystem name" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes updated codeSystems
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
@@ -388,7 +389,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       // delete a code system in the terminology system object
       updatedTerminology = updatedTerminology.copy(codeSystems = Seq(updatedTerminology.codeSystems.head))
       // delete the code system within same terminology
-      Put(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(updatedTerminology))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned only first code system in the terminologySystem
         updatedTerminology = JsonMethods.parse(responseAs[String]).extract[TerminologySystem]
@@ -401,7 +402,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "get the job in a project to verify terminology system is updated with deleted codeSystem" in {
       // get the job
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/jobs/${jobTest.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${jobTest.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job includes only first codeSystem
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
@@ -417,7 +418,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       val fileData = Multipart.FormData.BodyPart.fromPath("attachment", ContentTypes.`text/plain(UTF-8)`, file.toPath)
       val formData = Multipart.FormData(fileData)
       // save a csv file as a concept map within a terminology system
-      Post(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem1.id}/file", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS}/${codeSystem1.id}/${TerminologyServiceManagerEndpoint.SEGMENT_FILE}", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "OK"
         Thread.sleep(5000)
@@ -426,7 +427,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
 
     "download csv content of a code system within a terminology system" in {
       // download csv content of a code system within a terminology system
-      Get(s"/${webServerConfig.baseUri}/terminologies/${terminologySystem1.id}/code-systems/${codeSystem1.id}/file") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${TerminologyServiceManagerEndpoint.SEGMENT_TERMINOLOGY}/${terminologySystem1.id}/${CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS}/${codeSystem1.id}/${TerminologyServiceManagerEndpoint.SEGMENT_FILE}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that it returns the csv content
         val csvContent: String = responseAs[String]

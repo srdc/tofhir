@@ -125,7 +125,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
         schema.`type` shouldEqual schema1.`type`
       }
       // get a schema with invalid id
-      Get(s"/tofhir/projects/${projectId}/schemas/123123") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
@@ -384,13 +384,13 @@ class SchemaEndpointTest extends BaseEndpointTest {
 
     "get structure definition of a schema to export" in {
       // get a schema structure definition by defining format parameter
-      Get(s"/${webServerConfig.baseUri}/projects/${projectId}/schemas/${schema3.id}?format=${SchemaFormats.STRUCTURE_DEFINITION}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${schema3.id}?format=${SchemaFormats.STRUCTURE_DEFINITION}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved schema
         val schemaResource: Resource = JsonMethods.parse(responseAs[String]).extract[Resource]
         // Create a map from resource json
         var schemaResourceMap: Map[String, Any] = Map.empty
-        schemaResource.values.foreach((tuple) => schemaResourceMap += tuple._1 -> tuple._2)
+        schemaResource.values.foreach(tuple => schemaResourceMap += tuple._1 -> tuple._2)
         // Validate some fields of the schema
         schemaResourceMap should contain allOf(
           "id" -> schema3.id,
@@ -413,7 +413,7 @@ class SchemaEndpointTest extends BaseEndpointTest {
         }
         // Validate if fieldDefinitions length of the SchemaDefinition and element length of the StructureDefinition are the same
         differential.get("element") match {
-          case Some(elementList) => elementList should have length (3)
+          case Some(elementList) => elementList should have length 3
           case None => fail("Field definitions are missing in the structure definition of the schema.")
         }
       }

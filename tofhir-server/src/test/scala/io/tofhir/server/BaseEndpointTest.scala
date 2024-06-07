@@ -9,7 +9,7 @@ import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.config.RedCapServiceConfig
 import io.tofhir.server.common.config.WebServerConfig
-import io.tofhir.server.endpoint.ToFhirServerEndpoint
+import io.tofhir.server.endpoint.{ProjectEndpoint, ToFhirServerEndpoint}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.Project
 import io.tofhir.server.service.project.ProjectFolderRepository
@@ -49,7 +49,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
   def createProject(id: Option[String] = None): Unit = {
     val project1: Project = Project(id = id.getOrElse(UUID.randomUUID().toString), name = "example", url = "https://www.example.com", description = Some("example project"))
     // create a project
-    Post("/tofhir/projects", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
+    Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}", HttpEntity(ContentTypes.`application/json`, writePretty(project1))) ~> route ~> check {
       status shouldEqual StatusCodes.Created
       val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
       // set the created project

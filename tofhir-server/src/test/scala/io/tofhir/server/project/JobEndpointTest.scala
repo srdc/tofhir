@@ -20,7 +20,7 @@ import scala.concurrent.duration.DurationInt
 
 class JobEndpointTest extends BaseEndpointTest {
   // default timeout is 1 seconds, which is not enough for some tests
-  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(new DurationInt(60).second.dilated(system))
+  implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(new DurationInt(60).second.dilated(system))
 
   // first job to be created
   val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
@@ -35,7 +35,7 @@ class JobEndpointTest extends BaseEndpointTest {
 
     "create a job within project" in {
       // create the first job
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(job1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(job1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -45,7 +45,7 @@ class JobEndpointTest extends BaseEndpointTest {
       }
 
       // create the second job
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(kafkaSourceJob))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(kafkaSourceJob))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -57,7 +57,7 @@ class JobEndpointTest extends BaseEndpointTest {
 
     "get all jobs in a project" in {
       // get all jobs
-      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved jobs
         val jobs: Seq[FhirMappingJob] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingJob]]
@@ -67,35 +67,35 @@ class JobEndpointTest extends BaseEndpointTest {
 
     "get a job in a project" in {
       // get a job
-      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}/${job1.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${job1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the retrieved job
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
         job.name shouldEqual job1.name
       }
       // get a job with invalid id
-      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}/123123") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "update a job in a project" in {
       // update a job
-      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}/${job1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(job1.copy(name = Some("updatedJob"))))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${job1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(job1.copy(name = Some("updatedJob"))))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate the updated job
         val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
         job.name shouldEqual Some("updatedJob")
       }
       // update a job with invalid id
-      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}/123123", HttpEntity(ContentTypes.`application/json`, writePretty(job1.copy(id = "123123")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/123123", HttpEntity(ContentTypes.`application/json`, writePretty(job1.copy(id = "123123")))) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "delete a job in a project" in {
       // delete a job
-      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}/${job1.id}") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${job1.id}") ~> route ~> check {
         status shouldEqual StatusCodes.NoContent
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -104,14 +104,14 @@ class JobEndpointTest extends BaseEndpointTest {
         FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${job1.id}${FileExtensions.JSON}").toFile shouldNot exist
       }
       // delete a job with invalid id
-      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/jobs/123123") ~> route ~> check {
+      Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/123123") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "get a job with kafka source type in a project" in {
       // get a job
-      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/${projectId}/${JobEndpoint.SEGMENT_JOB}/${kafkaSourceJob.id}") ~> route ~> check {
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${kafkaSourceJob.id}") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // convert the JSON response to a JValue
         val jsonResponse: JValue = JsonMethods.parse(responseAs[String])
