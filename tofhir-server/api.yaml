@@ -1467,6 +1467,22 @@ paths:
               examples:
                 FilePathNodeExample:
                   $ref: "#/components/examples/FilePathNodeExample"
+  # Beginning of the metadata tag
+  /metadata:
+    get:
+      tags:
+        - Metadata
+      summary: Return metadata information of the server including version, config etc.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metadata"
+              examples:
+                MetadataExample:
+                  $ref: "#/components/examples/MetadataExample"
 
 
 components:
@@ -2612,6 +2628,61 @@ components:
           items:
             $ref: '#/components/schemas/FilePathNode'
 
+    Metadata:
+      type: object
+      description: "Model that represents the metadata of the server."
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        majorFhirVersion:
+          type: string
+        toFhirRedcapVersion:
+          type: string
+        definitionsRootUrls:
+          type: array
+          items:
+            type: string
+        schemasFhirVersion:
+          type: string
+        repositoryNames:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RepositoryNames'
+        archiving:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Archiving'
+
+
+    RepositoryNames:
+      type: object
+      description: "Represent configured repository names model to return inside the metadata."
+      properties:
+        mappings:
+          type: string
+        schemas:
+          type: string
+        contexts:
+          type: string
+        jobs:
+          type: string
+        terminologySystems:
+          type: string
+
+    Archiving:
+      type: object
+      description: "Represent archiving configs included inside the metadata."
+      properties:
+        erroneousRecordsFolder:
+          type: string
+        archiveFolder:
+          type: string
+        streamArchivingFrequency:
+          type: number
 
   # HTTP responses for requests
   responses:
@@ -2858,6 +2929,28 @@ components:
               - label: PERSON.csv
                 isFolder: false
                 children: []
+
+    # Example response for the path: GET, /metadata
+    MetadataExample:
+      value:
+        name: toFHIR
+        description: toFHIR is a tool for mapping data from various sources to FHIR resources.
+        version: 1.1-SNAPSHOT
+        toFhirRedcapVersion: 1.1-SNAPSHOT
+        majorFhirVersion: R5
+        definitionsRootUrls:
+          - https://datatools4heart.eu
+        schemasFhirVersion: 5.0.0
+        repositoryNames:
+          mappings: mappings
+          schemas: schemas
+          contexts: mapping-contexts
+          jobs: mapping-jobs
+          terminologySystems: terminology-systems
+        archiving:
+          erroneousRecordsFolder: erroneous-records-folder
+          archiveFolder: archive-folder
+          streamArchivingFrequency: 5000
 
     # A simple structure definition example for schema post
     SimpleStructureDefinitionExample:
