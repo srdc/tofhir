@@ -45,8 +45,9 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val redcapEndpoint = new RedCapEndpoint(redCapServiceConfig)
   val fileSystemTreeStructureEndpoint = new FileSystemTreeStructureEndpoint()
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, conceptMapRepository, codeSystemRepository, mappingJobRepository)
+  val metadataEndpoint = new MetadataEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, redCapServiceConfig)
   // Custom rejection handler to send proper messages to user
-  val toFhirRejectionHandler: RejectionHandler = ToFhirRejectionHandler.getRejectionHandler();
+  val toFhirRejectionHandler: RejectionHandler = ToFhirRejectionHandler.getRejectionHandler()
 
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {
@@ -63,7 +64,8 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
                     fhirDefinitionsEndpoint.route(restCall) ~
                     fhirPathFunctionsEndpoint.route(restCall) ~
                     redcapEndpoint.route(restCall) ~
-                    fileSystemTreeStructureEndpoint.route(restCall)
+                    fileSystemTreeStructureEndpoint.route(restCall) ~
+                    metadataEndpoint.route(restCall)
                   }
                 }
               }

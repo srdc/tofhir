@@ -23,7 +23,7 @@ class RedCapServiceConfig(redCapServiceConfig: Config) {
   /**
    * The base endpoint URL for the tofhir-redcap service.
    */
-  private lazy val endpoint: String = Try(redCapServiceConfig.getString("endpoint")).getOrElse("http://localhost:8095/tofhir-redcap")
+  lazy val endpoint: String = Try(redCapServiceConfig.getString("endpoint")).getOrElse("http://localhost:8095/tofhir-redcap")
 
   /**
    * Constructs the full URL for the notification endpoint by combining the base endpoint URL and the notification path.
