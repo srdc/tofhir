@@ -9,7 +9,6 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import java.io.File
 import java.net.URI
-import java.nio.file.Paths
 import java.time.LocalDateTime
 import scala.collection.mutable
 
@@ -35,18 +34,12 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
   override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty,jobId: Option[String] = Option.empty): DataFrame = {
     // get the format of the file
     val sourceType = mappingSource.inferFileFormat
-    // append the file format to the path if not exists
-    // for streaming jobs, we expect a directory name, so simply use the given path
-    val sourcePath =
-      if (sourceSettings.asStream || mappingSource.path.endsWith(s".${sourceType}"))
-        mappingSource.path
-      else mappingSource.path.concat(s".${sourceType}")
     // determine the final path
     // if it is a Hadoop path (starts with "hdfs://"), construct the URI directly without adding the context path
     val finalPath = if (sourceSettings.dataFolderPath.startsWith("hdfs://")) {
-      new URI(s"${sourceSettings.dataFolderPath.stripSuffix("/")}/${sourcePath.stripPrefix("/")}").toString
+      new URI(s"${sourceSettings.dataFolderPath.stripSuffix("/")}/${mappingSource.path.stripPrefix("/")}").toString
     } else {
-      FileUtils.getPath(sourceSettings.dataFolderPath, sourcePath).toAbsolutePath.toString
+      FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
     }
     // validate whether the provided path is a directory when streaming is enabled in the source settings
     if(sourceSettings.asStream && !new File(finalPath).isDirectory){
