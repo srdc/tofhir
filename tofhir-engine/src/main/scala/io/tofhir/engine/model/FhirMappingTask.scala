@@ -38,21 +38,22 @@ trait FhirMappingSourceContext extends Serializable {
 /**
  * Context/configuration for one of the sources of the mapping that will read the source data from the file system.
  *
- * For batch jobs, you should either provide a file name in the "path" field with a file extension or provide the file name
- * without an extension in the "path" field and indicate the extension in the "fileFormat" field.
+ * For batch jobs, you should either provide a file name in the "path" field with a file extension or provide the folder name
+ * in the "path" field and indicate the extension in the "fileFormat" field. In the latter case, it reads the files with
+ * the specified file format in the given folder.
  *
- * Examples:
+ * Examples for Batch Jobs:
  *   - With extension in path:
- *     FileSystemSource(path = "data/patients.csv") => Will read "data/patients.csv" file
- *   - Without extension in path (specifying file format separately):
- *     FileSystemSource(path = "data/patients", fileFormat = Some("csv")) => Will read "data/patients.csv" file
+ *     FileSystemSource(path = "data/patients.csv") => Will read the "data/patients.csv" file.
+ *   - Providing folder name and file format:
+ *     FileSystemSource(path = "data/patients", fileFormat = Some("csv")) => Will read all "csv" files in the "data/patients" folder.
  *
  * For streaming jobs, you should provide a folder name in the "path" field and a file format in the "fileFormat" field so that
- * it can read the files with specified file formats in the given folder.
+ * it can read the files with the specified file format in the given folder.
  *
- * Examples:
+ * Examples for Streaming Jobs:
  *   - Providing folder name and file format:
- *     FileSystemSource(path = "data/streaming/patients", fileFormat = Some("json")) => Will read "json" files in "data/streaming/patients" folder
+ *     FileSystemSource(path = "data/streaming/patients", fileFormat = Some("json")) => Will read all "json" files in the "data/streaming/patients" folder.
  * @param path        File path to the source file or folder, e.g., "patients.csv" or "patients".
  * @param fileFormat  Format of the file (csv | json | parquet) if it cannot be inferred from the path, e.g., csv.
  * @param options     Further options for the format (Spark Data source options for the format, e.g., for csv -> https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option).
