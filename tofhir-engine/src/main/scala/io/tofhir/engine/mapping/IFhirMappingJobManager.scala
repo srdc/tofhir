@@ -3,6 +3,7 @@ package io.tofhir.engine.mapping
 import java.time.LocalDateTime
 
 import io.tofhir.engine.model._
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.streaming.StreamingQuery
 
 import scala.concurrent.Future
@@ -97,4 +98,22 @@ trait IFhirMappingJobManager {
                                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                                   identityServiceSettings: Option[IdentityServiceSettings] = None
                                  ): Future[Seq[FhirMappingResult]]
+
+  /**
+   * Executes the specified FHIR mapping job and returns the resulting FhirMappingResult dataset.
+   *
+   * @param mappingJobExecution        The FHIR Mapping Job execution details.
+   * @param sourceSettings             A map containing settings for the source system(s).
+   * @param terminologyServiceSettings Optional settings for the terminology service to use within mappings (e.g., for lookupDisplay).
+   * @param identityServiceSettings    Optional settings for the identity service to use within mappings (e.g., for resolveIdentifier).
+   * @param taskCompletionCallback     A callback function to be invoked when a mapping task execution is completed.
+   * @return A Future containing a Dataset of FhirMappingResult representing the outcome of the mapping job.
+   */
+  def executeMappingJobAndReturn(mappingJobExecution: FhirMappingJobExecution,
+                                 sourceSettings: Map[String, DataSourceSettings],
+                                 terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
+                                 identityServiceSettings: Option[IdentityServiceSettings] = None,
+                                 taskCompletionCallback: () => Unit
+                                ): Future[Dataset[FhirMappingResult]]
+
 }

@@ -17,6 +17,8 @@ import java.util.regex.Pattern
  * @param mappingTasks               List of mapping tasks to be executed (as a subset of the mapping tasks defined in the job)
  * @param jobGroupIdOrStreamingQuery Keeps Spark job group id for batch jobs and StreamingQuery for streaming jobs
  */
+// TODO: The FhirMappingJobExecution model currently includes the entire FhirMappingJob ('job' field), which is unnecessary.
+//  We should remove the 'job' field from the model. Instead, add only the necessary fields to the model.
 case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
                                    projectId: String = "",
                                    job: FhirMappingJob,
