@@ -92,7 +92,8 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               .options(otherOptions)
               .schema(csvSchema.orNull)
               .csv(finalPath)
-        case SourceFileFormats.JSON =>
+        // assume that each line in the txt files contains a separate JSON object.
+        case SourceFileFormats.JSON | SourceFileFormats.TXT=>
           if(sourceSettings.asStream)
             spark.readStream.options(mappingSource.options).schema(schema.orNull).json(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file

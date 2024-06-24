@@ -496,6 +496,34 @@ class FhirMappingJobManager(
           .toSeq // Convert to Seq[Resource]
       }
   }
+
+  override def executeMappingJobAndReturn(mappingJobExecution: FhirMappingJobExecution,
+                                          sourceSettings: Map[String, DataSourceSettings],
+                                          terminologyServiceSettings: Option[TerminologyServiceSettings],
+                                          identityServiceSettings: Option[IdentityServiceSettings],
+                                          taskCompletionCallback: () => Unit): Future[Dataset[FhirMappingResult]] = {
+    import spark.implicits._
+    // create an initial empty DataFrame
+    val initialDataFrame: Dataset[FhirMappingResult] = spark.emptyDataset[FhirMappingResult]
+    // fold over the mapping tasks to chain the futures sequentially
+    mappingJobExecution.mappingTasks.foldLeft(Future.successful(initialDataFrame)) { (accFuture, task) =>
+      accFuture.flatMap { accDataFrame =>
+        logger.info(s"Executing mapping task ${task.mappingRef} within mapping job: ${mappingJobExecution.job.id}")
+        readSourceAndExecuteTask(mappingJobExecution.job.id, task, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
+          .map { dataFrame =>
+            logger.info(s"Completed the execution of mapping task ${task.mappingRef} within mapping job: ${mappingJobExecution.job.id}")
+            // notify the caller that the mapping task execution is complete by invoking the taskCompletionCallback function
+            taskCompletionCallback()
+            // combine the accumulated DataFrame with the current task's DataFrame
+            accDataFrame.union(dataFrame)
+          }.recover {
+            case e: Throwable =>
+              logger.error(s"Failed to execute mapping task ${task.mappingRef} within mapping job: ${mappingJobExecution.job.id}",e)
+              throw e
+          }
+      }
+    }
+  }
 }
 
 
