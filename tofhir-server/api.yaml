@@ -2634,55 +2634,72 @@ components:
       properties:
         name:
           type: string
+          description: "The name of the server."
         description:
           type: string
+          description: "A description of the server."
         version:
           type: string
+          description: "The current version of the server."
         majorFhirVersion:
           type: string
+          description: "The major FHIR version of definitions (profiles, valuesets, codesystems) supported by the server."
         toFhirRedcapVersion:
           type: string
+          description: "The optional toFHIR-Redcap server version."
         definitionsRootUrls:
           type: array
           items:
             type: string
+          description: "Optional list of root URLs for definitions."
         schemasFhirVersion:
           type: string
+          description: "The FHIR version used for schemas."
         repositoryNames:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/RepositoryNames'
+          description: "The configured repository names."
         archiving:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/Archiving'
+          description: "The archiving configuration."
 
 
     RepositoryNames:
       type: object
-      description: "Represent configured repository names model to return inside the metadata."
+      description: "Represents the configured repository names included in the metadata."
       properties:
         mappings:
           type: string
+          description: "The path to the folder where the mappings are kept."
         schemas:
           type: string
+          description: "The path to the folder where the schema definitions are kept."
         contexts:
           type: string
+          description: "The path to the folder where the mapping context files are kept."
         jobs:
           type: string
+          description: "The path to the folder where the job definitions are kept."
         terminologySystems:
           type: string
+          description: "The path to the folder where the terminology system definitions are kept."
 
     Archiving:
       type: object
-      description: "Represent archiving configs included inside the metadata."
+      description: "Represents the archiving configurations included in the metadata."
       properties:
         erroneousRecordsFolder:
           type: string
+          description: "The parent folder where the data sources of errors received while running mapping are stored."
         archiveFolder:
           type: string
+          description: "The folder path where the archive of the processed source data is stored."
         streamArchivingFrequency:
           type: number
+          description: "The period (in milliseconds) to run the archiving task for file streaming jobs."
 
   # HTTP responses for requests
   responses:
