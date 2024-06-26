@@ -28,7 +28,7 @@ object SinkHandler {
     val mappingErrors = df.filter(_.error.exists(_.code != FhirMappingErrorCodes.INVALID_INPUT))
     val mappedResults = df.filter(_.mappedResource.isDefined)
     //Create an accumulator to accumulate the results that cannot be written
-    val accumName = s"${mappingJobExecution.job.id}:${mappingUrl.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
+    val accumName = s"${mappingJobExecution.jobId}:${mappingUrl.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
     val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
     fhirWriteProblemsAccum.reset()
     //Write the FHIR resources
@@ -53,7 +53,7 @@ object SinkHandler {
       writeBatch(spark, mappingJobExecution, Some(mappingUrl), dataset, resourceWriter)
     } catch {
       case e: Throwable =>
-        logger.error(s"Streaming batch resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.job.id}, execution: ${mappingJobExecution.id}, mapping: $mappingUrl", e.getMessage)
+        logger.error(s"Streaming batch resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.jobId}, execution: ${mappingJobExecution.id}, mapping: $mappingUrl", e.getMessage)
     }
 
     df

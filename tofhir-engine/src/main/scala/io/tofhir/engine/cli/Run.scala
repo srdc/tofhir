@@ -38,7 +38,7 @@ class Run extends Command {
               context.toFhirEngine.runningJobRegistry.registerBatchJob(
                 mappingJobExecution,
                 Some(f),
-                s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
+                s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
               )
             } else {
               // Understand whether the argument is the name or the URL of the mapping and then find/execute it.
@@ -71,7 +71,7 @@ class Run extends Command {
                 context.toFhirEngine.runningJobRegistry.registerBatchJob(
                   mappingJobExecution,
                   Some(f),
-                  s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
+                  s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
                 )
               }
             }

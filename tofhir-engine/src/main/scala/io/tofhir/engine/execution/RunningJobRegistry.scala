@@ -51,10 +51,10 @@ class RunningJobRegistry(spark: SparkSession) {
       // If there is an error in the streaming query execution, call 'stopMappingExecution' function,
       // which is responsible for removing it from the registry. Without that, the registry might contain incorrect
       // information such as indicating that the job is still running when it has encountered an error.
-      streamingQueryFuture.recover(_ => stopMappingExecution(execution.job.id, execution.id, mappingUrl))
+      streamingQueryFuture.recover(_ => stopMappingExecution(execution.jobId, execution.id, mappingUrl))
       // Wait for the initial Future to be resolved
       val streamingQuery: StreamingQuery = Await.result(streamingQueryFuture, Duration.Inf)
-      val jobId: String = execution.job.id
+      val jobId: String = execution.jobId
       val executionId: String = execution.id
 
       // Multiple threads can update the global task map. So, updates are synchronized.
@@ -106,7 +106,7 @@ class RunningJobRegistry(spark: SparkSession) {
   def registerBatchJob(execution: FhirMappingJobExecution, jobFuture: Option[Future[Unit]], jobDescription: String = ""): Unit = {
     val jobGroup: String = setSparkJobGroup(jobDescription)
     val executionWithJobGroupId = execution.copy(jobGroupIdOrStreamingQuery = Some(Left(jobGroup)))
-    val jobId: String = executionWithJobGroupId.job.id
+    val jobId: String = executionWithJobGroupId.jobId
     val executionId: String = executionWithJobGroupId.id
 
     runningTasks.synchronized {
@@ -132,13 +132,13 @@ class RunningJobRegistry(spark: SparkSession) {
   def registerSchedulingJob(mappingJobExecution: FhirMappingJobExecution, scheduler: Scheduler): Unit = {
     // add it to the scheduledTasks map
     scheduledTasks
-      .getOrElseUpdate(mappingJobExecution.job.id, collection.mutable.Map[String, Scheduler]())
+      .getOrElseUpdate(mappingJobExecution.jobId, collection.mutable.Map[String, Scheduler]())
       .put(mappingJobExecution.id, scheduler)
-    logger.debug(s"Scheduling job ${mappingJobExecution.job.id} has been registered")
+    logger.debug(s"Scheduling job ${mappingJobExecution.jobId} has been registered")
     // add a scheduler listener to monitor task events
     scheduler.addSchedulerListener(new SchedulerListener {
       override def taskLaunching(executor: TaskExecutor): Unit = {
-        registerBatchJob(mappingJobExecution,None,s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}")
+        registerBatchJob(mappingJobExecution,None,s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}")
       }
 
       override def taskSucceeded(executor: TaskExecutor): Unit = {
@@ -270,7 +270,7 @@ class RunningJobRegistry(spark: SparkSession) {
           val execution: FhirMappingJobExecution = jobMapping(executionId)
           var removedMappingEntry: Option[Either[String, StreamingQuery]] = None
           // If it is a batch job do nothing but warn user about the situation
-          if (!execution.isStreaming()) {
+          if (!execution.isStreaming) {
             logger.warn(s"Execution with $jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl won't be stopped with a specific mapping as this is a batch job." +
               s"Stop execution by providing only the jobId and executionId")
 
@@ -308,7 +308,7 @@ class RunningJobRegistry(spark: SparkSession) {
         case None => true // We know we have an execution at this point
         case Some(url) =>
           // For streaming jobs, we check whether there is a streaming query for the given mapping
-          if (runningTasks(jobId)(executionId).isStreaming()) {
+          if (runningTasks(jobId)(executionId).isStreaming) {
             runningTasks(jobId)(executionId).getStreamingQueryMap().contains(url)
 
             // For batch jobs, we don't differentiate mapping tasks. So, returning true directly (which indicates that the job execution is in progress)
@@ -411,6 +411,6 @@ class RunningJobRegistry(spark: SparkSession) {
    */
   private def handleCompletedBatchJob(execution: FhirMappingJobExecution): Unit = {
     FileStreamInputArchiver.applyArchivingOnBatchJob(execution)
-    removeExecutionFromRunningTasks(execution.job.id, execution.id)
+    removeExecutionFromRunningTasks(execution.jobId, execution.id)
   }
 }
