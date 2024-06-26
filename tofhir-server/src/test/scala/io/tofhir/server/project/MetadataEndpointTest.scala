@@ -20,7 +20,7 @@ class MetadataEndpointTest extends BaseEndpointTest {
 
         metadata.name shouldEqual "toFHIR"
         metadata.description shouldEqual "toFHIR is a tool for mapping data from various sources to FHIR resources."
-        metadata.majorFhirVersion shouldEqual "R4"
+        metadata.fhirDefinitionsVersion shouldEqual "R4"
         metadata.repositoryNames.mappings shouldEqual "mappings"
         metadata.repositoryNames.schemas shouldEqual "schemas"
         metadata.repositoryNames.contexts shouldEqual "mapping-contexts"

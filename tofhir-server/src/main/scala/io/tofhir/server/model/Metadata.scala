@@ -16,7 +16,7 @@ package io.tofhir.server.model
 case class Metadata(name: String,
                     description: String,
                     version: String,
-                    majorFhirVersion: String,
+                    fhirDefinitionsVersion: String,
                     toFhirRedcapVersion: Option[String],
                     definitionsRootUrls: Option[Seq[String]],
                     schemasFhirVersion: String,
