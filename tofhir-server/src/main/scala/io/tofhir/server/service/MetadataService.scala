@@ -75,7 +75,7 @@ class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
     val responseFuture: Future[HttpResponse] = Http().singleRequest(proxiedRequest)
     val responseAsString = Try(Await.result(
       responseFuture.flatMap(resp => Unmarshal(resp.entity).to[String]),
-      1.seconds
+      10.seconds
     ))
 
     responseAsString match {
