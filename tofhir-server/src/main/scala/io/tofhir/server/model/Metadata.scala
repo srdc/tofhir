@@ -3,15 +3,15 @@ package io.tofhir.server.model
 /**
  * Model that represents the metadata of the server.
  *
- * @param name                The name of the server.
- * @param description         A description of the server.
- * @param version             The current version of the server.
- * @param majorFhirVersion    The major FHIR version of definitions (profiles, valuesets, codesystems) supported by the server.
- * @param toFhirRedcapVersion The optional toFHIR-Redcap server version.
- * @param definitionsRootUrls Optional list of root URLs for definitions.
- * @param schemasFhirVersion  The FHIR version used for schemas.
- * @param repositoryNames     The configured repository names.
- * @param archiving           The archiving configuration.
+ * @param name                   The name of the server.
+ * @param description            A description of the server.
+ * @param version                The current version of the server.
+ * @param fhirDefinitionsVersion The major FHIR version of definitions (profiles, valuesets, codesystems) supported by the server.
+ * @param toFhirRedcapVersion    The optional toFHIR-Redcap server version.
+ * @param definitionsRootUrls    Optional list of root URLs for definitions.
+ * @param schemasFhirVersion     The FHIR version used for schemas.
+ * @param repositoryNames        The configured repository names.
+ * @param archiving              The archiving configuration.
  */
 case class Metadata(name: String,
                     description: String,
