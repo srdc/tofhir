@@ -2,7 +2,7 @@ package io.tofhir.test.engine.data.write
 
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.write.{BaseFhirWriter, SinkHandler}
-import io.tofhir.engine.model.{DataProcessingSettings, FhirMappingJob, FhirMappingJobExecution, FhirMappingResult}
+import io.tofhir.engine.model.{DataProcessingSettings, FhirMappingJob, FhirMappingJobExecution, FhirMappingResult, FileSystemSourceSettings}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.mockito.ArgumentMatchers
 import org.mockito.MockitoSugar._
@@ -21,6 +21,7 @@ class SinkHandlerTest extends AnyFlatSpec {
     val mockJob: FhirMappingJob = mock[FhirMappingJob]
     when(mockJob.id).thenReturn("jobId")
     when(mockJob.dataProcessingSettings).thenReturn(DataProcessingSettings.apply())
+    when(mockJob.sourceSettings).thenReturn(Map("0" -> FileSystemSourceSettings.apply("name", "sourceUri", "dataFolderPath")))
 
     val execution: FhirMappingJobExecution = FhirMappingJobExecution("executionId", "projectId", mockJob)
 
