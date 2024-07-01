@@ -10,6 +10,7 @@
 tofhir-db/
 projects.json
 terminology-systems.json
+testcontext/
 
 # Spark
 checkpoint/
