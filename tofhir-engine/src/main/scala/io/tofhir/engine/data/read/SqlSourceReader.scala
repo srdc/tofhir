@@ -65,6 +65,7 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
       .option("dbtable", dbTable)
       .option("user", sourceSettings.username)
       .option("password", sourceSettings.password)
+      .options(mappingSource.options)
       .load()
   }
 }

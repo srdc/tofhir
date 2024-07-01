@@ -96,8 +96,9 @@ case class FileSystemSource(path: String, fileFormat:Option[String] = None, opti
  *
  * @param tableName Name of the table
  * @param query     Query to execute in the database
+ * @param options   Further options for SQL source (Spark SQL Guide -> https://spark.apache.org/docs/3.4.1/sql-data-sources-jdbc.html ).
  */
-case class SqlSource(tableName: Option[String] = None, query: Option[String] = None, override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext
+case class SqlSource(tableName: Option[String] = None, query: Option[String] = None, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext
 
 /**
  * Context/configuration for one of the source of the mapping that will read the source data from a kafka as stream
@@ -105,8 +106,9 @@ case class SqlSource(tableName: Option[String] = None, query: Option[String] = N
  * @param topicName       The topic(s) to subscribe, may be comma seperated string list (topic1,topic2)
  * @param groupId         The Kafka group id to use in Kafka consumer while reading from Kafka
  * @param startingOffsets The start point when a query is started
+ * @param options         Further options for Kafka source (Spark Kafka Guide -> https://spark.apache.org/docs/3.4.1/structured-streaming-kafka-integration.html)
  */
-case class KafkaSource(topicName: String, groupId: String, startingOffsets: String, override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext
+case class KafkaSource(topicName: String, groupId: String, startingOffsets: String, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None) extends FhirMappingSourceContext
 
 /**
  * Represents a mapping source context for FHIR server data.
