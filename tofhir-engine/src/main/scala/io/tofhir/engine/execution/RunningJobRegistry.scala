@@ -270,7 +270,7 @@ class RunningJobRegistry(spark: SparkSession) {
           val execution: FhirMappingJobExecution = jobMapping(executionId)
           var removedMappingEntry: Option[Either[String, StreamingQuery]] = None
           // If it is a batch job do nothing but warn user about the situation
-          if (!execution.isStreaming) {
+          if (!execution.isStreamingJob) {
             logger.warn(s"Execution with $jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl won't be stopped with a specific mapping as this is a batch job." +
               s"Stop execution by providing only the jobId and executionId")
 
@@ -308,7 +308,7 @@ class RunningJobRegistry(spark: SparkSession) {
         case None => true // We know we have an execution at this point
         case Some(url) =>
           // For streaming jobs, we check whether there is a streaming query for the given mapping
-          if (runningTasks(jobId)(executionId).isStreaming) {
+          if (runningTasks(jobId)(executionId).isStreamingJob) {
             runningTasks(jobId)(executionId).getStreamingQueryMap().contains(url)
 
             // For batch jobs, we don't differentiate mapping tasks. So, returning true directly (which indicates that the job execution is in progress)
