@@ -114,8 +114,8 @@ object FhirMappingContextUrlPlaceHolder {
 /**
  * Provides the details about FHIR interaction to persist the new information
  * @param `type`      FHIR interaction type e.g. create | update | patch
- *                    For FHIR patch interaction, the mapped content should be arranged accordingly (JSON patch or FHIR Path patch)
- * @param rlocator    Only required for FHIR Patch and provides either FHIR resource locator (e.g. Patient/ ) if required for the interaction (required for FHIR patch).
+ *                    For FHIR patch interaction, the mapped content should be arranged accordingly (JSON patch or FHIRPath patch)
+ * @param rid    Only required for FHIR Patch and provides either FHIR resource locator (e.g. Patient/ ) if required for the interaction (required for FHIR patch).
  *                    Note: Placeholders can be used to construct this
  *
  *                    e.g., Observation/{{resourceId}}
