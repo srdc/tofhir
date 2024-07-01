@@ -132,6 +132,7 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
       .option("subscribe", mappingSource.topicName)
       .option("startingOffsets", mappingSource.startingOffsets)
       .option("inferSchema", value = true)
+      .options(mappingSource.options)
       .load()
       .select($"value".cast(StringType)) // change the type of message from binary to string
       .withColumn("value", processDataUDF(col("value"))) // replace 'value' column with the processed data
