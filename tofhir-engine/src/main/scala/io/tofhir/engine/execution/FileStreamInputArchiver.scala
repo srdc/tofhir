@@ -93,7 +93,7 @@ object FileStreamInputArchiver {
       val archiveMode: ArchiveModes = execution.archiveMode
       if (archiveMode != ArchiveModes.OFF) {
         // get data folder path from data source settings
-        val dataFolderPath = FileUtils.getPath(execution.fileSystemSourceDataFolderPath).toString
+        val dataFolderPath = FileUtils.getPath(execution.fileSystemSourceDataFolderPath.get).toString
 
         // Get paths of the input files referred by the mapping tasks
         paths = execution.mappingTasks.flatMap(mapping => {
@@ -180,16 +180,11 @@ class StreamingArchiverTask(archiver: FileStreamInputArchiver, runningJobRegistr
   override def run(): Unit = {
     // Get executions with streaming queries and file system sources and apply
     val executions = runningJobRegistry.getRunningExecutionsWithCompleteMetadata()
-      .filter(execution => execution.isStreamingJob)
-      .filter(execution => execution.hasFileSystemSource)
+      .filter(execution => execution.isStreamingJob && execution.fileSystemSourceDataFolderPath.nonEmpty)
     executions.foreach(execution => {
-      if (execution.isStreamingJob) {
-        execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
-          archiver.applyArchivingOnStreamingJob(execution, mappingUrl)
-        })
-      }
+      execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
+        archiver.applyArchivingOnStreamingJob(execution, mappingUrl)
+      })
     })
   }
-
-
 }
