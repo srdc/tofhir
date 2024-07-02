@@ -42,7 +42,7 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
   }
 
   override def toString: String = {
-    s"toFHIR batch mapping result ($result) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.job.id}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n" +
+    s"toFHIR batch mapping result ($result) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n" +
         s"\t# of Invalid Rows: \t$numOfInvalids\n" +
           s"\t# of Not Mapped: \t$numOfNotMapped\n" +
           s"\t# of Failed writes:\t$numOfFailedWrites\n" +
@@ -58,7 +58,7 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
     // create a new HashMap to store the marker attributes
     val markerMap: java.util.Map[String, Any] = new java.util.HashMap[String, Any]()
     // add attributes to the marker map
-    markerMap.put("jobId", mappingJobExecution.job.id)
+    markerMap.put("jobId", mappingJobExecution.jobId)
     markerMap.put("projectId", mappingJobExecution.projectId)
     markerMap.put("executionId", mappingJobExecution.id)
     markerMap.put("mappingUrl", mappingUrl.orNull)

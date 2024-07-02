@@ -33,15 +33,11 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
   // Create test objects for delete mode
   val jobId2 = "mocked_job_id_2"
-  val testDataProcessingSettingsWithDelete: DataProcessingSettings = DataProcessingSettings(archiveMode = ArchiveModes.DELETE)
-  val testJobWithDelete: FhirMappingJob = testJob.copy(id = jobId2, dataProcessingSettings = testDataProcessingSettingsWithDelete)
-  val testExecutionWithDelete: FhirMappingJobExecution = testExecution.copy(id = jobId2, job = testJobWithDelete)
+  val testExecutionWithDelete: FhirMappingJobExecution = testExecution.copy(id = jobId2, jobId = jobId2, archiveMode = ArchiveModes.DELETE)
 
   // Create test objects for off mode
   val jobId3 = "mocked_job_id_3"
-  val testDataProcessingSettingsWithOff: DataProcessingSettings = DataProcessingSettings(archiveMode = ArchiveModes.OFF)
-  val testJobWithOff: FhirMappingJob = testJob.copy(id = jobId3, dataProcessingSettings = testDataProcessingSettingsWithOff)
-  val testExecutionWithOff: FhirMappingJobExecution = testExecution.copy(id = jobId3, job = testJobWithOff)
+  val testExecutionWithOff: FhirMappingJobExecution = testExecution.copy(id = jobId3, jobId = jobId3 , archiveMode = ArchiveModes.OFF)
 
   "FileStreamInputArchiver" should "not apply archiving/deletion for a streaming job with archive mode is off" in {
     // Initialize spark files for this test

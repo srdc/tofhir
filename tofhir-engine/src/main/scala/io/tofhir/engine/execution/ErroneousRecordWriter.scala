@@ -30,7 +30,7 @@ object ErroneousRecordWriter {
                            notWrittenResources: util.List[FhirMappingResult],
                            mappingErrors: Dataset[FhirMappingResult],
                            invalidInputs: Dataset[FhirMappingResult]): Unit = {
-    if (mappingJobExecution.job.dataProcessingSettings.saveErroneousRecords) {
+    if (mappingJobExecution.saveErroneousRecords) {
       if (!invalidInputs.isEmpty) {
         this.writeErroneousDataset(mappingJobExecution, invalidInputs, mappingUrl.get, FhirMappingErrorCodes.INVALID_INPUT)
       }
