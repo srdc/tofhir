@@ -1,0 +1,48 @@
+{
+  "id": "observation-mapping-fromfhir",
+  "url": "http://observation-mapping-from-fhir-with-two-sources",
+  "name": "observation-mapping-fromfhir",
+  "title": "Observation Mapping from FHIR",
+  "source": [
+    {
+      "alias": "observation",
+      "url": "http://hl7.org/fhir/StructureDefinition/Observation",
+      "joinOn": ["subject.reference"]
+    },
+    {
+      "alias": "patient",
+      "url": "http://hl7.org/fhir/StructureDefinition/Patient",
+      "joinOn": ["id"]
+    }
+  ],
+  "context": {},
+  "variable": [],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Observation",
+          "id": "{{id}}",
+          "meta": {
+            "profile": ["https://datatools4heart.eu/fhir/StructureDefinition/HFR-VitalSign"],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "status": "final",
+          "code": "{{code}}",
+          "subject": "{{subject}}",
+          "effectiveDateTime": "{{effectiveDateTime}}",
+          "component": "{{* component.where(code.coding.code = '8310-5')}}",
+          "extension": [{
+            "url": "{{%sourceSystem.sourceUri}}/patient-gender",
+            "valueString": "{{? %patient.gender}}"
+          },{
+            "url": "{{%sourceSystem.sourceUri}}/patient-birthdate",
+            "valueString": "{{? %patient.birthDate}}"
+          }]
+        }
+      }
+    }
+  ]
+}

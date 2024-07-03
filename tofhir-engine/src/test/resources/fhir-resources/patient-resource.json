@@ -1,0 +1,15 @@
+{
+  "resourceType": "Patient",
+  "id": "example-patient-fhir",
+  "gender": "female",
+  "birthDate": "2011-04-01",
+  "deceasedDateTime": "2020-06-01T23:00:00Z",
+  "identifier": [
+    {
+      "use": "official",
+      "system": "http://datatools4heart.eu/data-ingestion-suite/ucl-data",
+      "value": "8216"
+    }
+  ],
+  "active": false
+}

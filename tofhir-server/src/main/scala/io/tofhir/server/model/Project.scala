@@ -56,7 +56,7 @@ case class Project(id: String = UUID.randomUUID().toString,
         ),
         "mappings" -> JArray(
           List(
-            this.mappings.map(_.getMetadata()): _*
+            this.mappings.map(_.getMetadata): _*
           )
         ),
         "mappingContexts" -> JArray(

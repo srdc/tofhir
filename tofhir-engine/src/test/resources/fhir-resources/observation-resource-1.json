@@ -1,20 +1,20 @@
 {
   "resourceType": "Observation",
-  "id": "example-observation",
+  "id": "example-observation-fhir-1",
   "status": "final",
   "code": {
 	"coding": [
 	  {
-		"system": "http://loinc.org",
-		"code": "8310-5",
-		"display": "Body temperature"
+		"system": "http://some-code-system",
+		"code": "SOME_CODE",
+		"display": "VITAL_OBSERVATION"
 	  }
 	]
   },
   "subject": {
 	"reference": "Patient/example-patient-fhir"
   },
-  "effectiveDateTime": "2023-12-21T08:00:00Z",
+  "effectiveDateTime": "2018-12-21T08:00:00Z",
   "component": [
 	{
 	  "code": {
