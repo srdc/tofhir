@@ -1,6 +1,7 @@
 package io.tofhir.engine.mapping
 
 import com.fasterxml.jackson.dataformat.csv.CsvReadException
+import io.onfhir.api.Resource
 import io.onfhir.api.service.IFhirTerminologyService
 import io.onfhir.api.util.{FHIRUtil, IOUtil}
 import io.tofhir.engine.mapping.LocalTerminologyService.{CodeSystemFileColumns, ConceptMapFileColumns, equivalenceCodes}
@@ -424,6 +425,13 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
         throw FhirMappingException(s"Invalid tofhir CodeSystem CSV file $filePath! Columns ${Set(CodeSystemFileColumns.CODE, CodeSystemFileColumns.DISPLAY).mkString(",")} are mandatory for code system definitions!",t)
     }
   }
+
+  /**
+   * These methods are not implemented for the LocalTerminologyService and will not implemented in the future.
+   */
+  override def expandWithId(id: String, filter: Option[String], offset: Option[Long], count: Option[Long]): Future[JObject] = ???
+  override def expand(url: String, version: Option[String], filter: Option[String], offset: Option[Long], count: Option[Long]): Future[JObject] = ???
+  override def expandWithValueSet(valueSet: Resource, offset: Option[Long], count: Option[Long]): Future[JObject] = ???
 }
 
 object LocalTerminologyService {
