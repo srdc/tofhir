@@ -127,7 +127,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
 
             val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(mapping.mappingRef))
             io.FileUtils.deleteDirectory(checkpointDirectory)
-            logger.debug(s"Deleted checkpoint directory for jobId: ${mappingJobExecution.job.id}, executionId: ${mappingJobExecution.id}, mappingUrl: ${mapping.mappingRef}, path: ${checkpointDirectory.getAbsolutePath}")
+            logger.debug(s"Deleted checkpoint directory for jobId: ${mappingJobExecution.jobId}, executionId: ${mappingJobExecution.id}, mappingUrl: ${mapping.mappingRef}, path: ${checkpointDirectory.getAbsolutePath}")
           })
         }
 
@@ -180,7 +180,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           toFhirEngine.runningJobRegistry.registerBatchJob(
             mappingJobExecution,
             Some(executionFuture),
-            s"Spark job for job: ${mappingJobExecution.job.id} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
+            s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
           )
         }
       }

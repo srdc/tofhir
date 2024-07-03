@@ -42,7 +42,7 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
    * @param taskExecution
    */
   def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
-    val archiveMode: ArchiveModes = taskExecution.job.dataProcessingSettings.archiveMode
+    val archiveMode: ArchiveModes = taskExecution.archiveMode
     if (archiveMode != ArchiveModes.OFF) {
       // Get the commit file directory for this execution
       val commitDirectory: File = new File(taskExecution.getCommitDirectory(mappingUrl))
@@ -90,11 +90,10 @@ object FileStreamInputArchiver {
     // Putting the archiving logic for the batch file inside within a try block so that it would not affect the caller in case of any exception.
     // That means archiving works in best-effort mode.
     try {
-      val archiveMode: ArchiveModes = execution.job.dataProcessingSettings.archiveMode
+      val archiveMode: ArchiveModes = execution.archiveMode
       if (archiveMode != ArchiveModes.OFF) {
-        val fileSystemSourceSettings = execution.job.sourceSettings.head._2.asInstanceOf[FileSystemSourceSettings]
         // get data folder path from data source settings
-        val dataFolderPath = FileUtils.getPath(fileSystemSourceSettings.dataFolderPath).toString
+        val dataFolderPath = FileUtils.getPath(execution.fileSystemSourceDataFolderPath.get).toString
 
         // Get paths of the input files referred by the mapping tasks
         paths = execution.mappingTasks.flatMap(mapping => {
@@ -111,7 +110,7 @@ object FileStreamInputArchiver {
         })
       }
     } catch {
-      case t:Throwable => logger.warn(s"Failed to apply archiving for job: ${execution.job.id}, execution: ${execution.id}")
+      case t:Throwable => logger.warn(s"Failed to apply archiving for job: ${execution.jobId}, execution: ${execution.id}")
     }
   }
 
@@ -181,16 +180,11 @@ class StreamingArchiverTask(archiver: FileStreamInputArchiver, runningJobRegistr
   override def run(): Unit = {
     // Get executions with streaming queries and file system sources and apply
     val executions = runningJobRegistry.getRunningExecutionsWithCompleteMetadata()
-      .filter(execution => execution.isStreaming())
-      .filter(execution => execution.job.sourceSettings.head._2.isInstanceOf[FileSystemSourceSettings])
+      .filter(execution => execution.isStreamingJob && execution.fileSystemSourceDataFolderPath.nonEmpty)
     executions.foreach(execution => {
-      if (execution.isStreaming()) {
-        execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
-          archiver.applyArchivingOnStreamingJob(execution, mappingUrl)
-        })
-      }
+      execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
+        archiver.applyArchivingOnStreamingJob(execution, mappingUrl)
+      })
     })
   }
-
-
 }

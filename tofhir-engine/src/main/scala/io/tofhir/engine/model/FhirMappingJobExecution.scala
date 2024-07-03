@@ -1,6 +1,7 @@
 package io.tofhir.engine.model
 
 import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.model.ArchiveModes.ArchiveModes
 import io.tofhir.engine.util.SparkUtil
 import org.apache.spark.sql.streaming.StreamingQuery
 
@@ -11,29 +12,25 @@ import java.util.regex.Pattern
 /**
  * Represents the execution of mapping tasks included in a mapping job.
  *
- * @param id                         Unique identifier for the execution
- * @param projectId                  Unique identifier of project to which mapping job belongs
- * @param job                        Fhir mapping job
- * @param mappingTasks               List of mapping tasks to be executed (as a subset of the mapping tasks defined in the job)
- * @param jobGroupIdOrStreamingQuery Keeps Spark job group id for batch jobs and StreamingQuery for streaming jobs
+ * @param id                             Unique identifier for the execution
+ * @param projectId                      Unique identifier of project to which mapping job belongs
+ * @param mappingTasks                   List of mapping tasks to be executed (as a subset of the mapping tasks defined in the job)
+ * @param jobGroupIdOrStreamingQuery     Keeps Spark job group id for batch jobs and StreamingQuery for streaming jobs
+ * @param isStreamingJob                 Whether the execution is streaming or not
+ * @param fileSystemSourceDataFolderPath If execution has a file system source, this is data folder path of it
+ * @param archiveMode                    Archive mode of execution
+ * @param saveErroneousRecords           Whether to save erroneous records or not
  */
-// TODO: The FhirMappingJobExecution model currently includes the entire FhirMappingJob ('job' field), which is unnecessary.
-//  We should remove the 'job' field from the model. Instead, add only the necessary fields to the model.
-case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
-                                   projectId: String = "",
-                                   job: FhirMappingJob,
-                                   mappingTasks: Seq[FhirMappingTask] = Seq.empty,
-                                   jobGroupIdOrStreamingQuery: Option[Either[String, collection.mutable.Map[String, StreamingQuery]]] = None
+case class FhirMappingJobExecution(id: String,
+                                   projectId: String,
+                                   jobId: String,
+                                   mappingTasks: Seq[FhirMappingTask],
+                                   jobGroupIdOrStreamingQuery: Option[Either[String, collection.mutable.Map[String, StreamingQuery]]],
+                                   isStreamingJob: Boolean,
+                                   fileSystemSourceDataFolderPath: Option[String],
+                                   archiveMode: ArchiveModes,
+                                   saveErroneousRecords: Boolean
                                   ) {
-
-  /**
-   * Returns whether the execution is streaming or not
-   * @return
-   */
-  def isStreaming(): Boolean = {
-    job.sourceSettings.exists(source => source._2.asStream)
-  }
-
   /**
    * Returns the map of streaming queries i.e. map of (mapping url -> streaming query)
    * @return
@@ -80,7 +77,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return Directory path in which the checkpoints will be managed
    */
   def getCheckpointDirectory(mappingUrl: String): String =
-    Paths.get(ToFhirConfig.sparkCheckpointDirectory, job.id, mappingUrl.hashCode.toString).toString
+    Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString).toString
 
   /**
    * Creates a commit directory for a mapping included in a job
@@ -112,7 +109,7 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
    * @return
    */
   def getErrorOutputDirectory(mappingUrl: String, errorType: String): String =
-    Paths.get(ToFhirConfig.engineConfig.erroneousRecordsFolder, errorType, s"job-${job.id}", s"execution-${id}",
+    Paths.get(ToFhirConfig.engineConfig.erroneousRecordsFolder, errorType, s"job-${jobId}", s"execution-${id}",
       this.convertUrlToAlphaNumeric(mappingUrl)).toString
 
 
@@ -137,5 +134,50 @@ case class FhirMappingJobExecution(id: String = UUID.randomUUID().toString,
     // Combine the transformed words to create a folder name
     extractedWords.mkString("-")
   }
-
 }
+
+/**
+ * An object to create FhirMappingJobExecution instances
+ */
+object FhirMappingJobExecution {
+
+  /**
+   *
+   * @param id                             Unique identifier for the execution
+   * @param projectId                      Unique identifier of project to which mapping job belongs
+   * @param job                            FHIR mapping job that includes this execution.
+   * @param mappingTasks                   List of mapping tasks to be executed (as a subset of the mapping tasks defined in the job)
+   * @param jobGroupIdOrStreamingQuery     Keeps Spark job group id for batch jobs and StreamingQuery for streaming jobs
+   * @return
+   */
+  def apply(id: String = UUID.randomUUID().toString,
+            projectId: String = "",
+            job: FhirMappingJob,
+            mappingTasks: Seq[FhirMappingTask] = Seq.empty,
+            jobGroupIdOrStreamingQuery: Option[Either[String, collection.mutable.Map[String, StreamingQuery]]] = None
+           ): FhirMappingJobExecution = {
+
+    // Configure properties related to the source settings of the job
+    var isStreamingJob = false
+    var fileSystemSourceDataFolderPath: Option[String] = None
+    if (job.sourceSettings.nonEmpty) {
+      isStreamingJob = job.sourceSettings.exists(source => source._2.asStream)
+      fileSystemSourceDataFolderPath  = job.sourceSettings.head._2 match {
+        case settings: FileSystemSourceSettings => Some(settings.dataFolderPath)
+        case _ => None
+      }
+    }
+
+    // Configure properties related to the data processing settings of the job
+    var archiveMode = ArchiveModes.OFF
+    var saveErroneousRecords = false
+    if(job.dataProcessingSettings != null) {
+      archiveMode = job.dataProcessingSettings.archiveMode
+      saveErroneousRecords = job.dataProcessingSettings.saveErroneousRecords
+    }
+
+    // Create a FhirMappingJobExecution with only necessary properties
+    FhirMappingJobExecution(id, projectId, job.id, mappingTasks, jobGroupIdOrStreamingQuery, isStreamingJob, fileSystemSourceDataFolderPath, archiveMode, saveErroneousRecords)
+  }
+}
+
