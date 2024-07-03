@@ -20,8 +20,6 @@ import scala.concurrent.Future
  * @param context                    Context data for mappings
  * @param mappings                   Mapping scripts
  * @param variables                  Variables defined in the mapping
- * @param columnToConvert            Optional column name in the source DataFrame to be converted to a JObject i.e.
- *                                   input to the mapping executor. If not provided, the entire row will be converted.
  * @param terminologyServiceSettings Settings for terminology service to use within mappings (e.g. lookupDisplay)
  * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
  * @param functionLibraries          External function libraries containing functions to use in FHIRPath expressions
@@ -34,7 +32,6 @@ class FhirMappingService(
                           context: Map[String, FhirMappingContext],
                           mappings: Seq[FhirMappingExpression],
                           variables: Seq[FhirExpression],
-                          val columnToConvert: Option[String],
                           terminologyServiceSettings: Option[TerminologyServiceSettings],
                           identityServiceSettings: Option[IdentityServiceSettings],
                           functionLibraries: Map[String, IFhirPathFunctionLibraryFactory],

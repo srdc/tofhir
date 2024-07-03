@@ -1,0 +1,43 @@
+{
+  "id": "patient-mapping-two-sources",
+  "url": "https://datatools4heart.eu/fhir/mappings/patient-fhir-mapping-two-sources",
+  "name": "patient-fhir-mapping-two-sources",
+  "title": "Mapping of patient from a FHIR endpoint joining patient's observations",
+  "source": [
+    {
+      "alias": "patient",
+      "url": "http://hl7.org/fhir/StructureDefinition/Patient",
+      "joinOn" : ["id"]
+    },
+    {
+      "alias": "observations",
+      "url": "http://hl7.org/fhir/StructureDefinition/Observation",
+      "joinOn" : ["subject.reference"]
+    }
+  ],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Patient",
+          "id": "{{id}}",
+          "identifier": "{{* identifier}}",
+          "gender": "{{gender}}",
+          "birthDate": "{{birthDate}}",
+          "extension": [{
+              "url": "{{%sourceSystem.sourceUri}}/temp-sum",
+              "valueQuantity": "{{%observations.component.where(code.coding.system = 'http://loinc.org' and code.coding.code = '8310-5').select(valueQuantity.value).aggregate($total + $this, 0)}}"
+          },{
+            "url": "{{%sourceSystem.sourceUri}}/temp-avg",
+            "valueQuantity": "{{%observations.component.where(code.coding.system = 'http://loinc.org' and code.coding.code = '8310-5').agg:avg(valueQuantity.value)}}"
+          },{
+            "url": "{{%sourceSystem.sourceUri}}/resp-max",
+            "valueQuantity": "{{%observations.component.where(code.coding.system = 'http://loinc.org' and code.coding.code = '9279-1').agg:max(valueQuantity.value)}}"
+          }]
+        }
+      }
+    }
+  ]
+}

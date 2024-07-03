@@ -8,7 +8,7 @@ import io.tofhir.engine.data.write.{BaseFhirWriter, FhirWriterFactory, SinkHandl
 import io.tofhir.engine.model._
 import it.sauronsoftware.cron4j.SchedulingPattern
 import org.apache.spark.SparkThrowable
-import org.apache.spark.sql.functions.{collect_list, struct}
+import org.apache.spark.sql.functions.{collect_list, struct, udf}
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
@@ -33,7 +33,7 @@ class FhirMappingJobManager(
                              fhirMappingRepository: IFhirMappingRepository,
                              contextLoader: IMappingContextLoader,
                              schemaLoader: IFhirSchemaLoader,
-                             functionLibraries : Map[String, IFhirPathFunctionLibraryFactory],
+                             functionLibraries: Map[String, IFhirPathFunctionLibraryFactory],
                              spark: SparkSession,
                              mappingJobScheduler: Option[MappingJobScheduler] = Option.empty
                            )(implicit ec: ExecutionContext) extends IFhirMappingJobManager {
@@ -126,7 +126,7 @@ class FhirMappingJobManager(
             .recover {
               case e: Throwable =>
                 val jobResult = FhirMappingJobResult(mappingJobExecution, Some(t.mappingRef), status = Some(FhirMappingJobResult.FAILURE))
-                logger.error(jobResult.toMapMarker, jobResult.toString,e)
+                logger.error(jobResult.toMapMarker, jobResult.toString, e)
                 throw e
             }
       })
@@ -185,10 +185,10 @@ class FhirMappingJobManager(
    * Runnable for scheduled periodic mapping job
    *
    * @param mappingJobExecution Mapping job execution
-   * @param startTime          Initial start time for source data
-   * @param sourceSettings     Settings for the source system
-   * @param sinkSettings       FHIR sink settings/configurations
-   * @param schedulingSettings Scheduling information
+   * @param startTime           Initial start time for source data
+   * @param sourceSettings      Settings for the source system
+   * @param sinkSettings        FHIR sink settings/configurations
+   * @param schedulingSettings  Scheduling information
    * @return
    */
   private def runnableMappingJob(mappingJobExecution: FhirMappingJobExecution,
@@ -282,8 +282,8 @@ class FhirMappingJobManager(
     // Using Future.apply to convert the result of readJoinSourceData into a Future
     // ensuring that if there's an error in readJoinSourceData, it will be propagated as a failed future
     Future.apply(readJoinSourceData(task, sourceSettings, timeRange, jobId = Some(jobId))) flatMap {
-        case (fhirMapping, mds, df) => executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId, projectId = projectId)
-      }
+      case (fhirMapping, mds, df) => executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId, projectId = projectId)
+    }
   }
 
   /**
@@ -377,7 +377,7 @@ class FhirMappingJobManager(
       sources.map {
         case (alias, schema, sourceContext, sourceStt, timeRange) =>
           alias ->
-            SourceHandler.readSource( alias, spark, sourceContext, sourceStt, schema, timeRange, jobId = jobId)
+            SourceHandler.readSource(alias, spark, sourceContext, sourceStt, schema, timeRange, jobId = jobId)
       }
 
     val df = handleJoin(fhirMapping.source, sourceDataFrames)
@@ -421,12 +421,12 @@ class FhirMappingJobManager(
           .toSeq
           .map(cdef => contextLoader.retrieveContext(cdef._2).map(context => cdef._1 -> context))
       ).map(loadedContextMap => {
-      //Get configuration context
-      val configurationContext = mainSourceSettings.toConfigurationContext
-      //Construct the mapping service
-      val fhirMappingService = new FhirMappingService(jobId, fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, mainSourceSettings.columnToConvert ,terminologyServiceSettings, identityServiceSettings, functionLibraries,projectId)
-      MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, executionId)
-    })
+        //Get configuration context
+        val configurationContext = mainSourceSettings.toConfigurationContext
+        //Construct the mapping service
+        val fhirMappingService = new FhirMappingService(jobId, fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries, projectId)
+        MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, executionId)
+      })
   }
 
   /**
@@ -437,31 +437,66 @@ class FhirMappingJobManager(
    * @return
    */
   private def handleJoin(sources: Seq[FhirMappingSource], sourceDataFrames: Seq[(String, DataFrame)]): DataFrame = {
+
+    // Rename a DataFrame's column name from dotted version to camelcase since dots have special meaning in Spark's column names.
+    def toCamelCase(input: String): String = {
+      input.split("\\.").toList match {
+        case Nil => ""
+        case head :: tail =>
+          head + tail.map(_.capitalize).mkString("")
+      }
+    }
+
+    // For each column which is a FHIR reference, remove FHIR resource name so that the joins can work.
+    //  Patient/1234 -> 1234
+    def transformFhirReferenceColumns(joinCols: Seq[String], df: DataFrame): DataFrame = {
+      // This is a Spark UDF to remove FHIR resource names from values of FHIR references.
+      val fhirReferenceResourceNameRemoverUDF = udf((reference: String) => {
+        if (reference.matches("^[A-Z].*/.*$")) {
+          reference.substring(reference.indexOf('/') + 1)
+        } else {
+          reference
+        }
+      })
+      joinCols.filter(_.contains(".reference")).foldLeft(df) {
+        case (df, refColumn) => df.withColumn(toCamelCase(refColumn), fhirReferenceResourceNameRemoverUDF(df.col(toCamelCase(refColumn))))
+      }
+    }
+
     sourceDataFrames match {
       case Seq(_ -> df) => df
-      //If we have multiple sources
-      case _ =>
-        val mainSource = sourceDataFrames.head._1
+      case _ => //If we have multiple sources
+        val mainSource = sourceDataFrames.head._1 // We accept the 1st source as the main source and left-join the other sources on this main source.
         val mainJoinOnColumns = sources.find(_.alias == mainSource).get.joinOn
+
+        // Add the JSON object of the whole Row as a column to the DataFrame of the main source
         var mainDf = sourceDataFrames.head._2.withColumn(s"__$mainSource", struct("*"))
-        mainDf = mainDf.select((mainJoinOnColumns :+ s"__$mainSource").map(mainDf.col): _*)
+
+        // Find the values addressed by each column (they can be subject.reference or identifier.value (Spark navigates the DataFrame accordingly, like FHIRPath)),
+        //  add them to the DataFrame with an alias for each column to convert subject.reference to subjectReference with toCamelCase function.
+        // Construct a DataFrame with these join columns and the JSON object of the Row.
+        mainDf = mainDf.select(
+          mainJoinOnColumns.map(c => mainDf.col(c).as(toCamelCase(c))) :+ mainDf.col(s"__$mainSource"): _*)
+
+        // This is a hack to remove the FHIR resource names from reference fields so that join can work!
+        mainDf = transformFhirReferenceColumns(mainJoinOnColumns, mainDf)
+
         //Group other dataframes on join columns and rename their join columns
         val otherDfs: Seq[(DataFrame, Seq[String])] =
           sourceDataFrames
-            .tail
+            .tail // The first source is the main and the rest are others to be left-joined
             .map {
               case (alias, df) =>
                 val joinColumnStmts = sources.find(_.alias == alias).get.joinOn
                 val colsToJoinOn = joinColumnStmts.filter(_ != null)
-                val groupedDf =
-                  df
-                    .groupBy(colsToJoinOn.map(df.col): _*)
-                    .agg(collect_list(struct("*")).as(s"__$alias"))
-
+                var groupedDf = df
+                  .groupBy(colsToJoinOn.map(c => df.col(c).as(toCamelCase(c))): _*)
+                  .agg(collect_list(struct("*")).as(s"__$alias"))
+                groupedDf = transformFhirReferenceColumns(colsToJoinOn, groupedDf)
                 if (colsToJoinOn.toSet.subsetOf(mainJoinOnColumns.toSet))
                   groupedDf -> colsToJoinOn
                 else {
-                  val actualJoinColumns = joinColumnStmts.zip(mainJoinOnColumns).filter(_._1 != null)
+                  val actualJoinColumns = joinColumnStmts.map(toCamelCase).zip(mainJoinOnColumns.map(toCamelCase)).filter(_._1 != null)
                   actualJoinColumns
                     .foldLeft(groupedDf) {
                       case (gdf, (c1, r1)) => gdf.withColumnRenamed(c1, r1)

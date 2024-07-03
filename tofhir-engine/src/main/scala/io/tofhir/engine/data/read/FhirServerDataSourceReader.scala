@@ -1,7 +1,7 @@
 package io.tofhir.engine.data.read
 
 import io.onfhir.spark.reader.FhirApiReader.OPTIONS
-import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirServerSource, FhirServerSourceSettings, FixedTokenAuthenticationSettings}
+import io.tofhir.engine.model._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -35,15 +35,24 @@ class FhirServerDataSourceReader(spark: SparkSession) extends BaseDataSourceRead
   override def read(mappingSource: FhirServerSource, sourceSettings: FhirServerSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
     // extract Spark option for the authentication from the given source settings
     val authenticationOptions = extractAuthenticationOptions(sourceSettings)
-    // read data from a FHIR Server using a custom Spark data source i.e. io.onfhir.spark.reader.FhirApiTableProvider
-    spark
+
+    /*
+    val fhirConfig = SparkFhirConfig.apply("R5")
+    val schemaUtil = new SparkSchemaUtil(fhirConfig)
+    //Get the schema of the resource type from the provided FHIR release (R4 or R5)
+    val resourceSchema = schemaUtil.getSparkSchemaForResourceType(mappingSource.resourceType).get
+    */
+
+    import io.onfhir.spark.reader.FhirApiReader._
+    implicit val implicitSpark: SparkSession = spark
+    implicitSpark
       .read
-      .format("io.onfhir.spark.reader.FhirApiTableProvider")
-      .option("url", sourceSettings.serverUrl)
-      .option("rtype", mappingSource.resourceType)
-      .option("query", s"?${mappingSource.query.getOrElse("")}")
+      .fhir(sourceSettings.serverUrl)
+      .on(mappingSource.resourceType)
       .options(authenticationOptions)
-      .load()
+      .load(/*resourceSchema*/)
+    // If we use the schema of a resource type, spark processing takes too long, probably because of the huge size of the schema.
+    // Hence, we load without a schema; FhirApiReader internally utilizes spark.read.json to parse the retrieved FHIR resources.
   }
 
   /**

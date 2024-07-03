@@ -1,0 +1,54 @@
+{
+	"resourceType": "Observation",
+	"id": "example-observation-fhir-2",
+	"status": "final",
+	"code": {
+		"coding": [
+			{
+				"system": "http://some-code-system",
+				"code": "SOME_CODE",
+				"display": "VITAL_OBSERVATION"
+			}
+		]
+	},
+	"subject": {
+		"reference": "Patient/example-patient-fhir"
+	},
+	"effectiveDateTime": "2018-12-22T10:00:00Z",
+	"component": [
+		{
+			"code": {
+				"coding": [
+					{
+						"system": "http://loinc.org",
+						"code": "8310-5",
+						"display": "Body temperature"
+					}
+				]
+			},
+			"valueQuantity": {
+				"value": 39.8,
+				"unit": "Cel",
+				"system": "http://unitsofmeasure.org",
+				"code": "Cel"
+			}
+		},
+		{
+			"code": {
+				"coding": [
+					{
+						"system": "http://loinc.org",
+						"code": "9279-1",
+						"display": "Respiratory rate"
+					}
+				]
+			},
+			"valueQuantity": {
+				"value": 24,
+				"unit": "/min",
+				"system": "http://unitsofmeasure.org",
+				"code": "/min"
+			}
+		}
+	]
+}

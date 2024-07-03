@@ -37,7 +37,7 @@ case class FhirMapping(id: String,
    *
    * @return
    */
-  def getMetadata(): JObject = {
+  def getMetadata: JObject = {
     JObject(
       List(
         "id" -> JString(this.id),

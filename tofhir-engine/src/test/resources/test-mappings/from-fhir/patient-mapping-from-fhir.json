@@ -1,0 +1,41 @@
+{
+  "id": "patient-mapping",
+  "url": "https://datatools4heart.eu/fhir/mappings/patient-fhir-mapping",
+  "name": "patient-fhir-mapping",
+  "title": "Mapping of patient from a FHIR endpoint",
+  "source": [
+    {
+      "alias": "source",
+      "url": "http://hl7.org/fhir/StructureDefinition/Patient"
+    }
+  ],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Patient",
+          "id": "{{id}}",
+          "meta": {
+            "profile": [
+              "https://datatools4heart.eu/fhir/StructureDefinition/HFR-Patient"
+            ],
+            "source": "{{%sourceSystem.sourceUri}}"
+          },
+          "active": true,
+          "identifier": [
+            {
+              "use": "{{identifier.use}}",
+              "system": "{{%sourceSystem.sourceUri}}",
+              "value": "{{identifier.value}}"
+            }
+          ],
+          "gender": "{{gender}}",
+          "birthDate": "{{birthDate}}",
+          "deceasedDateTime": "{{? deceasedDateTime}}"
+        }
+      }
+    }
+  ]
+}

@@ -275,6 +275,16 @@
                 <artifactId>fhir-api-spark-source_${scala.binary.version}</artifactId>
                 <version>${spark-on-fhir.version}</version>
             </dependency>
+<!--            <dependency>-->
+<!--                <groupId>io.onfhir</groupId>-->
+<!--                <artifactId>fhir-spark-util</artifactId>-->
+<!--                <version>${spark-on-fhir.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>io.onfhir</groupId>-->
+<!--                <artifactId>fhir-path-spark_${scala.binary.version}</artifactId>-->
+<!--                <version>${spark-on-fhir.version}</version>-->
+<!--            </dependency>-->
 
             <!-- JSON4S -->
             <dependency>

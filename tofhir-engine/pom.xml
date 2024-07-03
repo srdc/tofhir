@@ -190,6 +190,7 @@
             <groupId>io.onfhir</groupId>
             <artifactId>fhir-api-spark-source_${scala.binary.version}</artifactId>
         </dependency>
+
         <!-- toFHIR dependencies -->
         <dependency>
             <groupId>io.onfhir</groupId>
