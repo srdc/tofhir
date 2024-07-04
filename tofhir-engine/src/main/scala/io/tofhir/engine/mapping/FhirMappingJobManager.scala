@@ -61,6 +61,7 @@ class FhirMappingJobManager(
     fhirWriter.validate()
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
+        // log the start of the FHIR mapping task execution
         val jobResult = FhirMappingJobResult(mappingJobExecution, Some(task.mappingRef))
         logger.info(jobResult.toMapMarker, jobResult.toString)
 
@@ -114,6 +115,7 @@ class FhirMappingJobManager(
     mappingJobExecution.mappingTasks
       .map(t => {
         logger.debug(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping url ${t.mappingRef} is started and waiting for the data...")
+        // log the start of the FHIR mapping task execution
         val jobResult = FhirMappingJobResult(mappingJobExecution, Some(t.mappingRef))
         logger.info(jobResult.toMapMarker, jobResult.toString)
 

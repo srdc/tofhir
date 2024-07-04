@@ -68,6 +68,8 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
     markerMap.put("numOfFhirResources", numOfFhirResources)
     markerMap.put("numOfFailedWrites", numOfFailedWrites)
     markerMap.put("eventId", eventId)
+    markerMap.put("isStreamingJob", mappingJobExecution.isStreamingJob)
+    markerMap.put("isScheduledJob", mappingJobExecution.isScheduledJob)
     // create a new MapMarker using the marker map
     new MapMarker("marker", markerMap)
   }
@@ -115,4 +117,16 @@ object FhirMappingJobResult {
    * It allows distinguishing between tasks that were intentionally halted and those that failed.
    */
   val STOPPED: String = "STOPPED"
+
+  /**
+   * Represents the status when the mapping job has been scheduled.
+   * This status indicates that the mapping job is planned to be executed at a later time.
+   */
+  val SCHEDULED: String = "SCHEDULED"
+
+  /**
+   * Represents the status when the mapping job has been descheduled.
+   * This status indicates that the previously scheduled mapping job has been canceled and will not be executed.
+   */
+  val DESCHEDULED: String = "DESCHEDULED"
 }
