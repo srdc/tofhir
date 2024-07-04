@@ -3,7 +3,7 @@ package io.tofhir.engine.execution
 import it.sauronsoftware.cron4j.{Scheduler, SchedulerListener, TaskExecutor}
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.model.FhirMappingJobExecution
+import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingJobResult}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.StreamingQuery
 
@@ -11,7 +11,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
-
+import io.tofhir.engine.Execution.actorSystem
 /**
  * Execution manager that keeps track of running and scheduled mapping tasks in-memory.
  * This registry is designed to maintain the execution status of both Streaming and Batch mapping jobs.
@@ -28,14 +28,34 @@ class RunningJobRegistry(spark: SparkSession) {
   private val runningTasks: collection.mutable.Map[String, collection.mutable.Map[String, FhirMappingJobExecution]] =
     collection.mutable.Map[String, collection.mutable.Map[String, FhirMappingJobExecution]]()
 
-  // Keeps the scheduled jobs in the form of: jobId -> (executionId -> Scheduler)
-  private val scheduledTasks: collection.mutable.Map[String, collection.mutable.Map[String, Scheduler]] =
-    collection.mutable.Map[String, collection.mutable.Map[String, Scheduler]]()
+  // Keeps the scheduled jobs in the form of: jobId -> (executionId -> (Scheduler, execution))
+  private val scheduledTasks: collection.mutable.Map[String, collection.mutable.Map[String, (Scheduler,FhirMappingJobExecution)]] =
+    collection.mutable.Map[String, collection.mutable.Map[String, (Scheduler,FhirMappingJobExecution)]]()
 
   // Dedicated execution context for blocking streaming jobs
   private val streamingTaskExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool)
 
   private val logger: Logger = Logger(this.getClass)
+
+  /**
+   * When the actor system is terminated i.e., the system is shutdown, log the status of running mapping jobs
+   * as 'STOPPED' and scheduled mapping jobs as 'DESCHEDULED'.
+   */
+  actorSystem.whenTerminated
+    .map(_ => {
+      // iterate over all running tasks and log each one as 'STOPPED'
+      runningTasks.values.flatMap(_.values)
+        .foreach(execution => {
+          val jobResult = FhirMappingJobResult(execution, None, status = Some(FhirMappingJobResult.STOPPED))
+          logger.info(jobResult.toMapMarker, jobResult.toString)
+        })
+      // iterate over all scheduled tasks and log each one as 'DESCHEDULED'
+      scheduledTasks.values.flatMap(_.values.map(_._2))
+        .foreach(execution => {
+          val jobResult = FhirMappingJobResult(execution, None, status = Some(FhirMappingJobResult.DESCHEDULED))
+          logger.info(jobResult.toMapMarker, jobResult.toString)
+        })
+    })
 
   /**
    * Caches a [[FhirMappingJobExecution]] for an individual mapping task
@@ -132,9 +152,11 @@ class RunningJobRegistry(spark: SparkSession) {
   def registerSchedulingJob(mappingJobExecution: FhirMappingJobExecution, scheduler: Scheduler): Unit = {
     // add it to the scheduledTasks map
     scheduledTasks
-      .getOrElseUpdate(mappingJobExecution.jobId, collection.mutable.Map[String, Scheduler]())
-      .put(mappingJobExecution.id, scheduler)
-    logger.debug(s"Scheduling job ${mappingJobExecution.jobId} has been registered")
+      .getOrElseUpdate(mappingJobExecution.jobId, collection.mutable.Map[String, (Scheduler,FhirMappingJobExecution)]())
+      .put(mappingJobExecution.id, (scheduler, mappingJobExecution))
+    // log the mapping job status as 'SCHEDULED'
+    val jobResult = FhirMappingJobResult(mappingJobExecution, None, status = Some(FhirMappingJobResult.SCHEDULED))
+    logger.info(jobResult.toMapMarker, jobResult.toString)
     // add a scheduler listener to monitor task events
     scheduler.addSchedulerListener(new SchedulerListener {
       override def taskLaunching(executor: TaskExecutor): Unit = {
@@ -164,8 +186,11 @@ class RunningJobRegistry(spark: SparkSession) {
     // stop the job execution
     stopJobExecution(jobId, executionId)
     // stop the scheduler for the specified job execution
-    scheduledTasks(jobId)(executionId).stop()
+    scheduledTasks(jobId)(executionId)._1.stop()
     logger.debug(s"Descheduled the mapping job with id: $jobId and execution: $executionId")
+    // log the mapping job status as 'DESCHEDULED'
+    val jobResult = FhirMappingJobResult(scheduledTasks(jobId)(executionId)._2, None, status = Some(FhirMappingJobResult.DESCHEDULED))
+    logger.info(jobResult.toMapMarker, jobResult.toString)
     // remove the execution from the scheduledTask Map
     scheduledTasks(jobId).remove(executionId)
     // if there are no executions left for the job, remove the job from the map
