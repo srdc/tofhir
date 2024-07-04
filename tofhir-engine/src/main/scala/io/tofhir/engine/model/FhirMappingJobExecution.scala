@@ -20,6 +20,7 @@ import java.util.regex.Pattern
  * @param fileSystemSourceDataFolderPath If execution has a file system source, this is data folder path of it
  * @param archiveMode                    Archive mode of execution
  * @param saveErroneousRecords           Whether to save erroneous records or not
+ * @param isScheduledJob                 Whether the execution is scheduled or not
  */
 case class FhirMappingJobExecution(id: String,
                                    projectId: String,
@@ -29,7 +30,8 @@ case class FhirMappingJobExecution(id: String,
                                    isStreamingJob: Boolean,
                                    fileSystemSourceDataFolderPath: Option[String],
                                    archiveMode: ArchiveModes,
-                                   saveErroneousRecords: Boolean
+                                   saveErroneousRecords: Boolean,
+                                   isScheduledJob: Boolean
                                   ) {
   /**
    * Returns the map of streaming queries i.e. map of (mapping url -> streaming query)
@@ -175,9 +177,11 @@ object FhirMappingJobExecution {
       archiveMode = job.dataProcessingSettings.archiveMode
       saveErroneousRecords = job.dataProcessingSettings.saveErroneousRecords
     }
+    // check whether it is a scheduled job or not
+    val isScheduledJob = job.schedulingSettings.nonEmpty
 
     // Create a FhirMappingJobExecution with only necessary properties
-    FhirMappingJobExecution(id, projectId, job.id, mappingTasks, jobGroupIdOrStreamingQuery, isStreamingJob, fileSystemSourceDataFolderPath, archiveMode, saveErroneousRecords)
+    FhirMappingJobExecution(id, projectId, job.id, mappingTasks, jobGroupIdOrStreamingQuery, isStreamingJob, fileSystemSourceDataFolderPath, archiveMode, saveErroneousRecords, isScheduledJob)
   }
 }
 
