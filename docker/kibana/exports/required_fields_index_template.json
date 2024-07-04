@@ -44,6 +44,12 @@
 		  }
 		}
 	  },
+	  "isStreamingJob": {
+		"type": "boolean"
+	  },
+	  "isScheduledJob": {
+		"type": "boolean"
+	  },
 	  "errorExpr": {
 		"type": "text",
 		"fields": {
