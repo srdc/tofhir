@@ -17,7 +17,7 @@ trait ToFhirTestSpec extends Matchers with OptionValues with Inside with Inspect
   val repositoryFolderUri: URI = getClass.getResource(ToFhirConfig.engineConfig.mappingRepositoryFolderPath).toURI
   val mappingRepository: IFhirMappingRepository = new FhirMappingFolderRepository(repositoryFolderUri)
 
-  val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepository)
+  val contextLoader: IMappingContextLoader = new MappingContextLoader
 
   val schemaRepositoryURI: URI = getClass.getResource(ToFhirConfig.engineConfig.schemaRepositoryFolderPath).toURI
   val schemaRepository = new SchemaFolderLoader(schemaRepositoryURI)

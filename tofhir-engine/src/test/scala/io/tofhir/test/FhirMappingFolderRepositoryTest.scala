@@ -41,7 +41,7 @@ class FhirMappingFolderRepositoryTest extends AsyncFlatSpec with ToFhirTestSpec 
   it should "correctly load concept map context definitions" in {
     val observationMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/other-observation-mapping")
     val contextDefinition = observationMapping.context("obsConceptMap")
-    val mappingContextLoader = new MappingContextLoader(mappingRepository)
+    val mappingContextLoader = new MappingContextLoader
     mappingContextLoader.retrieveContext(contextDefinition) map { context =>
       val conceptMapContext = context.asInstanceOf[ConceptMapContext]
       conceptMapContext.concepts.size shouldBe 13
@@ -56,7 +56,7 @@ class FhirMappingFolderRepositoryTest extends AsyncFlatSpec with ToFhirTestSpec 
   it should "correctly load concept map context definitions from another directory" in {
     val labResultsMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
     val contextDefinition = labResultsMapping.context("obsConceptMap")
-    val mappingContextLoader = new MappingContextLoader(mappingRepository)
+    val mappingContextLoader = new MappingContextLoader
     mappingContextLoader.retrieveContext(contextDefinition) map { context =>
       val conceptMapContext = context.asInstanceOf[ConceptMapContext]
       conceptMapContext.concepts.size shouldBe 13
@@ -71,7 +71,7 @@ class FhirMappingFolderRepositoryTest extends AsyncFlatSpec with ToFhirTestSpec 
   it should "correctly load unit conversion mapping definitions" in {
     val labResultsMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
     val unitConversionContextDefinition = labResultsMapping.context("labResultUnitConversion")
-    val mappingContextLoader = new MappingContextLoader(mappingRepository)
+    val mappingContextLoader = new MappingContextLoader
     mappingContextLoader.retrieveContext(unitConversionContextDefinition) map { context =>
       val unitConversionContext = context.asInstanceOf[UnitConversionContext]
       unitConversionContext.conversionFunctions.size shouldBe 25

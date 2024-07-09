@@ -19,7 +19,7 @@ class FhirPathMappingFunctionsTest extends AsyncFlatSpec with ToFhirTestSpec {
   val labResultMapping: FhirMapping = mappingRepository.getFhirMappingByUrl("https://aiccelerate.eu/fhir/mappings/lab-results-mapping")
   val conceptMapContextDefinition: FhirMappingContextDefinition = labResultMapping.context("obsConceptMap")
   val unitConversionContextDefinition: FhirMappingContextDefinition = labResultMapping.context("labResultUnitConversion")
-  val mappingContextLoader = new MappingContextLoader(mappingRepository)
+  val mappingContextLoader = new MappingContextLoader
 
   "A FhirPathMappingsFunctions" should "correctly execute the getConcept function" in {
     mappingContextLoader.retrieveContext(conceptMapContextDefinition) map { mappingContext =>
