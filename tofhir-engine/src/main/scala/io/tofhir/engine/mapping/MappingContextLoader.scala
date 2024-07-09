@@ -3,7 +3,6 @@ package io.tofhir.engine.mapping
 import java.io.File
 import java.nio.file.Paths
 
-import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.{CsvUtil, FileUtils}
@@ -24,9 +23,7 @@ trait IMappingContextLoader {
   def retrieveContext(contextDefinition: FhirMappingContextDefinition): Future[FhirMappingContext]
 }
 
-class MappingContextLoader(fhirMappingRepository: IFhirMappingRepository) extends IMappingContextLoader {
-
-  private val logger: Logger = Logger(this.getClass)
+class MappingContextLoader extends IMappingContextLoader {
 
   def retrieveContext(contextDefinition: FhirMappingContextDefinition): Future[FhirMappingContext] = {
     if (contextDefinition.url.isDefined) {

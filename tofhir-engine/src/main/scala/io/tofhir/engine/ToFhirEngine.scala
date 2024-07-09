@@ -32,7 +32,7 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
   val mappingRepo: IFhirMappingCachedRepository = mappingRepository.getOrElse(new FhirMappingFolderRepository(FileUtils.getPath(engineConfig.mappingRepositoryFolderPath).toUri))
 
   //Context loader
-  val contextLoader: IMappingContextLoader = new MappingContextLoader(mappingRepo)
+  val contextLoader: IMappingContextLoader = new MappingContextLoader
 
   //Repository for source data schemas
   val schemaLoader: IFhirSchemaLoader = schemaRepository.getOrElse(new SchemaFolderLoader(FileUtils.getPath(engineConfig.schemaRepositoryFolderPath).toUri))
