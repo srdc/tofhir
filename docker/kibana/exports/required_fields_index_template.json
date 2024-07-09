@@ -50,6 +50,9 @@
 	  "isScheduledJob": {
 		"type": "boolean"
 	  },
+	  "batchResult": {
+		"type": "boolean"
+	  },
 	  "errorExpr": {
 		"type": "text",
 		"fields": {
