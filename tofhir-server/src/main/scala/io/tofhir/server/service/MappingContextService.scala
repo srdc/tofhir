@@ -4,6 +4,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.repository.mappingContext.IMappingContextRepository
+import io.tofhir.server.util.CsvUtil.CsvHeader
 
 import scala.concurrent.Future
 
@@ -49,7 +50,7 @@ class MappingContextService(mappingContextRepository: IMappingContextRepository)
   * @param headers mapping context headers
   * @return
   */
-  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[String]): Future[Unit] = {
+  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[CsvHeader]): Future[Unit] = {
     mappingContextRepository.updateMappingContextHeader(projectId, id, headers)
   }
 

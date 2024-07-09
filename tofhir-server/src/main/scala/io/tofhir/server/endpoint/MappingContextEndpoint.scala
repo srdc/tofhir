@@ -11,6 +11,7 @@ import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CON
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.repository.mappingContext.IMappingContextRepository
 import io.tofhir.server.service.MappingContextService
+import io.tofhir.server.util.CsvUtil.CsvHeader
 
 class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository) extends LazyLogging {
 
@@ -108,7 +109,7 @@ class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository
    */
   private def updateMappingContextHeaderRoute(projectId: String, id: String): Route = {
     post {
-      entity(as[Seq[String]]) { headers =>
+      entity(as[Seq[CsvHeader]]) { headers =>
         complete {
           service.updateMappingContextHeader(projectId, id, headers) map { _ =>
             StatusCodes.OK

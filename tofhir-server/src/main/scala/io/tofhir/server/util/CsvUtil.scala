@@ -50,6 +50,7 @@ object CsvUtil {
   /**
    * Overwrite headers string to the first line of the CSV file
    * Adjust the rows to match the new headers if necessary e.g.
+   * - if a column name is changed, change headers of the rows with new name
    * - if a column removed, remove the column from the rows
    * - if a new column name recognized, add the column to the rows with a default value (<column_name>)
    * - order of the columns are preserved according to the newHHeaders
@@ -57,7 +58,7 @@ object CsvUtil {
    * @param newHeaders Headers to write to the file
    * @return
    */
-  def writeCsvHeaders(file: File, newHeaders: Seq[String]): Future[Unit] = {
+  def writeCsvHeaders(file: File, newHeaders: Seq[CsvHeader]): Future[Unit] = {
     // Used external CSV Parser library to handle double quotes in the CSV file
     val parser = new CSVParserBuilder().withSeparator(',').withQuoteChar('"').build()
 
@@ -79,34 +80,43 @@ object CsvUtil {
         }
       }
 
+
     // here an example existingContent looks like:
     // [
-    //   [ "header1" -> "value1", "header2" -> "value2" ],
-    //   [ "header1" -> "value3", "header2" -> "value4" ]
+    //   [ "header1" -> "value1", "header2" -> "value2", "header3" -> "value3" ],
+    //   [ "header1" -> "value4", "header2" -> "value5", "header3" -> "value6" ]
     // ]
     //
     // an example newHeaders looks like:
-    // [ "header2", "header3" ]
+    // [ "header2", "headerChanged", "header4" ]
+    // "header1" is deleted,
+    // "header3" changed to "headerChanged"
+    // "header4" is added
     existingContentFuture.map { existingContent =>
+
       // Create a new list of lists where each list is a row and the first element in the tuples is the header
-      val updatedContent = existingContent.map { row => // iterate each row
+      var updatedContent = existingContent.map { row => // iterate each row
         newHeaders.map { header => // iterate each new header
-          // if the header already exists, use its value (header2 -> value2)
-          // otherwise, use a default value (header3 -> <header3>)
-          header -> row.find(_._1 == header).map(_._2).getOrElse(s"<$header>")
+          // If name (field) is different than the previously saved name, update the header of tuples
+          val key = if (header.field != header.savedName) header.field else header.savedName
+          // if the header already exists or header name is changed, use its value (header2 -> value2, headerChanged -> value3)
+          // otherwise, use a default value (header4 -> <header4>)
+          key -> row.find(_._1 == header.savedName).map(_._2).getOrElse(s"<${header.field}>")
         }
       }
 
       // here an example updatedContent looks like:
       // [
-      //   [ "header2" -> "value2", "header3" -> "<header3>" ],
-      //   [ "header2" -> "value4", "header3" -> "<header3>" ]
+      //   [ "header2" -> "value2", "headerChanged" -> "value3" ,"header4" -> "<header4>" ],
+      //   [ "header2" -> "value5", "headerChanged" -> "value6" ,"header4" -> "<header4>" ]
       // ]
 
+      // Extract the new names from CsvHeader array
+      val newHeaderNames = newHeaders.map(_.field)
       // create a header line by joining the new headers with a comma
       // create row content by using the second element of the tuple and joining them with a comma
       // finally merge the header and row content with a comma
-      val csvContent = (newHeaders.mkString(",") +: updatedContent.map(_.map(x => s"\"${x._2}\"").mkString(","))).map(ByteString(_))
+      val csvContent = (newHeaderNames.mkString(",") +: updatedContent.map(_.map(x => s"\"${x._2}\"").mkString(","))).map(ByteString(_))
       // Write the updated CSV content back to the file
       Source(csvContent).intersperse(ByteString("\n"))
         .runWith(FileIO.toPath(file.toPath, Set(StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)))
@@ -206,4 +216,11 @@ object CsvUtil {
 
   }
 
+  /**
+   * Represents a CSV header with a new name and a previously saved name.
+   * @param field The current name of the header.
+   * @param savedName The previously saved name of the header, used for column name change without data loss
+   * If a new header is desired to be created, saved name may be any placeholder
+   */
+  case class CsvHeader(field: String, savedName: String)
 }
