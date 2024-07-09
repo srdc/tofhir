@@ -2,7 +2,7 @@ package io.tofhir.engine.model
 
 import ch.qos.logback.more.appenders.marker.MapMarker
 /**
- * Result of a batch mapping job execution
+ * Result of a mapping job execution
  *
  * @param mappingJobExecution Fhir Mapping Job execution
  * @param mappingUrl          Url of the mapping if this is reporting single mapping
@@ -11,14 +11,16 @@ import ch.qos.logback.more.appenders.marker.MapMarker
  * @param numOfFhirResources  Total number of FHIR resources created as a result mapping(s)
  * @param numOfFailedWrites   Total number of FHIR resources that cannot be written to the configured sink (e.g. FHIR repository)
  * @param status              An optional status indicating the overall outcome of the mapping job.
+ * @param batchResult         Whether it represents the result of a batch (applicable only for the batch mapping job) or the execution of a mapping task
  */
 case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
                                 mappingUrl: Option[String],
-                                numOfInvalids: Long = -1,
-                                numOfNotMapped: Long = -1,
-                                numOfFhirResources: Long = -1,
-                                numOfFailedWrites: Long = -1,
-                                status: Option[String] = None
+                                numOfInvalids: Long = 0,
+                                numOfNotMapped: Long = 0,
+                                numOfFhirResources: Long = 0,
+                                numOfFailedWrites: Long = 0,
+                                status: Option[String] = None,
+                                batchResult: Boolean = true
                                ) {
   final val eventId: String = "MAPPING_JOB_RESULT"
   /**
@@ -31,7 +33,6 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
       status.get
     else
       numOfInvalids + numOfNotMapped + numOfFailedWrites match {
-        case -3 => FhirMappingJobResult.STARTED
         case 0 => FhirMappingJobResult.SUCCESS
         case _ => // Check if it is complete failure or there are some successfully written resources
           numOfFhirResources match {
@@ -42,11 +43,19 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
   }
 
   override def toString: String = {
-    s"toFHIR batch mapping result ($result) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n" +
+    // get the status of execution
+    val status: String = result
+    // construct the message for the execution of mapping job
+    var message = s"toFHIR ${if (batchResult) "batch " else "" }mapping result ($status) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n"
+    // if it is not the start log, print the result of execution
+    if(!status.contentEquals(FhirMappingJobResult.STARTED)){
+      message = message +
         s"\t# of Invalid Rows: \t$numOfInvalids\n" +
-          s"\t# of Not Mapped: \t$numOfNotMapped\n" +
-          s"\t# of Failed writes:\t$numOfFailedWrites\n" +
-          s"\t# of Written FHIR resources:\t$numOfFhirResources"
+        s"\t# of Not Mapped: \t$numOfNotMapped\n" +
+        s"\t# of Failed writes:\t$numOfFailedWrites\n" +
+        s"\t# of Written FHIR resources:\t$numOfFhirResources"
+    }
+    message
   }
 
   /**
@@ -63,6 +72,7 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
     markerMap.put("executionId", mappingJobExecution.id)
     markerMap.put("mappingUrl", mappingUrl.orNull)
     markerMap.put("result", result)
+    markerMap.put("batchResult", batchResult)
     markerMap.put("numOfInvalids", numOfInvalids)
     markerMap.put("numOfNotMapped", numOfNotMapped)
     markerMap.put("numOfFhirResources", numOfFhirResources)
