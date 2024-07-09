@@ -90,7 +90,7 @@
         <appender-ref ref="FLUENT" />
     </logger>
 
-    <logger name="io.tofhir.engine.execution.RunningJobRegistry">
+    <logger name="io.tofhir.engine.execution.ExecutionLogger">
         <appender-ref ref="ASYNC-AUDIT" />
         <appender-ref ref="ASYNC-AUDIT-FLUENT" />
     </logger>

@@ -46,14 +46,14 @@ class RunningJobRegistry(spark: SparkSession) {
       // iterate over all running tasks and log each one as 'STOPPED'
       runningTasks.values.flatMap(_.values)
         .foreach(execution => {
-          val jobResult = FhirMappingJobResult(execution, None, status = Some(FhirMappingJobResult.STOPPED))
-          logger.info(jobResult.toMapMarker, jobResult.toString)
+          // log execution status as 'STOPPED'
+          ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.STOPPED)
         })
       // iterate over all scheduled tasks and log each one as 'DESCHEDULED'
       scheduledTasks.values.flatMap(_.values.map(_._2))
         .foreach(execution => {
-          val jobResult = FhirMappingJobResult(execution, None, status = Some(FhirMappingJobResult.DESCHEDULED))
-          logger.info(jobResult.toMapMarker, jobResult.toString)
+          // log execution status as 'DESCHEDULED'
+          ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.DESCHEDULED)
         })
     })
 
@@ -154,9 +154,8 @@ class RunningJobRegistry(spark: SparkSession) {
     scheduledTasks
       .getOrElseUpdate(mappingJobExecution.jobId, collection.mutable.Map[String, (Scheduler,FhirMappingJobExecution)]())
       .put(mappingJobExecution.id, (scheduler, mappingJobExecution))
-    // log the mapping job status as 'SCHEDULED'
-    val jobResult = FhirMappingJobResult(mappingJobExecution, None, status = Some(FhirMappingJobResult.SCHEDULED))
-    logger.info(jobResult.toMapMarker, jobResult.toString)
+    // log execution status as 'SCHEDULED'
+    ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.SCHEDULED)
     // add a scheduler listener to monitor task events
     scheduler.addSchedulerListener(new SchedulerListener {
       override def taskLaunching(executor: TaskExecutor): Unit = {
@@ -188,9 +187,8 @@ class RunningJobRegistry(spark: SparkSession) {
     // stop the scheduler for the specified job execution
     scheduledTasks(jobId)(executionId)._1.stop()
     logger.debug(s"Descheduled the mapping job with id: $jobId and execution: $executionId")
-    // log the mapping job status as 'DESCHEDULED'
-    val jobResult = FhirMappingJobResult(scheduledTasks(jobId)(executionId)._2, None, status = Some(FhirMappingJobResult.DESCHEDULED))
-    logger.info(jobResult.toMapMarker, jobResult.toString)
+    // log execution status as 'DESCHEDULED'
+    ExecutionLogger.logExecutionStatus(scheduledTasks(jobId)(executionId)._2, FhirMappingJobResult.DESCHEDULED)
     // remove the execution from the scheduledTask Map
     scheduledTasks(jobId).remove(executionId)
     // if there are no executions left for the job, remove the job from the map

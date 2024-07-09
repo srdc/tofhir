@@ -1,7 +1,7 @@
 package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.execution.ErroneousRecordWriter
+import io.tofhir.engine.execution.{ErroneousRecordWriter, ExecutionLogger}
 import io.tofhir.engine.model._
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{Dataset, SparkSession}
@@ -88,9 +88,14 @@ object SinkHandler {
     val numOfFhirResources = fhirResources.count()
     val numOfWritten = numOfFhirResources - numOfNotWritten
 
-    //Log the job result
-    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfWritten, numOfNotWritten)
-    logger.info(jobResult.toMapMarker, jobResult.toString)
+    // Log the job result
+    if(mappingJobExecution.isStreamingJob){
+      // Log the result for streaming mapping task execution
+      ExecutionLogger.logExecutionResultForStreamingMappingTask(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfWritten, numOfNotWritten)
+    } else {
+      // Log the result for batch execution
+      ExecutionLogger.logExecutionResultForBatch(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfWritten, numOfNotWritten)
+    }
 
     // Log the mapping and invalid input errors
     if (numOfNotMapped > 0 || numOfInvalids > 0) {
