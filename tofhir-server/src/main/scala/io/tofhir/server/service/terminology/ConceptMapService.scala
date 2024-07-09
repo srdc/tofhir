@@ -4,6 +4,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.TerminologySystem.TerminologyConceptMap
+import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.repository.terminology.conceptmap.IConceptMapRepository
 
 import scala.concurrent.Future
@@ -67,7 +68,7 @@ class ConceptMapService(conceptMapRepository: IConceptMapRepository) extends Laz
    * @param headers new headers to update
    * @return
    */
-  def updateConceptMapHeader(terminologyId: String, conceptMapId: String, headers: Seq[String]): Future[Unit] = {
+  def updateConceptMapHeader(terminologyId: String, conceptMapId: String, headers: Seq[CsvHeader]): Future[Unit] = {
     conceptMapRepository.updateConceptMapHeader(terminologyId, conceptMapId, headers)
   }
 

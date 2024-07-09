@@ -3,6 +3,7 @@ package io.tofhir.server.repository.terminology.conceptmap
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import io.tofhir.server.model.TerminologySystem.TerminologyConceptMap
+import io.tofhir.server.model.csv.CsvHeader
 
 import scala.concurrent.Future
 
@@ -53,7 +54,7 @@ trait IConceptMapRepository {
    * @param headers new headers to update
    * @return
    */
-  def updateConceptMapHeader(terminologyId: String, conceptMapId: String, headers: Seq[String]): Future[Unit]
+  def updateConceptMapHeader(terminologyId: String, conceptMapId: String, headers: Seq[CsvHeader]): Future[Unit]
 
   /**
    * Retrieve and save the content of a concept map csv file within a terminology

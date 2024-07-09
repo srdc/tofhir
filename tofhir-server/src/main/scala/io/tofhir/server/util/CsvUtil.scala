@@ -6,6 +6,7 @@ import com.opencsv.CSVParserBuilder
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.InternalError
+import io.tofhir.server.model.csv.CsvHeader
 
 import java.io.File
 import java.nio.file.StandardOpenOption
@@ -50,6 +51,7 @@ object CsvUtil {
   /**
    * Overwrite headers string to the first line of the CSV file
    * Adjust the rows to match the new headers if necessary e.g.
+   * - if a column name is changed, change headers of the rows with new name
    * - if a column removed, remove the column from the rows
    * - if a new column name recognized, add the column to the rows with a default value (<column_name>)
    * - order of the columns are preserved according to the newHHeaders
@@ -57,7 +59,7 @@ object CsvUtil {
    * @param newHeaders Headers to write to the file
    * @return
    */
-  def writeCsvHeaders(file: File, newHeaders: Seq[String]): Future[Unit] = {
+  def writeCsvHeaders(file: File, newHeaders: Seq[CsvHeader]): Future[Unit] = {
     // Used external CSV Parser library to handle double quotes in the CSV file
     val parser = new CSVParserBuilder().withSeparator(',').withQuoteChar('"').build()
 
@@ -79,34 +81,44 @@ object CsvUtil {
         }
       }
 
+
     // here an example existingContent looks like:
-    // [
-    //   [ "header1" -> "value1", "header2" -> "value2" ],
-    //   [ "header1" -> "value3", "header2" -> "value4" ]
-    // ]
+    // header1,  header2,  header3
+    // value1,   value2,   value3
+    // value4,   value5,   value6
     //
     // an example newHeaders looks like:
-    // [ "header2", "header3" ]
+    // Seq(
+    //  CsvHeader(currentName = "header2", previousName = "header2"),
+    //  CsvHeader(currentName = "headerChanged", previousName = "header3"),
+    //  CsvHeader(currentName = "header4", previousName = "header4")  // previousName may be any placeholder
+    // )
+    // "header1" is deleted,
+    // "header3" changed to "headerChanged"
+    // "header4" is added
     existingContentFuture.map { existingContent =>
       // Create a new list of lists where each list is a row and the first element in the tuples is the header
       val updatedContent = existingContent.map { row => // iterate each row
         newHeaders.map { header => // iterate each new header
-          // if the header already exists, use its value (header2 -> value2)
-          // otherwise, use a default value (header3 -> <header3>)
-          header -> row.find(_._1 == header).map(_._2).getOrElse(s"<$header>")
+          // If the current name is different than the previously saved name, update the header of tuples
+          val key = if (header.currentName != header.previousName) header.currentName else header.previousName
+          // if the header already exists or header name is changed, use its value (header2 -> value2, headerChanged -> value3)
+          // otherwise, use a default value (header4 -> <header4>)
+          key -> row.find(_._1 == header.previousName).map(_._2).getOrElse(s"<${header.currentName}>")
         }
       }
 
       // here an example updatedContent looks like:
-      // [
-      //   [ "header2" -> "value2", "header3" -> "<header3>" ],
-      //   [ "header2" -> "value4", "header3" -> "<header3>" ]
-      // ]
+      // header2,  headerChanged,  header4
+      // value2,   value3,         <header4>
+      // value5,   value6,         <header4>
 
+      // Extract the new names from CsvHeader array
+      val newHeaderNames = newHeaders.map(_.currentName)
       // create a header line by joining the new headers with a comma
       // create row content by using the second element of the tuple and joining them with a comma
       // finally merge the header and row content with a comma
-      val csvContent = (newHeaders.mkString(",") +: updatedContent.map(_.map(x => s"\"${x._2}\"").mkString(","))).map(ByteString(_))
+      val csvContent = (newHeaderNames.mkString(",") +: updatedContent.map(_.map(x => s"\"${x._2}\"").mkString(","))).map(ByteString(_))
       // Write the updated CSV content back to the file
       Source(csvContent).intersperse(ByteString("\n"))
         .runWith(FileIO.toPath(file.toPath, Set(StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)))
@@ -205,5 +217,4 @@ object CsvUtil {
       .recover(e => throw InternalError("Error while writing file.", e.getMessage))
 
   }
-
 }

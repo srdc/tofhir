@@ -3,6 +3,7 @@ package io.tofhir.server.repository.terminology.codesystem
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
+import io.tofhir.server.model.csv.CsvHeader
 
 import scala.concurrent.Future
 
@@ -53,7 +54,7 @@ trait ICodeSystemRepository {
   * @param headers new headers to update
   * @return
   */
-  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[String]): Future[Unit]
+  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[CsvHeader]): Future[Unit]
 
   /**
    * Retrieve and save the content of a code system csv file within a terminology

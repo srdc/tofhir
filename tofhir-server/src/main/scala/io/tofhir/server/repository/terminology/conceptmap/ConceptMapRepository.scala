@@ -9,6 +9,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, InternalError, ResourceNotFound}
 import io.tofhir.server.model.TerminologySystem.TerminologyConceptMap
 import io.tofhir.server.model._
+import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.repository.terminology.TerminologySystemFolderRepository.getTerminologySystemsJsonPath
 import io.tofhir.server.util.{CsvUtil, FileOperations}
 import org.json4s.jackson.Serialization.writePretty
@@ -168,7 +169,7 @@ class ConceptMapRepository(terminologySystemFolderPath: String) extends IConcept
    * @param headers new headers to update
    * @return
    */
-  def updateConceptMapHeader(terminologyId: String, conceptMapId: String, headers: Seq[String]): Future[Unit] = {
+  def updateConceptMapHeader(terminologyId: String, conceptMapId: String, headers: Seq[CsvHeader]): Future[Unit] = {
     val conceptMap = findConceptMapById(terminologyId, conceptMapId)
     // get file and update headers
     val conceptMapFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, conceptMap.id).toFile
