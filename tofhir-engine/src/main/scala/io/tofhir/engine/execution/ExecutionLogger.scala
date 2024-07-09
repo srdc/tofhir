@@ -18,7 +18,7 @@ object ExecutionLogger {
   // Stores the overall result of the mapping task execution for batch mapping jobs
   // A mapping task execution is divided into multiple batches based on the max batch size configuration
   // Keeps active executions in the form of: executionId -> FhirMappingJobResult
-  private val batchJobMappingTaskExecutions: collection.mutable.Map[String, FhirMappingJobResult] =
+  private val batchJobMappingTaskExecutionResults: collection.mutable.Map[String, FhirMappingJobResult] =
   collection.mutable.Map[String, FhirMappingJobResult]()
 
   /**
@@ -47,7 +47,7 @@ object ExecutionLogger {
       status match {
         case FhirMappingJobResult.STARTED =>
           // clear the status, we will set it while logging the mapping task results
-          batchJobMappingTaskExecutions.put(mappingJobExecution.id, jobResult.copy(status = None))
+          batchJobMappingTaskExecutionResults.put(mappingJobExecution.id, jobResult.copy(status = None))
         case _ => // ignore other statuses
       }
     }
@@ -74,14 +74,14 @@ object ExecutionLogger {
     logger.info(jobResult.toMapMarker, jobResult.toString)
 
     // modify the result of mapping job execution kept in the map
-    val cachedResult = batchJobMappingTaskExecutions(mappingJobExecution.id)
+    val cachedResult = batchJobMappingTaskExecutionResults(mappingJobExecution.id)
     val updatedResult = cachedResult.copy(
       numOfNotMapped = cachedResult.numOfNotMapped + numOfNotMapped,
       numOfFailedWrites = cachedResult.numOfFailedWrites + numOfFailedWrites,
       numOfFhirResources = cachedResult.numOfFhirResources + numOfFhirResources,
       numOfInvalids = cachedResult.numOfInvalids + numOfInvalids
     )
-    batchJobMappingTaskExecutions.put(mappingJobExecution.id, updatedResult)
+    batchJobMappingTaskExecutionResults.put(mappingJobExecution.id, updatedResult)
   }
 
   /**
@@ -112,9 +112,9 @@ object ExecutionLogger {
    */
   def logExecutionResultForBatchMappingTask(executionId: String): Unit = {
     //Log the job result
-    val jobResult = batchJobMappingTaskExecutions(executionId).copy(batchResult = false)
+    val jobResult = batchJobMappingTaskExecutionResults(executionId).copy(batchResult = false)
     logger.info(jobResult.toMapMarker, jobResult.toString)
     // remove execution from the map
-    batchJobMappingTaskExecutions.remove(executionId)
+    batchJobMappingTaskExecutionResults.remove(executionId)
   }
 }
