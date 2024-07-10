@@ -1,14 +1,14 @@
 {
   "name" : "patient-job-test",
   "sourceSettings" : {
-	"patient" : {
+	"patientSource" : {
 	  "jsonClass" : "FileSystemSourceSettings",
 	  "name" : "patient-test-data",
 	  "sourceUri" : "http://test-data",
 	  "dataFolderPath" : "./test-data",
 	  "asStream" : false
 	},
-	"patientGender" : {
+	"genderSource" : {
 	  "jsonClass" : "FileSystemSourceSettings",
 	  "name" : "patient-gender-test-data",
 	  "sourceUri" : "http://test-data",
@@ -28,13 +28,15 @@
 		"jsonClass" : "FileSystemSource",
 		"path" : "patient-simple.csv",
 		"fileFormat" : "csv",
-		"options" : { }
+		"options" : { },
+		"sourceRef": "patientSource"
 	  },
 	  "patientGender" : {
 		"jsonClass" : "FileSystemSource",
 		"path" : "patient-gender-simple.csv",
 		"fileFormat" : "csv",
-		"options" : { }
+		"options" : { },
+		"sourceRef": "genderSource"
 	  }
 	}
   } ],

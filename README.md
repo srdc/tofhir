@@ -829,19 +829,19 @@ We'll implement a mapping job that utilizes these two CSV files as data sources 
 
 ##### 1. Define Source Settings
 
-First, define the source settings pointing to the two different file data sources:
+First, define the source settings pointing to the two different data sources:
 
 ```json
 {
   "sourceSettings" : {
-    "patient" : {
+    "patientSource" : {
       "jsonClass" : "FileSystemSourceSettings",
       "name" : "patient-test-data",
       "sourceUri" : "http://test-data",
       "dataFolderPath" : "/test-data",
       "asStream" : false
     },
-    "patientGender" : {
+    "genderSource" : {
       "jsonClass" : "SqlSourceSettings",
       "name" : "patient-gender-test-data",
       "sourceUri" : "http://test-data-gender",
@@ -853,22 +853,22 @@ First, define the source settings pointing to the two different file data source
 }
 
 ```
-The `patient` source points to the `test-data` directory in the file system, while the `patientGender` source points to a relational
+The `patientSource` points to the `test-data` directory in the file system, while the `genderSource` points to a relational
 database, actually a query result or a table name. It is important to note that the mapping definitions are not directly connected to
-the data sources. `patientGender` source can point to a folder which means that the same mapping can be executed on the 
+the data sources. `genderSource` can point to a folder which means that the same mapping can be executed on the 
 data read from different sources. 
 
 ```json
 {
   "sourceSettings" : {
-    "patient" : {
+    "patientSource" : {
       "jsonClass" : "FileSystemSourceSettings",
       "name" : "patient-test-data",
       "sourceUri" : "http://test-data",
       "dataFolderPath" : "/test-data",
       "asStream" : false
     },
-    "patientGender" : {
+    "genderSource" : {
       "jsonClass" : "FileSystemSourceSettings",
       "name" : "patient-gender-test-data",
       "sourceUri" : "http://test-data-gender",
@@ -891,21 +891,27 @@ Next, specify the source contexts for your mappings in the job. Here's an exampl
         "jsonClass" : "FileSystemSource",
         "path" : "patient-simple.csv",
         "fileFormat" : "csv",
-        "options" : { }
+        "options" : { },
+        "sourceRef": "patientSource"
       },
       "patientGender" : {
         "jsonClass" : "SqlSource",
-        "query" : "SELECT pid, gender FROM patient_gender"
+        "query" : "SELECT pid, gender FROM patient_gender",
+        "sourceRef": "genderSource"
       }
     }
   } ]
 }
 ```
-In this example, `patient-simple.csv` is used for the `patient` source, while an SQL query result is used for the `patientGender` source. 
-Ensure that the keys in the `sourceContext` match those in the `sourceSettings` above! 
-Otherwise, if there is no match, the `sourceContext` will use first source specified in `sourceSettings`.
+In this example, `patient-simple.csv` is used for the `patient` mapping source, while an SQL query result is used for the `patientGender` mapping source. 
+Since the mapping job has more than one data source, we should specify the source reference in the mapping source context using `sourceRef` field.
+Here, `patient` source reads the csv file from `patientSource` whereas `patientGender` source reads the result of an SQL query from
+`genderSource`.
 
-If the `patientGender` was connected to file system in the job definition, the `sourceContext` parameters would be as in the following:
+If `sourceRef` is skipped or does not match any entry in the `sourceSettings`, the first source specified in `sourceSettings` will be used to
+read the data.
+
+If the `genderSource` was connected to file system in the job definition, the `sourceContext` parameters would be as in the following:
 ```json
 {
   "mappings" : [ {
@@ -915,13 +921,15 @@ If the `patientGender` was connected to file system in the job definition, the `
         "jsonClass" : "FileSystemSource",
         "path" : "patient-simple.csv",
         "fileFormat" : "csv",
-        "options" : { }
+        "options" : { },
+        "sourceRef": "patientSource"
       },
       "patientGender" : {
         "jsonClass" : "FileSystemSource",
         "path" : "patient-gender-simple.csv",
         "fileFormat" : "csv",
-        "options" : { }
+        "options" : { },
+        "sourceRef": "genderSource"
       }
     }
   } ]
