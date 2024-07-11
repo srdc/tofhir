@@ -9,11 +9,11 @@ import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.model.TerminologySystem
-import io.tofhir.server.service.TerminologySystemService
-import io.tofhir.server.service.job.JobFolderRepository
-import io.tofhir.server.service.terminology.ITerminologySystemRepository
-import io.tofhir.server.service.terminology.codesystem.ICodeSystemRepository
-import io.tofhir.server.service.terminology.conceptmap.IConceptMapRepository
+import io.tofhir.server.repository.job.JobFolderRepository
+import io.tofhir.server.repository.terminology.ITerminologySystemRepository
+import io.tofhir.server.service.terminology.TerminologySystemService
+import io.tofhir.server.repository.terminology.codesystem.ICodeSystemRepository
+import io.tofhir.server.repository.terminology.conceptmap.IConceptMapRepository
 
 import scala.concurrent.Future
 

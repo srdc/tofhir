@@ -5,7 +5,10 @@ import io.onfhir.expression.{FhirExpression, FhirExpressionException}
 import io.onfhir.path.{FhirPathEvaluator, IFhirPathFunctionLibraryFactory}
 import io.onfhir.template.FhirTemplateExpressionHandler
 import io.tofhir.common.model.Json4sSupport.formats
+import io.tofhir.engine.mapping.fhirPath.FhirMappingFunctionsFactory
+import io.tofhir.engine.mapping.service.IntegratedServiceFactory
 import io.tofhir.engine.model._
+import io.tofhir.engine.model.exception.FhirMappingException
 import org.json4s.JsonAST.{JArray, JNull, JObject, JValue}
 
 import scala.concurrent.ExecutionContext.Implicits.global

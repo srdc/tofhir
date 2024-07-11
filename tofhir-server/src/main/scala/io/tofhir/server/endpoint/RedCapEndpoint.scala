@@ -9,7 +9,7 @@ import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.config.RedCapServiceConfig
 import io.tofhir.server.endpoint.RedCapEndpoint.{SEGMENT_NOTIFICATION, SEGMENT_REDCAP}
 import io.tofhir.common.model.Json4sSupport._
-import io.tofhir.server.model.RedCapProjectConfig
+import io.tofhir.server.model.redcap.RedCapProjectConfig
 import io.tofhir.server.service.RedCapService
 
 /**

@@ -7,7 +7,8 @@ import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
 import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader, MappingJobScheduler}
+import io.tofhir.engine.mapping.job.{FhirMappingJobManager, MappingJobScheduler}
+import io.tofhir.engine.mapping.context.MappingContextLoader
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution, FhirRepositorySinkSettings}
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility}
 import it.sauronsoftware.cron4j.Scheduler

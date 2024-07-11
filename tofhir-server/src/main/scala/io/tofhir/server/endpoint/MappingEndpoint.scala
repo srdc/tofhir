@@ -9,9 +9,9 @@ import io.tofhir.engine.model.FhirMapping
 import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.MappingEndpoint.SEGMENT_MAPPINGS
 import io.tofhir.common.model.Json4sSupport._
+import io.tofhir.server.repository.job.IJobRepository
+import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.service.MappingService
-import io.tofhir.server.service.job.IJobRepository
-import io.tofhir.server.service.mapping.IMappingRepository
 
 class MappingEndpoint(mappingRepository: IMappingRepository, jobRepository: IJobRepository) extends LazyLogging {
 

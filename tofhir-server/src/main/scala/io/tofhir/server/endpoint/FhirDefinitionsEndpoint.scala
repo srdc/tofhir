@@ -8,9 +8,9 @@ import io.onfhir.api.Resource
 import io.tofhir.server.common.model.{BadRequest, ToFhirRestCall}
 import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_FHIR_DEFINITIONS, SEGMENT_VALIDATE, QUERY_PARAM_FHIRVALIDATIONURL}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
-import io.tofhir.server.service.FhirDefinitionsService
 
 import io.tofhir.common.model.Json4sSupport._
+import io.tofhir.server.service.fhir.FhirDefinitionsService
 
 class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) extends LazyLogging {
 

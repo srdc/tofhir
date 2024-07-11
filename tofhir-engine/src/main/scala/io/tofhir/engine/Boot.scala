@@ -3,7 +3,8 @@ package io.tofhir.engine
 import com.typesafe.scalalogging.Logger
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.common.app.AppVersion
-import io.tofhir.engine.cli.{CommandExecutionContext, CommandFactory, CommandLineInterface}
+import io.tofhir.engine.cli.command.{CommandExecutionContext, CommandFactory}
+import io.tofhir.engine.cli.CommandLineInterface
 import io.tofhir.engine.config.ToFhirConfig
 
 /**

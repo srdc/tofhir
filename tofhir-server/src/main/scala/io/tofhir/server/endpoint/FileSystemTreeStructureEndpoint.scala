@@ -4,9 +4,9 @@ import akka.http.scaladsl.server.Directives.{pathEndOrSingleSlash, pathPrefix}
 import akka.http.scaladsl.server.Route
 import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.FileSystemTreeStructureEndpoint._
-import io.tofhir.server.service.FileSystemTreeStructureService
 import akka.http.scaladsl.server.Directives._
 import io.tofhir.common.model.Json4sSupport._
+import io.tofhir.server.service.fhir.FileSystemTreeStructureService
 
 class FileSystemTreeStructureEndpoint {
 

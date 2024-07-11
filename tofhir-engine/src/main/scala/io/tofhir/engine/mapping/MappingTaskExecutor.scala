@@ -9,7 +9,8 @@ import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.common.util.ExceptionUtil
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
-import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingException, FhirMappingResult}
+import io.tofhir.engine.model.exception.FhirMappingException
+import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingResult}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.JsonAST.{JArray, JObject, JValue}
 

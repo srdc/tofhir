@@ -9,12 +9,12 @@ import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.ProjectEndpoint.SEGMENT_PROJECTS
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.model.Project
+import io.tofhir.server.repository.job.IJobRepository
+import io.tofhir.server.repository.mapping.IMappingRepository
+import io.tofhir.server.repository.mappingContext.IMappingContextRepository
+import io.tofhir.server.repository.project.IProjectRepository
+import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.service.ProjectService
-import io.tofhir.server.service.job.IJobRepository
-import io.tofhir.server.service.mapping.IMappingRepository
-import io.tofhir.server.service.mappingcontext.IMappingContextRepository
-import io.tofhir.server.service.project.IProjectRepository
-import io.tofhir.server.service.schema.ISchemaRepository
 import org.json4s.JObject
 
 import scala.concurrent.Future

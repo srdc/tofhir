@@ -9,8 +9,8 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CONTENT, SEGMENT_CONTEXTS, SEGMENT_FILE, SEGMENT_HEADER}
 import io.tofhir.common.model.Json4sSupport._
+import io.tofhir.server.repository.mappingContext.IMappingContextRepository
 import io.tofhir.server.service.MappingContextService
-import io.tofhir.server.service.mappingcontext.IMappingContextRepository
 
 class MappingContextEndpoint(mappingContextRepository: IMappingContextRepository) extends LazyLogging {
 

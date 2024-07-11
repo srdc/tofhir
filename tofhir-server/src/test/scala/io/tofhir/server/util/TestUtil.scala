@@ -2,7 +2,7 @@ package io.tofhir.server.util
 
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.service.project.ProjectFolderRepository
+import io.tofhir.server.repository.project.ProjectFolderRepository
 import org.json4s.JArray
 
 object TestUtil {

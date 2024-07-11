@@ -4,11 +4,11 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.BadRequest
 import io.tofhir.server.model.{Project, ProjectEditableFields}
-import io.tofhir.server.service.job.IJobRepository
-import io.tofhir.server.service.mapping.IMappingRepository
-import io.tofhir.server.service.mappingcontext.IMappingContextRepository
-import io.tofhir.server.service.project.IProjectRepository
-import io.tofhir.server.service.schema.ISchemaRepository
+import io.tofhir.server.repository.job.IJobRepository
+import io.tofhir.server.repository.mapping.IMappingRepository
+import io.tofhir.server.repository.mappingContext.IMappingContextRepository
+import io.tofhir.server.repository.project.IProjectRepository
+import io.tofhir.server.repository.schema.ISchemaRepository
 import org.json4s.JObject
 import org.json4s.JsonAST.JString
 

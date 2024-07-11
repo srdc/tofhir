@@ -1,7 +1,8 @@
 package io.tofhir.engine.data.read
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.model.{FhirMappingException, SqlSource, SqlSourceSettings}
+import io.tofhir.engine.model.exception.FhirMappingException
+import io.tofhir.engine.model.{SqlSource, SqlSourceSettings}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 

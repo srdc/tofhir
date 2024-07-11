@@ -1,6 +1,7 @@
 package io.tofhir.engine.cli
 
-import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingJobScheduler}
+import io.tofhir.engine.cli.command.{CommandExecutionContext, CommandFactory, Load}
+import io.tofhir.engine.mapping.job.{FhirMappingJobManager, MappingJobScheduler}
 import io.tofhir.engine.model.FhirMappingJobExecution
 import io.tofhir.engine.util.FhirMappingJobFormatter
 import io.tofhir.engine.{ToFhirEngine, cli}
@@ -26,7 +27,7 @@ object CommandLineInterface {
       if (mappingJobFilePath.isDefined) {
         try {
           val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(mappingJobFilePath.get)
-          cli.CommandExecutionContext(toFhirEngine = toFhirEngine,
+          CommandExecutionContext(toFhirEngine = toFhirEngine,
             fhirMappingJob = Some(mappingJob),
             mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJob.mappings, toFhirEngine.mappingRepo))
         } catch {

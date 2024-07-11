@@ -1,8 +1,9 @@
 package io.tofhir.test
 
 import io.tofhir.ToFhirTestSpec
-import io.tofhir.engine.mapping.MappingContextLoader
-import io.tofhir.engine.model.{ConceptMapContext, FhirMappingException, UnitConversionContext}
+import io.tofhir.engine.mapping.context.MappingContextLoader
+import io.tofhir.engine.model.exception.FhirMappingException
+import io.tofhir.engine.model.{ConceptMapContext, UnitConversionContext}
 import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.io.File

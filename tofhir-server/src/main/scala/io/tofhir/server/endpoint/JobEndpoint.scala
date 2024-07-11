@@ -13,9 +13,9 @@ import io.tofhir.server.service.{ExecutionService, JobService}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
-import io.tofhir.server.service.job.IJobRepository
-import io.tofhir.server.service.mapping.IMappingRepository
-import io.tofhir.server.service.schema.ISchemaRepository
+import io.tofhir.server.repository.job.IJobRepository
+import io.tofhir.server.repository.mapping.IMappingRepository
+import io.tofhir.server.repository.schema.ISchemaRepository
 
 import scala.concurrent.Future
 
