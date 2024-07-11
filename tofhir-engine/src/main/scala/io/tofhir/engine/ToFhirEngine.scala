@@ -2,9 +2,13 @@ package io.tofhir.engine
 
 import io.onfhir.path._
 import io.tofhir.engine.config.{ToFhirConfig, ToFhirEngineConfig}
-import io.tofhir.engine.execution.{FileStreamInputArchiver, RunningJobRegistry}
+import io.tofhir.engine.execution.RunningJobRegistry
+import io.tofhir.engine.execution.processing.FileStreamInputArchiver
 import io.tofhir.engine.mapping._
-import io.tofhir.engine.model.EngineInitializationException
+import io.tofhir.engine.mapping.context.{IMappingContextLoader, MappingContextLoader}
+import io.tofhir.engine.mapping.schema.{IFhirSchemaLoader, SchemaFolderLoader}
+import io.tofhir.engine.model.exception.EngineInitializationException
+import io.tofhir.engine.repository.mapping.{FhirMappingFolderRepository, IFhirMappingCachedRepository}
 import io.tofhir.engine.util.FileUtils
 import org.apache.spark.sql.SparkSession
 

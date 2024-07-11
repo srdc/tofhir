@@ -2,7 +2,8 @@ package io.tofhir.test
 
 import io.onfhir.path.FhirPathEvaluator
 import io.tofhir.ToFhirTestSpec
-import io.tofhir.engine.mapping.{FhirMappingFunctionsFactory, MappingContextLoader}
+import io.tofhir.engine.mapping.context.MappingContextLoader
+import io.tofhir.engine.mapping.fhirPath.FhirMappingFunctionsFactory
 import io.tofhir.engine.model.{FhirMapping, FhirMappingContextDefinition}
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JNull, JObject, JString, JValue}

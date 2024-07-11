@@ -1,6 +1,7 @@
 package io.tofhir.engine.data.read
 
-import io.tofhir.engine.model.{DataSourceSettings, FhirMappingException, FhirMappingSourceContext}
+import io.tofhir.engine.model.exception.FhirMappingException
+import io.tofhir.engine.model.{DataSourceSettings, FhirMappingSourceContext}
 import org.apache.spark.sql.functions.{col, lit, when}
 import org.apache.spark.sql.types.{DataTypes, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}

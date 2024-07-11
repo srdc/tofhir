@@ -9,13 +9,13 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_IMPORT, SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
-import io.tofhir.server.service.SchemaDefinitionService
-import io.tofhir.server.service.schema.ISchemaRepository
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.MappingContextEndpoint.ATTACHMENT
-import io.tofhir.server.service.mapping.IMappingRepository
 import io.onfhir.api.Resource
+import io.tofhir.server.repository.mapping.IMappingRepository
+import io.tofhir.server.repository.schema.ISchemaRepository
+import io.tofhir.server.service.SchemaDefinitionService
 
 class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 

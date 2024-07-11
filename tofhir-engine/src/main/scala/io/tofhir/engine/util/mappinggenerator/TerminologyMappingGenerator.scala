@@ -1,7 +1,7 @@
 package io.tofhir.engine.util.mappinggenerator
 
 import com.fasterxml.jackson.dataformat.csv.{CsvMapper, CsvSchema}
-import io.tofhir.engine.mapping.LocalTerminologyService.ConceptMapFileColumns
+import io.tofhir.engine.mapping.service.LocalTerminologyService.ConceptMapFileColumns
 import io.tofhir.engine.util.mappinggenerator.TerminologyMappingGenerator._
 
 import java.io.File

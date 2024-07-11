@@ -6,9 +6,11 @@ import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path.{FhirPathIdentityServiceFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.util.JsonFormatter._
+import io.tofhir.engine.mapping.context.MappingContextLoader
 import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
-import io.tofhir.engine.mapping.{FhirMappingJobManager, MappingContextLoader}
+import io.tofhir.engine.mapping.job.FhirMappingJobManager
 import io.tofhir.engine.model._
+import io.tofhir.engine.model.exception.FhirMappingException
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FhirMappingUtility, FileUtils}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll}

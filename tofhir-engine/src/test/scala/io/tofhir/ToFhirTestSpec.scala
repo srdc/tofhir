@@ -3,6 +3,9 @@ package io.tofhir
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.mapping._
+import io.tofhir.engine.mapping.context.{IMappingContextLoader, MappingContextLoader}
+import io.tofhir.engine.mapping.schema.SchemaFolderLoader
+import io.tofhir.engine.repository.mapping.{FhirMappingFolderRepository, IFhirMappingRepository}
 import io.tofhir.engine.util.FileUtils
 import org.apache.spark.sql.SparkSession
 import org.scalatest.matchers.should.Matchers

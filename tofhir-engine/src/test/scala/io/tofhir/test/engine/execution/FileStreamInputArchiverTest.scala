@@ -1,7 +1,8 @@
 package io.tofhir.test.engine.execution
 
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.execution.{FileStreamInputArchiver, RunningJobRegistry}
+import io.tofhir.engine.execution.{RunningJobRegistry}
+import io.tofhir.engine.execution.processing.FileStreamInputArchiver
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.{FileUtils, SparkUtil}
 import org.mockito.MockitoSugar._

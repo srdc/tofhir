@@ -3,7 +3,7 @@ package io.tofhir.server.service
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.server.common.model.BadRequest
-import io.tofhir.server.service.job.IJobRepository
+import io.tofhir.server.repository.job.IJobRepository
 
 import javax.ws.rs.BadRequestException
 import scala.concurrent.Future

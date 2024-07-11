@@ -12,6 +12,8 @@ import java.util.concurrent.Executors
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import io.tofhir.engine.Execution.actorSystem
+import io.tofhir.engine.execution.log.ExecutionLogger
+import io.tofhir.engine.execution.processing.FileStreamInputArchiver
 /**
  * Execution manager that keeps track of running and scheduled mapping tasks in-memory.
  * This registry is designed to maintain the execution status of both Streaming and Batch mapping jobs.

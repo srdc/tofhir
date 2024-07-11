@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.config.RedCapServiceConfig
-import io.tofhir.server.model.RedCapProjectConfig
+import io.tofhir.server.model.redcap.RedCapProjectConfig
 import org.json4s.DefaultFormats
 import org.json4s.jackson.{JsonMethods, Serialization}
 

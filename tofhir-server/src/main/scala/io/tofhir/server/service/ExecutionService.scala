@@ -4,8 +4,8 @@ import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.common.util.CustomMappingFunctionsFactory
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.mapping.MappingContextLoader
-import io.tofhir.engine.mapping.FhirMappingJobManager
+import io.tofhir.engine.mapping.context.MappingContextLoader
+import io.tofhir.engine.mapping.job.FhirMappingJobManager
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
@@ -14,11 +14,11 @@ import io.tofhir.engine.{Execution, ToFhirEngine}
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 import io.tofhir.server.model.{ExecuteJobTask, TestResourceCreationRequest}
-import io.tofhir.server.service.job.IJobRepository
-import io.tofhir.server.service.mapping.IMappingRepository
-import io.tofhir.server.service.schema.ISchemaRepository
+import io.tofhir.server.repository.job.IJobRepository
+import io.tofhir.server.repository.mapping.IMappingRepository
+import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
-import io.tofhir.engine.mapping.MappingJobScheduler
+import io.tofhir.engine.mapping.job.MappingJobScheduler
 import org.apache.commons.io
 import org.json4s.JsonAST.{JBool, JObject, JValue}
 import org.json4s.jackson.JsonMethods

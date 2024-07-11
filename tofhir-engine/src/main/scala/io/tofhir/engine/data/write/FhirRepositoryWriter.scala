@@ -11,6 +11,7 @@ import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.model._
+import io.tofhir.engine.model.exception.InvalidFhirRepositoryUrlException
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator

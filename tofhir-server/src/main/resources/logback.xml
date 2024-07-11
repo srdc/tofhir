@@ -100,7 +100,7 @@
         <appender-ref ref="ASYNC-AUDIT-FLUENT" />
     </logger>
 
-    <logger name="io.tofhir.engine.mapping.FhirMappingJobManager">
+    <logger name="io.tofhir.engine.mapping.job.FhirMappingJobManager">
         <appender-ref ref="ASYNC-AUDIT" />
         <appender-ref ref="ASYNC-AUDIT-FLUENT" />
     </logger>

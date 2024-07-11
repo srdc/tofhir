@@ -3,7 +3,7 @@ package io.tofhir.server.service
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
-import io.tofhir.server.service.mappingcontext.IMappingContextRepository
+import io.tofhir.server.repository.mappingContext.IMappingContextRepository
 
 import scala.concurrent.Future
 

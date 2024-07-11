@@ -9,15 +9,16 @@ import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.common.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.server.common.model.ToFhirRestCall
-import io.tofhir.server.model.ToFhirRejectionHandler
-import io.tofhir.server.service.job.JobFolderRepository
-import io.tofhir.server.service.mapping.ProjectMappingFolderRepository
-import io.tofhir.server.service.mappingcontext.MappingContextFolderRepository
-import io.tofhir.server.service.project.{FolderDBInitializer, ProjectFolderRepository}
-import io.tofhir.server.service.schema.SchemaFolderRepository
-import io.tofhir.server.service.terminology.codesystem.{CodeSystemRepository, ICodeSystemRepository}
-import io.tofhir.server.service.terminology.{ITerminologySystemRepository, TerminologySystemFolderRepository}
-import io.tofhir.server.service.terminology.conceptmap.{ConceptMapRepository, IConceptMapRepository}
+import io.tofhir.server.repository.job.JobFolderRepository
+import io.tofhir.server.repository.mapping.ProjectMappingFolderRepository
+import io.tofhir.server.repository.mappingContext.MappingContextFolderRepository
+import io.tofhir.server.repository.project.ProjectFolderRepository
+import io.tofhir.server.repository.schema.SchemaFolderRepository
+import io.tofhir.server.repository.terminology.{ITerminologySystemRepository, TerminologySystemFolderRepository}
+import io.tofhir.server.repository.terminology.codesystem.{CodeSystemRepository, ICodeSystemRepository}
+import io.tofhir.server.repository.terminology.conceptmap.{ConceptMapRepository, IConceptMapRepository}
+import io.tofhir.server.service.db.FolderDBInitializer
+import io.tofhir.server.util.ToFhirRejectionHandler
 
 import java.util.UUID
 

@@ -12,7 +12,7 @@ import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.endpoint.{ProjectEndpoint, ToFhirServerEndpoint}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.model.Project
-import io.tofhir.server.service.project.ProjectFolderRepository
+import io.tofhir.server.repository.project.ProjectFolderRepository
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 import org.scalatest.BeforeAndAfterAll

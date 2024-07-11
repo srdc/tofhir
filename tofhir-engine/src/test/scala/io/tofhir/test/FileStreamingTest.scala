@@ -3,7 +3,7 @@ package io.tofhir.test
 import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
-import io.tofhir.engine.mapping.FhirMappingJobManager
+import io.tofhir.engine.mapping.job.FhirMappingJobManager
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FileUtils}
 import org.scalatest.BeforeAndAfterAll

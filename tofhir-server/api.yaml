@@ -2498,7 +2498,7 @@ components:
         logger_name:
           type: string
           description: "Name of the logger"
-          example: "io.tofhir.engine.mapping.FhirMappingJobManager"
+          example: "io.tofhir.engine.mapping.job.FhirMappingJobManager"
         mappedResource:
           type: string
           description: "Mapped resource, if any"

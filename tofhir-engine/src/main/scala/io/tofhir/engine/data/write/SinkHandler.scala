@@ -1,7 +1,8 @@
 package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.execution.{ErroneousRecordWriter, ExecutionLogger}
+import io.tofhir.engine.execution.log.ExecutionLogger
+import io.tofhir.engine.execution.processing.ErroneousRecordWriter
 import io.tofhir.engine.model._
 import org.apache.spark.sql.streaming.StreamingQuery
 import org.apache.spark.sql.{Dataset, SparkSession}

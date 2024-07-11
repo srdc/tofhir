@@ -10,8 +10,8 @@ import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.common.model.Json4sSupport._
-import io.tofhir.server.service.CodeSystemService
-import io.tofhir.server.service.terminology.codesystem.ICodeSystemRepository
+import io.tofhir.server.service.terminology.CodeSystemService
+import io.tofhir.server.repository.terminology.codesystem.ICodeSystemRepository
 
 class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends LazyLogging {
 

@@ -5,9 +5,9 @@ import io.tofhir.engine.config.{ToFhirConfig, ToFhirEngineConfig}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.ExecuteJobTask
-import io.tofhir.server.service.job.JobFolderRepository
-import io.tofhir.server.service.mapping.ProjectMappingFolderRepository
-import io.tofhir.server.service.schema.SchemaFolderRepository
+import io.tofhir.server.repository.job.JobFolderRepository
+import io.tofhir.server.repository.mapping.ProjectMappingFolderRepository
+import io.tofhir.server.repository.schema.SchemaFolderRepository
 import org.apache.commons.io
 import org.apache.spark.sql.types.StructType
 import org.mockito.MockitoSugar._

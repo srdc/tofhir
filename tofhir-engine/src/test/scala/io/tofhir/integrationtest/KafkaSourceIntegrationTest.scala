@@ -7,7 +7,7 @@ import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
 import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.mapping.FhirMappingJobManager
+import io.tofhir.engine.mapping.job.FhirMappingJobManager
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingUtility
 import org.apache.commons.io
