@@ -40,7 +40,7 @@ trait MappingSourceBinding extends Serializable {
   val preprocessSql: Option[String] = None
   /**
    * Reference to the source specified in the sourceSettings of a mapping job.
-   * This optional field can be used to explicitly link a source context to a particular source setting.
+   * This optional field can be used to explicitly link a source binding to a particular source setting.
    * If not provided, the source alias from the mapping will be used to determine the source settings,
    * ensuring backward compatibility.
    */
@@ -123,7 +123,7 @@ case class SqlSource(tableName: Option[String] = None, query: Option[String] = N
 case class KafkaSource(topicName: String, groupId: String, startingOffsets: String, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding
 
 /**
- * Represents a mapping source context for FHIR server data.
+ * Represents a mapping source binding for FHIR server data.
  *
  * @param resourceType   The type of FHIR resource to query.
  * @param query          An optional query string to filter the FHIR resources.

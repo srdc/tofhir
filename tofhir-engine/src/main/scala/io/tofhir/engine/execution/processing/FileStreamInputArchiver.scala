@@ -88,7 +88,7 @@ object FileStreamInputArchiver {
 
   def applyArchivingOnBatchJob(execution: FhirMappingJobExecution): Unit = {
     var paths: Seq[String] = Seq.empty
-    // Putting the archiving logic for the batch file inside within a try block so that it would not affect the caller in case of any exception.
+    // Putting the archiving logic for the batch job inside within a try block so that it would not affect the caller in case of any exception.
     // That means archiving works in best-effort mode.
     try {
       val archiveMode: ArchiveModes = execution.archiveMode

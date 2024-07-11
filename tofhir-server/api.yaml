@@ -1820,7 +1820,7 @@ components:
       properties:
         name:
           type: string
-          description: "Name for source context"
+          description: "Name for source binding"
           example: "source"
         sourceSettings:
           $ref: '#/components/schemas/MappingJobSourceSettings'
@@ -2512,7 +2512,7 @@ components:
         message:
           type: string
           description: "Log message"
-          example: "toFHIR batch mapping result (STARTED) for execution 'c531d5b0-40fc-42a9-8f2d-c6105e3a5d39' of job 'pilot1' in project 'pilot1'"
+          example: "toFHIR chunk mapping result (STARTED) for execution 'c531d5b0-40fc-42a9-8f2d-c6105e3a5d39' of job 'pilot1' in project 'pilot1'"
         numOfFailedWrites:
           type: integer
           description: "Number of failed writes, -1 if there is an error"

@@ -28,10 +28,10 @@ class JobEndpointTest extends BaseEndpointTest {
   val kafkaSourceSettings: KafkaSourceSettings = KafkaSourceSettings(name = "kafka-source", sourceUri = "http://example.com/kafka", bootstrapServers = "http://some-kafka-server:9092")
   val mappingJobSourceSettings: Map[String, MappingJobSourceSettings] =
     Map("source1" -> kafkaSourceSettings)
-  val kafkaMappingTask: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingRef1", Map("sourceContext1" -> KafkaSource(topicName = "topic", sourceRef = Some("source1"), groupId = "group", startingOffsets = "latest"))))
+  val kafkaMappingTask: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingRef1", Map("sourceBinding1" -> KafkaSource(topicName = "topic", sourceRef = Some("source1"), groupId = "group", startingOffsets = "latest"))))
   val kafkaSourceJob: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = mappingJobSourceSettings, sinkSettings = sinkSettings, mappings = kafkaMappingTask, dataProcessingSettings = DataProcessingSettings())
   // a malformed job with a source reference to a missing data source in the mapping tasks, to be rejected
-  val malformedMappings: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingRef1", Map("sourceContext1" -> SqlSource(tableName = Some("table"), sourceRef = Some("source2")))))
+  val malformedMappings: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingRef1", Map("sourceBinding1" -> SqlSource(tableName = Some("table"), sourceRef = Some("source2")))))
   val mappingTaskMalformedJob: FhirMappingJob = FhirMappingJob(name = Some("malformedJob1"), sourceSettings = mappingJobSourceSettings, sinkSettings = sinkSettings, mappings = malformedMappings, dataProcessingSettings = DataProcessingSettings())
   // a malformed job which is a scheduling job and has a stream file system data source, to be rejected
   val streamFileSystemSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings(name = "file-system-source", sourceUri = "http://example.co/filesystem", dataFolderPath = "test/data", asStream = true)

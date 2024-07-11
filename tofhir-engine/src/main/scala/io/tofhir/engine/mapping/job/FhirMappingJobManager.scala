@@ -69,7 +69,7 @@ class FhirMappingJobManager(
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         // log the start of the FHIR mapping task execution
         ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED ,Some(task.mappingRef))
-        readSourceExecuteAndWriteInBatches(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
+        readSourceExecuteAndWriteInChunks(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
           fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
       }.recover {
         // Check whether the job is stopped
@@ -256,7 +256,7 @@ class FhirMappingJobManager(
     readSourceAndExecuteTask(mappingJobExecution.jobId, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
       .map {
         dataset =>
-          SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingJobExecution.mappingTasks.head.mappingRef), dataset, fhirWriter)
+          SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingJobExecution.mappingTasks.head.mappingRef), dataset, fhirWriter)
       }
   }
 
@@ -290,8 +290,8 @@ class FhirMappingJobManager(
   }
 
   /**
-   * Read the source data, divide it into batches and execute the mapping (first mapping task in the Fhir Mapping Job
-   * Execution) and write each batch sequentially
+   * Read the source data, divide it into chunks and execute the mapping (first mapping task in the Fhir Mapping Job
+   * Execution) and write each chunk sequentially
    *
    * @param mappingJobExecution        Fhir Mapping Job execution
    * @param sourceSettings             The source settings of the mapping job
@@ -301,7 +301,7 @@ class FhirMappingJobManager(
    * @param timeRange                  Time range for the source data to load
    * @return
    */
-  private def readSourceExecuteAndWriteInBatches(mappingJobExecution: FhirMappingJobExecution,
+  private def readSourceExecuteAndWriteInChunks(mappingJobExecution: FhirMappingJobExecution,
                                                  sourceSettings: Map[String, MappingJobSourceSettings],
                                                  fhirWriter: BaseFhirWriter,
                                                  terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
@@ -313,28 +313,28 @@ class FhirMappingJobManager(
     val sizeOfDf: Long = df.count()
     logger.debug(s"$sizeOfDf records read for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
 
-    val result = ToFhirConfig.engineConfig.maxBatchSizeForMappingJobs match {
-      //If not specify run it as single batch
+    val result = ToFhirConfig.engineConfig.maxChunkSizeForMappingJobs match {
+      //If not specify run it as single chunk
       case None =>
         logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.jobId} ...")
         executeTask(mappingJobExecution.jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), Some(mappingJobExecution.projectId))
-          .map(dataset => SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
-      case Some(batchSize) if sizeOfDf < batchSize =>
+          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
+      case Some(chunkSize) if sizeOfDf < chunkSize =>
         logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.jobId} ...")
         executeTask(mappingJobExecution.jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), Some(mappingJobExecution.projectId))
-          .map(dataset => SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
-      //Otherwise divide the data into batches
-      case Some(batchSize) =>
-        val numOfBatch: Int = Math.ceil(sizeOfDf * 1.0 / batchSize * 1.0).toInt
-        logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.jobId} in $numOfBatch batches ...")
-        val splitDf = df.randomSplit((1 to numOfBatch).map(_ => 1.0).toArray[Double])
+          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
+      //Otherwise divide the data into chunks
+      case Some(chunkSize) =>
+        val numOfChunks: Int = Math.ceil(sizeOfDf * 1.0 / chunkSize * 1.0).toInt
+        logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.jobId} in $numOfChunks chunks ...")
+        val splitDf = df.randomSplit((1 to numOfChunks).map(_ => 1.0).toArray[Double])
         splitDf
           .zipWithIndex
           .foldLeft(Future.apply(())) {
             case (fj, (df, i)) => fj.flatMap(_ =>
               executeTask(mappingJobExecution.jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
-                .map(dataset => SinkHandler.writeBatch(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter))
-                .map(_ => logger.debug(s"Batch ${i + 1} is completed for mapping ${mappingTask.mappingRef} within MappingJob: ${mappingJobExecution.jobId}..."))
+                .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter))
+                .map(_ => logger.debug(s"Chunk ${i + 1} is completed for mapping ${mappingTask.mappingRef} within MappingJob: ${mappingJobExecution.jobId}..."))
             )
           }
     }
@@ -365,11 +365,11 @@ class FhirMappingJobManager(
     }
     // remove slice names from the mapping, otherwise FHIR resources will be created with slice names in fields starting with @
     val fhirMapping = mapping.removeSliceNames()
-    // verify that the provided source contexts in the mapping job match the source aliases defined in the mapping
+    // verify that the provided source bindings in the mapping job match the source aliases defined in the mapping
     val mappingSourceNames = fhirMapping.source.map(_.alias).toSet
-    val namesForSuppliedSourceContexts = task.sourceBinding.keySet
-    if (mappingSourceNames != namesForSuppliedSourceContexts)
-      throw FhirMappingException(s"Invalid mapping task, source context is not given for some mapping source(s): ${mappingSourceNames.diff(namesForSuppliedSourceContexts).mkString(", ")}")
+    val namesForSuppliedSourceBindings = task.sourceBinding.keySet
+    if (mappingSourceNames != namesForSuppliedSourceBindings)
+      throw FhirMappingException(s"Invalid mapping task, source binding is not given for some mapping source(s): ${mappingSourceNames.diff(namesForSuppliedSourceBindings).mkString(", ")}")
 
     //Get the source schemas
     val sources =
@@ -379,10 +379,10 @@ class FhirMappingJobManager(
         (
           s.alias, //Alias for the source
           schemaLoader.getSchema(s.url), //URL of the schema for the source
-          sourceBinding, //Get source context
+          sourceBinding,
           // Determine the source settings in the following order:
-          // - If the source context has a reference to a source setting, use it
-          // - If the source context does not have a reference, use the mapping source alias to find the source setting
+          // - If the source binding has a reference to a source setting, use it
+          // - If the source binding does not have a reference, use the mapping source alias to find the source setting
           // - If no matching source setting is found, use the default setting for all aliases (*)
           // - If nothing matches, use the settings of the first source
           sourceSettings.get(sourceBinding.sourceRef.getOrElse(s.alias)).orElse(sourceSettings.get("*")).getOrElse(sourceSettings.head._2),
