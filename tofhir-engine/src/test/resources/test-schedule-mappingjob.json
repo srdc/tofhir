@@ -22,7 +22,7 @@
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "source": {
           "jsonClass": "SqlSource",
           "query": "select * from patients"
@@ -31,7 +31,7 @@
     },
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "source": {
           "jsonClass": "SqlSource",
           "query": "select * from otherobservations o WHERE o.time > $fromTs AND o.time < $toTs"

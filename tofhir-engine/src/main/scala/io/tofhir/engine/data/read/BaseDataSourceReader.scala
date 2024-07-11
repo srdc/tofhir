@@ -1,6 +1,6 @@
 package io.tofhir.engine.data.read
 
-import io.tofhir.engine.model.{DataSourceSettings, FhirMappingSourceContext}
+import io.tofhir.engine.model.{MappingJobSourceSettings, MappingSourceBinding}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 
@@ -9,19 +9,19 @@ import java.time.LocalDateTime
 /**
  * Base data source reader
  */
-abstract class BaseDataSourceReader[T <: FhirMappingSourceContext, S<:DataSourceSettings] {
+abstract class BaseDataSourceReader[T <: MappingSourceBinding, S<:MappingJobSourceSettings] {
 
   /**
    * Read the source data for the given task
-   * @param mappingSource   Context/configuration information for mapping source
-   * @param sourceSettings  Common settings for source system
+   * @param mappingSourceBinding   Configuration information for the mapping source
+   * @param mappingJobSourceSettings  Common settings for the source system
    * @param schema          Schema for the source data
    * @param timeRange       Time range for the data to read if given
    * @param limit           Limit the number of rows to read
    * @param jobId           The identifier of mapping job which executes the mapping
    * @return
    */
-  def read(mappingSource: T, sourceSettings:S, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, limit: Option[Int], jobId: Option[String]): DataFrame
+  def read(mappingSourceBinding: T, mappingJobSourceSettings:S, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, limit: Option[Int], jobId: Option[String]): DataFrame
 
   /**
    * Whether this reader needs a data type validation for columns after reading the source

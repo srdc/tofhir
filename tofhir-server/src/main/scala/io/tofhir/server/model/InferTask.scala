@@ -1,12 +1,12 @@
 package io.tofhir.server.model
 
-import io.tofhir.engine.model.{DataSourceSettings, FhirMappingSourceContext}
+import io.tofhir.engine.model.{MappingJobSourceSettings, MappingSourceBinding}
 
 /**
  * Infer task instance for getting source settings and source context settings.
  * InferTask object is implemented only for SQL sources and file system sources.
  * @param name alias for source context
- * @param sourceSettings connection details for data source (e.g. JDBC connection details, file path)
- * @param sourceContext mapping task source context (e.g. file name, table name, query)
+ * @param mappingJobSourceSettings connection details for data source (e.g. JDBC connection details, file path)
+ * @param sourceBinding mapping task source configuration (e.g. file name, table name, query)
  */
-case class InferTask(name: String, sourceSettings: Map[String, DataSourceSettings], sourceContext: FhirMappingSourceContext)
+case class InferTask(name: String, mappingJobSourceSettings: Map[String, MappingJobSourceSettings], sourceBinding: MappingSourceBinding)

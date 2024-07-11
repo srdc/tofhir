@@ -27,7 +27,7 @@ class MappingEndpointTest extends BaseEndpointTest {
     name = Some("mappingJob"),
     sourceSettings = Map.empty,
     sinkSettings = sinkSettings,
-    mappings = Seq(FhirMappingTask(mappingRef = mapping2.url, sourceContext = Map.empty)))
+    mappings = Seq(FhirMappingTask(mappingRef = mapping2.url, sourceBinding = Map.empty)))
 
   "The service" should {
 

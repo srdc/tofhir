@@ -21,7 +21,7 @@ import javax.ws.rs.BadRequestException
  */
 case class FhirMappingJob(id: String = UUID.randomUUID().toString,
                           name: Option[String] = None,
-                          sourceSettings: Map[String,DataSourceSettings],
+                          sourceSettings: Map[String,MappingJobSourceSettings],
                           sinkSettings: FhirSinkSettings,
                           terminologyServiceSettings:Option[TerminologyServiceSettings] = None,
                           identityServiceSettings: Option[IdentityServiceSettings] = None,
@@ -43,9 +43,9 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
 
     // Check mapping tasks of the job, if a data source of a mapping task is missing, throw an error
     mappings.foreach(mappingTask => {
-      mappingTask.sourceContext.foreach(sourceContext => {
-        if(sourceContext._2.sourceRef.nonEmpty && !sourceSettings.contains(sourceContext._2.sourceRef.get)) {
-          throw new BadRequestException(s"The data source referenced by source name '${sourceContext._2.sourceRef.get}' in the mapping task '${mappingTask.mappingRef}' is not found in the source settings of the job.")
+      mappingTask.sourceBinding.foreach(sourceBinding => {
+        if(sourceBinding._2.sourceRef.nonEmpty && !sourceSettings.contains(sourceBinding._2.sourceRef.get)) {
+          throw new BadRequestException(s"The data source referenced by source name '${sourceBinding._2.sourceRef.get}' in the mapping task '${mappingTask.mappingRef}' is not found in the source settings of the job.")
         }
       })
     })

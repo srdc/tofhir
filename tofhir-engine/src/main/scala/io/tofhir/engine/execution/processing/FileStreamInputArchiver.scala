@@ -97,9 +97,9 @@ object FileStreamInputArchiver {
         val dataFolderPath = FileUtils.getPath(execution.fileSystemSourceDataFolderPath.get).toString
 
         // Get paths of the input files referred by the mapping tasks
-        paths = execution.mappingTasks.flatMap(mapping => {
-          mapping.sourceContext.flatMap(fhirMappingSourceContextMap => {
-            fhirMappingSourceContextMap._2 match {
+        paths = execution.mappingTasks.flatMap(mappingTask => {
+          mappingTask.sourceBinding.flatMap(mappingSourceBinding => {
+            mappingSourceBinding._2 match {
               case fileSystemSource: FileSystemSource => Some(fileSystemSource.path)
               case _ => None
             }

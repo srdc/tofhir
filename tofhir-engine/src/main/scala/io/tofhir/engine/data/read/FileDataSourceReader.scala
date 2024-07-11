@@ -23,7 +23,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
   /**
    * Read the source data
    *
-   * @param mappingSource Context/configuration information for mapping source
+   * @param mappingSourceBinding Configuration information for mapping source
    * @param schema        Optional schema for the source
    * @param limit         Limit the number of rows to read
    * @param jobId         The identifier of mapping job which executes the mapping
@@ -31,22 +31,22 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
    * @throws IllegalArgumentException If the path is not a directory for streaming jobs.
    * @throws NotImplementedError      If the specified source format is not implemented.
    */
-  override def read(mappingSource: FileSystemSource, sourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty,jobId: Option[String] = Option.empty): DataFrame = {
+  override def read(mappingSourceBinding: FileSystemSource, mappingJobSourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
     // get the format of the file
-    val sourceType = mappingSource.inferFileFormat
+    val sourceType = mappingSourceBinding.inferFileFormat
     // determine the final path
     // if it is a Hadoop path (starts with "hdfs://"), construct the URI directly without adding the context path
-    val finalPath = if (sourceSettings.dataFolderPath.startsWith("hdfs://")) {
-      new URI(s"${sourceSettings.dataFolderPath.stripSuffix("/")}/${mappingSource.path.stripPrefix("/")}").toString
+    val finalPath = if (mappingJobSourceSettings.dataFolderPath.startsWith("hdfs://")) {
+      new URI(s"${mappingJobSourceSettings.dataFolderPath.stripSuffix("/")}/${mappingSourceBinding.path.stripPrefix("/")}").toString
     } else {
-      FileUtils.getPath(sourceSettings.dataFolderPath, mappingSource.path).toAbsolutePath.toString
+      FileUtils.getPath(mappingJobSourceSettings.dataFolderPath, mappingSourceBinding.path).toAbsolutePath.toString
     }
     // validate whether the provided path is a directory when streaming is enabled in the source settings
-    if(sourceSettings.asStream && !new File(finalPath).isDirectory){
+    if(mappingJobSourceSettings.asStream && !new File(finalPath).isDirectory){
       throw new IllegalArgumentException(s"$finalPath is not a directory. For streaming job, you should provide a directory.")
     }
 
-    val isDistinct = mappingSource.options.get("distinct").contains("true")
+    val isDistinct = mappingSourceBinding.options.get("distinct").contains("true")
 
     // keeps the names of processed files by Spark
     val processedFiles: mutable.HashSet[String] =mutable.HashSet.empty
@@ -56,24 +56,24 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
           val updatedOptions = sourceType match {
             case SourceFileFormats.TSV =>
               // If the file format is tsv, use tab (\t) as separator by default if it is not set explicitly
-              mappingSource.options +
-                ("sep" -> mappingSource.options.getOrElse("sep", "\\t"),
+              mappingSourceBinding.options +
+                ("sep" -> mappingSourceBinding.options.getOrElse("sep", "\\t"),
                 // use *.tsv as pathGlobFilter by default if it is not set explicitly to ignore files without tsv extension
-                "pathGlobFilter" -> mappingSource.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.TSV}"))
+                "pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.TSV}"))
             case SourceFileFormats.CSV =>
-              mappingSource.options +
+              mappingSourceBinding.options +
                 // use *.csv as pathGlobFilter by default if it is not set explicitly to ignore files without csv extension
-                ("pathGlobFilter" -> mappingSource.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.CSV}"))
+                ("pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.CSV}"))
           }
 
           //Options that we infer for csv
-          val inferSchema = schema.isEmpty || mappingSource.preprocessSql.isDefined
-          val csvSchema = if(mappingSource.preprocessSql.isDefined) None else schema
+          val inferSchema = schema.isEmpty || mappingSourceBinding.preprocessSql.isDefined
+          val csvSchema = if(mappingSourceBinding.preprocessSql.isDefined) None else schema
           //val enforceSchema = schema.isDefined
-          val includeHeader = mappingSource.options.get("header").forall(_ == "true")
+          val includeHeader = mappingSourceBinding.options.get("header").forall(_ == "true")
           //Other options except header, inferSchema and enforceSchema
           val otherOptions = updatedOptions.filterNot(o => o._1 == "header" || o._1 == "inferSchema" || o._1 == "enforceSchema")
-          if(sourceSettings.asStream)
+          if(mappingJobSourceSettings.asStream)
             spark.readStream
               .option("enforceSchema", false) //Enforce schema should be false (See https://spark.apache.org/docs/latest/sql-data-sources-csv.html)
               .option("header", includeHeader)
@@ -94,19 +94,19 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               .csv(finalPath)
         // assume that each line in the txt files contains a separate JSON object.
         case SourceFileFormats.JSON | SourceFileFormats.TXT=>
-          if(sourceSettings.asStream)
-            spark.readStream.options(mappingSource.options).schema(schema.orNull).json(finalPath)
+          if(mappingJobSourceSettings.asStream)
+            spark.readStream.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file
               .withColumn("filename", logStartOfDataReading(processedFiles, logger = logger, jobId = jobId)(input_file_name))
           else
-            spark.read.options(mappingSource.options).schema(schema.orNull).json(finalPath)
+            spark.read.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
         case SourceFileFormats.PARQUET =>
-          if(sourceSettings.asStream)
-            spark.readStream.options(mappingSource.options).schema(schema.orNull).parquet(finalPath)
+          if(mappingJobSourceSettings.asStream)
+            spark.readStream.options(mappingSourceBinding.options).schema(schema.orNull).parquet(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file
               .withColumn("filename", logStartOfDataReading(processedFiles, logger = logger, jobId = jobId)(input_file_name))
           else
-            spark.read.options(mappingSource.options).schema(schema.orNull).parquet(finalPath)
+            spark.read.options(mappingSourceBinding.options).schema(schema.orNull).parquet(finalPath)
         case _ => throw new NotImplementedError()
       }
     if(isDistinct)

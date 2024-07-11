@@ -548,7 +548,7 @@ Example of a Mapping Job definition file with csv source type:
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "patient": {
           "jsonClass": "FileSystemSource",
           "path": "patients.csv"    
@@ -557,7 +557,7 @@ Example of a Mapping Job definition file with csv source type:
     },
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/practitioner-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "practitioner": {
           "jsonClass": "FileSystemSource",
           "path": "practitioners.csv"
@@ -581,8 +581,8 @@ The json snippet above illustrates the structure of an example mapping job. Let'
 Let's take the patient mapping as an example from the mappings list.
 `https://aiccelerate.eu/fhir/mappings/project1/patient-mapping` is the unique reference URL of the mapping repository.
 Assuming this URL refers to the first mapping example in the mapping section: [patient-mapping](#Mapping), this means that patient mapping will be
-executed with the source data defined in the `sourceContext` part.
-Inside `sourceContext` part, `patient` is the alias of the source data, and it should match with the `alias` used in `source` field in the mapping.
+executed with the source data defined in the `sourceBinding` part.
+Inside `sourceBinding` part, `patient` is the alias of the source data, and it should match with the `alias` used in `source` field in the mapping.
 
 `jsonClass` specifies the type of the source, and `path` is the file name of the source data.
 Since we have FileSystemSourceSettings defined in the source settings, `jsonClass`es of mappings are expected to be FileSystemSource.
@@ -633,7 +633,7 @@ Example of a Mapping Job definition file with csv source type in streaming mode:
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "patient": {
           "jsonClass": "FileSystemSource",
           "path": "patients",
@@ -671,7 +671,7 @@ Similarly, if we had a source with SQL type, `sourceSettings` and `mappings` par
 ```json
 {
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "SqlSource",
       "tableName": "location"
@@ -683,7 +683,7 @@ We can give a table name with the `tableName` field, as well as write a query wi
 ```json
 {
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "SqlSource",
       "query": "select * from location"
@@ -710,7 +710,7 @@ Mapping job and mapping examples shown below for the streaming type of sources l
 ```json
 {
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "KafkaSource",
       "topicName": "patients",
@@ -779,7 +779,7 @@ Within the mapping source, you can define the resource type (e.g., Patient, Obse
 ```json
 {
   "mappingRef" : "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
-  "sourceContext" : {
+  "sourceBinding" : {
     "source" : {
       "jsonClass" : "FhirServerSource",
       "resourceType" : "Patient",
@@ -804,7 +804,7 @@ To give any spark option, you can use the `options` field in the source context 
 ```json
 {
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "FileSystemSource",
       "path": "patients",
@@ -886,7 +886,7 @@ Next, specify the source contexts for your mappings in the job. Here's an exampl
 {
   "mappings" : [ {
     "mappingRef" : "http://patient-mapping-with-two-sources",
-    "sourceContext" : {
+    "sourceBinding" : {
       "patient" : {
         "jsonClass" : "FileSystemSource",
         "path" : "patient-simple.csv",
@@ -911,12 +911,12 @@ Here, `patient` source reads the csv file from `patientSource` whereas `patientG
 If `sourceRef` is skipped or does not match any entry in the `sourceSettings`, the first source specified in `sourceSettings` will be used to
 read the data.
 
-If the `genderSource` was connected to file system in the job definition, the `sourceContext` parameters would be as in the following:
+If the `genderSource` was connected to file system in the job definition, the `sourceBinding` parameters would be as in the following:
 ```json
 {
   "mappings" : [ {
     "mappingRef" : "http://patient-mapping-with-two-sources",
-    "sourceContext" : {
+    "sourceBinding" : {
       "patient" : {
         "jsonClass" : "FileSystemSource",
         "path" : "patient-simple.csv",
@@ -1135,7 +1135,7 @@ you can specify the initial time in your mapping job definition as follows:
 {
   ...
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/omop/procedure-occurrence-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "SqlSource",
       "query": "select ... from procedure_occurrence po left join concept c on po.procedure_concept_id = c.concept_id where po.procedure_date > $fromTs and po.procedure_date < $toTs"

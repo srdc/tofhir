@@ -32,7 +32,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
 
   val testDataFolderPath: String = Paths.get(getClass.getResource("/test-data").toURI).toAbsolutePath.toString
 
-  val dataSourceSettings: Map[String, DataSourceSettings] = Map(
+  val mappingJobSourceSettings: Map[String, MappingJobSourceSettings] = Map(
     "source" ->
       FileSystemSourceSettings(name = "test-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
         dataFolderPath = streamingTestWatchFolderPath, asStream = true))
@@ -41,18 +41,18 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = "patients_csv", fileFormat = Some("csv"), options = Map("cleanSource" -> "archive", "sourceArchiveDir" -> patientArchiveFolder.getAbsolutePath)))
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients_csv", fileFormat = Some("csv"), options = Map("cleanSource" -> "archive", "sourceArchiveDir" -> patientArchiveFolder.getAbsolutePath)))
   )
 
   val observationMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = "observations_csv", fileFormat = Some("csv"), options = Map("cleanSource" -> "archive", "sourceArchiveDir" -> observationArchiveFolder.getAbsolutePath)))
+    sourceBinding = Map("source" -> FileSystemSource(path = "observations_csv", fileFormat = Some("csv"), options = Map("cleanSource" -> "archive", "sourceArchiveDir" -> observationArchiveFolder.getAbsolutePath)))
   )
 
   //create a fhir mapping job for testing
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(
     name = Some("test-streaming-job"),
-    sourceSettings = dataSourceSettings,
+    sourceSettings = mappingJobSourceSettings,
     sinkSettings = fileSinkSettings,
     mappings = Seq.empty,
     dataProcessingSettings = DataProcessingSettings()
@@ -89,7 +89,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "other-observations.csv").toFile, FileUtils.getPath(observationWatchFolder.getAbsolutePath, "other-observations.csv").toFile)
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession)
-    val streamingQueryFutures = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask), job = fhirMappingJob), dataSourceSettings, fileSinkSettings)
+    val streamingQueryFutures = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask), job = fhirMappingJob), mappingJobSourceSettings, fileSinkSettings)
     val streamingQueries = Await.result(Future.sequence(streamingQueryFutures.values), FiniteDuration(5, TimeUnit.SECONDS))
     streamingQueries.foreach(sq => sq.isActive shouldBe true)
 //    streamingQuery.awaitTermination()

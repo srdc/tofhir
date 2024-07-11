@@ -107,7 +107,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
     // Execute SQL and get the dataFrame
     val dataFrame = try {
       SourceHandler.readSource(inferTask.name, ToFhirConfig.sparkSession,
-        inferTask.sourceContext, inferTask.sourceSettings.head._2, None, None, Some(1))
+        inferTask.sourceBinding, inferTask.mappingJobSourceSettings.head._2, None, None, Some(1))
     } catch {
       case e: FhirMappingException =>
         // Remove the new lines and capitalize the error detail to show it in front-end properly.

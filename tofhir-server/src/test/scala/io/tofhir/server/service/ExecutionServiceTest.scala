@@ -33,7 +33,7 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
     mappings = Seq.apply(
       FhirMappingTask(
         mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-        sourceContext = Map("source" -> FileSystemSource(path = ".", fileFormat = Some("csv")))
+        sourceBinding = Map("source" -> FileSystemSource(path = ".", fileFormat = Some("csv")))
       )
     ),
     dataProcessingSettings = DataProcessingSettings(archiveMode = ArchiveModes.OFF)

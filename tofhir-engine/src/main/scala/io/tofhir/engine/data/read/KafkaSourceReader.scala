@@ -21,13 +21,13 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
   /**
    * Read the source data for the given task
    *
-   * @param mappingSource Context/configuration information for mapping source
-   * @param schema        Schema for the source
-   * @param limit         Limit the number of rows to read
-   * @param jobId         The identifier of mapping job which executes the mapping
+   * @param mappingSourceBinding  Configuration information for mapping source
+   * @param schema                Schema for the source
+   * @param limit                 Limit the number of rows to read
+   * @param jobId                 The identifier of mapping job which executes the mapping
    * @return
    */
-  override def read(mappingSource: KafkaSource, sourceSettings: KafkaSourceSettings, schema: Option[StructType] = Option.empty, timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
+  override def read(mappingSourceBinding: KafkaSource, mappingJobSourceSettings: KafkaSourceSettings, schema: Option[StructType] = Option.empty, timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
     import spark.implicits._
 
     if (schema.isEmpty) {
@@ -128,11 +128,11 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
     val df = spark
       .readStream
       .format("kafka")
-      .option("kafka.bootstrap.servers", sourceSettings.bootstrapServers)
-      .option("subscribe", mappingSource.topicName)
-      .option("startingOffsets", mappingSource.startingOffsets)
+      .option("kafka.bootstrap.servers", mappingJobSourceSettings.bootstrapServers)
+      .option("subscribe", mappingSourceBinding.topicName)
+      .option("startingOffsets", mappingSourceBinding.startingOffsets)
       .option("inferSchema", value = true)
-      .options(mappingSource.options)
+      .options(mappingSourceBinding.options)
       .load()
       .select($"value".cast(StringType)) // change the type of message from binary to string
       .withColumn("value", processDataUDF(col("value"))) // replace 'value' column with the processed data
