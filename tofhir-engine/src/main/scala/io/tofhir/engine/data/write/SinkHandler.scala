@@ -14,14 +14,15 @@ object SinkHandler {
   val logger: Logger = Logger(this.getClass)
 
   /**
+   * Writes the FHIR mapping results to the specified resource writer.
    *
-   * @param spark
-   * @param mappingJobExecution
-   * @param mappingUrl
-   * @param df
-   * @param resourceWriter
+   * @param spark The SparkSession instance.
+   * @param mappingJobExecution The execution context of the FHIR mapping job.
+   * @param mappingUrl An optional URL for the mapping.
+   * @param df The DataFrame containing FHIR mapping results.
+   * @param resourceWriter The writer instance to write the FHIR resources.
    */
-  def writeBatch(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, mappingUrl: Option[String], df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter): Unit = {
+  def writeMappingResult(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, mappingUrl: Option[String], df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter): Unit = {
     //Cache the dataframe
     df.cache()
     //Filter out the errors
@@ -41,20 +42,21 @@ object SinkHandler {
   }
 
   /**
+   * Writes streaming FHIR mapping results to the specified resource writer.
    *
-   * @param spark
-   * @param mappingJobExecution
-   * @param df
-   * @param resourceWriter
-   * @param mappingUrl
-   * @return
+   * @param spark The SparkSession instance.
+   * @param mappingJobExecution The execution context of the FHIR mapping job.
+   * @param df The DataFrame containing FHIR mapping results.
+   * @param resourceWriter The writer instance to write the FHIR resources.
+   * @param mappingUrl The URL for the mapping.
+   * @return The StreamingQuery instance representing the streaming query.
    */
   def writeStream(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter, mappingUrl: String): StreamingQuery = {
-    val datasetWrite = (dataset: Dataset[FhirMappingResult], batchN: Long) => try {
-      writeBatch(spark, mappingJobExecution, Some(mappingUrl), dataset, resourceWriter)
+    val datasetWrite = (dataset: Dataset[FhirMappingResult], _: Long) => try {
+      writeMappingResult(spark, mappingJobExecution, Some(mappingUrl), dataset, resourceWriter)
     } catch {
       case e: Throwable =>
-        logger.error(s"Streaming batch resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.jobId}, execution: ${mappingJobExecution.id}, mapping: $mappingUrl", e.getMessage)
+        logger.error(s"Streaming chunk resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.jobId}, execution: ${mappingJobExecution.id}, mapping: $mappingUrl", e.getMessage)
     }
 
     df
@@ -95,7 +97,7 @@ object SinkHandler {
       ExecutionLogger.logExecutionResultForStreamingMappingTask(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfWritten, numOfNotWritten)
     } else {
       // Log the result for batch execution
-      ExecutionLogger.logExecutionResultForBatch(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfWritten, numOfNotWritten)
+      ExecutionLogger.logExecutionResultForChunk(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfWritten, numOfNotWritten)
     }
 
     // Log the mapping and invalid input errors

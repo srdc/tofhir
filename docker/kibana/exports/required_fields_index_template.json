@@ -50,7 +50,7 @@
 	  "isScheduledJob": {
 		"type": "boolean"
 	  },
-	  "batchResult": {
+	  "chunkResult": {
 		"type": "boolean"
 	  },
 	  "errorExpr": {

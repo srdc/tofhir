@@ -30,7 +30,7 @@ case class FileSystemSinkSettings(path: String,
  *
  * @param fhirRepoUrl      FHIR endpoint root url
  * @param securitySettings Security settings if target API is secured
- * @param returnMinimal    Whether 'return=minimal' header should be added to the batch request while writing the
+ * @param returnMinimal    Whether 'return=minimal' header should be added to the FHIR batch request while writing the
  *                         resources into the FHIR Repository. If this header is added, the response does not return the
  *                         body which improves the performance.
  */

@@ -91,9 +91,9 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
   }
 
   /**
-   * Prepare the batch request from mapping results
+   * Prepare the FHIR batch request from mapping results
    *
-   * @param mappingResults Mapping results for this batch
+   * @param mappingResults Mapping results for this FHIR batch
    * @param onFhirClient   OnFhirClient
    * @return
    */

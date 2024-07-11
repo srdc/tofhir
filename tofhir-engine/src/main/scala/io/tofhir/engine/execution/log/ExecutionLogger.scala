@@ -8,15 +8,15 @@ import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingJobResult}
  *
  * This object provides methods to:
  * - Log the explicit status of a mapping job execution (e.g., started, skipped, stopped, failed)
- * - Log the result of individual batch executions for batch mapping jobs
+ * - Log the result of individual chunk executions for batch mapping jobs
  * - Log the result of mapping task executions for streaming jobs
- * - Log the overall result of a mapping task execution for batch mapping jobs after all batches are completed
+ * - Log the overall result of a mapping task execution for batch mapping jobs after all chunks are completed
  */
 object ExecutionLogger {
   private val logger: Logger = Logger(this.getClass)
 
   // Stores the overall result of the mapping task execution for batch mapping jobs
-  // A mapping task execution is divided into multiple batches based on the max batch size configuration
+  // A mapping task execution is divided into multiple chunks based on the max chunk size configuration
   // Keeps active executions in the form of: executionId -> FhirMappingJobResult
   private val batchJobMappingTaskExecutionResults: collection.mutable.Map[String, FhirMappingJobResult] =
   collection.mutable.Map[String, FhirMappingJobResult]()
@@ -54,8 +54,8 @@ object ExecutionLogger {
   }
 
   /**
-   * Logs the result of an individual batch execution for a batch mapping job.
-   * A batch mapping job is divided into several batches based on the given max batch size configuration.
+   * Logs the result of an individual chunk execution for a batch mapping job.
+   * A batch mapping job is divided into several chunks based on the given max chunk size configuration.
    *
    * @param mappingJobExecution The mapping job execution instance
    * @param mappingUrl          The optional URL of the mapping
@@ -64,7 +64,7 @@ object ExecutionLogger {
    * @param numOfFhirResources  The number of FHIR resources created
    * @param numOfFailedWrites   The number of failed writes
    */
-  def logExecutionResultForBatch(mappingJobExecution: FhirMappingJobExecution, mappingUrl: Option[String],
+  def logExecutionResultForChunk(mappingJobExecution: FhirMappingJobExecution, mappingUrl: Option[String],
                                  numOfInvalids: Long = 0,
                                  numOfNotMapped: Long = 0,
                                  numOfFhirResources: Long = 0,
@@ -101,18 +101,18 @@ object ExecutionLogger {
                                                 numOfFhirResources: Long = 0,
                                                 numOfFailedWrites: Long = 0): Unit = {
     //Log the job result
-    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites, batchResult = false)
+    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingUrl, numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites, chunkResult = false)
     logger.info(jobResult.toMapMarker, jobResult.toString)
   }
 
   /**
-   * Logs the overall result of the execution of a mapping task for a batch mapping job once all batches are completed.
+   * Logs the overall result of the execution of a mapping task for a batch mapping job once all chunks are completed.
    *
    * @param executionId The ID of the mapping job execution
    */
   def logExecutionResultForBatchMappingTask(executionId: String): Unit = {
     //Log the job result
-    val jobResult = batchJobMappingTaskExecutionResults(executionId).copy(batchResult = false)
+    val jobResult = batchJobMappingTaskExecutionResults(executionId).copy(chunkResult = false)
     logger.info(jobResult.toMapMarker, jobResult.toString)
     // remove execution from the map
     batchJobMappingTaskExecutionResults.remove(executionId)

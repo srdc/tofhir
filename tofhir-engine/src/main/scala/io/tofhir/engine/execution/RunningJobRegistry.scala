@@ -109,7 +109,7 @@ class RunningJobRegistry(spark: SparkSession) {
   //  However, due to Spark's task distribution across multiple threads, using cancelJobGroup may not cancel all tasks,
   //  especially in the case of scheduled mapping jobs because setJobGroup only works for the Spark tasks started in the same thread.
   //  To resolve this issue, we need to assign a unique Spark job group id at the start of mapping job execution, before registering it with the RunningJobRegistry.
-  //  We should call setJobGroup function before Spark tasks begin execution. The ideal location for this call seems to be the readSourceExecuteAndWriteInBatches function,
+  //  We should call setJobGroup function before Spark tasks begin execution. The ideal location for this call seems to be the readSourceExecuteAndWriteInChunks function,
   //  although thorough testing is required to ensure its effectiveness.
   //  UPDATE: Although I set the job group id of each thread to the same value, cancelJobGroup does not work as expected
   //  because it only cancels the active jobs in Spark 3.5 not the future submitted jobs.
