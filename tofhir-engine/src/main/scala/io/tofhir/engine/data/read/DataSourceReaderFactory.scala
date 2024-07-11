@@ -1,6 +1,6 @@
 package io.tofhir.engine.data.read
 
-import io.tofhir.engine.model.{DataSourceSettings, FhirMappingSourceContext, FhirServerSource, FhirServerSourceSettings, FileSystemSource, FileSystemSourceSettings, KafkaSource, KafkaSourceSettings, SqlSource, SqlSourceSettings}
+import io.tofhir.engine.model.{MappingJobSourceSettings, MappingSourceBinding, FhirServerSource, FhirServerSourceSettings, FileSystemSource, FileSystemSourceSettings, KafkaSource, KafkaSourceSettings, SqlSource, SqlSourceSettings}
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -15,7 +15,7 @@ object DataSourceReaderFactory {
    * @param mappingSourceContext Mapping source context
    * @return
    */
-  def apply[T <: FhirMappingSourceContext, S<:DataSourceSettings](spark: SparkSession, mappingSourceContext: T, sourceSettings:S): BaseDataSourceReader[T,S] = {
+  def apply[T <: MappingSourceBinding, S<:MappingJobSourceSettings](spark: SparkSession, mappingSourceContext: T, sourceSettings:S): BaseDataSourceReader[T,S] = {
     (mappingSourceContext -> sourceSettings) match {
       case (_: FileSystemSource, _:FileSystemSourceSettings) => new FileDataSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]
       case (_: SqlSource, _:SqlSourceSettings) => new SqlSourceReader(spark).asInstanceOf[BaseDataSourceReader[T,S]]

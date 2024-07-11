@@ -1823,8 +1823,8 @@ components:
           description: "Name for source context"
           example: "source"
         sourceSettings:
-          $ref: '#/components/schemas/DataSourceSettings'
-        sourceContext:
+          $ref: '#/components/schemas/MappingJobSourceSettings'
+        sourceBinding:
           oneOf:
             - $ref: "#/components/schemas/FileSystemSource"
             - $ref: "#/components/schemas/SqlSource"
@@ -1832,9 +1832,9 @@ components:
       required:
         - name
         - sourceSettings
-        - sourceContext
+        - sourceBinding
 
-    DataSourceSettings:
+    MappingJobSourceSettings:
       type: object
       description: Factory class for creating a data source from a JSON object"
       properties:
@@ -2165,7 +2165,7 @@ components:
           type: string
           example: "pilot-example"
         sourceSettings:
-          $ref: "#/components/schemas/DataSourceSettings"
+          $ref: "#/components/schemas/MappingJobSourceSettings"
         sinkSettings:
           $ref: "#/components/schemas/FhirSinkSettings"
         terminologyServiceSettings:
@@ -2381,7 +2381,7 @@ components:
           type: string
           description: "Canonical URL of the FhirMapping definition to execute"
           example: "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping"
-        sourceContext:
+        sourceBinding:
           type: object
           description: "Provide details how to load each source data for the mapping"
           properties:

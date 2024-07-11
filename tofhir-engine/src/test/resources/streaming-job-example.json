@@ -20,7 +20,7 @@
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "source": {
           "jsonClass": "FileSystemSource",
           "path": "patients_csv",

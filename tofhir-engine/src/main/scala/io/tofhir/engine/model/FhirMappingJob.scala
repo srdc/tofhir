@@ -21,7 +21,7 @@ import javax.ws.rs.BadRequestException
  */
 case class FhirMappingJob(id: String = UUID.randomUUID().toString,
                           name: Option[String] = None,
-                          sourceSettings: Map[String,DataSourceSettings],
+                          sourceSettings: Map[String,MappingJobSourceSettings],
                           sinkSettings: FhirSinkSettings,
                           terminologyServiceSettings:Option[TerminologyServiceSettings] = None,
                           identityServiceSettings: Option[IdentityServiceSettings] = None,

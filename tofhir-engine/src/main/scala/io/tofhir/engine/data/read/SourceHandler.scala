@@ -1,7 +1,7 @@
 package io.tofhir.engine.data.read
 
 import io.tofhir.engine.model.exception.FhirMappingException
-import io.tofhir.engine.model.{DataSourceSettings, FhirMappingSourceContext}
+import io.tofhir.engine.model.{MappingJobSourceSettings, MappingSourceBinding}
 import org.apache.spark.sql.functions.{col, lit, when}
 import org.apache.spark.sql.types.{DataTypes, StructType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -17,8 +17,8 @@ object SourceHandler {
    *
    * @param alias          Name of the source
    * @param spark          Spark session
-   * @param mappingSource  Source definition e.g. See FileSystemSource
-   * @param sourceSettings General source settings e.g. See FileSystemSourceSettings
+   * @param mappingSource  Source definition of the mapping e.g. See FileSystemSource
+   * @param mappingJobSourceSettings General source settings of mapping job e.g. See FileSystemSourceSettings
    * @param schema         Schema of the input supplied by the mapping definition
    * @param timeRange      Time range for the data to read if given
    * @param limit          Limit the number of rows to read
@@ -27,29 +27,29 @@ object SourceHandler {
    * @tparam S Type of the source settings class
    * @return
    */
-  def readSource[T <: FhirMappingSourceContext, S <: DataSourceSettings](
-                                                                          alias: String,
-                                                                          spark: SparkSession,
-                                                                          mappingSource: T,
-                                                                          sourceSettings: S,
-                                                                          schema: Option[StructType],
-                                                                          timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty,
-                                                                          limit: Option[Int] = Option.empty,
-                                                                          jobId: Option[String] = Option.empty
+  def readSource[T <: MappingSourceBinding, S <: MappingJobSourceSettings](
+                                                                            alias: String,
+                                                                            spark: SparkSession,
+                                                                            mappingSource: T,
+                                                                            mappingJobSourceSettings: S,
+                                                                            schema: Option[StructType],
+                                                                            timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty,
+                                                                            limit: Option[Int] = Option.empty,
+                                                                            jobId: Option[String] = Option.empty
                                                                         ): DataFrame = {
     val reader = try {
       DataSourceReaderFactory
-        .apply(spark, mappingSource, sourceSettings)
+        .apply(spark, mappingSource, mappingJobSourceSettings)
     }
     catch {
-      case e: Throwable => throw FhirMappingException(s"Failed to construct reader for mapping source: $mappingSource source settings: $sourceSettings.", e)
+      case e: Throwable => throw FhirMappingException(s"Failed to construct reader for mapping source: $mappingSource source settings: $mappingJobSourceSettings.", e)
     }
 
     val sourceData = try {
       reader
-        .read(mappingSource, sourceSettings, schema, timeRange, limit, jobId = jobId)
+        .read(mappingSource, mappingJobSourceSettings, schema, timeRange, limit, jobId = jobId)
     } catch {
-      case e: Throwable => throw FhirMappingException(s"Source cannot be read for mapping source: $mappingSource source settings: $sourceSettings.", e)
+      case e: Throwable => throw FhirMappingException(s"Source cannot be read for mapping source: $mappingSource source settings: $mappingJobSourceSettings.", e)
     }
 
     val finalSourceData = try {

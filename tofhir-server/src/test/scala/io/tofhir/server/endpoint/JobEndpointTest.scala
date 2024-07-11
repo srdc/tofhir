@@ -27,9 +27,9 @@ class JobEndpointTest extends BaseEndpointTest {
   val job1: FhirMappingJob = FhirMappingJob(name = Some("mappingJob1"), sourceSettings = Map.empty, sinkSettings = sinkSettings, mappings = Seq.empty, dataProcessingSettings = DataProcessingSettings())
   // second job using kafka as a data source to be created
   val kafkaSourceSettings: KafkaSourceSettings = KafkaSourceSettings(name = "kafka-source", sourceUri = "http://example.com/kafka", bootstrapServers = "http://some-kafka-server:9092")
-  val dataSourceSettings: Map[String, DataSourceSettings] =
+  val mappingJobSourceSettings: Map[String, MappingJobSourceSettings] =
     Map("source" -> kafkaSourceSettings)
-  val kafkaSourceJob: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = Seq.empty, dataProcessingSettings = DataProcessingSettings())
+  val kafkaSourceJob: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = mappingJobSourceSettings, sinkSettings = sinkSettings, mappings = Seq.empty, dataProcessingSettings = DataProcessingSettings())
 
   "The service" should {
 

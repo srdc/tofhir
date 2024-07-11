@@ -15,7 +15,7 @@
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "source": {
           "jsonClass": "FileSystemSource",
           "path": "patients.csv"
@@ -24,7 +24,7 @@
     },
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "source": {
           "jsonClass": "FileSystemSource",
           "path": "other-observations.csv"

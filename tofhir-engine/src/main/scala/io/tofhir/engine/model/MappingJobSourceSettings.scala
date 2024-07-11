@@ -4,9 +4,9 @@ import org.json4s.JsonAST.{JString, JValue}
 
 
 /**
- * Interface for data source settings/configurations
+ * Interface for data source settings/configurations of a mapping job
  */
-trait DataSourceSettings {
+trait MappingJobSourceSettings {
   /**
    * Human friendly name for the source organization for data source
    */
@@ -40,7 +40,7 @@ trait DataSourceSettings {
  * @param dataFolderPath Path to the folder all source data is located
  * @param asStream       Whether to listen the given folders for new files and run the mapping in stream mode
  */
-case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderPath: String, override val asStream:Boolean=false) extends DataSourceSettings
+case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderPath: String, override val asStream:Boolean=false) extends MappingJobSourceSettings
 
 /**
  *
@@ -50,7 +50,7 @@ case class FileSystemSourceSettings(name: String, sourceUri: String, dataFolderP
  * @param username    Username for database connection
  * @param password    Password for database connection
  */
-case class SqlSourceSettings(name: String, sourceUri: String, databaseUrl: String, username: String, password: String) extends DataSourceSettings
+case class SqlSourceSettings(name: String, sourceUri: String, databaseUrl: String, username: String, password: String) extends MappingJobSourceSettings
 
 /**
  *
@@ -59,7 +59,7 @@ case class SqlSourceSettings(name: String, sourceUri: String, databaseUrl: Strin
  * @param bootstrapServers Kafka bootstrap server(s) with port, may be comma seperated list (localhost:9092,localhost:9091)
  * @param asRedCap         Indicate whether it is a RedCap source
  */
-case class KafkaSourceSettings(name: String = "", sourceUri: String = "", bootstrapServers: String = "", asRedCap: Boolean = false) extends DataSourceSettings {
+case class KafkaSourceSettings(name: String = "", sourceUri: String = "", bootstrapServers: String = "", asRedCap: Boolean = false) extends MappingJobSourceSettings {
   override val asStream: Boolean = true
 }
 
@@ -71,4 +71,4 @@ case class KafkaSourceSettings(name: String = "", sourceUri: String = "", bootst
  * @param serverUrl The URL of the FHIR server.
  * @param securitySettings Security settings if the FHIR Server is secured
  */
-case class FhirServerSourceSettings(name: String, sourceUri: String, serverUrl: String, securitySettings: Option[IFhirRepositorySecuritySettings] = None) extends DataSourceSettings
+case class FhirServerSourceSettings(name: String, sourceUri: String, serverUrl: String, securitySettings: Option[IFhirRepositorySecuritySettings] = None) extends MappingJobSourceSettings

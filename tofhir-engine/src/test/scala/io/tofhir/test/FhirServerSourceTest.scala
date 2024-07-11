@@ -36,18 +36,18 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://datatools4heart.eu/fhir/mappings/patient-fhir-mapping",
-    sourceContext = Map("source" -> FhirServerSource(resourceType = "Patient"))
+    sourceBinding = Map("source" -> FhirServerSource(resourceType = "Patient"))
   )
 
   val patientMappingTaskWith2Sources: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://datatools4heart.eu/fhir/mappings/patient-fhir-mapping-two-sources",
-    sourceContext = Map("patient" -> FhirServerSource(resourceType = "Patient"), "observations" -> FhirServerSource(resourceType = "Observation"))
+    sourceBinding = Map("patient" -> FhirServerSource(resourceType = "Patient"), "observations" -> FhirServerSource(resourceType = "Observation"))
   )
 
   // Observation mapping task
   val observationMappingTaskWith2Sources: FhirMappingTask = FhirMappingTask(
     mappingRef = "http://observation-mapping-from-fhir-with-two-sources",
-    sourceContext = Map("observation" -> FhirServerSource(resourceType = "Observation"), "patient" -> FhirServerSource(resourceType = "Patient")))
+    sourceBinding = Map("observation" -> FhirServerSource(resourceType = "Observation"), "patient" -> FhirServerSource(resourceType = "Patient")))
 
   // Mapping Job
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(
@@ -97,7 +97,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
   it should "read data from FHIR server and execute the Patient mapping with a single source" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(
       mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask), job = fhirMappingJob),
-      sourceSettings = fhirServerSourceSettings
+      mappingJobSourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
       mappingResults.length shouldBe 1
       val patientResource = mappingResults.head.mappedResource.get.parseJson
@@ -111,7 +111,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
   it should "execute Patient mapping which joins Observation resources to Patient resources" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(
       mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTaskWith2Sources), job = fhirMappingJob),
-      sourceSettings = fhirServerSourceSettings
+      mappingJobSourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
       mappingResults.length shouldBe 1
       val patientResource = mappingResults.head.mappedResource.get.parseJson
@@ -132,7 +132,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
   it should "execute Observation mapping which joins Patient resources to Observation resources" in {
     fhirMappingJobManager.executeMappingTaskAndReturn(
       mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(observationMappingTaskWith2Sources), job = fhirMappingJob),
-      sourceSettings = fhirServerSourceSettings
+      mappingJobSourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
       mappingResults.length shouldBe 3
       val observationResources = mappingResults.map(r => r.mappedResource.get.parseJson)

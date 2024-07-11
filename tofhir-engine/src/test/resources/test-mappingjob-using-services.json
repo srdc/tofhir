@@ -34,7 +34,7 @@
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "source": {
           "jsonClass": "FileSystemSource",
           "path": "patients.csv"
@@ -43,7 +43,7 @@
     },
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/mapping-using-identity-service",
-      "sourceContext": {
+      "sourceBinding": {
         "source": {
           "jsonClass": "FileSystemSource",
           "path": "other-observations.csv"
