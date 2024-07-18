@@ -6,11 +6,12 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
 import io.tofhir.server.common.model.{BadRequest, ToFhirRestCall}
-import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_FHIR_DEFINITIONS, SEGMENT_VALIDATE, QUERY_PARAM_FHIRVALIDATIONURL}
+import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_FHIRVALIDATIONURL, QUERY_PARAM_FHIR_VERSION, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_BASE_PROFILES, SEGMENT_FHIR_DEFINITIONS, SEGMENT_VALIDATE}
 import io.tofhir.server.fhir.FhirDefinitionsConfig
-
 import io.tofhir.common.model.Json4sSupport._
+import io.tofhir.engine.util.MajorFhirVersion
 import io.tofhir.server.service.fhir.FhirDefinitionsService
+import io.tofhir.server.service.fhir.base.FhirBaseProfilesService
 
 class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) extends LazyLogging {
 
@@ -46,7 +47,34 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
         pathEndOrSingleSlash {
           validateResource()
         }
+      } ~ pathPrefix(SEGMENT_BASE_PROFILES) {
+      pathEndOrSingleSlash {
+        get {
+          parameterMap { queryParams =>
+            // FHIR version
+            val fhirVersion = queryParams.get(QUERY_PARAM_FHIR_VERSION)
+            // comma separated profile urls
+            val profile = queryParams.get(QUERY_PARAM_PROFILE)
+
+            (fhirVersion, profile) match {
+              // return the SchemaDefinitions for the requested profiles
+              case (Some(v), Some(p)) =>
+                v match {
+                  case MajorFhirVersion.R4 | MajorFhirVersion.R5 => complete(FhirBaseProfilesService.apply(v).getProfile(p))
+                  case unk => throw BadRequest("Invalid parameter value.", s"$QUERY_PARAM_FHIR_VERSION on $SEGMENT_BASE_PROFILES cannot take the value: $unk. Possible values are: ${MajorFhirVersion.R4} and ${MajorFhirVersion.R5}")
+                }
+              // return the list of available resource types
+              case (Some(v), None) =>
+                v match {
+                  case MajorFhirVersion.R4 | MajorFhirVersion.R5 => complete(FhirBaseProfilesService.apply(v).resourceTypes)
+                  case unk => throw BadRequest("Invalid parameter value.", s"$QUERY_PARAM_FHIR_VERSION on $SEGMENT_BASE_PROFILES cannot take the value: $unk. Possible values are: ${MajorFhirVersion.R4} and ${MajorFhirVersion.R5}")
+                }
+              case (None, _) => throw BadRequest("Missing query parameter.", s"$SEGMENT_BASE_PROFILES path cannot be invoked without the query parameter '$QUERY_PARAM_FHIR_VERSION'.")
+            }
+          }
+        }
       }
+    }
 
   /**
    * Validates a FHIR resource against a given FHIR validation URL in 'fhirValidationUrl' query param.
@@ -78,10 +106,12 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) exte
 object FhirDefinitionsEndpoint {
   val SEGMENT_FHIR_DEFINITIONS = "fhir-definitions"
   val SEGMENT_VALIDATE = "validate"
+  val SEGMENT_BASE_PROFILES = "base-profiles"
   val QUERY_PARAM_Q = "q"
   val QUERY_PARAM_RTYPE = "rtype"
   val QUERY_PARAM_PROFILE = "profile"
   val QUERY_PARAM_FHIRVALIDATIONURL = "fhirValidationUrl"
+  val QUERY_PARAM_FHIR_VERSION = "fhirVersion"
 
   object DefinitionsQuery extends Enumeration {
     type DefinitionsQuery = Value
