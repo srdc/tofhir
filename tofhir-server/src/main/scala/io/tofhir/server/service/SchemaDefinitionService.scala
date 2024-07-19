@@ -46,12 +46,11 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
 
   /**
    * Get a schema definition by its URL from the schema repository
-   * @param projectId Project containing the schema definition
    * @param url URL of the schema definition
    * @return
    */
-  def getSchemaByUrl(projectId: String, url: String): Future[Option[SchemaDefinition]] = {
-    schemaRepository.getSchemaByUrl(projectId, url)
+  def getSchemaByUrl(url: String): Future[Option[SchemaDefinition]] = {
+    schemaRepository.getSchemaByUrl(url)
   }
 
   /**

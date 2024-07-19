@@ -41,7 +41,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   new FolderDBInitializer(schemaRepository, mappingRepository, mappingJobRepository, projectRepository, mappingContextRepository).init()
 
   val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository)
-  val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
+  val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig,schemaRepository, mappingRepository)
   val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint()
   val redcapEndpoint =  redCapServiceConfig.map(config => new RedCapEndpoint(config))
   val fileSystemTreeStructureEndpoint = new FileSystemTreeStructureEndpoint()
