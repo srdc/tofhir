@@ -77,21 +77,21 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   val consumer = new KafkaConsumer[String, String](consumerProperties, new StringDeserializer, new StringDeserializer)
 
   val streamingSourceSettings: Map[String, KafkaSourceSettings] =
-    Map("source" -> KafkaSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort"))
+    Map("kafka-source" -> KafkaSourceSettings("kafka-source", "https://aiccelerate.eu/data-integration-suite/kafka-data", s"PLAINTEXT://localhost:$kafkaPort"))
 
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = onFhirClient.getBaseUrl())
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceContext = Map("source" -> KafkaSource(topicName = "patients", groupId = "tofhir", startingOffsets = "earliest"))
+    sourceContext = Map("source" -> KafkaSource(topicName = "patients", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
   )
   val otherObservationMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-    sourceContext = Map("source" -> KafkaSource(topicName = "observations", groupId = "tofhir", startingOffsets = "earliest"))
+    sourceContext = Map("source" -> KafkaSource(topicName = "observations", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
   )
   val familyMemberHistoryMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/family-member-history-mapping",
-    sourceContext = Map("source" -> KafkaSource(topicName = "familyMembers", groupId = "tofhir", startingOffsets = "earliest"))
+    sourceContext = Map("source" -> KafkaSource(topicName = "familyMembers", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
   )
 
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(
