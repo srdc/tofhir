@@ -28,8 +28,15 @@ class JobEndpointTest extends BaseEndpointTest {
   // second job using kafka as a data source to be created
   val kafkaSourceSettings: KafkaSourceSettings = KafkaSourceSettings(name = "kafka-source", sourceUri = "http://example.com/kafka", bootstrapServers = "http://some-kafka-server:9092")
   val dataSourceSettings: Map[String, DataSourceSettings] =
-    Map("source" -> kafkaSourceSettings)
-  val kafkaSourceJob: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = Seq.empty, dataProcessingSettings = DataProcessingSettings())
+    Map("source1" -> kafkaSourceSettings)
+  val kafkaMappingTask: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingRef1", Map("sourceContext1" -> KafkaSource(topicName = "topic", sourceRef = Some("source1"), groupId = "group", startingOffsets = "latest"))))
+  val kafkaSourceJob: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = kafkaMappingTask, dataProcessingSettings = DataProcessingSettings())
+  // a malformed job with a source reference to a missing data source in the mapping tasks, to be rejected
+  val malformedMappings: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingRef1", Map("sourceContext1" -> SqlSource(tableName = Some("table"), sourceRef = Some("source2")))))
+  val mappingTaskMalformedJob: FhirMappingJob = FhirMappingJob(name = Some("malformedJob1"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = malformedMappings, dataProcessingSettings = DataProcessingSettings())
+  // a malformed job which is a scheduling job and has a stream file system data source, to be rejected
+  val streamFileSystemSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings(name = "file-system-source", sourceUri = "http://example.co/filesystem", dataFolderPath = "test/data", asStream = true)
+  val streamAndSchedulingMalformedJob: FhirMappingJob = FhirMappingJob(name = Some("malformedJob2"), schedulingSettings = Some(SchedulingSettings(cronExpression = "* * * * *")) ,sourceSettings = Map("source1" -> streamFileSystemSourceSettings.copy(asStream = false), "source2" -> streamFileSystemSourceSettings), sinkSettings = sinkSettings, mappings = Seq.empty, dataProcessingSettings = DataProcessingSettings())
 
   "The service" should {
 
@@ -117,7 +124,29 @@ class JobEndpointTest extends BaseEndpointTest {
         val jsonResponse: JValue = JsonMethods.parse(responseAs[String])
         // check if the fields exist
         (jsonResponse \ "name") should be (JString("mappingJob2"))
-        (jsonResponse \ "sourceSettings" \ "source" \ "asStream") should be (JBool(true))
+        (jsonResponse \ "sourceSettings" \ "source1" \ "asStream") should be (JBool(true))
+      }
+    }
+
+    "prevent creation of jobs with malformed content" in {
+      // try to create a job with malformed mapping content
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(mappingTaskMalformedJob))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        // validate that job metadata file is still the same
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
+        // check job folder is not created
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${mappingTaskMalformedJob.id}${FileExtensions.JSON}").toFile shouldNot exist
+      }
+
+      // try to crate a job which is scheduling and has a stream data source
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(streamAndSchedulingMalformedJob))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        // validate that job metadata file is still the same
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
+        // check job folder is not created
+        FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${mappingTaskMalformedJob.id}${FileExtensions.JSON}").toFile shouldNot exist
       }
     }
   }
