@@ -33,7 +33,7 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
       pathEndOrSingleSlash {
         parameterMap { queryParams =>
           queryParams.get("url") match {
-            case Some(url) => getSchemaByUrl(projectId, url)
+            case Some(url) => getSchemaByUrl(url)
             case None => getAllSchemas(request) ~ createSchema(projectId, queryParams.getOrElse("format", SchemaFormats.SIMPLE_STRUCTURE_DEFINITION)) // Operations on all schemas
           }
         }
@@ -114,10 +114,10 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
     }
   }
 
-  private def getSchemaByUrl(projectId: String, url: String): Route = {
+  private def getSchemaByUrl(url: String): Route = {
     get {
       complete {
-        service.getSchemaByUrl(projectId, url) map {
+        service.getSchemaByUrl(url) map {
           case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
           case None => StatusCodes.NotFound -> {
             throw ResourceNotFound("Schema not found", s"Schema definition with url $url not found")

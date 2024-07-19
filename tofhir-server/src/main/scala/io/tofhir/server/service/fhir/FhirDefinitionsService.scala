@@ -16,18 +16,24 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.{FileUtils, MajorFhirVersion}
 import io.tofhir.server.common.model.BadRequest
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
+import io.tofhir.server.repository.mapping.IMappingRepository
+import io.tofhir.server.repository.schema.ISchemaRepository
+import io.tofhir.server.service.SchemaDefinitionService
 import org.json4s.JsonAST.JObject
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.JsonMethods.compact
 
 import java.net.{MalformedURLException, URL}
 import scala.collection.mutable
-import scala.concurrent.Future
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 
-class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
+class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig,schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) {
 
   private val logger: Logger = Logger(this.getClass)
+  // service to manage schemas
+  private val schemaDefinitionService: SchemaDefinitionService = new SchemaDefinitionService(schemaRepository, mappingRepository)
+
   // timeout for the proxy request to the FHIR validator
   val timeout: FiniteDuration = 20.seconds
 
@@ -128,13 +134,28 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
   }
 
   /**
-   * Given a URL for a profile, retrieve the simplified structure definition of that profile.
+   * Retrieves the simplified structure definitions for a given FHIR profile or schema URL.
    *
-   * @param profileUrl
-   * @return
+   * This method first attempts to obtain the structure definition from the SimpleStructureDefinitionService.
+   * If the profile is not found, it queries the Schema Repository.
+   *
+   * @param url The URL of the FHIR profile or Schema to retrieve the structure definition for.
+   * @return A sequence of SimpleStructureDefinition objects representing the simplified structure definition of the profile or schema.
    */
-  def getElementDefinitionsOfProfile(profileUrl: String): Seq[SimpleStructureDefinition] = {
-    simplifiedStructureDefinitionCache.getOrElseUpdate(profileUrl, simpleStructureDefinitionService.simplifyStructureDefinition(profileUrl))
+  def getElementDefinitionsOfProfile(url: String): Seq[SimpleStructureDefinition] = {
+    // retrieve the simplified structure definitions from the cache, or simplify it using SimpleStructureDefinitionService if not cached
+    var simpleStructureDefinitions: Seq[SimpleStructureDefinition] = simplifiedStructureDefinitionCache.getOrElseUpdate(url, simpleStructureDefinitionService.simplifyStructureDefinition(url))
+    // if not found in SimpleStructureDefinitionService, check the Schema Repository
+    if(simpleStructureDefinitions.isEmpty){
+      // fetch the schema from the schema repository
+      val schema = Await.result(schemaDefinitionService.getSchemaByUrl(url), Duration.Inf)
+      // if the schema is found, get the field definitions
+      if(schema.nonEmpty){
+        simpleStructureDefinitions = schema.get.fieldDefinitions.get
+      }
+    }
+    // return the simplified structure definitions
+    simpleStructureDefinitions
   }
 
   /**

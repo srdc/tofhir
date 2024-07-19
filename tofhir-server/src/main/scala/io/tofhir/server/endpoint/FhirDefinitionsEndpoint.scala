@@ -10,12 +10,14 @@ import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUER
 import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.engine.util.MajorFhirVersion
+import io.tofhir.server.repository.mapping.IMappingRepository
+import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.service.fhir.FhirDefinitionsService
 import io.tofhir.server.service.fhir.base.FhirBaseProfilesService
 
-class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) extends LazyLogging {
+class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig,schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
-  val service: FhirDefinitionsService = new FhirDefinitionsService(fhirDefinitionsConfig)
+  val service: FhirDefinitionsService = new FhirDefinitionsService(fhirDefinitionsConfig,schemaRepository,mappingRepository)
 
   def route(request: ToFhirRestCall): Route =
     pathPrefix(SEGMENT_FHIR_DEFINITIONS) {
