@@ -39,6 +39,15 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
     if(sourceSettings.exists(_._2.asStream) && schedulingSettings.nonEmpty){
       throw new BadRequestException("Streaming jobs cannot be scheduled.")
     }
+
+    // Check mapping tasks of the job, if a data source of a mapping task is missing throw an error
+    mappings.foreach((mappingTask) => {
+      mappingTask.sourceContext.foreach((sourceContext) => {
+        if(sourceContext._2.sourceRef.nonEmpty && !sourceSettings.contains(sourceContext._2.sourceRef.get)) {
+          throw new BadRequestException(s"The data source with the source name ${sourceContext._2.sourceRef.get} is referenced by mapping tasks of this job.")
+        }
+      })
+    })
   }
   /**
    * Return the final identity service settings
