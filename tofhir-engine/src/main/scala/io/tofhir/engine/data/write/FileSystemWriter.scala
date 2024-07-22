@@ -3,6 +3,7 @@ package io.tofhir.engine.data.write
 import com.typesafe.scalalogging.Logger
 import FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings}
+import org.apache.spark.sql.types.{ArrayType, StructType}
 import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 
@@ -25,8 +26,26 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
             .write
             .mode(SaveMode.Append)
             .options(sinkSettings.options)
-
         writer.text(sinkSettings.path)
+      case SinkFileFormats.CSV =>
+        // read the mapped resource json column and load it to a new data frame
+        val mappedResourceDF = spark.read.json(df.select("mappedResource").as[String])
+        // select the columns that are not array type or struct type
+        // since the CSV is a flat data structure
+        val nonArrayAndStructCols = mappedResourceDF.schema.fields.filterNot(field => {
+          field.dataType.isInstanceOf[ArrayType] || field.dataType.isInstanceOf[StructType]
+        }).map(_.name)
+        // if the DataFrame contains data, write it to the specified path
+        if(!mappedResourceDF.isEmpty){
+          val filteredDF = mappedResourceDF.select(nonArrayAndStructCols.head, nonArrayAndStructCols.tail: _*)
+          // write the mapped resources to a CSV file
+          filteredDF
+            .coalesce(sinkSettings.numOfPartitions)
+            .write
+            .mode(SaveMode.Append)
+            .options(sinkSettings.options)
+            .csv(sinkSettings.path)
+        }
       case _ =>
         throw new NotImplementedError()
     }
@@ -43,5 +62,6 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
 object FileSystemWriter {
   object SinkFileFormats {
     final val NDJSON = "ndjson"
+    final val CSV = "csv"
   }
 }

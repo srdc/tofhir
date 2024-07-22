@@ -1,0 +1,39 @@
+{
+  "resourceType": "Patient",
+  "id": "example",
+  "active": true,
+  "name": [
+	{
+	  "use": "official",
+	  "family": "Chalmers",
+	  "given": [
+		"Peter",
+		"James"
+	  ]
+	}
+  ],
+  "telecom": [
+	{
+	  "system": "phone",
+	  "value": "(03) 5555 6473",
+	  "use": "work"
+	}
+  ],
+  "gender": "male",
+  "birthDate": "1974-12-25",
+  "deceasedBoolean": false,
+  "address": [
+	{
+	  "use": "home",
+	  "type": "both",
+	  "line": [
+		"534 Erewhon St"
+	  ],
+	  "city": "PleasantVille",
+	  "district": "Rainbow",
+	  "state": "Vic",
+	  "postalCode": "3999",
+	  "country": "Australia"
+	}
+  ]
+}
