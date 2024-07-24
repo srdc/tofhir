@@ -447,16 +447,37 @@ class FhirMappingJobManager(
   }
 
   /**
-   * Handle the joining of source data frames
+   * Handle the joining of source data frames.
    *
-   * @param sources          Defined sources within the mapping
-   * @param sourceDataFrames Source data frames loaded
-   * @return
+   * This function performs a left join of multiple source data frames based on predefined join columns.
+   * The first data frame in the sourceDataFrames sequence is considered the main source. The remaining
+   * data frames are joined to this main source based on their respective join columns.
+   *
+   * The function also handles:
+   * - Renaming column names from dotted notation to camelCase, since dots have special meanings in Spark.
+   * - Removing FHIR resource names from reference fields to ensure joins can work correctly.
+   *
+   * Join Logic:
+   * - Each source data frame is grouped by its join columns, which are converted to camelCase.
+   * - FHIR reference columns are transformed by removing resource names.
+   * - Join columns between the main data frame and the other source data frames are identified:
+   *   - Join columns are identified by matching the columns defined in the sources configuration.
+   *   - For each source data frame, null join columns are skipped.
+   *   - The remaining join columns are paired with the corresponding join columns in the main data frame.
+   * - Columns are renamed in the source data frames to align with the main data frame's join columns for proper joining.
+   * - The join operation is performed based on these join columns.
+   *
+   * @param sources          Defined sources within the mapping, including their aliases and join columns.
+   * @param sourceDataFrames Source data frames loaded, with each frame associated with a source alias.
+   * @return A DataFrame resulting from left-joining the source data frames on their respective join columns.
    */
   private def handleJoin(sources: Seq[FhirMappingSource], sourceDataFrames: Seq[(String, DataFrame)]): DataFrame = {
 
-    // Rename a DataFrame's column name from dotted version to camelcase since dots have special meaning in Spark's column names.
+    // Rename a DataFrame's column name from dotted version to camelCase since dots have special meaning in Spark's column names.
+    // E.g., subject.reference -> subjectReference
     def toCamelCase(input: String): String = {
+      if (input == null)
+        return ""
       input.split("\\.").toList match {
         case Nil => ""
         case head :: tail =>
@@ -469,11 +490,7 @@ class FhirMappingJobManager(
     def transformFhirReferenceColumns(joinCols: Seq[String], df: DataFrame): DataFrame = {
       // This is a Spark UDF to remove FHIR resource names from values of FHIR references.
       val fhirReferenceResourceNameRemoverUDF = udf((reference: String) => {
-        if (reference.matches("^[A-Z].*/.*$")) {
-          reference.substring(reference.indexOf('/') + 1)
-        } else {
-          reference
-        }
+        if (reference != null && reference.matches("^[A-Z].*/.*$")) reference.substring(reference.indexOf('/') + 1) else reference
       })
       joinCols.filter(_.contains(".reference")).foldLeft(df) {
         case (df, refColumn) => df.withColumn(toCamelCase(refColumn), fhirReferenceResourceNameRemoverUDF(df.col(toCamelCase(refColumn))))
@@ -481,21 +498,22 @@ class FhirMappingJobManager(
     }
 
     sourceDataFrames match {
-      case Seq(_ -> df) => df
+      case Seq(_ -> df) => df // If there's only one source, return it as the result.
       case _ => //If we have multiple sources
         val mainSource = sourceDataFrames.head._1 // We accept the 1st source as the main source and left-join the other sources on this main source.
         val mainJoinOnColumns = sources.find(_.alias == mainSource).get.joinOn
 
         // Add the JSON object of the whole Row as a column to the DataFrame of the main source
+        // The name of newly added column is the concatenation of "__" and source name such as "__encounter" or "__source"
         var mainDf = sourceDataFrames.head._2.withColumn(s"__$mainSource", struct("*"))
-
-        // Find the values addressed by each column (they can be subject.reference or identifier.value (Spark navigates the DataFrame accordingly, like FHIRPath)),
+        // Construct a DataFrame with the join columns and the JSON object of the Row.
+        // Find the values addressed by each join column (they can be subject.reference or identifier.value (Spark navigates the DataFrame accordingly, like FHIRPath)),
         //  add them to the DataFrame with an alias for each column to convert subject.reference to subjectReference with toCamelCase function.
-        // Construct a DataFrame with these join columns and the JSON object of the Row.
         mainDf = mainDf.select(
           mainJoinOnColumns.map(c => mainDf.col(c).as(toCamelCase(c))) :+ mainDf.col(s"__$mainSource"): _*)
 
         // This is a hack to remove the FHIR resource names from reference fields so that join can work!
+        // Example: Patient/1234 -> 1234
         mainDf = transformFhirReferenceColumns(mainJoinOnColumns, mainDf)
 
         //Group other dataframes on join columns and rename their join columns
@@ -504,21 +522,38 @@ class FhirMappingJobManager(
             .tail // The first source is the main and the rest are others to be left-joined
             .map {
               case (alias, df) =>
-                val joinColumnStmts = sources.find(_.alias == alias).get.joinOn
-                val colsToJoinOn = joinColumnStmts.filter(_ != null)
+                // find the join columns of the source
+                val sourceJoinColumns = sources.find(_.alias == alias).get.joinOn
+                // filter out the null columns
+                val colsToJoinOn = sourceJoinColumns.filter(_ != null)
+                // Group the DataFrame by the specified join columns (converted to camelCase),
+                // then aggregate each group into a list of rows, stored as a struct, and name this column using the alias prefixed with "__".
+                // Assuming the "condition" source has "encounter.reference" as the join column, the result would be:
+                // +-------------------+--------------------+
+                //| encounterReference|         __condition|
+                //+-------------------+--------------------+
+                //|...                |...                 |
+                //+-------------------+--------------------+
                 var groupedDf = df
                   .groupBy(colsToJoinOn.map(c => df.col(c).as(toCamelCase(c))): _*)
                   .agg(collect_list(struct("*")).as(s"__$alias"))
+                // transform FHIR reference columns
                 groupedDf = transformFhirReferenceColumns(colsToJoinOn, groupedDf)
-                if (colsToJoinOn.toSet.subsetOf(mainJoinOnColumns.toSet))
-                  groupedDf -> colsToJoinOn
-                else {
-                  val actualJoinColumns = joinColumnStmts.map(toCamelCase).zip(mainJoinOnColumns.map(toCamelCase)).filter(_._1 != null)
-                  actualJoinColumns
-                    .foldLeft(groupedDf) {
-                      case (gdf, (c1, r1)) => gdf.withColumnRenamed(c1, r1)
-                    } -> actualJoinColumns.map(_._2)
-                }
+                // Create pairs of join columns from the source and main DataFrames by converting them to camelCase,
+                // and filter out any pairs where the source join column is null or empty.
+                // Example:
+                // If sourceJoinColumns are [null, "id"] and mainJoinOnColumns are ["id", "subjectReference"],
+                // after filtering and pairing: actualJoinColumns will be [("id", "subjectReference")].
+                val actualJoinColumns = sourceJoinColumns.map(toCamelCase).zip(mainJoinOnColumns.map(toCamelCase)).filter(c => c._1 != null && c._1.nonEmpty)
+                // We can join two DataFrame on the columns if they exist on both DataFrames. Therefore, rename the columns
+                // in groupedDf based on the filtered pairs to align with the main DataFrame's columns for joining.
+                // Example:
+                // If actualJoinColumns are [("id", "subjectReference")], "id" field of the source DataFrame will be
+                // replaced by "subjectReference" so that it can be joined on this field
+                actualJoinColumns
+                  .foldLeft(groupedDf) {
+                    case (gdf, (c1, r1)) => gdf.withColumnRenamed(c1, r1)
+                  } -> actualJoinColumns.map(_._2)
             }
         //Join other data frames to main data frame
         otherDfs.foldLeft(mainDf) {
