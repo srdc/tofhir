@@ -1,0 +1,68 @@
+{
+  "id": "encounter-summary-mapping",
+  "url": "http://encounter-summary",
+  "name": "encounter-summary-mapping",
+  "title": "Encounter Summary Mapping",
+  "source": [
+	{
+	  "alias": "encounter",
+	  "url": "http://hl7.org/fhir/StructureDefinition/Encounter-R4",
+	  "joinOn": [
+		"id",
+		"subject.reference"
+	  ]
+	},
+	{
+	  "alias": "condition",
+	  "url": "http://hl7.org/fhir/StructureDefinition/Condition-R4",
+	  "joinOn": [
+		"encounter.reference"
+	  ]
+	},
+	{
+	  "alias": "observation",
+	  "url": "http://hl7.org/fhir/StructureDefinition/Observation-R4",
+	  "joinOn": [
+		"encounter.reference"
+	  ]
+	},
+	{
+	  "alias": "patient",
+	  "url": "http://hl7.org/fhir/StructureDefinition/Patient-R4",
+	  "joinOn": [
+		null,
+		"id"
+	  ]
+	}
+  ],
+  "context": {},
+  "variable": [],
+  "mapping": [
+	{
+	  "expression": {
+		"name": "encounter",
+		"language": "application/fhir-template+json",
+		"value": {
+		  "encounterId": "{{id}}",
+		  "patientId": "{{%patient.id}}",
+		  "gender": "{{%patient.gender}}",
+		  "birthDate": "{{%patient.birthDate}}",
+		  "encounterClass": "{{class.coding.where(system='http://terminology.hl7.org/CodeSystem/v3-ActCode').first().code}}",
+		  "encounterStart": "{{plannedStartDate}}",
+		  "encounterEnd": "{{plannedEndDate}}",
+		  "observationLoincCode": "{{%observation.first().code.coding.where(system='http://loinc.org').first().code}}",
+		  "observationDate": "{{%observation.first().effectiveDateTime}}",
+		  "observationResult": "{{%observation.first().valueQuantity.value}} {{%observation.first().valueQuantity.unit}}",
+		  "conditionSnomedCode": "{{%condition.first().code.coding.where(system='http://snomed.info/sct').code}}",
+		  "conditionDate": "{{%condition.first().onsetDateTime}}",
+		  "resourceType": null,
+		  "meta": {
+			"profile": [
+			  "http://encounter-summary"
+			]
+		  }
+		}
+	  }
+	}
+  ]
+}

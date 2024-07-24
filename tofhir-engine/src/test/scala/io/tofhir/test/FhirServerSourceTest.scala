@@ -13,6 +13,7 @@ import org.json4s.jackson.JsonMethods
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AsyncFlatSpec
 
+import java.io.File
 import scala.io.Source
 
 /**
@@ -58,22 +59,31 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
     dataProcessingSettings = DataProcessingSettings()
   )
 
+  // The folder where the generated resources will be written
+  val fsSinkFolder: File = new File("fsSink")
+
   // Resources to be created on onFhir server as the source data
   val testPatientResource: Resource = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/patient-resource.json")).mkString).extract[Resource]
   val testObservationResource1: Resource = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/observation-resource-1.json")).mkString).extract[Resource]
   val testObservationResource2: Resource = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/observation-resource-2.json")).mkString).extract[Resource]
   val testObservationResource3: Resource = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/observation-resource-3.json")).mkString).extract[Resource]
+  val encounterSummaryMappingResources: Seq[Resource] = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/encounter-summary-mapping-resource.json")).mkString).extract[Seq[Resource]]
 
   /**
    * Create the resources on the onFHIR server before starting the tests.
    * */
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    onFhirClient.batch()
+    var batchRequest = onFhirClient.batch()
       .entry(_.update(testPatientResource))
       .entry(_.update(testObservationResource1))
       .entry(_.update(testObservationResource2))
       .entry(_.update(testObservationResource3))
+    // add FHIR Resources for encounter-summary mapping
+    encounterSummaryMappingResources.foreach(r => {
+      batchRequest = batchRequest.entry(_.update(r))
+    })
+    batchRequest
       .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
       res.httpStatus shouldBe StatusCodes.OK
     }
@@ -84,13 +94,80 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
    * */
   override protected def afterAll(): Unit = {
     super.afterAll()
+    // delete test resources on onFHIR
     onFhirClient.batch()
-      .entry(_.delete("Observation", "example-patient-fhir"))
-      .entry(_.delete("Observation", "example-observation-fhir-1"))
-      .entry(_.delete("Observation", "example-observation-fhir-2"))
-      .entry(_.delete("Observation", "example-observation-fhir-3"))
+      .entry(_.delete("Patient"))
+      .entry(_.delete("Condition"))
+      .entry(_.delete("Observation"))
+      .entry(_.delete("Encounter"))
       .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
       res.httpStatus shouldBe StatusCodes.OK
+    }
+    // delete the file system sink folder
+    org.apache.commons.io.FileUtils.deleteDirectory(fsSinkFolder)
+  }
+
+  it should "map Encounter, Observation, Condition and Patient FHIR data to a flat structure and write it to a CSV file successfully" in {
+    val job: FhirMappingJob = FhirMappingJob(
+      name = Some("encounter-summary-job"),
+      mappings = Seq.empty,
+      sourceSettings = Map(
+        "fhirServer" -> FhirServerSourceSettings(name = "fhirServer", sourceUri = "http://fhir-server-source", serverUrl = onFhirClient.getBaseUrl())
+      ),
+      sinkSettings = FileSystemSinkSettings(path = s"${fsSinkFolder.getPath}/results.csv", options = Map("header" -> "true")),
+      dataProcessingSettings = DataProcessingSettings()
+    )
+    val mappingTask: FhirMappingTask = FhirMappingTask(
+      mappingRef = "http://encounter-summary",
+      sourceContext = Map(
+        "encounter" -> FhirServerSource(resourceType = "Encounter", sourceRef = Some("fhirServer")),
+        "condition" -> FhirServerSource(resourceType = "Condition", sourceRef = Some("fhirServer")),
+        "patient" -> FhirServerSource(resourceType = "Patient", sourceRef = Some("fhirServer")),
+        "observation" -> FhirServerSource(resourceType = "Observation", sourceRef = Some("fhirServer"))
+      )
+    )
+
+    fhirMappingJobManager.executeMappingJob(
+      mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(mappingTask), job = job),
+      sourceSettings = job.sourceSettings,
+      sinkSettings = job.sinkSettings
+    ) map { _ =>
+      // read the csv file created in the file system
+      val csvFile: File = fsSinkFolder.listFiles.find(_.getName.contains("results.csv"))
+        .get.listFiles().find(file => file.getName.endsWith(".csv"))
+        .get
+      val results = sparkSession.read
+        .option("header", "true")
+        .csv(csvFile.getPath)
+      // verify the row count
+      results.count() == 2
+      // verify the content of rows
+      val firstRow = results.head()
+      firstRow.getAs[String]("encounterId") shouldEqual ("example-encounter")
+      firstRow.getAs[String]("patientId") shouldEqual ("example")
+      firstRow.getAs[String]("gender") shouldEqual ("male")
+      firstRow.getAs[String]("birthDate") shouldEqual "1974-12-25"
+      firstRow.getAs[String]("encounterClass") shouldEqual ("AMB")
+      firstRow.getAs[String]("encounterStart") shouldEqual ("2024-07-22T08:00:00Z")
+      firstRow.getAs[String]("encounterEnd") shouldEqual ("2024-07-22T09:00:00Z")
+      firstRow.getAs[String]("observationLoincCode") shouldEqual ("2093-3")
+      firstRow.getAs[String]("observationDate") shouldEqual ("2024-07-22T09:00:00Z")
+      firstRow.getAs[String]("observationResult") shouldEqual ("37.5 Celsius")
+      firstRow.getAs[String]("conditionSnomedCode") shouldEqual ("44054006")
+      firstRow.getAs[String]("conditionDate") shouldEqual ("2024-07-22")
+      val secondRow = results.limit(2).collect()(1)
+      secondRow.getAs[String]("encounterId") shouldEqual "example-encounter-2"
+      secondRow.getAs[String]("patientId") shouldEqual "example"
+      secondRow.getAs[String]("gender") shouldEqual "male"
+      secondRow.getAs[String]("birthDate") shouldEqual "1974-12-25"
+      secondRow.getAs[String]("encounterClass") shouldEqual "EMER"
+      secondRow.getAs[String]("encounterStart") shouldEqual "2024-08-01T10:00:00Z"
+      secondRow.getAs[String]("encounterEnd") shouldEqual "2024-08-02T09:00:00Z"
+      secondRow.getAs[String]("observationLoincCode") shouldEqual "85354-9"
+      secondRow.getAs[String]("observationDate") shouldEqual "2024-08-01T10:15:00Z"
+      secondRow.getAs[String]("observationResult") shouldEqual "140.0 mmHg"
+      secondRow.getAs[String]("conditionSnomedCode") shouldEqual "38341003"
+      secondRow.getAs[String]("conditionDate") shouldEqual "2024-08-01"
     }
   }
 
@@ -99,7 +176,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask), job = fhirMappingJob),
       sourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
-      mappingResults.length shouldBe 1
+      mappingResults.length shouldBe 2
       val patientResource = mappingResults.head.mappedResource.get.parseJson
       patientResource shouldBe a[Resource]
       (patientResource \ "meta" \ "profile").extract[Seq[String]].head shouldBe "https://datatools4heart.eu/fhir/StructureDefinition/HFR-Patient"
@@ -113,8 +190,8 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTaskWith2Sources), job = fhirMappingJob),
       sourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
-      mappingResults.length shouldBe 1
-      val patientResource = mappingResults.head.mappedResource.get.parseJson
+      mappingResults.length shouldBe 2
+      val patientResource = mappingResults.last.mappedResource.get.parseJson
       (patientResource \ "identifier" \ "value").extract[Seq[String]].head shouldBe "8216"
       val extensionList = (patientResource \ "extension").extract[Seq[JValue]]
       val tempSum = extensionList.find(e => (e \ "url").extract[String] == "https://map-from-fhir-test/temp-sum")
@@ -134,7 +211,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(observationMappingTaskWith2Sources), job = fhirMappingJob),
       sourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
-      mappingResults.length shouldBe 3
+      mappingResults.length shouldBe 5
       val observationResources = mappingResults.map(r => r.mappedResource.get.parseJson)
       val joinedPatientObservations = observationResources.filter(r => (r \ "subject" \ "reference").extract[String] == "Patient/example-patient-fhir")
       joinedPatientObservations.length shouldBe 2
@@ -145,11 +222,11 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       val patientBirthDate = extensionList.find(e => (e \ "url").extract[String] == "https://map-from-fhir-test/patient-birthdate")
       (patientBirthDate.get \ "valueString").extract[String] shouldBe "2011-04-01"
       val nonExistentPatientsObservation = observationResources.filterNot(r => (r \ "subject" \ "reference").extract[String] == "Patient/example-patient-fhir")
-      nonExistentPatientsObservation.length shouldBe 1
+      nonExistentPatientsObservation.length shouldBe 3
       extensionList = (nonExistentPatientsObservation.head \ "extension").extract[Seq[JValue]]
       patientGender = extensionList.find(e => (e \ "url").extract[String] == "https://map-from-fhir-test/patient-gender")
       patientGender.isDefined shouldBe true
-      (patientGender.get \ "valueString").extractOpt[String] shouldBe None
+      (patientGender.get \ "valueString").extract[String] shouldBe "male"
     }
   }
 

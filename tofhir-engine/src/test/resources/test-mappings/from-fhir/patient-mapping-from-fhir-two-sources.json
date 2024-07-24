@@ -31,10 +31,10 @@
               "valueQuantity": "{{%observations.component.where(code.coding.system = 'http://loinc.org' and code.coding.code = '8310-5').select(valueQuantity.value).aggregate($total + $this, 0)}}"
           },{
             "url": "{{%sourceSystem.sourceUri}}/temp-avg",
-            "valueQuantity": "{{%observations.component.where(code.coding.system = 'http://loinc.org' and code.coding.code = '8310-5').agg:avg(valueQuantity.value)}}"
+            "valueQuantity": "{{? %observations.component.where(code.coding.system = 'http://loinc.org' and code.coding.code = '8310-5').agg:avg(valueQuantity.value)}}"
           },{
             "url": "{{%sourceSystem.sourceUri}}/resp-max",
-            "valueQuantity": "{{%observations.component.where(code.coding.system = 'http://loinc.org' and code.coding.code = '9279-1').agg:max(valueQuantity.value)}}"
+            "valueQuantity": "{{? %observations.component.where(code.coding.system = 'http://loinc.org' and code.coding.code = '9279-1').agg:max(valueQuantity.value)}}"
           }]
         }
       }
