@@ -82,12 +82,12 @@ trait ISchemaRepository extends IFhirSchemaLoader {
 
 
   /**
-   * Save the schema by using its Structure Definition
+   * Saves the schemas by using their Structure Definition resources.
    *
-   * @param projectId Project containing the schema definition
-   * @param structureDefinitionResource The resource of the structure definition
-   * @return the SchemaDefinition of the created schema
+   * @param projectId                    The ID of the project that contains the schema definition.
+   * @param structureDefinitionResources A sequence of resources representing the structure definitions to be saved.
+   * @return A Future containing a sequence of SchemaDefinition objects for the created schemas.
    */
-  def saveSchemaByStructureDefinition(projectId: String, structureDefinitionResource: Resource): Future[SchemaDefinition]
+  def saveSchemaByStructureDefinition(projectId: String, structureDefinitionResources: Seq[Resource]): Future[Seq[SchemaDefinition]]
 
 }

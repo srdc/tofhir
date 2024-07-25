@@ -359,41 +359,53 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   }
 
   /**
-   * Save a schema by using directly its structure definition resource
-   * Throws:
-   *  InitializationException – If there is a problem in given profile or value set definitions of the schema structure definition
+   * Saves the schemas by using their Structure Definition resources.
    *
-   * @param projectId Identifier of the project in which the schema will be created
-   * @param structureDefinitionResource Structure definition resource of the schema
-   * @return the SchemaDefinition of the created schema
+   * This method validates the given structure definition resources, processes them to create schema definitions,
+   * and saves these definitions to the repository. It also ensures that the schema definitions are unique within
+   * the specified project and updates the cache accordingly.
+   *
+   * Throws:
+   *  - BadRequest: If the schema resource cannot be validated.
+   *
+   * @param projectId The identifier of the project in which the schemas will be created.
+   * @param structureDefinitionResources A sequence of structure definition resources for the schemas.
+   * @return A Future containing a sequence of SchemaDefinition objects representing the created schemas.
    */
-  override def saveSchemaByStructureDefinition(projectId: String, structureDefinitionResource: Resource): Future[SchemaDefinition] = {
-    // Validate the resource
-    try {
-      fhirConfigurator.validateGivenInfrastructureResources(baseFhirConfig, api.FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION, Seq(structureDefinitionResource))
-    } catch {
-      case e: Exception =>
-        throw BadRequest("Schema resource is not valid.", s"Schema resource cannot be validated.", Some(e))
+  override def saveSchemaByStructureDefinition(projectId: String, structureDefinitionResources: Seq[Resource]): Future[Seq[SchemaDefinition]] = {
+    // convert each Resource to a SchemaDefinition
+    val schemaDefinitions: Seq[SchemaDefinition] = structureDefinitionResources.map(structureDefinitionResource => {
+      // Validate the resource
+      try {
+        fhirConfigurator.validateGivenInfrastructureResources(baseFhirConfig, api.FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION, Seq(structureDefinitionResource))
+      } catch {
+        case e: Exception =>
+          throw BadRequest("Schema resource is not valid.", s"Schema resource cannot be validated.", Some(e))
+      }
+
+      // Create structureDefinition from the resource
+      val structureDefinition: ProfileRestrictions = fhirFoundationResourceParser.parseStructureDefinition(structureDefinitionResource, includeElementMetadata = true)
+      // Generate an Id if id is missing
+      val schemaId = structureDefinition.id.getOrElse(UUID.randomUUID().toString)
+
+      checkIfSchemaIsUnique(projectId, schemaId, structureDefinition.url)
+
+      // To use convertToSchemaDefinition, profileRestrictions sequence must include the structure definition. Add it before conversion
+      baseFhirConfig.profileRestrictions += structureDefinition.url -> structureDefinition
+      val schemaDefinition = convertToSchemaDefinition(structureDefinition, simpleStructureDefinitionService)
+      // Remove structure definition from the cache and add it after file writing is done to ensure files and cache are the same
+      baseFhirConfig.profileRestrictions -= structureDefinition.url
+
+      // Check SchemaDefinition type is valid.
+      this.validateSchemaDefinitionType(schemaDefinition)
+      schemaDefinition
+    })
+    // write the schemas to the repository as a new file and update caches
+    val futures: Seq[Future[SchemaDefinition]] = schemaDefinitions.zipWithIndex.map {
+      case (schemaDefinition, index) =>
+        writeSchemaAndUpdateCaches(projectId, structureDefinitionResources.lift(index).get, schemaDefinition)
     }
-
-    // Create structureDefinition from the resource
-    val structureDefinition: ProfileRestrictions = fhirFoundationResourceParser.parseStructureDefinition(structureDefinitionResource, includeElementMetadata = true)
-    // Generate an Id if id is missing
-    val schemaId = structureDefinition.id.getOrElse(UUID.randomUUID().toString)
-
-    checkIfSchemaIsUnique(projectId, schemaId, structureDefinition.url)
-
-    // To use convertToSchemaDefinition, profileRestrictions sequence must include the structure definition. Add it before conversion
-    baseFhirConfig.profileRestrictions += structureDefinition.url -> structureDefinition
-    val schemaDefinition = convertToSchemaDefinition(structureDefinition, simpleStructureDefinitionService)
-    // Remove structure definition from the cache and add it after file writing is done to ensure files and cache are the same
-    baseFhirConfig.profileRestrictions -= structureDefinition.url
-
-    // Check SchemaDefinition type is valid.
-    this.validateSchemaDefinitionType(schemaDefinition);
-
-    // Write to the repository as a new file and update caches
-    writeSchemaAndUpdateCaches(projectId, structureDefinitionResource, schemaDefinition)
+    Future.sequence(futures)
   }
 
   /**

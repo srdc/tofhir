@@ -1,7 +1,7 @@
 package io.tofhir.server.endpoint
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, MediaTypes, Multipart, StatusCodes}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, Resource}
@@ -19,6 +19,7 @@ import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 
 import java.io.File
+import java.nio.file.{Files, Paths}
 import java.sql.{Connection, DriverManager, Statement}
 import scala.concurrent.duration._
 import scala.io.{BufferedSource, Source}
@@ -494,6 +495,69 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         extensionLastElement.sliceName.get shouldEqual "nationality"
         extensionLastElement.elements.get.size shouldEqual 3
         extensionLastElement.elements.get.head.path shouldEqual "Patient.extension.nationality.url"
+      }
+    }
+
+    "import StructureDefinitions from a ZIP of FHIR Profiles" in {
+      // create the FormData including the ZIP file
+      val zipFilePath = Paths.get(getClass.getResource("/fhir-resources/custom-profiles.zip").toURI)
+      val zipFileBytes = Files.readAllBytes(zipFilePath)
+      val formData = Multipart.FormData(
+        Multipart.FormData.BodyPart.Strict(
+          "file",
+          HttpEntity(ContentType(MediaTypes.`application/zip`), zipFileBytes),
+          Map("filename" -> "custom-profiles.zip")
+        )
+      )
+      // import the StructureDefinitions from the ZIP
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_IMPORT_ZIP}", formData) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+      // url of the generated Condition schema
+      val conditionSchemaURL = "http://example.org/fhir/StructureDefinition/CustomCondition"
+      // validate if the schema is imported correctly
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}?url=$conditionSchemaURL") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual conditionSchemaURL
+        schema.id shouldEqual "CustomCondition"
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 25
+        val birthDateField = fieldDefinitions.head
+        birthDateField.path shouldEqual "Condition.onsetDateTime"
+        birthDateField.minCardinality shouldEqual 1
+        val extension = fieldDefinitions.lift(1).get
+        extension.path shouldEqual "Condition.extension"
+        extension.elements.get.size shouldEqual 2
+        val extensionLastElement = extension.elements.get.last
+        extensionLastElement.path shouldEqual "Condition.extension.severity"
+        extensionLastElement.sliceName.get shouldEqual "severity"
+        extensionLastElement.elements.get.size shouldEqual 3
+        extensionLastElement.elements.get.head.path shouldEqual "Condition.extension.severity.url"
+      }
+      // url of the generated Observation schema
+      val observationSchemaURL = "http://example.org/fhir/StructureDefinition/CustomObservation"
+      // validate if the schema is imported correctly
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}?url=$observationSchemaURL") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual observationSchemaURL
+        schema.id shouldEqual "CustomObservation"
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 32
+        val birthDateField = fieldDefinitions.head
+        birthDateField.path shouldEqual "Observation.valueQuantity"
+        birthDateField.minCardinality shouldEqual 1
+        val extension = fieldDefinitions.lift(1).get
+        extension.path shouldEqual "Observation.extension"
+        extension.elements.get.size shouldEqual 2
+        val extensionLastElement = extension.elements.get.last
+        extensionLastElement.path shouldEqual "Observation.extension.observationMethod"
+        extensionLastElement.sliceName.get shouldEqual "observationMethod"
+        extensionLastElement.elements.get.size shouldEqual 3
+        extensionLastElement.elements.get.head.path shouldEqual "Observation.extension.observationMethod.url"
       }
     }
   }

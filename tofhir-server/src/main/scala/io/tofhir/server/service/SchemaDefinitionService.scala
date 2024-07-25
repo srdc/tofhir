@@ -147,8 +147,20 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
       if (response.httpStatus.intValue() == HttpStatus.SC_NOT_FOUND)
         throw BadRequest("Invalid resource identifier!", s"Structure Definition with id '${settings.resourceId}' does not exist.")
       // save the schema
-      schemaRepository.saveSchemaByStructureDefinition(projectId, response.responseBody.get)
+      schemaRepository.saveSchemaByStructureDefinition(projectId, Seq(response.responseBody.get))
+        .map(definitions => definitions.head)
     }
+  }
+
+  /**
+   * Creates schema definitions for the given FHIR resources.
+   *
+   * @param projectId The ID of the project in which the schema definitions will be created.
+   * @param resources A sequence of FHIR resources representing the schema definitions to be created.
+   * @return A Future containing a sequence of `SchemaDefinition` objects for the created schemas.
+   */
+  def createSchemas(projectId: String, resources:Seq[Resource]):Future[Seq[SchemaDefinition]] = {
+    schemaRepository.saveSchemaByStructureDefinition(projectId, resources)
   }
 
   /**
@@ -187,6 +199,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * @return the SchemaDefinition of the created schema
    */
   def createSchemaFromStructureDefinition(projectId: String, structureDefinitionResource: Resource): Future[SchemaDefinition] = {
-    schemaRepository.saveSchemaByStructureDefinition(projectId, structureDefinitionResource)
+    schemaRepository.saveSchemaByStructureDefinition(projectId, Seq(structureDefinitionResource))
+      .map(definitions => definitions.head)
   }
 }
