@@ -135,8 +135,11 @@ case class FhirInteraction(`type`:String, rid:Option[String] = None, condition:O
  * @param precondition    A precondition FHIR expression for this mapping
  * @param fhirInteraction Provides information about the FHIR Interaction to persist the mapped information. If not given
  *                        FHIR Update interaction is used and the mapped content is expected to be a FHIR resource.
+ * @param description     An optional description of the mapping expression. This can be used to provide additional
+ *                        context or documentation for the mapping.
  */
 case class FhirMappingExpression(expression: FhirExpression,
                                  precondition: Option[FhirExpression] = None,
-                                 fhirInteraction: Option[FhirInteraction] = None
+                                 fhirInteraction: Option[FhirInteraction] = None,
+                                 description: Option[String] = None
                                 )
