@@ -77,8 +77,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param toExpr   End index (inclusive)
    * @return the field names which have values i.e. the non-empty ones
    */
-  @FhirPathFunction(documentation = "It populates field names by concatenating indices (from..to) to the prefix and" +
-    " returns the ones which have a value. Ex: mpp:nonEmptyLoopedFields('child_',1,5)",
+  @FhirPathFunction(documentation = "\uD83D\uDCDC Creates a sequence of indices between from-to integers and concatenates them and prefix string to generate looped field names (i.e. prefix+from,...,prefix+to). After that, for each field, it checks whether it has a value or not and returns the list of field names which have values i.e the non-empty ones.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`prefixExpr`**  \nPrefix string to be used to generate field names.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`fromExpr`**  \nThe start index (inclusive).\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`toExpr`**  \nThe end index (inclusive).\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```\n[\"child_1\", \"child_3\", \"child_4\"]\n``` \n\uD83D\uDCA1 **E.g.** mpp:nonEmptyLoopedFields('child_',1,5)",
     insertText = "mpp:nonEmptyLoopedFields(<prefixExpr>, <fromExpr>, <toExpr>)",detail = "mpp", label = "mpp:nonEmptyLoopedFields", kind = "Function",
     returnType = Seq("String"), inputType = Seq())
   def nonEmptyLoopedFields(prefixExpr: ExpressionContext, fromExpr: ExpressionContext, toExpr: ExpressionContext): Seq[FhirPathResult] = {

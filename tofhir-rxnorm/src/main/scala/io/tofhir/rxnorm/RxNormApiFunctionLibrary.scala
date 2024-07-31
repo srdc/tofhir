@@ -22,7 +22,7 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
    * @return
    */
    @FhirPathFunction(
-     documentation = "Find out RxNorm Concept Ids (rxcui) for given NDC code",
+     documentation = "\uD83D\uDCDC Finds out RxNorm Concept Ids (rxcui) for the given NDC code.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`ndcExpr`**  \nThe NDC code expression.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```\n[\"104922\", \"105784\"]\n``` \n\uD83D\uDCA1 **E.g.** rxn:findRxConceptIdsByNdc('12345678901')",
      insertText = "rxn:findRxConceptIdsByNdc(<ndcCode>)",
      detail = "rxn",
      label = "rxn:findRxConceptIdByNdc",
@@ -53,7 +53,7 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
    * @return
    */
   @FhirPathFunction(
-    documentation = "Find out Ingredients and their properties for given RxNorm Drug",
+    documentation = "\uD83D\uDCDC Finds out Ingredients and their properties for the given RxNorm Drug.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`rxcuiExpr`**  \nThe RxNorm Concept Id expression for the drug.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```json\n{\n  \"ingredientAndStrength\": [\n    {\n      \"activeIngredientRxcui\": \"104922\",\n      \"activeIngredientName\": \"Acetaminophen\",\n      \"numeratorValue\": 500.0,\n      \"numeratorUnit\": \"mg\",\n      \"denominatorValue\": 1.0,\n      \"denominatorUnit\": \"tablet\"\n    },\n    {\n      \"activeIngredientRxcui\": \"105784\",\n      \"activeIngredientName\": \"Ibuprofen\",\n      \"numeratorValue\": 200.0,\n      \"numeratorUnit\": \"mg\",\n      \"denominatorValue\": 1.0,\n      \"denominatorUnit\": \"tablet\"\n    }\n  ],\n  \"doseFormConcept\": {\n    \"rxcui\": \"106366\",\n    \"doseFormName\": \"Tablet\"\n  }\n}\n``` \n\uD83D\uDCA1 **E.g.** rxn:getMedicationDetails('12345')",
     insertText = "rxn:getMedicationDetails(<rxcui>)",
     detail = "rxn",
     label = "rxn:getMedicationDetails",
@@ -130,7 +130,7 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
    * @return
    */
   @FhirPathFunction(
-    documentation = "Find out Ingredients and their properties for given RxNorm Drug",
+    documentation = "\uD83D\uDCDC Finds out Ingredients and their properties for the given RxNorm Drug.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`rxcuiExpr`**  \nThe RxNorm Concept Id expression for the drug.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```json\n[\n  {\n    \"ingredient\": \"Acetaminophen\",\n    \"strength\": \"500 mg\"\n  },\n  {\n    \"ingredient\": \"Ibuprofen\",\n    \"strength\": \"200 mg\"\n  }\n]\n``` \n\uD83D\uDCA1 **E.g.** rxn:findIngredientsOfDrug('12345')",
     insertText = "rxn:findIngredientsOfDrug(<rxcui>)",
     detail = "rxn",
     label = "rxn:findIngredientsOfDrug",
@@ -157,7 +157,7 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
    * @return
    */
   @FhirPathFunction(
-    documentation = "Find the corresponding ATC code for the RxNorm ingredient concept",
+    documentation = "\uD83D\uDCDC Finds the corresponding ATC code for the given RxNorm ingredient concept.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`rxcuiExpr`**  \nThe RxNorm Concept Id expression for the drug.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```\n\"N02BE01\"\n``` \n\uD83D\uDCA1 **E.g.** rxn:getATC('12345')",
     insertText = "rxn:getATC(<rxcui>)",
     detail = "rxn",
     label = "rxn:getATC",
