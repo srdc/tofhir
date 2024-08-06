@@ -23,7 +23,7 @@ class CustomMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPath
    * @param dataExpr String data such that byte representation of each 2 consecutive characters represents a number.
    * @return Space separated numbers concatenated in a string
    */
-  @FhirPathFunction(documentation = " Decodes the given data and converts it to an array of space separated numbers. The output would be like '123 456 123'. Ex: cst:createTimeSeriesData(%data)",
+  @FhirPathFunction(documentation = "\uD83D\uDCDC Decodes the given data and converts it to an array of space separated numbers. Returns the space separated numbers concatenated in a string.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`dataExpr`**  \nString data such that byte representation of each 2 consecutive characters represents a number.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```\n'123 456 123'\n``` \n\uD83D\uDCA1 **E.g.** cst:createTimeSeriesData(%data)",
     insertText = "cst:createTimeSeriesData(<dataExpr>)", detail = "cst", label = "cst:createTimeSeriesData", kind = "Method", returnType = Seq("string"), inputType = Seq("string"))
   def createTimeSeriesData(dataExpr: ExpressionContext): Seq[FhirPathResult] = {
     val dataResult = new FhirPathExpressionEvaluator(context, current).visit(dataExpr)
