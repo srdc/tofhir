@@ -73,7 +73,7 @@ trait BaseEndpointTest extends AnyWordSpec with Matchers with ScalatestRouteTest
     FileUtils.getPath(fhirDefinitionsConfig.codesystemsPath.get).toFile.mkdirs()
     FileUtils.getPath(fhirDefinitionsConfig.valuesetsPath.get).toFile.mkdirs()
     // initialize endpoint and route
-    val endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, redCapServiceConfig)
+    val endpoint = new ToFhirServerEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, Some(redCapServiceConfig))
     route = endpoint.toFHIRRoute
   }
 
