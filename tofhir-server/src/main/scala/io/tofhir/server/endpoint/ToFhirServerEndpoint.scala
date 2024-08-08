@@ -26,7 +26,7 @@ import java.util.UUID
  * Encapsulates all services and directives
  * Main Endpoint for toFHIR server
  */
-class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig, redCapServiceConfig: RedCapServiceConfig) extends ICORSHandler with IErrorHandler {
+class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConfig: WebServerConfig, fhirDefinitionsConfig: FhirDefinitionsConfig, redCapServiceConfig: Option[RedCapServiceConfig]) extends ICORSHandler with IErrorHandler {
 
   val projectRepository: ProjectFolderRepository = new ProjectFolderRepository(toFhirEngineConfig) // creating the repository instance globally as weed a singleton instance
   val mappingRepository: ProjectMappingFolderRepository = new ProjectMappingFolderRepository(toFhirEngineConfig.mappingRepositoryFolderPath, projectRepository)
@@ -43,7 +43,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
   val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint()
-  val redcapEndpoint = new RedCapEndpoint(redCapServiceConfig)
+  val redcapEndpoint =  redCapServiceConfig.map(config => new RedCapEndpoint(config))
   val fileSystemTreeStructureEndpoint = new FileSystemTreeStructureEndpoint()
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, conceptMapRepository, codeSystemRepository, mappingJobRepository)
   val metadataEndpoint = new MetadataEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, redCapServiceConfig)
@@ -60,13 +60,17 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
                 val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
                 handleRejections(toFhirRejectionHandler) {
                   handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                    terminologyServiceManagerEndpoint.route(restCall) ~
-                    projectEndpoint.route(restCall) ~
-                    fhirDefinitionsEndpoint.route(restCall) ~
-                    fhirPathFunctionsEndpoint.route(restCall) ~
-                    redcapEndpoint.route(restCall) ~
-                    fileSystemTreeStructureEndpoint.route(restCall) ~
-                    metadataEndpoint.route(restCall)
+                    // RedCap Endpoint is optional, so it will be handled separately
+                    val routes = Seq(
+                      terminologyServiceManagerEndpoint.route(restCall),
+                      projectEndpoint.route(restCall),
+                      fhirDefinitionsEndpoint.route(restCall),
+                      fhirPathFunctionsEndpoint.route(restCall),
+                      fileSystemTreeStructureEndpoint.route(restCall),
+                      metadataEndpoint.route(restCall)
+                    ) ++ redcapEndpoint.map(_.route(restCall))
+
+                    concat(routes: _*)
                   }
                 }
               }

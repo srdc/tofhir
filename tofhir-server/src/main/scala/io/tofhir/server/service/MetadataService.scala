@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
 class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
                       webServerConfig: WebServerConfig,
                       fhirDefinitionsConfig: FhirDefinitionsConfig,
-                      redCapServiceConfig: RedCapServiceConfig) {
+                      redCapServiceConfig: Option[RedCapServiceConfig]) {
   /**
    * Use configurations to create a Metadata object along with the version set in pom.xml.
    * @return
@@ -37,27 +37,27 @@ class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
     val properties: Properties  = new Properties()
     properties.load(getClass.getClassLoader.getResourceAsStream("version.properties"))
     val toFhirRedCapVersion = getToFhirRedCapVersion
-      Metadata(
-        name = "toFHIR",
-        description = "toFHIR is a tool for mapping data from various sources to FHIR resources.",
-        version = properties.getProperty("application.version"),
-        fhirDefinitionsVersion = fhirDefinitionsConfig.majorFhirVersion,
-        toFhirRedcapVersion = toFhirRedCapVersion,
-        definitionsRootUrls = fhirDefinitionsConfig.definitionsRootURLs,
-        schemasFhirVersion = toFhirEngineConfig.schemaRepositoryFhirVersion,
-        repositoryNames = RepositoryNames(
-          mappings = toFhirEngineConfig.mappingRepositoryFolderPath,
-          schemas = toFhirEngineConfig.schemaRepositoryFolderPath,
-          contexts = toFhirEngineConfig.mappingContextRepositoryFolderPath,
-          jobs = toFhirEngineConfig.jobRepositoryFolderPath,
-          terminologySystems = toFhirEngineConfig.terminologySystemFolderPath
-        ),
-        archiving = Archiving(
-          erroneousRecordsFolder = toFhirEngineConfig.erroneousRecordsFolder,
-          archiveFolder = toFhirEngineConfig.archiveFolder,
-          streamArchivingFrequency = toFhirEngineConfig.streamArchivingFrequency
-        )
+    Metadata(
+      name = "toFHIR",
+      description = "toFHIR is a tool for mapping data from various sources to FHIR resources.",
+      version = properties.getProperty("application.version"),
+      fhirDefinitionsVersion = fhirDefinitionsConfig.majorFhirVersion,
+      toFhirRedcapVersion = toFhirRedCapVersion,
+      definitionsRootUrls = fhirDefinitionsConfig.definitionsRootURLs,
+      schemasFhirVersion = toFhirEngineConfig.schemaRepositoryFhirVersion,
+      repositoryNames = RepositoryNames(
+        mappings = toFhirEngineConfig.mappingRepositoryFolderPath,
+        schemas = toFhirEngineConfig.schemaRepositoryFolderPath,
+        contexts = toFhirEngineConfig.mappingContextRepositoryFolderPath,
+        jobs = toFhirEngineConfig.jobRepositoryFolderPath,
+        terminologySystems = toFhirEngineConfig.terminologySystemFolderPath
+      ),
+      archiving = Archiving(
+        erroneousRecordsFolder = toFhirEngineConfig.erroneousRecordsFolder,
+        archiveFolder = toFhirEngineConfig.archiveFolder,
+        streamArchivingFrequency = toFhirEngineConfig.streamArchivingFrequency
       )
+    )
   }
 
   /**
@@ -66,23 +66,23 @@ class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
    * @return
    */
   private def getToFhirRedCapVersion: Option[String] = {
-    val proxiedRequest = HttpRequest(
-      method = HttpMethods.GET,
-      uri = s"${redCapServiceConfig.endpoint}/$SEGMENT_METADATA",
-      headers = RawHeader("Content-Type", "application/json") :: Nil
-    )
+    redCapServiceConfig.flatMap { redCapConfig =>
+      val proxiedRequest = HttpRequest(
+        method = HttpMethods.GET,
+        uri = s"${redCapConfig.endpoint}/$SEGMENT_METADATA",
+        headers = RawHeader("Content-Type", "application/json") :: Nil
+      )
 
-    val responseFuture: Future[HttpResponse] = Http().singleRequest(proxiedRequest)
-    val responseAsString = Try(Await.result(
-      responseFuture.flatMap(resp => Unmarshal(resp.entity).to[String]),
-      1.seconds // increasing this leads to increase initial loading time of the toFHIR frontend
-    ))
+      val responseFuture: Future[HttpResponse] = Http().singleRequest(proxiedRequest)
+      val responseAsString = Try(Await.result(
+        responseFuture.flatMap(resp => Unmarshal(resp.entity).to[String]),
+        1.seconds // increasing this leads to increase initial loading time of the toFHIR frontend
+      ))
 
-    responseAsString match {
-      case Success(res) => Some(res)
-      case Failure(_) => None
+      responseAsString match {
+        case Success(res) => Some(res)
+        case Failure(_) => None
+      }
     }
   }
-
-
 }
