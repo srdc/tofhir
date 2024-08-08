@@ -18,7 +18,7 @@ import io.tofhir.server.service.MetadataService
 class MetadataEndpoint(toFhirEngineConfig: ToFhirEngineConfig,
                        webServerConfig: WebServerConfig,
                        fhirDefinitionsConfig: FhirDefinitionsConfig,
-                       redCapServiceConfig: RedCapServiceConfig) extends LazyLogging {
+                       redCapServiceConfig: Option[RedCapServiceConfig]) extends LazyLogging {
 
   val service: MetadataService = new MetadataService(
     toFhirEngineConfig,
