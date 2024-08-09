@@ -560,6 +560,25 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         extensionLastElement.elements.get.head.path shouldEqual "Observation.extension.observationMethod.url"
       }
     }
+
+    "return an error when importing a FHIR profiles ZIP with missing referenced schemas" in {
+      // create the FormData including the ZIP file
+      val zipFilePath = Paths.get(getClass.getResource("/fhir-resources/fhir-profiles-missing-referenced-schemas.zip").toURI)
+      val zipFileBytes = Files.readAllBytes(zipFilePath)
+      val formData = Multipart.FormData(
+        Multipart.FormData.BodyPart.Strict(
+          "file",
+          HttpEntity(ContentType(MediaTypes.`application/zip`), zipFileBytes),
+          Map("filename" -> "fhir-profiles-missing-referenced-schemas.zip")
+        )
+      )
+      // import the StructureDefinitions from the ZIP
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_IMPORT_ZIP}", formData) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Detail: The schema with URL 'https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition' references a non-existent schema: 'https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient'. Ensure all referenced schemas exist.")
+      }
+    }
   }
 
   /**

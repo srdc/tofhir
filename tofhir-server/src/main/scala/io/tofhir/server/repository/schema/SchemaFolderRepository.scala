@@ -373,6 +373,10 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    * @return A Future containing a sequence of SchemaDefinition objects representing the created schemas.
    */
   override def saveSchemaByStructureDefinition(projectId: String, structureDefinitionResources: Seq[Resource]): Future[Seq[SchemaDefinition]] = {
+    // Extract the URLs of the schemas that are about to be saved. These URLs will be used later to validate
+    // any referenced schemas within the current schema, ensuring they exist either as base FHIR definitions,
+    // already present schemas, or as part of this batch.
+    val schemaUrls = structureDefinitionResources.map(resource => (resource \ "url").extract[String])
     // convert each Resource to a SchemaDefinition
     val schemaDefinitions: Seq[SchemaDefinition] = structureDefinitionResources.map(structureDefinitionResource => {
       // Validate the resource
@@ -382,6 +386,8 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         case e: Exception =>
           throw BadRequest("Schema resource is not valid.", s"Schema resource cannot be validated.", Some(e))
       }
+      // Validate that all referenced schemas in the current schema exist or are part of the schemas to be saved.
+      validateReferencedSchemas(projectId, structureDefinitionResource, schemaUrls)
 
       // Create structureDefinition from the resource
       val structureDefinition: ProfileRestrictions = fhirFoundationResourceParser.parseStructureDefinition(structureDefinitionResource, includeElementMetadata = true)
@@ -461,6 +467,50 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     val schemaDefinitionType: String = schemaDefinition.`type`;
     if(schemaDefinitionType.isEmpty || schemaDefinitionType.apply(0).isLower){
       throw BadRequest("Schema definition is not valid.", s"Schema definition type must starts with uppercase!");
+    }
+  }
+
+  /**
+   * Validates that all referenced profiles in a given schema either exist as base FHIR definitions,
+   * are already present in the system, or are included in the list of schemas to be created.
+   *
+   * @param projectId The ID of the project in which the schemas are being validated.
+   * @param schemaResource The FHIR StructureDefinition resource representing the schema to be validated.
+   * @param schemaUrls The list of URLs of the schemas that are included in the current batch to be created.
+   * @throws BadRequest if any referenced profile is missing.
+   */
+  private def validateReferencedSchemas(projectId: String, schemaResource: Resource, schemaUrls: Seq[String]): Unit = {
+    /**
+     * Validates a single profile URL to ensure it either exists as a base FHIR definition,
+     * is already present in the system, or is included in the provided schema URLs list.
+     *
+     * @param profile   The URL of the profile to be validated.
+     * @param schemaUrl The URL of the schema that references this profile, used for error reporting.
+     * @throws BadRequest if the profile is missing.
+     */
+    def validateProfile(profile: String, schemaUrl: String): Unit = {
+      if (!profile.startsWith("http://hl7.org/fhir/StructureDefinition") &&
+        !schemaUrls.contains(profile) &&
+        !schemaDefinitions(projectId).values.exists(s => s.url.contentEquals(profile))) {
+        throw BadRequest("Invalid Schema Reference !", s"The schema with URL '$schemaUrl' references a non-existent schema: '$profile'. Ensure all referenced schemas exist.")
+      }
+    }
+
+    // Validate the base definition of the schema
+    val baseDefinitionUrl: String = (schemaResource \ "baseDefinition").extract[String]
+    val schemaUrl: String = (schemaResource \ "url").extract[String]
+    validateProfile(baseDefinitionUrl, schemaUrl)
+
+    // Validate the profiles associated with each element in the schema
+    val elements = (schemaResource \ "differential" \ "element").extract[Seq[Resource]]
+    elements.foreach { element =>
+      val types = (element \ "type").extract[Seq[Resource]]
+      types.foreach { elementType =>
+        val profiles = (elementType \ "profile").extract[Seq[String]]
+        val targetProfiles = (elementType \ "targetProfile").extract[Seq[String]]
+        val allProfiles = profiles ++ targetProfiles
+        allProfiles.foreach(profile => validateProfile(profile, schemaUrl))
+      }
     }
   }
 }
