@@ -12,6 +12,7 @@ import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.service.terminology.CodeSystemService
 import io.tofhir.server.repository.terminology.codesystem.ICodeSystemRepository
+import io.tofhir.server.util.CsvUtil.CsvHeader
 
 class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends LazyLogging {
 
@@ -92,7 +93,7 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
    */
   private def updateCodeSystemHeaderRoute(terminologyId: String, codeSystemId: String): Route = {
     post {
-      entity(as[Seq[String]]) { headers =>
+      entity(as[Seq[CsvHeader]]) { headers =>
         complete {
           service.updateCodeSystemHeader(terminologyId, codeSystemId, headers) map { _ =>
             StatusCodes.OK

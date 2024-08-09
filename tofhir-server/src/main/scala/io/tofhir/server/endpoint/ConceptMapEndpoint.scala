@@ -12,6 +12,7 @@ import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.service.terminology.ConceptMapService
 import io.tofhir.server.repository.terminology.conceptmap.IConceptMapRepository
+import io.tofhir.server.util.CsvUtil.CsvHeader
 
 class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends LazyLogging {
 
@@ -92,7 +93,7 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
    */
   private def updateConceptMapHeaderRoute(terminologyId: String, conceptMapId: String): Route = {
     post {
-      entity(as[Seq[String]]) { headers =>
+      entity(as[Seq[CsvHeader]]) { headers =>
         complete {
           service.updateConceptMapHeader(terminologyId, conceptMapId, headers) map { _ =>
             StatusCodes.OK
