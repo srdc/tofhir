@@ -2,7 +2,7 @@ package io.tofhir.server.repository.schema
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api
-import io.onfhir.api.Resource
+import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, FHIR_ROOT_URL_FOR_DEFINITIONS, Resource}
 import io.onfhir.api.util.IOUtil
 import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
@@ -489,7 +489,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
      * @throws BadRequest if the profile is missing.
      */
     def validateProfile(profile: String, schemaUrl: String): Unit = {
-      if (!profile.startsWith("http://hl7.org/fhir/StructureDefinition") &&
+      if (!profile.startsWith(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}") &&
         !schemaUrls.contains(profile) &&
         !schemaDefinitions(projectId).values.exists(s => s.url.contentEquals(profile))) {
         throw BadRequest("Invalid Schema Reference !", s"The schema with URL '$schemaUrl' references a non-existent schema: '$profile'. Ensure all referenced schemas exist.")
