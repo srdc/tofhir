@@ -1,29 +1,31 @@
 package io.tofhir.server.endpoint
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, MediaTypes, Multipart, StatusCodes}
 import akka.http.scaladsl.testkit.RouteTestTimeout
+import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, Resource}
+import io.tofhir.OnFhirTestContainer
 import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.endpoint.{MappingEndpoint, ProjectEndpoint, SchemaDefinitionEndpoint, SchemaFormats}
-import io.tofhir.server.model.InferTask
+import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 
 import java.io.File
+import java.nio.file.{Files, Paths}
 import java.sql.{Connection, DriverManager, Statement}
 import scala.concurrent.duration._
 import scala.io.{BufferedSource, Source}
 import scala.util.{Failure, Success, Using}
 
-class SchemaEndpointTest extends BaseEndpointTest {
+class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   // database url for infer schema test
   val DATABASE_URL = "jdbc:h2:mem:inputDb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=FALSE"
 
@@ -451,6 +453,132 @@ class SchemaEndpointTest extends BaseEndpointTest {
       }
     }
 
+    "import a non-existent StructureDefinition from a FHIR server" in {
+      // settings to import a StructureDefinition named 'NonExistentStructureDefinition' from the onFHIR
+      val schemaID = "NonExistentStructureDefinition"
+      val importSchemaSettings = ImportSchemaSettings(onFhirClient.getBaseUrl(), schemaID, None)
+      // import the StructureDefinition from onFHIR
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_IMPORT}", HttpEntity(ContentTypes.`application/json`, writePretty(importSchemaSettings))) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include(s"Detail: Structure Definition with id '$schemaID' does not exist.")
+      }
+    }
+
+    "import StructureDefinition from a FHIR server" in {
+      // settings to import a StructureDefinition named 'CustomPatient' from the onFHIR
+      val schemaID = "CustomPatient"
+      val importSchemaSettings = ImportSchemaSettings(onFhirClient.getBaseUrl(),schemaID, None)
+      // import the StructureDefinition from onFHIR
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_IMPORT}", HttpEntity(ContentTypes.`application/json`, writePretty(importSchemaSettings))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+      // url of the generated schema
+      val schemaURL = "http://example.org/fhir/StructureDefinition/CustomPatient"
+      // validate if the schema is imported correctly
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}?url=$schemaURL") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual schemaURL
+        schema.id shouldEqual schemaID
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 23
+        val birthDateField = fieldDefinitions.head
+        birthDateField.path shouldEqual "Patient.birthDate"
+        birthDateField.minCardinality shouldEqual 1
+        val extension = fieldDefinitions.lift(1).get
+        extension.path shouldEqual "Patient.extension"
+        extension.elements.get.size shouldEqual 2
+        val extensionLastElement = extension.elements.get.last
+        extensionLastElement.path shouldEqual "Patient.extension.nationality"
+        extensionLastElement.sliceName.get shouldEqual "nationality"
+        extensionLastElement.elements.get.size shouldEqual 3
+        extensionLastElement.elements.get.head.path shouldEqual "Patient.extension.nationality.url"
+      }
+    }
+
+    "import StructureDefinitions from a ZIP of FHIR Profiles" in {
+      // create the FormData including the ZIP file
+      val zipFilePath = Paths.get(getClass.getResource("/fhir-resources/custom-profiles.zip").toURI)
+      val zipFileBytes = Files.readAllBytes(zipFilePath)
+      val formData = Multipart.FormData(
+        Multipart.FormData.BodyPart.Strict(
+          "file",
+          HttpEntity(ContentType(MediaTypes.`application/zip`), zipFileBytes),
+          Map("filename" -> "custom-profiles.zip")
+        )
+      )
+      // import the StructureDefinitions from the ZIP
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_IMPORT_ZIP}", formData) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+      // url of the generated Condition schema
+      val conditionSchemaURL = "http://example.org/fhir/StructureDefinition/CustomCondition"
+      // validate if the schema is imported correctly
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}?url=$conditionSchemaURL") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual conditionSchemaURL
+        schema.id shouldEqual "CustomCondition"
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 25
+        val birthDateField = fieldDefinitions.head
+        birthDateField.path shouldEqual "Condition.onsetDateTime"
+        birthDateField.minCardinality shouldEqual 1
+        val extension = fieldDefinitions.lift(1).get
+        extension.path shouldEqual "Condition.extension"
+        extension.elements.get.size shouldEqual 2
+        val extensionLastElement = extension.elements.get.last
+        extensionLastElement.path shouldEqual "Condition.extension.severity"
+        extensionLastElement.sliceName.get shouldEqual "severity"
+        extensionLastElement.elements.get.size shouldEqual 3
+        extensionLastElement.elements.get.head.path shouldEqual "Condition.extension.severity.url"
+      }
+      // url of the generated Observation schema
+      val observationSchemaURL = "http://example.org/fhir/StructureDefinition/CustomObservation"
+      // validate if the schema is imported correctly
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}?url=$observationSchemaURL") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate the retrieved schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        schema.url shouldEqual observationSchemaURL
+        schema.id shouldEqual "CustomObservation"
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 32
+        val birthDateField = fieldDefinitions.head
+        birthDateField.path shouldEqual "Observation.valueQuantity"
+        birthDateField.minCardinality shouldEqual 1
+        val extension = fieldDefinitions.lift(1).get
+        extension.path shouldEqual "Observation.extension"
+        extension.elements.get.size shouldEqual 2
+        val extensionLastElement = extension.elements.get.last
+        extensionLastElement.path shouldEqual "Observation.extension.observationMethod"
+        extensionLastElement.sliceName.get shouldEqual "observationMethod"
+        extensionLastElement.elements.get.size shouldEqual 3
+        extensionLastElement.elements.get.head.path shouldEqual "Observation.extension.observationMethod.url"
+      }
+    }
+
+    "return an error when importing a FHIR profiles ZIP with missing referenced schemas" in {
+      // create the FormData including the ZIP file
+      val zipFilePath = Paths.get(getClass.getResource("/fhir-resources/fhir-profiles-missing-referenced-schemas.zip").toURI)
+      val zipFileBytes = Files.readAllBytes(zipFilePath)
+      val formData = Multipart.FormData(
+        Multipart.FormData.BodyPart.Strict(
+          "file",
+          HttpEntity(ContentType(MediaTypes.`application/zip`), zipFileBytes),
+          Map("filename" -> "fhir-profiles-missing-referenced-schemas.zip")
+        )
+      )
+      // import the StructureDefinitions from the ZIP
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_IMPORT_ZIP}", formData) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        val response = responseAs[String]
+        response should include("Detail: The schema with URL 'https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition' references a non-existent schema: 'https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient'. Ensure all referenced schemas exist.")
+      }
+    }
   }
 
   /**
@@ -461,6 +589,14 @@ class SchemaEndpointTest extends BaseEndpointTest {
     val sql = readFileContent("/sql/sql-source-populate.sql")
     runSQL(sql)
     this.createProject()
+    // create a test patient profile on the onFHIR server.
+    // this profile will be used later to generate a schema.
+    val testPatientProfile: Resource = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/custom-patient-profile.json")).mkString).extract[Resource]
+    onFhirClient.batch()
+      .entry(_.update(testPatientProfile))
+      .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+      res.httpStatus shouldBe StatusCodes.OK
+    }
   }
 
   /**
@@ -470,6 +606,12 @@ class SchemaEndpointTest extends BaseEndpointTest {
     val sql = readFileContent("/sql/sql-source-drop.sql")
     runSQL(sql)
     super.afterAll()
+    // delete test resources on onFHIR
+    onFhirClient.batch()
+      .entry(_.delete("StructureDefinition"))
+      .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+      res.httpStatus shouldBe StatusCodes.OK
+    }
   }
 
   /**

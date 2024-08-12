@@ -1,0 +1,73 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "CustomPatient",
+  "url": "http://example.org/fhir/StructureDefinition/CustomPatient",
+  "version": "1.0.0",
+  "name": "CustomPatient",
+  "status": "draft",
+  "date": "2024-07-25",
+  "publisher": "Example Organization",
+  "description": "Custom profile for Patient resource",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Patient",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Patient",
+  "derivation": "constraint",
+  "differential": {
+	"element": [
+	  {
+		"id": "Patient.birthDate",
+		"path": "Patient.birthDate",
+		"min": 1,
+		"max": "1",
+		"type": [
+		  {
+			"code": "date"
+		  }
+		],
+		"mustSupport": true
+	  },
+	  {
+		"id": "Patient.extension",
+		"path": "Patient.extension",
+		"slicing": {
+		  "discriminator": [
+			{
+			  "type": "value",
+			  "path": "url"
+			}
+		  ],
+		  "rules": "open"
+		}
+	  },
+	  {
+		"id": "Patient.extension:nationality",
+		"path": "Patient.extension",
+		"sliceName": "nationality",
+		"min": 0,
+		"max": "1",
+		"type": [
+		  {
+			"code": "Extension"
+		  }
+		]
+	  },
+	  {
+		"id": "Patient.extension:nationality.url",
+		"path": "Patient.extension.url",
+		"fixedUri": "http://example.org/fhir/StructureDefinition/nationality"
+	  },
+	  {
+		"id": "Patient.extension:nationality.valueCodeableConcept",
+		"path": "Patient.extension.valueCodeableConcept",
+		"min": 1,
+		"type": [
+		  {
+			"code": "CodeableConcept"
+		  }
+		]
+	  }
+	]
+  }
+}

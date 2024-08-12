@@ -1,17 +1,25 @@
 package io.tofhir.server.util
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.Execution.actorSystem
+import io.onfhir.api.Resource
+import io.onfhir.util.OnFhirZipInputStream
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization.writePretty
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
-import io.tofhir.server.common.model.InternalError
+import io.tofhir.server.common.model.{BadRequest, InternalError}
+import org.apache.commons.io.input.BOMInputStream
+import org.json4s.JsonAST.JObject
+import org.json4s.jackson.JsonMethods
 
-import java.io.{File, FileWriter}
+import java.io.{File, FileWriter, InputStreamReader, Reader}
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path}
+import java.util.zip.ZipEntry
+import scala.collection.mutable
+import scala.concurrent.Future
 import scala.io.Source
 
 object FileOperations {
@@ -116,6 +124,54 @@ object FileOperations {
     } else {
       true
     }
+  }
+
+  /**
+   * Processes a ZIP file containing FHIR structure definitions and extracts the resources.
+   *
+   * This method reads the ZIP file, parses each JSON resource, and collects them into a sequence of
+   * `Resource` objects.
+   *
+   * @param zipFilePath The path to the ZIP file to be processed.
+   * @return A Future containing a sequence of `Resource` objects extracted from the ZIP file.
+   */
+  def processZipFile(zipFilePath: Path): Future[Seq[Resource]] = Future {
+    /**
+     * Parses a JSON resource from the provided reader.
+     *
+     * This method attempts to parse a JSON resource from the given `Reader`. If the path does not end with ".json",
+     * or if the JSON parsing fails, appropriate exceptions are thrown.
+     *
+     * @param reader The reader to read the JSON data from.
+     * @param path   The file path from which the resource is being read.
+     * @return The parsed `Resource` object from the JSON data.
+     * @throws InternalError If there is a problem parsing the JSON data from the path.
+     * @throws BadRequest    If the file path does not end with ".json".
+     */
+    def parseResource(reader: Reader, path: String): Resource = {
+      if (path.endsWith(".json"))
+        try {
+          JsonMethods.parse(reader).asInstanceOf[JObject]
+        }
+        catch {
+          case e: Exception =>
+            throw InternalError("JSON parsing problem", s"Cannot parse resource from path $path!", Some(e))
+        }
+      else
+        throw BadRequest("Invalid JSON!", s"Cannot read resource from path $path, it should be JSON file!")
+    }
+
+    val zipStream = new OnFhirZipInputStream(Files.newInputStream(zipFilePath))
+    val resources: mutable.ListBuffer[Resource] = new mutable.ListBuffer[Resource]
+    var zipEntry: ZipEntry = zipStream.getNextEntry
+
+    while (zipEntry != null) {
+      val reader = new InputStreamReader(BOMInputStream.builder.setInputStream(zipStream).get(), "UTF-8")
+      resources.append(parseResource(reader, zipEntry.getName))
+      zipStream.closeEntry()
+      zipEntry = zipStream.getNextEntry
+    }
+    resources.toSeq
   }
 
   /**

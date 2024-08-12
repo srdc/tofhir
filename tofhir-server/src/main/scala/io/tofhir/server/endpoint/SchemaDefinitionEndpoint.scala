@@ -6,16 +6,22 @@ import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_IMPORT, SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
+import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{SEGMENT_IMPORT, SEGMENT_IMPORT_ZIP, SEGMENT_INFER, SEGMENT_REDCAP, SEGMENT_SCHEMAS}
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
-import io.tofhir.server.common.model.{BadRequest, ResourceNotFound, ToFhirRestCall}
+import io.tofhir.server.common.model.{BadRequest, InternalError, ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.MappingContextEndpoint.ATTACHMENT
 import io.onfhir.api.Resource
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.service.SchemaDefinitionService
+import akka.http.scaladsl.server.directives.FileInfo
+import io.tofhir.server.util.FileOperations
+
+import java.io.File
+import java.nio.file.Files
+import scala.util.{Failure, Success}
 
 class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
@@ -37,6 +43,8 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
         importREDCapDataDictionary(projectId)
       } ~ pathPrefix(SEGMENT_IMPORT) { // import a schema from a Fhir Server
         importFromFhirServer(projectId)
+      } ~ pathPrefix(SEGMENT_IMPORT_ZIP) {
+        importFromZipOfFHIRProfiles(projectId)
       } ~ pathPrefix(Segment) { id: String => // Operations on a single schema identified by its id
         getSchema(projectId, id) ~ updateSchema(projectId, id) ~ deleteSchema(projectId, id)
       }
@@ -187,6 +195,48 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
       }
     }
   }
+
+  /**
+   * Route to import FHIR profiles (structure definitions) from a ZIP file uploaded to the server.
+   *
+   * This route handles the uploading and processing of a ZIP file containing FHIR structure definitions.
+   * It parses the ZIP file, validates and processes the JSON resources, and then creates schemas in the
+   * specified project.
+   *
+   * @param projectId The ID of the project where the FHIR profiles will be imported.
+   * @return A Route that handles POST requests to import the schema from the ZIP file.
+   */
+  private def importFromZipOfFHIRProfiles(projectId: String): Route = {
+    post {
+      storeUploadedFile("file", createTempFile) {
+        case (_, file) =>
+          val zipProcessingResult = FileOperations.processZipFile(file.toPath)
+          onComplete(zipProcessingResult) {
+            case Success(result) =>
+              complete(
+                service.createSchemas(projectId, result)
+              )
+            case Failure(ex) =>
+              throw InternalError("Processing of ZIP file failed!", s"Cannot process the ZIP file: ${ex.getMessage}")
+          }
+      }
+    }
+  }
+
+  /**
+   * Creates a temporary file with the given file name and a ".tmp" extension.
+   *
+   * This method creates a temporary file in the system's default temporary-file directory.
+   * The file is marked for deletion when the JVM exits, ensuring that it will be cleaned up automatically.
+   *
+   * @param fileInfo Information about the uploaded file, including the file name.
+   * @return A temporary file object.
+   */
+  private def createTempFile(fileInfo: FileInfo): File = {
+      val tempFile = Files.createTempFile(fileInfo.fileName, ".tmp").toFile
+      tempFile.deleteOnExit()
+      tempFile
+  }
 }
 
 object SchemaDefinitionEndpoint {
@@ -194,6 +244,7 @@ object SchemaDefinitionEndpoint {
   val SEGMENT_INFER = "infer"
   val SEGMENT_REDCAP = "redcap"
   val SEGMENT_IMPORT = "import"
+  val SEGMENT_IMPORT_ZIP = "import-zip"
 }
 
 /**
