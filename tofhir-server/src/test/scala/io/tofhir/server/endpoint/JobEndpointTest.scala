@@ -132,6 +132,9 @@ class JobEndpointTest extends BaseEndpointTest {
       // try to create a job with malformed mapping content
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(mappingTaskMalformedJob))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
+        // validate error message
+        val response = responseAs[String]
+        response should include("Detail: The data source with the source name source2 is referenced by mapping tasks of this job.")
         // validate that job metadata file is still the same
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
@@ -142,6 +145,9 @@ class JobEndpointTest extends BaseEndpointTest {
       // try to crate a job which is scheduling and has a stream data source
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(streamAndSchedulingMalformedJob))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
+        // validate error message
+        val response = responseAs[String]
+        response should include("Detail: Streaming jobs cannot be scheduled.")
         // validate that job metadata file is still the same
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1

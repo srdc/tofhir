@@ -33,7 +33,7 @@ class JobService(jobRepository: IJobRepository) extends LazyLogging {
       // create the job
       jobRepository.createJob(projectId, job)
     } catch {
-      case _: BadRequestException => throw BadRequest("Invalid mapping job!","Streaming jobs cannot be scheduled.")
+      case e: BadRequestException => throw BadRequest("Invalid mapping job!",e.getMessage)
     }
   }
 
