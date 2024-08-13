@@ -10,6 +10,7 @@ import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.CodeSystemEndpoint.SEGMENT_CODE_SYSTEMS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.common.model.Json4sSupport._
+import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.service.terminology.CodeSystemService
 import io.tofhir.server.repository.terminology.codesystem.ICodeSystemRepository
 
@@ -73,18 +74,29 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
   }
 
   /**
-   * Route to update code system csv headers
-   * Headers are passed as a list of strings and overwrite the existing headers in the first line of the CSV file
-   * Compare existing columns names are new names and adjust the rows to match the new headers if necessary
+   * Route to update code system CSV headers.
+   *
+   * Headers are passed as a list of `CsvHeader` objects, where each `CsvHeader` contains both the `currentName` (new header name) and `previousName` (the previously saved header name).
+   * The existing headers in the first line of the CSV file are overwritten with the new headers provided. The rows are adjusted to match the new headers if necessary.
    *
    * e.g. 1:
-   * Existing headers in a CSV: "header1", "header2" --> New headers: "header1", "header2", "header3"
-   * Rows belonging to the header1 and header2 are preserved and only header3 is added with a default value for each row (<header3>)
+   * Existing headers in a CSV:
+   *  - CsvHeader(currentName = "header1", previousName = "header1")
+   *  - CsvHeader(currentName = "header2", previousName = "header2")
+   * New headers:
+   * - CsvHeader(currentName = "header1", previousName = "header1")
+   * - CsvHeader(currentName = "headerChanged", previousName = "header2")
+   * - CsvHeader(currentName = "header3", previousName = "header3")
+   * Rows under "header1" are preserved, rows belonging to "header2" are moved to "headerChanged", and "header3" is added with a default value for each row (`<header3>`).
    *
    * e.g. 2:
-   * Existing headers in a CSV: "header1", "header2" --> New headers: "header2", "header3"
-   * Rows belonging to the header1 are removed, header2 is preserved and shifted to the first column with its values
-   * and header3 is added as second column with a default value for each row (<header3>)
+   * Existing headers in a CSV:
+   * - CsvHeader(currentName = "header1", previousName = "header1")
+   * - CsvHeader(currentName = "header2", previousName = "header2")
+   * New headers:
+   * - CsvHeader(currentName = "header2", previousName = "header2")
+   * - CsvHeader(currentName = "header3", previousName = "header3")
+   * Rows under "header1" are removed, rows under "header2" are preserved and shifted to the first column, and "header3" is added as the second column with a default value for each row (`<header3>`).
    *
    * @param terminologyId terminology id
    * @param codeSystemId code system id
@@ -92,7 +104,7 @@ class CodeSystemEndpoint(codeSystemRepository: ICodeSystemRepository) extends La
    */
   private def updateCodeSystemHeaderRoute(terminologyId: String, codeSystemId: String): Route = {
     post {
-      entity(as[Seq[String]]) { headers =>
+      entity(as[Seq[CsvHeader]]) { headers =>
         complete {
           service.updateCodeSystemHeader(terminologyId, codeSystemId, headers) map { _ =>
             StatusCodes.OK

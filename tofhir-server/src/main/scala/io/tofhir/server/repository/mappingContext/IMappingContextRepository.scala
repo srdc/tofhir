@@ -2,6 +2,7 @@ package io.tofhir.server.repository.mappingContext
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import io.tofhir.server.model.csv.CsvHeader
 
 import scala.concurrent.Future
 
@@ -48,7 +49,7 @@ trait IMappingContextRepository {
    * @param headers mapping context headers
    * @return
    */
-  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[String]): Future[Unit]
+  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[CsvHeader]): Future[Unit]
 
   /**
    * Save the mapping context content to the repository

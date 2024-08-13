@@ -8,6 +8,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
 import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
 import io.tofhir.server.model._
+import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.repository.terminology.TerminologySystemFolderRepository.getTerminologySystemsJsonPath
 import io.tofhir.server.util.{CsvUtil, FileOperations}
 import org.json4s.jackson.Serialization.writePretty
@@ -166,7 +167,7 @@ class CodeSystemRepository(terminologySystemFolderPath: String) extends ICodeSys
    * @param headers new headers to update
    * @return
    */
-  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[String]): Future[Unit] = {
+  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[CsvHeader]): Future[Unit] = {
     val codeSystem = findCodeSystemById(terminologyId, codeSystemId)
     // get file and update headers
     val codeSystemFile = FileUtils.getPath(terminologySystemFolderPath, terminologyId, codeSystem.id).toFile

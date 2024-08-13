@@ -7,6 +7,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{AlreadyExists, ResourceNotFound}
 import io.tofhir.server.model._
+import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.repository.project.ProjectFolderRepository
 import io.tofhir.server.util.CsvUtil
 
@@ -114,7 +115,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @param headers mapping context headers
    * @return
    */
-  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[String]): Future[Unit] = {
+  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[CsvHeader]): Future[Unit] = {
     if (!mappingContextExists(projectId, id)) {
       throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }

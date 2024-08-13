@@ -4,6 +4,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.server.model.TerminologySystem.TerminologyCodeSystem
+import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.repository.terminology.codesystem.ICodeSystemRepository
 
 import scala.concurrent.Future
@@ -67,7 +68,7 @@ class CodeSystemService(codeSystemRepository: ICodeSystemRepository) extends Laz
    * @param headers new headers to update
    * @return
    */
-  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[String]): Future[Unit] = {
+  def updateCodeSystemHeader(terminologyId: String, codeSystemId: String, headers: Seq[CsvHeader]): Future[Unit] = {
     codeSystemRepository.updateCodeSystemHeader(terminologyId, codeSystemId, headers)
   }
 

@@ -10,6 +10,7 @@ import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.ConceptMapEndpoint.SEGMENT_CONCEPT_MAPS
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
 import io.tofhir.common.model.Json4sSupport._
+import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.service.terminology.ConceptMapService
 import io.tofhir.server.repository.terminology.conceptmap.IConceptMapRepository
 
@@ -75,24 +76,36 @@ class ConceptMapEndpoint(conceptMapRepository: IConceptMapRepository) extends La
   /**
    * Route to update concept map csv header
    *
-   * Headers are passed as a list of strings and overwrite the existing headers in the first line of the CSV file
-   * Compare existing columns names are new names and adjust the rows to match the new headers if necessary
+   * Headers are passed as a list of `CsvHeader` objects and overwrite the existing headers in the first line of the CSV file.
+   * The `CsvHeader` class represents each header with both its current name and previously saved name.
+   * The rows are adjusted to match the new headers if necessary.
    *
    * e.g. 1:
-   * Existing headers in a CSV: "header1", "header2" --> New headers: "header1", "header2", "header3"
-   * Rows belonging to the header1 and header2 are preserved and only header3 is added with a default value for each row (<header3>)
+   * Existing headers in a CSV:
+   *  - CsvHeader(currentName = "header1", previousName = "header1")
+   *  - CsvHeader(currentName = "header2", previousName = "header2")
+   * New headers:
+   * - CsvHeader(currentName = "header1", previousName = "header1")
+   * - CsvHeader(currentName = "headerChanged", previousName = "header2")
+   * - CsvHeader(currentName = "header3", previousName = "header3")
+   * Rows under "header1" are preserved, rows belonging to "header2" are moved to "headerChanged", and "header3" is added with a default value for each row (`<header3>`).
    *
    * e.g. 2:
-   * Existing headers in a CSV: "header1", "header2" --> New headers: "header2", "header3"
-   * Rows belonging to the header1 are removed, header2 is preserved and shifted to the first column with its values
-   * and header3 is added as second column with a default value for each row (<header3>)
+   * Existing headers in a CSV:
+   * - CsvHeader(currentName = "header1", previousName = "header1")
+   * - CsvHeader(currentName = "header2", previousName = "header2")
+   * New headers:
+   * - CsvHeader(currentName = "header2", previousName = "header2")
+   * - CsvHeader(currentName = "header3", previousName = "header3")
+   * Rows under "header1" are removed, rows under "header2" are preserved and shifted to the first column, and "header3" is added as the second column with a default value for each row (`<header3>`).
+   *
    * @param terminologyId terminology id
    * @param conceptMapId concept map id
    * @return
    */
   private def updateConceptMapHeaderRoute(terminologyId: String, conceptMapId: String): Route = {
     post {
-      entity(as[Seq[String]]) { headers =>
+      entity(as[Seq[CsvHeader]]) { headers =>
         complete {
           service.updateConceptMapHeader(terminologyId, conceptMapId, headers) map { _ =>
             StatusCodes.OK
