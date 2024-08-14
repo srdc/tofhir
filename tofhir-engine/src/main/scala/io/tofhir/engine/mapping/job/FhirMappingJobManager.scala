@@ -365,21 +365,30 @@ class FhirMappingJobManager(
     }
     // remove slice names from the mapping, otherwise FHIR resources will be created with slice names in fields starting with @
     val fhirMapping = mapping.removeSliceNames()
-    val sourceNames = fhirMapping.source.map(_.alias).toSet
+    // verify that the provided source contexts in the mapping job match the source aliases defined in the mapping
+    val mappingSourceNames = fhirMapping.source.map(_.alias).toSet
     val namesForSuppliedSourceContexts = task.sourceContext.keySet
-    if (sourceNames != namesForSuppliedSourceContexts)
-      throw FhirMappingException(s"Invalid mapping task, source context is not given for some mapping source(s) ${sourceNames.diff(namesForSuppliedSourceContexts).mkString(", ")}")
+    if (mappingSourceNames != namesForSuppliedSourceContexts)
+      throw FhirMappingException(s"Invalid mapping task, source context is not given for some mapping source(s): ${mappingSourceNames.diff(namesForSuppliedSourceContexts).mkString(", ")}")
 
     //Get the source schemas
     val sources =
-      fhirMapping.source.map(s =>
+      fhirMapping.source.map(s => {
+        // Get source context for the alias
+        val sourceContext = task.sourceContext(s.alias)
         (
           s.alias, //Alias for the source
           schemaLoader.getSchema(s.url), //URL of the schema for the source
-          task.sourceContext(s.alias), //Get source context
-          sourceSettings.get(s.alias).orElse(sourceSettings.get("*")).getOrElse(sourceSettings.head._2), //Get source settings from the job definition for that alias or for all aliases (*). If they do not exist, get the first one's settings!!
+          sourceContext, //Get source context
+          // Determine the source settings in the following order:
+          // - If the source context has a reference to a source setting, use it
+          // - If the source context does not have a reference, use the mapping source alias to find the source setting
+          // - If no matching source setting is found, use the default setting for all aliases (*)
+          // - If nothing matches, use the settings of the first source
+          sourceSettings.get(sourceContext.sourceRef.getOrElse(s.alias)).orElse(sourceSettings.get("*")).getOrElse(sourceSettings.head._2),
           timeRange
-        ))
+        )
+      })
     //Read sources into Spark as DataFrame
     val sourceDataFrames =
       sources.map {
