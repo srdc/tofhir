@@ -19,23 +19,28 @@ class MissingFileFormatException(message: String) extends RuntimeException(messa
  * retrieved from the repository and executed.
  *
  * @param mappingRef        Canonical URL of the FhirMapping definition to execute
- * @param sourceContext     Provide details how to load each source data for the mapping
+ * @param sourceBinding     A map that provides details on how to load each source data for the mapping.
+ *                          It links the source settings of a mapping job to the sources of a mapping.
  * @param mapping           FhirMapping definition to execute
  */
-case class FhirMappingTask(mappingRef: String, sourceContext: Map[String, FhirMappingSourceContext], mapping: Option[FhirMapping] = None)
+case class FhirMappingTask(mappingRef: String, sourceBinding: Map[String, MappingSourceBinding], mapping: Option[FhirMapping] = None)
 
 
 /**
- * Interface for source contexts
+ * Interface for defining the mapping source binding in a mapping job.
+ *
+ * This interface is used to provide a way to link source settings of a mapping job
+ * to the corresponding sources in a mapping. Implementations of this interface
+ * should specify how to load each source data required by the mapping.
  */
-trait FhirMappingSourceContext extends Serializable {
+trait MappingSourceBinding extends Serializable {
   /**
    * SQL Query to preprocess the source data
    */
   val preprocessSql: Option[String] = None
   /**
    * Reference to the source specified in the sourceSettings of a mapping job.
-   * This optional field can be used to explicitly link a source context to a particular source setting.
+   * This optional field can be used to explicitly link a source binding to a particular source setting.
    * If not provided, the source alias from the mapping will be used to determine the source settings,
    * ensuring backward compatibility.
    */
@@ -65,7 +70,7 @@ trait FhirMappingSourceContext extends Serializable {
  * @param fileFormat  Format of the file (csv | json | parquet) if it cannot be inferred from the path, e.g., csv.
  * @param options     Further options for the format (Spark Data source options for the format, e.g., for csv -> https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option).
  */
-case class FileSystemSource(path: String, fileFormat:Option[String] = None, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends FhirMappingSourceContext {
+case class FileSystemSource(path: String, fileFormat:Option[String] = None, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding {
   /**
    * Infers the file format based on the provided path and file format.
    *
@@ -105,7 +110,7 @@ case class FileSystemSource(path: String, fileFormat:Option[String] = None, opti
  * @param query     Query to execute in the database
  * @param options   Further options for SQL source (Spark SQL Guide -> https://spark.apache.org/docs/3.4.1/sql-data-sources-jdbc.html ).
  */
-case class SqlSource(tableName: Option[String] = None, query: Option[String] = None, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends FhirMappingSourceContext
+case class SqlSource(tableName: Option[String] = None, query: Option[String] = None, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding
 
 /**
  * Context/configuration for one of the source of the mapping that will read the source data from a kafka as stream
@@ -115,16 +120,16 @@ case class SqlSource(tableName: Option[String] = None, query: Option[String] = N
  * @param startingOffsets The start point when a query is started
  * @param options         Further options for Kafka source (Spark Kafka Guide -> https://spark.apache.org/docs/3.4.1/structured-streaming-kafka-integration.html)
  */
-case class KafkaSource(topicName: String, groupId: String, startingOffsets: String, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends FhirMappingSourceContext
+case class KafkaSource(topicName: String, groupId: String, startingOffsets: String, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding
 
 /**
- * Represents a mapping source context for FHIR server data.
+ * Represents a mapping source binding for FHIR server data.
  *
  * @param resourceType   The type of FHIR resource to query.
  * @param query          An optional query string to filter the FHIR resources.
  * @param preprocessSql  An optional SQL string for preprocessing the data before mapping.
  */
-case class FhirServerSource(resourceType: String, query: Option[String] = None, override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends FhirMappingSourceContext
+case class FhirServerSource(resourceType: String, query: Option[String] = None, override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding
 
 /**
  * List of source file formats supported by tofhir

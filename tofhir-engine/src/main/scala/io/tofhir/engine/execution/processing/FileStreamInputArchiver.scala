@@ -88,7 +88,7 @@ object FileStreamInputArchiver {
 
   def applyArchivingOnBatchJob(execution: FhirMappingJobExecution): Unit = {
     var paths: Seq[String] = Seq.empty
-    // Putting the archiving logic for the batch file inside within a try block so that it would not affect the caller in case of any exception.
+    // Putting the archiving logic for the batch job inside within a try block so that it would not affect the caller in case of any exception.
     // That means archiving works in best-effort mode.
     try {
       val archiveMode: ArchiveModes = execution.archiveMode
@@ -97,9 +97,9 @@ object FileStreamInputArchiver {
         val dataFolderPath = FileUtils.getPath(execution.fileSystemSourceDataFolderPath.get).toString
 
         // Get paths of the input files referred by the mapping tasks
-        paths = execution.mappingTasks.flatMap(mapping => {
-          mapping.sourceContext.flatMap(fhirMappingSourceContextMap => {
-            fhirMappingSourceContextMap._2 match {
+        paths = execution.mappingTasks.flatMap(mappingTask => {
+          mappingTask.sourceBinding.flatMap(mappingSourceBinding => {
+            mappingSourceBinding._2 match {
               case fileSystemSource: FileSystemSource => Some(fileSystemSource.path)
               case _ => None
             }

@@ -16,7 +16,7 @@ class SinkHandlerTest extends AnyFlatSpec {
 
   val sparkSession: SparkSession = ToFhirConfig.sparkSession
 
-  "SinkHandler" should "continue processing subsequent batches for streaming queries after a batch throws an exception" in {
+  "SinkHandler" should "continue processing subsequent chunks for streaming queries after a chunk throws an exception" in {//
     // A mock
     val mockJob: FhirMappingJob = mock[FhirMappingJob]
     when(mockJob.id).thenReturn("jobId")
@@ -36,13 +36,13 @@ class SinkHandlerTest extends AnyFlatSpec {
         FhirMappingResult("someId", "someUrl", None, Timestamp.from(Instant.now()), Some(""))
       })
 
-    // Configure the mock writer such that it would throw an exception for the first batch but not for the subsequent batches
-    var batchCount = 0
+    // Configure the mock writer such that it would throw an exception for the first chunk but not for the subsequent chunks
+    var chunkCount = 0
     val mockWriter: BaseFhirWriter = mock[BaseFhirWriter]
     when(mockWriter.write(ArgumentMatchers.any(), ArgumentMatchers.argThat[Dataset[FhirMappingResult]]({
       case _ =>
-        if (batchCount == 0) {
-          batchCount = batchCount + 1
+        if (chunkCount == 0) {
+          chunkCount = chunkCount + 1
           true
         } else {
           false

@@ -22,8 +22,8 @@ class FhirServerDataSourceReader(spark: SparkSession) extends BaseDataSourceRead
   /**
    * Reads data from the specified FHIR server source.
    *
-   * @param mappingSource  Context/configuration information for the FHIR server source.
-   * @param sourceSettings Settings for the FHIR server source, including column conversion information.
+   * @param mappingSourceBinding  Configuration information for the mapping source.
+   * @param mappingJobSourceSettings Source settings of the mapping job for the FHIR server.
    * @param schema         Optional schema for the source data.
    * @param timeRange      Optional time range to filter the data.
    * @param limit          Optional limit on the number of rows to read.
@@ -32,9 +32,9 @@ class FhirServerDataSourceReader(spark: SparkSession) extends BaseDataSourceRead
    * @throws IllegalArgumentException If the path is not a directory for streaming jobs.
    * @throws NotImplementedError      If the specified source format is not implemented.
    */
-  override def read(mappingSource: FhirServerSource, sourceSettings: FhirServerSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
+  override def read(mappingSourceBinding: FhirServerSource, mappingJobSourceSettings: FhirServerSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
     // extract Spark option for the authentication from the given source settings
-    val authenticationOptions = extractAuthenticationOptions(sourceSettings)
+    val authenticationOptions = extractAuthenticationOptions(mappingJobSourceSettings)
 
     /*
     val fhirConfig = SparkFhirConfig.apply("R5")
@@ -47,8 +47,8 @@ class FhirServerDataSourceReader(spark: SparkSession) extends BaseDataSourceRead
     implicit val implicitSpark: SparkSession = spark
     implicitSpark
       .read
-      .fhir(sourceSettings.serverUrl)
-      .on(mappingSource.resourceType)
+      .fhir(mappingJobSourceSettings.serverUrl)
+      .on(mappingSourceBinding.resourceType)
       .options(authenticationOptions)
       .load(/*resourceSchema*/)
     // If we use the schema of a resource type, spark processing takes too long, probably because of the huge size of the schema.

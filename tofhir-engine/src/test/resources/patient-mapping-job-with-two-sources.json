@@ -23,7 +23,7 @@
   },
   "mappings" : [ {
 	"mappingRef" : "http://patient-mapping-with-two-sources",
-	"sourceContext" : {
+	"sourceBinding" : {
 	  "patient" : {
 		"jsonClass" : "FileSystemSource",
 		"path" : "patient-simple.csv",

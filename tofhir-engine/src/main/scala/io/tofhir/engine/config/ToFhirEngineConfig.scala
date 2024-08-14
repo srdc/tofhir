@@ -42,11 +42,11 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
   lazy val partitionsForMappingJobs: Option[Int] = Try(toFhirEngineConfig.getInt("mapping-jobs.numOfPartitions")).toOption
 
   /**
-   * Max batch size to execute for batch executions, if number of records exceed this the source data will be divided into batches
+   * Max chunk size to execute for batch executions, if number of records exceed this, the source data will be divided into chunks
    */
-  lazy val maxBatchSizeForMappingJobs: Option[Long] = Try(toFhirEngineConfig.getLong("mapping-jobs.maxBatchSize")).toOption
+  lazy val maxChunkSizeForMappingJobs: Option[Long] = Try(toFhirEngineConfig.getLong("mapping-jobs.maxChunkSize")).toOption
 
-  /** The # of FHIR resources in the group while executing (create/update) a batch operation. */
+  /** The # of FHIR resources in the group while executing (create/update) a FHIR batch operation. */
   lazy val fhirWriterBatchGroupSize: Int = Try(toFhirEngineConfig.getInt("fhir-server-writer.batch-group-size")).getOrElse(10)
 
   /** Path to the folder which acts as the folder database of toFHIR*/

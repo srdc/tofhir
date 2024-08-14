@@ -123,8 +123,8 @@ tofhir {
     # Number of partitions to repartition the source data before executing the mappings for the mapping jobs
     # numOfPartitions = 10
 
-    # Maximum number of records for batch mapping execution, if source data exceeds this it is divided into batches
-    # maxBatchSize = 10000
+    # Maximum number of records for batch mapping execution, if source data exceeds this it is divided into chunks
+    # maxChunkSize = 10000
   }
 
   terminology-systems = {
@@ -145,7 +145,7 @@ tofhir {
 
   # Settings for FHIR repository writer
   fhir-server-writer {
-    # The # of FHIR resources in the group while executing (create/update) a batch operation.
+    # The # of FHIR resources in the group while executing (create/update) a FHIR batch operation.
     batch-group-size = 50
   }
 
@@ -548,7 +548,7 @@ Example of a Mapping Job definition file with csv source type:
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "patient": {
           "jsonClass": "FileSystemSource",
           "path": "patients.csv"    
@@ -557,7 +557,7 @@ Example of a Mapping Job definition file with csv source type:
     },
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/practitioner-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "practitioner": {
           "jsonClass": "FileSystemSource",
           "path": "practitioners.csv"
@@ -581,8 +581,8 @@ The json snippet above illustrates the structure of an example mapping job. Let'
 Let's take the patient mapping as an example from the mappings list.
 `https://aiccelerate.eu/fhir/mappings/project1/patient-mapping` is the unique reference URL of the mapping repository.
 Assuming this URL refers to the first mapping example in the mapping section: [patient-mapping](#Mapping), this means that patient mapping will be
-executed with the source data defined in the `sourceContext` part.
-Inside `sourceContext` part, `patient` is the alias of the source data, and it should match with the `alias` used in `source` field in the mapping.
+executed with the source data defined in the `sourceBinding` part.
+Inside `sourceBinding` part, `patient` is the alias of the source data, and it should match with the `alias` used in `source` field in the mapping.
 
 `jsonClass` specifies the type of the source, and `path` is the file name of the source data.
 Since we have FileSystemSourceSettings defined in the source settings, `jsonClass`es of mappings are expected to be FileSystemSource.
@@ -633,7 +633,7 @@ Example of a Mapping Job definition file with csv source type in streaming mode:
   "mappings": [
     {
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
-      "sourceContext": {
+      "sourceBinding": {
         "patient": {
           "jsonClass": "FileSystemSource",
           "path": "patients",
@@ -648,8 +648,8 @@ Example of a Mapping Job definition file with csv source type in streaming mode:
 The json snippet above illustrates the structure of an example mapping job in streaming mode.
 Similar to the batch mode, most of the fields are the same. The only differences are:
 - `asStream` field in the source settings
-- `path`  in the source context of the mapping. `path` should be the name of the **folder** this time, and it is where toFHIR will monitor the changes.
-- `fileFormat` in the source context of the mapping. `fileFormat` field is mandatory for streams and filters to process only files with the given format.
+- `path`  in the source binding of the mapping. `path` should be the name of the **folder** this time, and it is where toFHIR will monitor the changes.
+- `fileFormat` in the source binding of the mapping. `fileFormat` field is mandatory for streams and filters to process only files with the given format.
 
 ##### SQL
 
@@ -671,7 +671,7 @@ Similarly, if we had a source with SQL type, `sourceSettings` and `mappings` par
 ```json
 {
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "SqlSource",
       "tableName": "location"
@@ -683,7 +683,7 @@ We can give a table name with the `tableName` field, as well as write a query wi
 ```json
 {
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "SqlSource",
       "query": "select * from location"
@@ -710,7 +710,7 @@ Mapping job and mapping examples shown below for the streaming type of sources l
 ```json
 {
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "KafkaSource",
       "topicName": "patients",
@@ -748,7 +748,7 @@ Utilize the same configuration approach as described for Kafka, with a few key c
   }
 }
 ```
-- **Topic Name**: While defining the topic name for a mapping source context within a mapping job, use the name generated by 
+- **Topic Name**: While defining the topic name for a mapping source binding within a mapping job, use the name generated by 
 the [tofhir-redcap integration module](https://github.com/srdc/tofhir-redcap) for the corresponding RedCAP project. 
 For detailed instructions, refer to the [README](https://github.com/srdc/tofhir-redcap/blob/main/README.md) file of the integration module.
 
@@ -779,7 +779,7 @@ Within the mapping source, you can define the resource type (e.g., Patient, Obse
 ```json
 {
   "mappingRef" : "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
-  "sourceContext" : {
+  "sourceBinding" : {
     "source" : {
       "jsonClass" : "FhirServerSource",
       "resourceType" : "Patient",
@@ -799,12 +799,12 @@ Available options for different source types can be found in the following links
 - SQL: https://spark.apache.org/docs/3.4.1/sql-data-sources-jdbc.html#data-source-option
 - Apache Kafka: https://spark.apache.org/docs/3.4.1/structured-streaming-kafka-integration.html
 
-To give any spark option, you can use the `options` field in the source context of the mapping in a mapping job.
+To give any spark option, you can use the `options` field in the source binding of the mapping in a mapping job.
 
 ```json
 {
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "FileSystemSource",
       "path": "patients",
@@ -879,14 +879,14 @@ data read from different sources.
 }
 ```
 
-##### 2. Specify Source Contexts
-Next, specify the source contexts for your mappings in the job. Here's an example:
+##### 2. Specify Source Bindings
+Next, specify the source bindings for your mappings in the job. Here's an example:
 
 ```json
 {
   "mappings" : [ {
     "mappingRef" : "http://patient-mapping-with-two-sources",
-    "sourceContext" : {
+    "sourceBinding" : {
       "patient" : {
         "jsonClass" : "FileSystemSource",
         "path" : "patient-simple.csv",
@@ -904,19 +904,19 @@ Next, specify the source contexts for your mappings in the job. Here's an exampl
 }
 ```
 In this example, `patient-simple.csv` is used for the `patient` mapping source, while an SQL query result is used for the `patientGender` mapping source. 
-Since the mapping job has more than one data source, we should specify the source reference in the mapping source context using `sourceRef` field.
+Since the mapping job has more than one data source, we should specify the source reference in the mapping source binding using `sourceRef` field.
 Here, `patient` source reads the csv file from `patientSource` whereas `patientGender` source reads the result of an SQL query from
 `genderSource`.
 
 If `sourceRef` is skipped or does not match any entry in the `sourceSettings`, the first source specified in `sourceSettings` will be used to
 read the data.
 
-If the `genderSource` was connected to file system in the job definition, the `sourceContext` parameters would be as in the following:
+If the `genderSource` was connected to file system in the job definition, the `sourceBinding` parameters would be as in the following:
 ```json
 {
   "mappings" : [ {
     "mappingRef" : "http://patient-mapping-with-two-sources",
-    "sourceContext" : {
+    "sourceBinding" : {
       "patient" : {
         "jsonClass" : "FileSystemSource",
         "path" : "patient-simple.csv",
@@ -1135,7 +1135,7 @@ you can specify the initial time in your mapping job definition as follows:
 {
   ...
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/omop/procedure-occurrence-mapping",
-  "sourceContext": {
+  "sourceBinding": {
     "source": {
       "jsonClass": "SqlSource",
       "query": "select ... from procedure_occurrence po left join concept c on po.procedure_concept_id = c.concept_id where po.procedure_date > $fromTs and po.procedure_date < $toTs"

@@ -43,19 +43,19 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
   val job1Id: String = UUID.randomUUID().toString
   val job2Id: String = UUID.randomUUID().toString
 
-  val dataSourceSettings: Map[String, DataSourceSettings] =
+  val mappingJobSourceSettings: Map[String, MappingJobSourceSettings] =
     Map("source" ->
       FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data", Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString))
   var sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_1", Some(SinkFileFormats.NDJSON))
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = "patients.csv")),
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients.csv")),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))
   )
   val batchJob: FhirMappingJob = FhirMappingJob(
     id = job1Id,
     name = Some("mappingJob"),
-    sourceSettings = dataSourceSettings,
+    sourceSettings = mappingJobSourceSettings,
     sinkSettings = sinkSettings,
     mappings = Seq(patientMappingTask),
     dataProcessingSettings = DataProcessingSettings(saveErroneousRecords = true, archiveMode = ArchiveModes.OFF))
@@ -68,19 +68,19 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
   val patientStreamingFolder: File = new File(patientStreamingFolderName)
 
   var sinkSettingsForStreaming: FhirSinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job3", Some(SinkFileFormats.NDJSON))
-  val streamingDataSourceSettings: Map[String, DataSourceSettings] =
+  val streamingMappingJobSourceSettings: Map[String, MappingJobSourceSettings] =
     Map("source" ->
       FileSystemSourceSettings("streaming-test-source", "https://some-url-for-data-source", Paths.get(getClass.getResource(s"/$parentStreamingFolderName").toURI).normalize().toAbsolutePath.toString, asStream = true))
   val patientStreamingMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://some-url-for-streaming-patient-mapping",
-    sourceContext = Map("source" -> FileSystemSource(path = s"$patientStreamingFolderName", fileFormat = Some(SourceFileFormats.CSV))),
+    sourceBinding = Map("source" -> FileSystemSource(path = s"$patientStreamingFolderName", fileFormat = Some(SourceFileFormats.CSV))),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))
   )
 
   val streamingJob: FhirMappingJob = FhirMappingJob(
     id = UUID.randomUUID().toString,
     name = Some("streamingMappingJob"),
-    sourceSettings = streamingDataSourceSettings,
+    sourceSettings = streamingMappingJobSourceSettings,
     sinkSettings = sinkSettingsForStreaming,
     mappings = Seq(patientStreamingMappingTask),
     dataProcessingSettings = DataProcessingSettings(saveErroneousRecords = true, archiveMode = ArchiveModes.OFF)
@@ -161,7 +161,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       // Update the job with the new mapping and new sink configuration
       val observationsMappingTask: FhirMappingTask = FhirMappingTask(
         mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping2",
-        sourceContext = Map("source" -> FileSystemSource(path = "other-observations.csv"))
+        sourceBinding = Map("source" -> FileSystemSource(path = "other-observations.csv"))
       )
       sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_2", Some(SinkFileFormats.NDJSON))
       val job1Updated = batchJob.copy(mappings = Seq(observationsMappingTask), sinkSettings = sinkSettings, name = Some("updatedJob"))
@@ -209,7 +209,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
     }
 
     sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job2", Some(SinkFileFormats.NDJSON))
-    val job2: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = dataSourceSettings, sinkSettings = sinkSettings, mappings = Seq(patientMappingTask), dataProcessingSettings = DataProcessingSettings())
+    val job2: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = mappingJobSourceSettings, sinkSettings = sinkSettings, mappings = Seq(patientMappingTask), dataProcessingSettings = DataProcessingSettings())
 
     "execute a mapping that is included in the mapping task" in {
       // create the job
@@ -360,7 +360,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         sinkSettings = FileSystemSinkSettings(path = s"$fsSinkFolder/results.csv", options = Map("header" -> "true")),
         mappings = Seq(FhirMappingTask(
           mappingRef = "http://patient-flat-mapping",
-          sourceContext = Map("patient" -> FhirServerSource(resourceType = "Patient")),
+          sourceBinding = Map("patient" -> FhirServerSource(resourceType = "Patient")),
           mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-flat-mapping.json").getPath)))
         ))
       )
@@ -472,14 +472,14 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
    *
    * @param jobId         Identifier of the job for which the test will be run
    * @param mappingRef    Url of the mapping to be tested
-   * @param sourceContext A map of defining the sources from which the test data will be read e.g. Map("source" -> FileSystemSource(path = "patients.csv"))
+   * @param sourceBinding A map of defining the sources from which the test data will be read e.g. Map("source" -> FileSystemSource(path = "patients.csv"))
    * @param mapping       Mapping itself to be tested. If the mapping itself is not provided, it is resolved via the mappingRef
    * @return
    */
-  private def initializeTestMappingQuery(jobId: String, mappingRef: String, sourceContext: Map[String, FhirMappingSourceContext], mapping: Option[FhirMapping] = None): RouteTestResult = {
+  private def initializeTestMappingQuery(jobId: String, mappingRef: String, sourceBinding: Map[String, MappingSourceBinding], mapping: Option[FhirMapping] = None): RouteTestResult = {
     val otherObservationsMappingTask: FhirMappingTask = FhirMappingTask(
       mappingRef = mappingRef,
-      sourceContext = sourceContext,
+      sourceBinding = sourceBinding,
       mapping
     )
     val createTestResourcesRequest: TestResourceCreationRequest = TestResourceCreationRequest(

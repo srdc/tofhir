@@ -33,10 +33,10 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   // inferTask object for infer schema test
-  val inferTask: InferTask = InferTask(name = "test", sourceSettings = Map(
+  val inferTask: InferTask = InferTask(name = "test", mappingJobSourceSettings = Map(
     "source" ->
       SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
-  ), sourceContext = SqlSource(query = Some("select * from death"), preprocessSql = Some("select person_id, death_date, death_datetime, cause_source_value from test")))
+  ), sourceBinding = SqlSource(query = Some("select * from death"), preprocessSql = Some("select person_id, death_date, death_datetime, cause_source_value from test")))
 
 
   // first schema schema to be created
@@ -280,13 +280,13 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for file data sources with wrong file extension" in {
-      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
         "source", FileSystemSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
           dataFolderPath = "data-integration-suite/test-data"
         )),
-        sourceContext = FileSystemSource("WRONG.wrong")
+        sourceBinding = FileSystemSource("WRONG.wrong")
       )
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -296,13 +296,13 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for data data sources with wrong file path" in {
-      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
         "source", FileSystemSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
           dataFolderPath = "data-integration-suite/test-data"
         )),
-        sourceContext = FileSystemSource("lab-results.csv")
+        sourceBinding = FileSystemSource("lab-results.csv")
       )
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -312,10 +312,10 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong preprocess SQL string" in {
-      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
-        sourceContext = SqlSource(query = Some("Select * from death"), preprocessSql = Some("Wrong query string"))
+        sourceBinding = SqlSource(query = Some("Select * from death"), preprocessSql = Some("Wrong query string"))
       )
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -325,7 +325,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong user credentials to access the DB" in {
-      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
         "source", SqlSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -342,7 +342,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong database URL" in {
-      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
         "source", SqlSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -359,10 +359,10 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for erroneous SQL query" in {
-      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
-        sourceContext = SqlSource(query = Some("WRONG"))
+        sourceBinding = SqlSource(query = Some("WRONG"))
       )
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -372,10 +372,10 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong column name in the SQL query" in {
-      val erroneousInferTask = inferTask.copy(sourceSettings = inferTask.sourceSettings.updated(
+      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
-        sourceContext = SqlSource(query = Some("select WRONG from death"))
+        sourceBinding = SqlSource(query = Some("select WRONG from death"))
       )
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
