@@ -30,11 +30,11 @@ trait ISchemaRepository extends IFhirSchemaLoader {
 
   /**
    * Retrieve the schema identified by its url.
-   * @param projectId Project containing the schema definition
+   *
    * @param url URL of the schema definition
    * @return
    */
-  def getSchemaByUrl(projectId: String, url: String): Future[Option[SchemaDefinition]]
+  def getSchemaByUrl(url: String): Future[Option[SchemaDefinition]]
 
   /**
    * Save the schema to the repository.

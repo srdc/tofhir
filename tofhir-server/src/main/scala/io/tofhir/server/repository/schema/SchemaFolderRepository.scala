@@ -88,13 +88,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   /**
    * Retrieve the schema identified by its url.
    *
-   * @param projectId Project containing the schema definition
    * @param url       URL of the schema definition
    * @return
    */
-  override def getSchemaByUrl(projectId: String, url: String): Future[Option[SchemaDefinition]] = {
+  override def getSchemaByUrl(url: String): Future[Option[SchemaDefinition]] = {
     Future {
-      schemaDefinitions(projectId).values.find(_.url.equals(url))
+        schemaDefinitions.values.flatMap(_.values).find(_.url.equals(url))
     }
   }
 
@@ -284,7 +283,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         val source = Source.fromFile(f, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()
         val structureDefinition: ProfileRestrictions = fhirFoundationResourceParser.parseStructureDefinition(fileContent.parseJson)
-        val schema = convertToSchemaDefinition(structureDefinition, simpleStructureDefinitionService)
+        val schema = simpleStructureDefinitionService.convertToSchemaDefinition(structureDefinition)
         projectSchemas.put(schema.id, schema)
       }
 
@@ -398,7 +397,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
 
       // To use convertToSchemaDefinition, profileRestrictions sequence must include the structure definition. Add it before conversion
       baseFhirConfig.profileRestrictions += structureDefinition.url -> structureDefinition
-      val schemaDefinition = convertToSchemaDefinition(structureDefinition, simpleStructureDefinitionService)
+      val schemaDefinition = simpleStructureDefinitionService.convertToSchemaDefinition(structureDefinition)
       // Remove structure definition from the cache and add it after file writing is done to ensure files and cache are the same
       baseFhirConfig.profileRestrictions -= structureDefinition.url
 

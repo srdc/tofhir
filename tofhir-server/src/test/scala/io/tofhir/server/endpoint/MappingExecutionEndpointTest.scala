@@ -4,6 +4,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.testkit.TestDuration
+import io.onfhir.api.Resource
+import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
+import io.tofhir.OnFhirTestContainer
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
@@ -12,7 +15,6 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.endpoint.{JobEndpoint, MappingContextEndpoint, MappingEndpoint, ProjectEndpoint, SchemaDefinitionEndpoint}
 import io.tofhir.server.model.{ResourceFilter, TestResourceCreationRequest}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.apache.spark.sql.SparkSession
@@ -24,9 +26,10 @@ import java.io.File
 import java.nio.file.Paths
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
+import scala.io.Source
 import scala.util.control.Breaks.{break, breakable}
 
-class MappingExecutionEndpointTest extends BaseEndpointTest {
+class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestContainer{
   // default timeout is 1 seconds, which is not enough for some tests
   implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(new DurationInt(60).second.dilated(system))
 
@@ -82,6 +85,9 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     mappings = Seq(patientStreamingMappingTask),
     dataProcessingSettings = DataProcessingSettings(saveErroneousRecords = true, archiveMode = ArchiveModes.OFF)
   )
+
+  // Resources to be created on onFhir server as the source data
+  val testPatientResource: Resource = JsonMethods.parse(Source.fromInputStream(getClass.getResourceAsStream("/fhir-resources/patient-resource.json")).mkString).extract[Resource]
 
   "The service" should {
     "run a job including a mapping" in {
@@ -329,6 +335,67 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
         if (!success2) fail("Failed to find empty sink file.")
       }
     }
+
+    /**
+     * Test case to run a batch mapping job which converts FHIR Resources into a flat schema and writes them to a CSV file.
+     *
+     * Steps:
+     * 1. Create a mapping.
+     * 2. Create a batch mapping job with the generated mapping, source settings pointing to an FHIR server, and sink settings
+     *    to write the results to a CSV file.
+     * 3. Post the job creation request to the server and check for the Created status.
+     * 4. Run the created job and check for the OK status.
+     * 5. Wait up to 30 seconds for the job to complete and verify that the CSV file is created with the expected results.
+     * 6. Check that the CSV file contains the correct data with specific fields and values.
+     */
+    "run a batch mapping job which converts FHIR Resources into a flat schema and write them to a CSV file" in {
+      // create the mapping
+      createMappingAndVerify("test-mappings/patient-flat-mapping.json", 4)
+      // create the job
+      val jobId = UUID.randomUUID().toString
+      val job: FhirMappingJob = FhirMappingJob(
+        id = jobId,
+        name = Some("patient-flat-job"),
+        sourceSettings = Map("source" -> FhirServerSourceSettings(name="fhir-server",sourceUri = "http://fhir-server", serverUrl = onFhirClient.getBaseUrl())),
+        sinkSettings = FileSystemSinkSettings(path = s"$fsSinkFolder/results.csv", options = Map("header" -> "true")),
+        mappings = Seq(FhirMappingTask(
+          mappingRef = "http://patient-flat-mapping",
+          sourceContext = Map("patient" -> FhirServerSource(resourceType = "Patient")),
+          mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-flat-mapping.json").getPath)))
+        ))
+      )
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(job))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+      // run the job
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/$jobId/${JobEndpoint.SEGMENT_RUN}", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // Mappings run asynchronously. Wait at most 30 seconds for mappings to complete.
+        val success = waitForCondition(30) {
+          fsSinkFolder.listFiles.exists(_.getName.contains("results.csv")) && {
+            // read the csv file created in the file system
+            val csvFile: File = fsSinkFolder.listFiles.find(_.getName.contains("results.csv"))
+              .get.listFiles().find(file => file.getName.endsWith(".csv"))
+              .get
+            val results = sparkSession.read
+              .option("header","true")
+              .csv(csvFile.getPath)
+            // verify the row count
+            results.count() == 1
+            // verify the content of row
+            val row = results.head()
+            row.getAs[String]("active").contentEquals("true")
+            row.getAs[String]("birthDate").contentEquals("1974-12-25")
+            row.getAs[String]("gender").contentEquals("male")
+            row.getAs[String]("homeCountry").contentEquals("Australia")
+            row.getAs[String]("id").contentEquals("db03a265-0194-460e-8625-69e25daec2d7")
+            row.getAs[String]("officialName").contentEquals("Peter Chalmers")
+            row.getAs[String]("phone").contentEquals("(03) 5555 6473")
+          }
+        }
+        if (!success) fail("Failed to find expected number of results. Either the results are not available or the number of results does not match")
+      }
+    }
   }
 
   /**
@@ -454,6 +521,12 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     org.apache.commons.io.FileUtils.deleteDirectory(Paths.get(toFhirEngineConfig.erroneousRecordsFolder).toFile)
     fsSinkFolder.mkdirs()
     this.createProject(Some("deadbeef-dead-dead-dead-deaddeafbeef"))
+    // create the test resources on onFHIR test container
+    onFhirClient.batch()
+      .entry(_.update(testPatientResource))
+      .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+      res.httpStatus shouldBe StatusCodes.OK
+    }
   }
 
   override def afterAll(): Unit = {
@@ -465,5 +538,11 @@ class MappingExecutionEndpointTest extends BaseEndpointTest {
     org.apache.commons.io.FileUtils.deleteDirectory(Paths.get(toFhirEngineConfig.erroneousRecordsFolder).toFile)
     // remove cloned csv file used for streaming job
     org.apache.commons.io.FileUtils.delete(Paths.get(getClass.getResource(s"/$parentStreamingFolderName/$patientStreamingFolder/patients2.csv").toURI).toFile)
+    // remove the test resources from onFHIR test container
+    onFhirClient.batch()
+      .entry(_.delete("Patient"))
+      .returnMinimal().asInstanceOf[FhirBatchTransactionRequestBuilder].execute() map { res =>
+      res.httpStatus shouldBe StatusCodes.OK
+    }
   }
 }

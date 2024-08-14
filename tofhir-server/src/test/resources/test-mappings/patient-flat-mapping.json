@@ -1,0 +1,38 @@
+{
+  "id": "patient-flat-mapping",
+  "url": "http://patient-flat-mapping",
+  "name": "patient-flat-mapping",
+  "title": "Patient Flat Mapping",
+  "source": [
+	{
+	  "alias": "patient",
+	  "url": "http://hl7.org/fhir/StructureDefinition/Patient-R4",
+	  "joinOn": []
+	}
+  ],
+  "context": {},
+  "variable": [],
+  "mapping": [
+	{
+	  "expression": {
+		"name": "flatPatient",
+		"language": "application/fhir-template+json",
+		"value": {
+		  "id": "{{id}}",
+		  "active": "{{active}}",
+		  "officialName": "{{name.where(use='official').first().given[0]}} {{name.where(use='official').first().family}}",
+		  "phone": "{{telecom.where(system='phone').first().value}}",
+		  "gender": "{{gender}}",
+		  "birthDate": "{{birthDate}}",
+		  "homeCountry": "{{address.where(use='home').first().country}}",
+		  "resourceType": null,
+		  "meta": {
+			"profile": [
+			  "http://patient-flat-schema"
+			]
+		  }
+		}
+	  }
+	}
+  ]
+}

@@ -11,6 +11,22 @@ import org.json4s.jackson.Serialization
 class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
 
   /**
+   * Convert ProfileRestrictions into a SchemaDefinition instance.
+   *
+   * @param profileRestrictions
+   * @return
+   */
+  def convertToSchemaDefinition(profileRestrictions: ProfileRestrictions): SchemaDefinition = {
+    val rootElementDefinition = createRootElement(profileRestrictions.resourceType)
+    SchemaDefinition(id = profileRestrictions.id.getOrElse(profileRestrictions.resourceType),
+      url = profileRestrictions.url,
+      `type` = profileRestrictions.resourceType,
+      name = profileRestrictions.resourceName.getOrElse(profileRestrictions.resourceType),
+      rootDefinition = Some(rootElementDefinition),
+      fieldDefinitions = Some(simplifyStructureDefinition(profileRestrictions.url, withResourceTypeInPaths = true)))
+  }
+
+  /**
    * Given a URL for a profile, return a sequence of definitions for all elements of the resource type indicated by this profile.
    *
    * @param profileUrl              The URL of the profile to be simplified.
@@ -398,4 +414,32 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       elements = None)
   }
 
+  /**
+   * Helper function to create the root element (1st element of the Element definitions which is dropped by IFhirFoundationParser.
+   *
+   * @param resourceType
+   * @return
+   */
+  private def createRootElement(resourceType: String): SimpleStructureDefinition = {
+    SimpleStructureDefinition(
+      id = resourceType,
+      path = resourceType,
+      dataTypes = Some(Seq(DataTypeWithProfiles("Element", None))),
+      isPrimitive = false,
+      isChoiceRoot = false,
+      isArray = false,
+      minCardinality = 0, maxCardinality = None,
+      boundToValueSet = None,
+      isValueSetBindingRequired = None,
+      referencableProfiles = None,
+      constraintDefinitions = None,
+      sliceDefinition = None,
+      sliceName = None,
+      fixedValue = None, patternValue = None,
+      referringTo = None,
+      short = None,
+      definition = None,
+      comment = None,
+      elements = None)
+  }
 }
