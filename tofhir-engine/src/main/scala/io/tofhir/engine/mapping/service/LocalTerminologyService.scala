@@ -428,11 +428,12 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
   }
 
   /**
-   * These methods are not implemented for the LocalTerminologyService and will not implemented in the future.
+   * These methods are not implemented for the LocalTerminologyService and will not be implemented in the future.
    */
   override def expandWithId(id: String, filter: Option[String], offset: Option[Long], count: Option[Long]): Future[JObject] = ???
   override def expand(url: String, version: Option[String], filter: Option[String], offset: Option[Long], count: Option[Long]): Future[JObject] = ???
   override def expandWithValueSet(valueSet: Resource, offset: Option[Long], count: Option[Long]): Future[JObject] = ???
+  override def validateCode(url: String, valueSetVersion: Option[String], code: String, system: Option[String], systemVersion: Option[String], display: Option[String]): Future[JObject] = ???
 }
 
 object LocalTerminologyService {
