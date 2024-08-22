@@ -22,6 +22,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
       url = profileRestrictions.url,
       `type` = profileRestrictions.resourceType,
       name = profileRestrictions.resourceName.getOrElse(profileRestrictions.resourceType),
+      description = profileRestrictions.resourceDescription,
       rootDefinition = Some(rootElementDefinition),
       fieldDefinitions = Some(simplifyStructureDefinition(profileRestrictions.url, withResourceTypeInPaths = true)))
   }

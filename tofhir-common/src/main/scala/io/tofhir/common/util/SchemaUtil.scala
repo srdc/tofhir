@@ -16,20 +16,23 @@ object SchemaUtil {
    * @return
    */
   def convertToStructureDefinitionResource(schemaDefinition: SchemaDefinition, fhirVersion: String): Resource = {
-    val structureDefinitionResource: Resource =
+    var structureDefinitionResource: Resource =
       ("id" -> schemaDefinition.id) ~
         ("resourceType" -> "StructureDefinition") ~
         ("url" -> schemaDefinition.url) ~
-        ("name" -> schemaDefinition.name) ~
-        ("status" -> "draft") ~
-        ("fhirVersion" -> fhirVersion) ~
-        ("kind" -> "logical") ~
-        ("abstract" -> false) ~
-        ("type" -> schemaDefinition.`type`) ~
-        ("baseDefinition" -> "http://hl7.org/fhir/StructureDefinition/Element") ~
-        ("derivation" -> "specialization") ~
-        ("differential" -> ("element" -> generateElementArray(schemaDefinition.`type`, schemaDefinition.fieldDefinitions.getOrElse(Seq.empty))))
-    structureDefinitionResource
+        ("name" -> schemaDefinition.name)
+    if (schemaDefinition.description.isDefined) { // If the description exists, add it here in order not to break the order of JSON elements (better to see the description close to the name)
+      structureDefinitionResource = structureDefinitionResource ~ ("description" -> schemaDefinition.description.get)
+    }
+    structureDefinitionResource ~
+      ("status" -> "draft") ~
+      ("fhirVersion" -> fhirVersion) ~
+      ("kind" -> "logical") ~
+      ("abstract" -> false) ~
+      ("type" -> schemaDefinition.`type`) ~
+      ("baseDefinition" -> "http://hl7.org/fhir/StructureDefinition/Element") ~
+      ("derivation" -> "specialization") ~
+      ("differential" -> ("element" -> generateElementArray(schemaDefinition.`type`, schemaDefinition.fieldDefinitions.getOrElse(Seq.empty))))
   }
 
   /**
@@ -70,11 +73,11 @@ object SchemaUtil {
               ("profile" -> dt.profiles)
           })
       // add the field definition if it exists
-      if(fd.definition.nonEmpty){
+      if (fd.definition.nonEmpty) {
         elementJson = elementJson ~ ("definition" -> fd.definition)
       }
       // add the field short if it exists
-      if(fd.short.nonEmpty){
+      if (fd.short.nonEmpty) {
         elementJson = elementJson ~ ("short" -> fd.short)
       }
       elementJson

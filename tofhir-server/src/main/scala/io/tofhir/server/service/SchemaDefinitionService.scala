@@ -37,7 +37,6 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    *
    * @param projectId
    * @param id
-   *
    * @return
    */
   def getSchema(projectId: String, id: String): Future[Option[SchemaDefinition]] = {
@@ -46,6 +45,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
 
   /**
    * Get a schema definition by its URL from the schema repository
+   *
    * @param url URL of the schema definition
    * @return
    */
@@ -72,7 +72,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * @param schemaDefinition
    * @return
    */
-  def putSchema(projectId: String, schemaId: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
+  def putSchema(projectId: String, schemaId: String, schemaDefinition: SchemaDefinition): Future[Unit] = { // TODO: HTTP PUT methods should return the updated object w.r.t REST principles
     // Ensure that the provided schemaId matches the SchemaDefinition's schemaId
     if (!schemaId.equals(schemaDefinition.id)) {
       throw BadRequest("Schema definition is not valid.", s"Identifier of the schema definition: ${schemaDefinition.id} does not match with the provided schemaId: $schemaId")
@@ -86,24 +86,25 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * @param projectId
    * @param id
    * @throws ResourceNotFound when the schema does not exist
-   * @throws BadRequest when the schema is in use by some mappings
+   * @throws BadRequest       when the schema is in use by some mappings
    * @return
    */
   def deleteSchema(projectId: String, id: String): Future[Unit] = {
     schemaRepository.getSchema(projectId, id).flatMap(schema => {
       if (schema.isEmpty)
         throw ResourceNotFound("Schema does not exists.", s"A schema definition with id $id does not exists in the schema repository.")
-      mappingRepository.getMappingsReferencingSchema(projectId,schema.get.url).flatMap(mappingIds => {
+      mappingRepository.getMappingsReferencingSchema(projectId, schema.get.url).flatMap(mappingIds => {
         if (mappingIds.isEmpty)
           schemaRepository.deleteSchema(projectId, id)
         else
-          throw BadRequest("Schema is referenced by some mappings.",s"Schema definition with id $id is referenced by the following mappings:${mappingIds.mkString(",")}")
+          throw BadRequest("Schema is referenced by some mappings.", s"Schema definition with id $id is referenced by the following mappings:${mappingIds.mkString(",")}")
       })
     })
   }
 
   /**
    * It takes inferTask object, connects to database, and executes the query. Infer a SchemaDefinition object from the result of the query.
+   *
    * @param inferTask The object that contains database connection information and sql query
    * @return SchemaDefinition object containing the field type information
    */
@@ -127,7 +128,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
       var fieldDefinitions = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
       // Remove INPUT_VALIDITY_ERROR fieldDefinition that is added by SourceHandler
       fieldDefinitions = fieldDefinitions.filter(fieldDefinition => fieldDefinition.id != SourceHandler.INPUT_VALIDITY_ERROR)
-      SchemaDefinition(url = defaultName, `type` = defaultName, name = defaultName, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))
+      SchemaDefinition(url = defaultName, `type` = defaultName, name = defaultName, description = Option.empty, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))
     }
     Future.apply(Some(unnamedSchema))
   }
@@ -162,7 +163,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * @param resources A sequence of FHIR resources representing the schema definitions to be created.
    * @return A Future containing a sequence of `SchemaDefinition` objects for the created schemas.
    */
-  def createSchemas(projectId: String, resources:Seq[Resource]):Future[Seq[SchemaDefinition]] = {
+  def createSchemas(projectId: String, resources: Seq[Resource]): Future[Seq[SchemaDefinition]] = {
     schemaRepository.saveSchemaByStructureDefinition(projectId, resources)
   }
 
@@ -187,8 +188,9 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
 
   /**
    * Get structure definition resource of the schema
+   *
    * @param projectId project containing the schema definition
-   * @param id id of the requested schema
+   * @param id        id of the requested schema
    * @return Structure definition of the schema converted into StructureDefinition Resource
    */
   def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[Resource]] = {
@@ -197,7 +199,8 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
 
   /**
    * Save the schema by using its StructureDefinition
-   * @param projectId Identifier of the project in which the schema will be created
+   *
+   * @param projectId                   Identifier of the project in which the schema will be created
    * @param structureDefinitionResource schema definition in the form of Structure Definition resource
    * @return the SchemaDefinition of the created schema
    */

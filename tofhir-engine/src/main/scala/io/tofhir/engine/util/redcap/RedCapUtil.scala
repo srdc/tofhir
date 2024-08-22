@@ -91,6 +91,7 @@ object RedCapUtil {
         url = s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId",
         `type` = schemaId,
         name = schemaName,
+        description = None,
         rootDefinition = None,
         fieldDefinitions = Some(definitions))
     }).toSeq
