@@ -35,7 +35,7 @@ object ToFhirHttpServer extends LazyLogging {
     var serverBinding: Option[Http.ServerBinding] = None
     try {
       serverBinding = Some(Await.result(serverBindingFuture, FiniteDuration(10L, TimeUnit.SECONDS)))
-      logger.info(s"tofHIR server ready at ${webServerConfig.serverHost}:${webServerConfig.serverPort}")
+      logger.info(s"toFHIR server ready at ${webServerConfig.serverHost}:${webServerConfig.serverPort}")
     } catch {
       case e: Exception =>
         logger.error("Problem while binding to the given HTTP address and port!", e)

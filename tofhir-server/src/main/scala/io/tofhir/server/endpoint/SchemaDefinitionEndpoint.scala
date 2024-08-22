@@ -45,8 +45,8 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
         importFromFhirServer(projectId)
       } ~ pathPrefix(SEGMENT_IMPORT_ZIP) {
         importFromZipOfFHIRProfiles(projectId)
-      } ~ pathPrefix(Segment) { id: String => // Operations on a single schema identified by its id
-        getSchema(projectId, id) ~ updateSchema(projectId, id) ~ deleteSchema(projectId, id)
+      } ~ pathPrefix(Segment) { schemaId: String => // Operations on a single schema identified by its id
+        getSchema(projectId, schemaId) ~ updateSchema(projectId, schemaId) ~ deleteSchema(projectId, schemaId)
       }
     }
   }
@@ -127,11 +127,11 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
     }
   }
 
-  private def updateSchema(projectId: String, id: String): Route = {
+  private def updateSchema(projectId: String, schemaId: String): Route = {
     put {
       entity(as[SchemaDefinition]) { schemaDefinition =>
         complete {
-          service.putSchema(projectId, id, schemaDefinition) map { _ =>
+          service.putSchema(projectId, schemaId, schemaDefinition) map { _ =>
             StatusCodes.OK -> schemaDefinition
           }
         }

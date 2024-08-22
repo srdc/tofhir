@@ -1,5 +1,6 @@
 package io.tofhir.common.model
 
+import io.tofhir.common.util.HashUtil
 import org.json4s.JsonAST.{JObject, JString}
 
 import java.util.UUID
@@ -14,7 +15,7 @@ import java.util.UUID
  * @param rootDefinition   Root element definition for the schema i.e. the first element in the definition
  * @param fieldDefinitions Rest of the element definitions
  */
-case class SchemaDefinition(id: String = UUID.randomUUID().toString,
+case class SchemaDefinition(id: String,
                             url: String,
                             `type`: String,
                             name: String,
@@ -36,5 +37,17 @@ case class SchemaDefinition(id: String = UUID.randomUUID().toString,
         "name" -> JString(this.name)
       )
     )
+  }
+}
+
+object SchemaDefinition {
+  def apply(url: String,
+            `type`: String,
+            name: String,
+            rootDefinition: Option[SimpleStructureDefinition],
+            fieldDefinitions: Option[Seq[SimpleStructureDefinition]]): SchemaDefinition = {
+    // If id is not provided, use MD5 hash of url as the id
+    val effectiveId = HashUtil.md5Hash(url)
+    SchemaDefinition(effectiveId, url, `type`, name, rootDefinition, fieldDefinitions)
   }
 }
