@@ -65,15 +65,19 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
   }
 
   /**
-   * Update the schema definition to the schema repository.
+   * Update the schema definition in the schema repository.
    *
    * @param projectId
-   * @param id
+   * @param schemaId
    * @param schemaDefinition
    * @return
    */
-  def putSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
-    schemaRepository.updateSchema(projectId, id, schemaDefinition)
+  def putSchema(projectId: String, schemaId: String, schemaDefinition: SchemaDefinition): Future[Unit] = {
+    // Ensure that the provided schemaId matches the SchemaDefinition's schemaId
+    if (!schemaId.equals(schemaDefinition.id)) {
+      throw BadRequest("Schema definition is not valid.", s"Identifier of the schema definition: ${schemaDefinition.id} does not match with the provided schemaId: $schemaId")
+    }
+    schemaRepository.updateSchema(projectId, schemaId, schemaDefinition)
   }
 
   /**

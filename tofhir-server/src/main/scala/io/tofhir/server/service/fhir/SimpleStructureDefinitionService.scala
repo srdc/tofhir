@@ -16,9 +16,9 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
    * @param profileRestrictions
    * @return
    */
-  def convertToSchemaDefinition(profileRestrictions: ProfileRestrictions): SchemaDefinition = {
+  def convertToSchemaDefinition(schemaId: String, profileRestrictions: ProfileRestrictions): SchemaDefinition = {
     val rootElementDefinition = createRootElement(profileRestrictions.resourceType)
-    SchemaDefinition(id = profileRestrictions.id.getOrElse(profileRestrictions.resourceType),
+    SchemaDefinition(id = schemaId,
       url = profileRestrictions.url,
       `type` = profileRestrictions.resourceType,
       name = profileRestrictions.resourceName.getOrElse(profileRestrictions.resourceType),

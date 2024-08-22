@@ -49,11 +49,11 @@ trait ISchemaRepository extends IFhirSchemaLoader {
    * Update the schema to the repository.
    *
    * @param projectId Project containing the schema definition
-   * @param id               Identifier of the schema
+   * @param schemaId               Identifier of the schema
    * @param schemaDefinition Content of the schema definition
    * @return
    */
-  def updateSchema(projectId: String, id: String, schemaDefinition: SchemaDefinition): Future[Unit]
+  def updateSchema(projectId: String, schemaId: String, schemaDefinition: SchemaDefinition): Future[Unit]
 
   /**
    * Delete the schema from the repository.

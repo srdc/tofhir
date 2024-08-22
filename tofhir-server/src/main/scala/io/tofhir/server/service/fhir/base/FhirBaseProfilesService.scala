@@ -7,6 +7,7 @@ import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.config.{BaseFhirServerConfigurator, FSConfigReader}
 import io.onfhir.r4.parsers.R4Parser
 import io.tofhir.common.model.SchemaDefinition
+import io.tofhir.common.util.HashUtil
 import io.tofhir.engine.util.MajorFhirVersion
 import io.tofhir.server.service.fhir.SimpleStructureDefinitionService
 
@@ -44,7 +45,7 @@ abstract class FhirBaseProfilesService {
       // parse the structure definition from the resource
       val structureDefinition: ProfileRestrictions = new R4Parser().parseStructureDefinition(resource)
       // convert the parsed structure definition to a schema definition
-      simpleStructureDefinitionService.convertToSchemaDefinition(structureDefinition)
+      simpleStructureDefinitionService.convertToSchemaDefinition(structureDefinition.id.getOrElse(HashUtil.md5Hash(structureDefinition.url)), structureDefinition)
     })
   }
 

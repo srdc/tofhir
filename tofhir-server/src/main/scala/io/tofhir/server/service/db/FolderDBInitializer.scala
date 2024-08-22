@@ -47,7 +47,7 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
         .toMap
       collection.mutable.Map(projectMap.toSeq: _*)
     } else {
-      logger.debug("There does not exist a metadata file for projects. Creating it...")
+      logger.debug(s"There does not exist a metadata file (${ProjectFolderRepository.PROJECTS_JSON}) for projects. Creating it...")
       file.createNewFile()
       // Parse the folder structure of the respective resource and to initialize projects with the resources found.
       val projects = initProjectsWithResources()
