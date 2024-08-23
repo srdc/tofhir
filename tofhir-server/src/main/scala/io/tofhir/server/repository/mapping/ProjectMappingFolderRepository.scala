@@ -193,8 +193,8 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * @return
    */
   private def getFileForMapping(projectId: String, fhirMapping: FhirMapping): Future[File] = {
-    val projectFuture: Future[Option[Project]] = projectFolderRepository.getProject(projectId)
-    projectFuture.map(project => {
+    projectFolderRepository.getProject(projectId).map(project => {
+      if (project.isEmpty) throw new IllegalStateException(s"This should not be possible. ProjectId: $projectId does not exist in the project folder repository.")
       val file: File = FileUtils.getPath(mappingRepositoryFolderPath, project.get.id, getFileName(fhirMapping.id)).toFile
       // If the project folder does not exist, create it
       if (!file.getParentFile.exists()) {

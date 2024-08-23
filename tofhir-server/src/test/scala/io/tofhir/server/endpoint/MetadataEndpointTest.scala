@@ -6,6 +6,7 @@ import io.tofhir.server.endpoint.MetadataEndpoint
 import io.tofhir.server.model.Metadata
 import org.json4s.jackson.JsonMethods
 import io.tofhir.common.model.Json4sSupport.formats
+import io.tofhir.engine.config.ToFhirConfig
 
 import java.io.File
 
@@ -26,8 +27,8 @@ class MetadataEndpointTest extends BaseEndpointTest {
         metadata.repositoryNames.contexts shouldEqual "mapping-contexts"
         metadata.repositoryNames.jobs shouldEqual "mapping-jobs"
         metadata.repositoryNames.terminologySystems shouldEqual "terminology-systems"
-        metadata.archiving.erroneousRecordsFolder shouldEqual s"conf${File.separator}erroneous-records-folder"
-        metadata.archiving.archiveFolder shouldEqual s"conf${File.separator}archive-folder"
+        metadata.archiving.erroneousRecordsFolder shouldEqual s"${ToFhirConfig.engineConfig.contextPath}${File.separator}erroneous-records-folder"
+        metadata.archiving.archiveFolder shouldEqual s"${ToFhirConfig.engineConfig.contextPath}${File.separator}archive-folder"
         metadata.archiving.streamArchivingFrequency shouldEqual 5000
       }
     }

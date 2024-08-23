@@ -415,7 +415,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
       (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual expectedSchemaCount
       // check schema folder is created
-      FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${otherObservationSourceSchema.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile should exist
+      FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${otherObservationSourceSchema.id}${FileExtensions.JSON}").toFile should exist
     }
   }
 

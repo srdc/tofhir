@@ -52,7 +52,6 @@ object FileUtils {
 
   object FileExtensions extends Enumeration {
     type FileExtensions = Value
-    final val StructureDefinition = Value(".StructureDefinition")
     final val CSV = Value(".csv")
     final val JSON = Value(".json")
   }
