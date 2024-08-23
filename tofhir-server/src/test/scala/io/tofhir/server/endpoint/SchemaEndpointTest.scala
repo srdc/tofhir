@@ -39,7 +39,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   ), sourceBinding = SqlSource(query = Some("select * from death"), preprocessSql = Some("select person_id, death_date, death_datetime, cause_source_value from test")))
 
 
-  // first schema schema to be created
+  // first schema to be created
   val schema1: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema", `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = None)
   // second schema to be created
   val schema2: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", `type` = "Ty2", name = "name2", description = Some("description2"), rootDefinition = None, fieldDefinitions = None)
@@ -95,7 +95,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
         // check schema folder is created
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema1.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile should exist
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema1.id}${FileExtensions.JSON}").toFile should exist
       }
       // create the second schema
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema2))) ~> route ~> check {
@@ -103,7 +103,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         // validate that schema metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 2
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema2.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile should exist
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema2.id}${FileExtensions.JSON}").toFile should exist
       }
     }
 
@@ -160,7 +160,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
       }
       // update a schema with invalid id
       Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/123123", HttpEntity(ContentTypes.`application/json`, writePretty(schema2))) ~> route ~> check {
-        status shouldEqual StatusCodes.NotFound
+        status shouldEqual StatusCodes.BadRequest
       }
     }
 
@@ -172,7 +172,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 1
         // check schema folder is deleted
-        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema1.id}${FileExtensions.StructureDefinition}${FileExtensions.JSON}").toFile shouldNot exist
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema1.id}${FileExtensions.JSON}").toFile shouldNot exist
       }
       // delete a schema with invalid id
       Delete(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/123123") ~> route ~> check {
@@ -468,7 +468,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     "import StructureDefinition from a FHIR server" in {
       // settings to import a StructureDefinition named 'CustomPatient' from the onFHIR
       val schemaID = "CustomPatient"
-      val importSchemaSettings = ImportSchemaSettings(onFhirClient.getBaseUrl(),schemaID, None)
+      val importSchemaSettings = ImportSchemaSettings(onFhirClient.getBaseUrl(), schemaID, None)
       // import the StructureDefinition from onFHIR
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_IMPORT}", HttpEntity(ContentTypes.`application/json`, writePretty(importSchemaSettings))) ~> route ~> check {
         status shouldEqual StatusCodes.OK

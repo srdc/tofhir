@@ -243,8 +243,8 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    */
   private def initMap(schemaRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, SchemaDefinition]] = {
     val schemaDefinitionMap = mutable.Map[String, mutable.Map[String, SchemaDefinition]]()
-    logger.info(s"Initializing the Schema Repository from path $schemaRepositoryFolderPath.")
     val schemaFolder = FileUtils.getPath(schemaRepositoryFolderPath).toFile
+    logger.info(s"Initializing the Schema Repository from path ${schemaFolder.getAbsolutePath}.")
     if (!schemaFolder.exists()) {
       schemaFolder.mkdirs()
     }
