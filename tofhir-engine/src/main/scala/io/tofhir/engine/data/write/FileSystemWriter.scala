@@ -1,7 +1,7 @@
 package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
-import FileSystemWriter.SinkFileFormats
+import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings}
 import org.apache.spark.sql.types.{ArrayType, StructType}
 import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
@@ -27,6 +27,15 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
             .mode(SaveMode.Append)
             .options(sinkSettings.options)
         writer.text(sinkSettings.path)
+      case SinkFileFormats.PARQUET =>
+        val writer =
+          df
+            .map(_.mappedResource.get)
+            .coalesce(sinkSettings.numOfPartitions)
+            .write
+            .mode(SaveMode.Append)
+            .options(sinkSettings.options)
+        writer.parquet(sinkSettings.path)
       case SinkFileFormats.CSV =>
         // read the mapped resource json column and load it to a new data frame
         val mappedResourceDF = spark.read.json(df.select("mappedResource").as[String])
@@ -63,5 +72,6 @@ object FileSystemWriter {
   object SinkFileFormats {
     final val NDJSON = "ndjson"
     final val CSV = "csv"
+    final val PARQUET = "parquet"
   }
 }
