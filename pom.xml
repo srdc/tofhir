@@ -533,6 +533,12 @@
                 <artifactId>opencsv</artifactId>
                 <version>${opencsv.version}</version>
             </dependency>
+            <!-- For integrating Delta Lake with Spark in a Scala project -->
+            <dependency>
+                <groupId>io.delta</groupId>
+                <artifactId>delta-spark_${scala.binary.version}</artifactId>
+                <version>3.0.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

@@ -297,6 +297,11 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
         </dependency>
+        <!-- For integrating Delta Lake with Spark in a Scala project -->
+        <dependency>
+            <groupId>io.delta</groupId>
+            <artifactId>delta-spark_${scala.binary.version}</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

@@ -36,6 +36,16 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
             .mode(SaveMode.Append)
             .options(sinkSettings.options)
         writer.parquet(sinkSettings.path)
+      case SinkFileFormats.DELTA_LAKE =>
+        val writer =
+          df
+            .map(_.mappedResource.get)
+            .coalesce(sinkSettings.numOfPartitions)
+            .write
+            .format(SinkFileFormats.DELTA_LAKE) // Specify Delta Lake format
+            .mode(SaveMode.Append)
+            .options(sinkSettings.options)
+        writer.save(sinkSettings.path)
       case SinkFileFormats.CSV =>
         // read the mapped resource json column and load it to a new data frame
         val mappedResourceDF = spark.read.json(df.select("mappedResource").as[String])
@@ -73,5 +83,6 @@ object FileSystemWriter {
     final val NDJSON = "ndjson"
     final val CSV = "csv"
     final val PARQUET = "parquet"
+    final val DELTA_LAKE = "delta"
   }
 }
