@@ -16,11 +16,14 @@ trait FhirSinkSettings
  * @param fileFormat      File format if not inferred from the path
  * @param numOfPartitions Number of partitions for the file (for distributed fs)
  * @param options         Further options (Spark data source write options)
+ * @param partitionByResourceType Flag to determine whether to partition the output files by FHIR resource type.
+ *                                When enabled, each resource type will be written to a separate directory.
  */
 case class FileSystemSinkSettings(path: String,
                                   fileFormat: Option[String] = None,
                                   numOfPartitions: Int = 1,
-                                  options: Map[String, String] = Map.empty[String, String]) extends FhirSinkSettings {
+                                  options: Map[String, String] = Map.empty[String, String],
+                                  partitionByResourceType: Boolean = false) extends FhirSinkSettings {
   def sinkType: String = fileFormat.getOrElse(path.split('.').last)
 
 }
