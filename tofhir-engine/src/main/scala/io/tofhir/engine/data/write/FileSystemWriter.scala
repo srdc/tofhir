@@ -56,15 +56,36 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
           val resourceType = rDf.getAs[String]("resourceType")
           // Convert the mutable ArraySeq (default in Spark) to an immutable List
           val resourcesSeq = rDf.getAs[Seq[String]]("resources").toList
-          // Convert the list of resources back into a DataFrame with a single column named "mappedResourceJson".
-          // This DataFrame will look like:
-          // +----------------------+
-          // | mappedResourceJson   |
-          // +----------------------+
-          // | {"resourceType": "...|
-          // | {"resourceType": "...|
-          // +----------------------+
-          val resourcesDF = resourcesSeq.toDF("mappedResourceJson")
+
+          // Generate the DataFrame that will be written to the file system.
+          // If the sink type is NDJSON, the DataFrame should have a single column containing the JSON strings.
+          // For other formats, the DataFrame should have multiple columns corresponding to the keys in the JSON objects.
+          val resourcesDF = if(sinkSettings.sinkType.contentEquals(SinkFileFormats.NDJSON)) {
+            // Convert the list of JSON strings into a DataFrame with a single column named "mappedResourceJson".
+            // The resulting DataFrame will contain one row per JSON string, where each row is a single JSON object.
+            // The structure of this DataFrame will be as follows:
+            // +----------------------+
+            // | mappedResourceJson   |
+            // +----------------------+
+            // | {"resourceType": "...|
+            // | {"resourceType": "...|
+            // +----------------------+
+            resourcesSeq.toDF("mappedResourceJson")
+          } else {
+            // Convert the list of JSON strings into a Dataset[String], where each element is a JSON string.
+            val resourcesDS = spark.createDataset(resourcesSeq)
+            // Create a DataFrame by reading the Dataset of JSON strings as JSON objects.
+            // The resulting DataFrame will have multiple columns based on the keys in the JSON strings.
+            // Each JSON object will be represented as a row in the DataFrame, with the columns corresponding to the JSON keys.
+            // For example, the DataFrame might look like this:
+            // +-----------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+------------+--------------------+--------------------+
+            // | abatementDateTime | asserter | category | clinicalStatus | code | encounter | id | meta | onsetDateTime | resourceType | subject | verificationStatus |
+            // +-----------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+------------+--------------------+--------------------+
+            // | NULL | NULL | [ {problem-list-item} ] | {active, http: //...| {J13, Pneumonia} | NULL | 2faab6373e7c3bba4...| [ {https://aiccele...| 2012-10-15 | Condition | {Patient/34dc88d5... | {confirmed, http... |
+            // | 2013-05-22 | NULL | [ {encounter-diagnosis} ] | {inactive, http...| {G40, Parkinson's disease} | Encounter/bb7134...| 63058b87a718e66d4...| [ {https://aiccele...| 2013-05-07 | Condition | {Patient/0b3a0b23... | NULL |
+            // +-----------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+------------+--------------------+--------------------+
+            spark.read.json(resourcesDS)
+          }
 
           // Define the output path based on the resourceType, ensuring that each resource type is saved in its own folder.
           val outputPath = s"${sinkSettings.path}/$resourceType"
@@ -92,18 +113,24 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
             .options(sinkSettings.options)
         writer.text(sinkSettings.path)
       case SinkFileFormats.PARQUET =>
+        // Convert the DataFrame to a Dataset of JSON strings
+        val jsonDS = df.select("mappedResource").as[String]
+        // Create a DataFrame from the Dataset of JSON strings
+        val jsonDF = spark.read.json(jsonDS)
         val writer =
-          df
-            .map(_.mappedResource.get)
+          jsonDF
             .coalesce(sinkSettings.numOfPartitions)
             .write
             .mode(SaveMode.Append)
             .options(sinkSettings.options)
         writer.parquet(sinkSettings.path)
       case SinkFileFormats.DELTA_LAKE =>
+        // Convert the DataFrame to a Dataset of JSON strings
+        val jsonDS = df.select("mappedResource").as[String]
+        // Create a DataFrame from the Dataset of JSON strings
+        val jsonDF = spark.read.json(jsonDS)
         val writer =
-          df
-            .map(_.mappedResource.get)
+          jsonDF
             .coalesce(sinkSettings.numOfPartitions)
             .write
             .format(SinkFileFormats.DELTA_LAKE) // Specify Delta Lake format
