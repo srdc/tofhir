@@ -52,7 +52,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
     val processedFiles: mutable.HashSet[String] =mutable.HashSet.empty
     //Based on source type
     val resultDf = sourceType match {
-        case SourceFileFormats.CSV | SourceFileFormats.TSV =>
+        case SourceFileFormats.CSV | SourceFileFormats.TSV | SourceFileFormats.TXT_CSV =>
           val updatedOptions = sourceType match {
             case SourceFileFormats.TSV =>
               // If the file format is tsv, use tab (\t) as separator by default if it is not set explicitly
@@ -64,6 +64,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               mappingSourceBinding.options +
                 // use *.csv as pathGlobFilter by default if it is not set explicitly to ignore files without csv extension
                 ("pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.CSV}"))
+            case SourceFileFormats.TXT_CSV => mappingSourceBinding.options
           }
 
           //Options that we infer for csv
@@ -93,7 +94,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               .schema(csvSchema.orNull)
               .csv(finalPath)
         // assume that each line in the txt files contains a separate JSON object.
-        case SourceFileFormats.JSON | SourceFileFormats.TXT=>
+        case SourceFileFormats.JSON | SourceFileFormats.TXT_NDJON=>
           if(mappingJobSourceSettings.asStream)
             spark.readStream.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file

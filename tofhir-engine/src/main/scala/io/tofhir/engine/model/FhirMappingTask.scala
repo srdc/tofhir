@@ -140,6 +140,7 @@ object SourceFileFormats {
   final val PARQUET = "parquet"
   final val JSON = "json"
   final val AVRO = "avro"
-  final val TXT = "txt"
+  final val TXT_NDJON = "txt-ndjson"
+  final val TXT_CSV = "txt-csv"
 }
 
