@@ -9,6 +9,7 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization.writePretty
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{BadRequest, InternalError}
 import org.apache.commons.io.input.BOMInputStream
 import org.json4s.JsonAST.JObject
@@ -43,6 +44,7 @@ object FileOperations {
 
   /**
    * Reads the given file into a JSON object
+   *
    * @param f
    * @return
    */
@@ -54,7 +56,8 @@ object FileOperations {
 
   /**
    * Write seq content to a json file
-   * @param f File to be written
+   *
+   * @param f       File to be written
    * @param content array of objects to be saved
    * @tparam K class that can be parsed to JSON and saved
    */
@@ -98,6 +101,7 @@ object FileOperations {
 
   /**
    * Get folder if exists
+   *
    * @param path path of the folder
    * @return File object
    */
@@ -112,14 +116,15 @@ object FileOperations {
 
   /**
    * Check whether the file name matches with the entity id
-   * @param entityId id of the entity e.g. job id, mapping id
-   * @param file file to whose name will be checked
+   *
+   * @param entityId   id of the entity e.g. job id, mapping id
+   * @param file       file to whose name will be checked
    * @param entityType type of the entity e.g. job, mapping
    * @return true if the file name matches with the entity id, false otherwise
    */
   def checkFileNameMatchesEntityId(entityId: String, file: File, entityType: String): Boolean = {
     if (!entityId.equals(file.getName.replace(FileExtensions.JSON.toString, ""))) {
-      logger.warn(s"Discarding ${entityType} definition with id ${entityId} as it does not match with the file name ${file.getName}")
+      logger.warn(s"Discarding $entityType definition with id $entityId as it does not match with the file name ${file.getName}")
       false
     } else {
       true
@@ -176,13 +181,31 @@ object FileOperations {
 
   /**
    * Write string content to a file
-   * @param file file to be written
+   *
+   * @param file    file to be written
    * @param content content to be written
    */
   def writeStringContentToFile(file: File, content: String): Unit = {
     val fileWriter = new FileWriter(file)
     fileWriter.write(content)
     fileWriter.close()
+  }
+
+  /**
+   * Gets the File object for the given entityId (jobId, mappingId, schemaId).
+   *
+   * @param repositoryPath (Path to the job repository, schema repository or mapping repository)
+   * @param projectId The id of the toFHIR project.
+   * @param entityId The id of the job, mapping or schema.
+   * @return
+   */
+  def getFileForEntityWithinProject(repositoryPath: String, projectId: String, entityId: String): File = {
+    val file: File = FileUtils.getPath(repositoryPath, projectId, s"$entityId${FileExtensions.JSON}").toFile
+    // If the project folder does not exist, create it
+    if (!file.getParentFile.exists()) {
+      file.getParentFile.mkdir()
+    }
+    file
   }
 }
 

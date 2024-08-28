@@ -95,24 +95,24 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
     }
   }
 
-  private def getJob(projectId: String, id: String): Route = {
+  private def getJob(projectId: String, jobId: String): Route = {
     get {
       complete {
-        service.getJob(projectId, id) map {
+        service.getJob(projectId, jobId) map {
           case Some(mappingJob) => StatusCodes.OK -> mappingJob
           case None => StatusCodes.NotFound -> {
-            throw ResourceNotFound("Job not found", s"Mapping job with name $id not found")
+            throw ResourceNotFound("Job not found", s"Mapping job with name $jobId not found")
           }
         }
       }
     }
   }
 
-  private def updateJob(projectId: String, id: String): Route = {
+  private def updateJob(projectId: String, jobId: String): Route = {
     put {
       entity(as[FhirMappingJob]) { job =>
         complete {
-          service.updateJob(projectId, id, job) map { _ =>
+          service.updateJob(projectId, jobId, job) map { _ =>
             StatusCodes.OK -> job
           }
         }
@@ -127,18 +127,18 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
    * be deleted. If the job is not running, the job is deleted.
    *
    * @param projectId The identifier of the project to which the mapping job belongs.
-   * @param id        The identifier of the mapping job to be deleted.
+   * @param jobId     The identifier of the mapping job to be deleted.
    */
-  private def deleteJob(projectId: String, id: String): Route = {
+  private def deleteJob(projectId: String, jobId: String): Route = {
     delete {
       complete {
-        executionService.isJobRunning(id) flatMap  { result =>
-          if(result)
+        executionService.isJobRunning(jobId) flatMap { result =>
+          if (result)
             Future {
               StatusCodes.BadRequest -> s"The running mapping jobs cannot be deleted."
             }
           else
-            service.deleteJob(projectId, id) map { _ =>
+            service.deleteJob(projectId, jobId) map { _ =>
               StatusCodes.NoContent -> HttpEntity.Empty
             }
         }
@@ -146,11 +146,11 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
     }
   }
 
-  private def runJob(projectId: String, id: String): Route = {
+  private def runJob(projectId: String, jobId: String): Route = {
     post {
       entity(as[Option[ExecuteJobTask]]) { executeJobTask =>
         complete {
-          executionService.runJob(projectId, id, None, executeJobTask) map { _ =>
+          executionService.runJob(projectId, jobId, None, executeJobTask) map { _ =>
             StatusCodes.OK
           }
         }
@@ -161,12 +161,12 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
   /**
    * Route to check if a mapping job with the specified ID is currently running.
    *
-   * @param id The identifier of the mapping job to be checked for running status.
+   * @param jobId The identifier of the mapping job to be checked for running status.
    */
-  private def isJobRunning(id: String): Route = {
+  private def isJobRunning(jobId: String): Route = {
     get {
       complete {
-        executionService.isJobRunning(id).map(result => result.toString)
+        executionService.isJobRunning(jobId).map(result => result.toString)
       }
     }
   }
@@ -174,13 +174,13 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
   /**
    * Route to test a mapping with mapping job configurations i.e. source data configurations
    * */
-  private def testMappingWithJob(projectId: String, id: String): Route = {
+  private def testMappingWithJob(projectId: String, jobId: String): Route = {
     post {
       entity(as[TestResourceCreationRequest]) { requestBody =>
         validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
           "Invalid row selection order. Available options are: start, end, random") {
           complete {
-            executionService.testMappingWithJob(projectId, id, requestBody)
+            executionService.testMappingWithJob(projectId, jobId, requestBody)
           }
         }
       }
@@ -190,10 +190,10 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
   /**
    * Route to get executions of a mapping job
    * */
-  private def getExecutions(projectId: String, id: String): Route = {
+  private def getExecutions(projectId: String, jobId: String): Route = {
     get {
       complete {
-        executionService.getExecutions(projectId, id)
+        executionService.getExecutions(projectId, jobId)
       }
     }
   }
@@ -213,6 +213,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
 
   /**
    * Route to continue a job execution with parameters (e.g. clearCheckpoint)
+   *
    * @param projectId
    * @param jobId
    * @param executionId

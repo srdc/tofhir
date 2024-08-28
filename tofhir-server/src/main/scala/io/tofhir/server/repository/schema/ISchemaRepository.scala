@@ -23,10 +23,10 @@ trait ISchemaRepository extends IFhirSchemaLoader {
    * Retrieve the schema identified by its id.
    *
    * @param projectId Project containing the schema definition
-   * @param id        Identifier of the schema definition
+   * @param schemaId  Identifier of the schema definition
    * @return
    */
-  def getSchema(projectId: String, id: String): Future[Option[SchemaDefinition]]
+  def getSchema(projectId: String, schemaId: String): Future[Option[SchemaDefinition]]
 
   /**
    * Retrieve the schema identified by its url.
@@ -48,21 +48,21 @@ trait ISchemaRepository extends IFhirSchemaLoader {
   /**
    * Update the schema to the repository.
    *
-   * @param projectId Project containing the schema definition
-   * @param schemaId               Identifier of the schema
+   * @param projectId        Project containing the schema definition
+   * @param schemaId         Identifier of the schema
    * @param schemaDefinition Content of the schema definition
    * @return
    */
-  def updateSchema(projectId: String, schemaId: String, schemaDefinition: SchemaDefinition): Future[Unit]
+  def updateSchema(projectId: String, schemaId: String, schemaDefinition: SchemaDefinition): Future[SchemaDefinition]
 
   /**
    * Delete the schema from the repository.
    *
    * @param projectId Project containing the schema definition
-   * @param id Identifier of the schema definition
+   * @param schemaId  Identifier of the schema definition
    * @return
    */
-  def deleteSchema(projectId: String, id: String): Future[Unit]
+  def deleteSchema(projectId: String, schemaId: String): Future[Unit]
 
   /**
    * Deletes all schemas associated with a specific project.
@@ -75,10 +75,10 @@ trait ISchemaRepository extends IFhirSchemaLoader {
    * Retrieve the Structure Definition of the schema identified by its id.
    *
    * @param projectId Project containing the schema definition
-   * @param id Identifier of the schema definition
+   * @param schemaId  Identifier of the schema definition
    * @return Structure definition of the schema converted into StructureDefinition Resource
    */
-  def getSchemaAsStructureDefinition(projectId: String, id: String): Future[Option[Resource]]
+  def getSchemaAsStructureDefinition(projectId: String, schemaId: String): Future[Option[Resource]]
 
 
   /**

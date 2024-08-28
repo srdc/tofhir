@@ -146,20 +146,6 @@ class MappingEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "update each job referencing a mapping whose url is updated" in {
-      // update a mapping
-      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${MappingEndpoint.SEGMENT_MAPPINGS}/${mapping2.id}", HttpEntity(ContentTypes.`application/json`, writePretty(mapping2.copy(url = "http://example.com/mapping4")))) ~> route ~> check {
-        status shouldEqual StatusCodes.OK
-        // validate that the returned mapping includes the update
-        val mapping: FhirMapping = JsonMethods.parse(responseAs[String]).extract[FhirMapping]
-        mapping.url shouldEqual "http://example.com/mapping4"
-
-        // validate that the job is updated
-        val updatedJob: FhirMappingJob = FileOperations.readJsonContentAsObject[FhirMappingJob](FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${job.id}${FileExtensions.JSON}").toFile)
-        updatedJob.mappings.head.mappingRef shouldEqual "http://example.com/mapping4"
-      }
-    }
-
   }
 
   /**

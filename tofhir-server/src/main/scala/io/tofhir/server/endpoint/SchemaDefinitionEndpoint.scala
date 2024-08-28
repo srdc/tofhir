@@ -85,7 +85,7 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
     }
   }
 
-  private def getSchema(projectId: String, id: String): Route = {
+  private def getSchema(projectId: String, schemaId: String): Route = {
     get {
       parameterMap { queryParams =>
         complete {
@@ -93,19 +93,19 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
           val format: String = queryParams.getOrElse("format", SchemaFormats.SIMPLE_STRUCTURE_DEFINITION)
           // Send structure definition for the user to export
           if(format == SchemaFormats.STRUCTURE_DEFINITION){
-            service.getSchemaAsStructureDefinition(projectId, id) map {
+            service.getSchemaAsStructureDefinition(projectId, schemaId) map {
               case Some(schemaStructureDefinition) => StatusCodes.OK -> schemaStructureDefinition
               case None => {
-                throw ResourceNotFound("Schema not found", s"Schema definition with name $id not found")
+                throw ResourceNotFound("Schema not found", s"Schema definition with name $schemaId not found")
               }
             }
           }
             // Send simple structure definition for general use in frontend
           else {
-            service.getSchema(projectId, id) map {
+            service.getSchema(projectId, schemaId) map {
               case Some(schemaSimpleStructureDefinition) => StatusCodes.OK -> schemaSimpleStructureDefinition
               case None => StatusCodes.NotFound -> {
-                throw ResourceNotFound("Schema not found", s"Schema definition with name $id not found")
+                throw ResourceNotFound("Schema not found", s"Schema definition with name $schemaId not found")
               }
             }
           }
@@ -131,18 +131,18 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
     put {
       entity(as[SchemaDefinition]) { schemaDefinition =>
         complete {
-          service.putSchema(projectId, schemaId, schemaDefinition) map { _ =>
-            StatusCodes.OK -> schemaDefinition
+          service.putSchema(projectId, schemaId, schemaDefinition) map { res: SchemaDefinition =>
+            StatusCodes.OK -> res
           }
         }
       }
     }
   }
 
-  private def deleteSchema(projectId: String, id: String): Route = {
+  private def deleteSchema(projectId: String, schemaId: String): Route = {
     delete {
       complete {
-        service.deleteSchema(projectId, id) map { _ =>
+        service.deleteSchema(projectId, schemaId) map { _ =>
           StatusCodes.NoContent
         }
       }

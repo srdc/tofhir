@@ -21,36 +21,39 @@ trait IMappingRepository extends IFhirMappingCachedRepository {
   /**
    * Save the mapping to the repository.
    *
-   * @param projectId  subfolder to save the mapping in
-   * @param mapping mapping to save
+   * @param projectId subfolder to save the mapping in
+   * @param mapping   mapping to save
    * @return
    */
-  def createMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping]
+  def saveMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping]
 
   /**
    * Get the mapping by its id
+   *
    * @param projectId project id the mapping belongs to
-   * @param id mapping id
+   * @param mappingId mapping id
    * @return
    */
-  def getMapping(projectId: String, id: String): Future[Option[FhirMapping]]
+  def getMapping(projectId: String, mappingId: String): Future[Option[FhirMapping]]
 
   /**
    * Update the mapping in the repository
+   *
    * @param projectId project id the mapping belongs to
-   * @param id mapping id
-   * @param mapping mapping to save
+   * @param mappingId mapping id
+   * @param mapping   mapping to save
    * @return
    */
-  def putMapping(projectId: String, id: String, mapping: FhirMapping): Future[FhirMapping]
+  def updateMapping(projectId: String, mappingId: String, mapping: FhirMapping): Future[FhirMapping]
 
   /**
    * Delete the mapping from the repository
+   *
    * @param projectId project id the mapping belongs to
-   * @param id mapping id
+   * @param mappingId mapping id
    * @return
    */
-  def deleteMapping(projectId: String, id: String): Future[Unit]
+  def deleteMapping(projectId: String, mappingId: String): Future[Unit]
 
   /**
    * Deletes all mappings associated with a specific project.
@@ -61,6 +64,7 @@ trait IMappingRepository extends IFhirMappingCachedRepository {
 
   /**
    * Retrieves the identifiers of mappings referencing the given schema in their definitions.
+   *
    * @param projectId identifier of project whose mappings will be checked
    * @param schemaUrl the url of schema
    * @return the identifiers of mappings referencing the given schema in their definitions

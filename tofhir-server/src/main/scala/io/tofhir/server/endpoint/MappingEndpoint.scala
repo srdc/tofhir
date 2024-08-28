@@ -49,35 +49,35 @@ class MappingEndpoint(mappingRepository: IMappingRepository, jobRepository: IJob
     }
   }
 
-  private def getMapping(projectId: String, id: String): Route = {
+  private def getMapping(projectId: String, mappingId: String): Route = {
     get {
       complete {
-        service.getMapping(projectId, id) map {
+        service.getMapping(projectId, mappingId) map {
           case Some(fhirMapping) => StatusCodes.OK -> fhirMapping
           case None => StatusCodes.NotFound -> {
-            throw ResourceNotFound("Mapping not found", s"Mapping with name $id not found")
+            throw ResourceNotFound("Mapping not found", s"Mapping with name $mappingId not found")
           }
         }
       }
     }
   }
 
-  private def putMapping(projectId: String, id: String): Route = {
+  private def putMapping(projectId: String, mappingId: String): Route = {
     put {
       entity(as[FhirMapping]) { fhirMapping =>
         complete {
-          service.updateMapping(projectId, id, fhirMapping) map { _ =>
-            StatusCodes.OK -> fhirMapping
+          service.updateMapping(projectId, mappingId, fhirMapping) map { res: FhirMapping =>
+            StatusCodes.OK -> res
           }
         }
       }
     }
   }
 
-  private def deleteMapping(projectId: String, id: String): Route = {
+  private def deleteMapping(projectId: String, mappingId: String): Route = {
     delete {
       complete {
-        service.deleteMapping(projectId, id) map { _ =>
+        service.deleteMapping(projectId, mappingId) map { _ =>
           StatusCodes.NoContent
         }
       }
