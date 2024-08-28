@@ -57,6 +57,12 @@ case class FhirMappingResult(
     markerMap.put("errorDesc", error.get.description)
     markerMap.put("errorExpr", error.get.expression.getOrElse(""))
     markerMap.put("eventId", eventId)
+    // The current timestamp is automatically added to the log entry when it is sent to Elasticsearch or written to a file.
+    // As a result, there is no need to manually add a "@timestamp" field.
+    // However, during the process of writing the log to Elasticsearch, the timestamp is rounded, resulting in a loss of precision.
+    // For example, "2024-08-28_13:54:44.740" may be rounded to "2024-08-28_13:54:44.000" in Elasticsearch.
+    // This rounding leads to the loss of crucial millisecond information, which is important for accurately sorting logs.
+    markerMap.put("@timestamp", System.currentTimeMillis.toString)
     // create a new MapMarker using the marker map
     val marker: MapMarker = new MapMarker("marker", markerMap)
     // add mappedResource to the marker map if error code is INVALID_RESOURCE
