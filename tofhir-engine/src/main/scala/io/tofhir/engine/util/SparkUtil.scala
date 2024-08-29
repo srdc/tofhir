@@ -1,11 +1,15 @@
 package io.tofhir.engine.util
 
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
+import org.apache.spark.SparkContext
+import org.apache.spark.input.PortableDataStream
+import org.apache.spark.rdd.RDD
 import org.json4s.jackson.JsonMethods
 
-import java.io.{File, PrintWriter}
+import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
 import java.net.URI
 import java.nio.file.{Path, Paths}
+import java.util.zip.ZipInputStream
 import scala.io.Source
 
 /**
@@ -87,4 +91,25 @@ object SparkUtil {
       .max
   }
 
+  /**
+   * Read zip file using spark context.
+   * @param path Path to the zip file
+   * @param sparkContext The spark context
+   * @return
+   */
+  def readZip(path: String, sparkContext: SparkContext): RDD[String]  = {
+    sparkContext.binaryFiles(path)
+      .flatMap { case (name: String, content: PortableDataStream) =>
+        val zis = new ZipInputStream(content.open);
+        LazyList.continually(zis.getNextEntry)
+          .takeWhile {
+            case null => zis.close(); false
+            case _ => true
+          }
+          .flatMap { _ =>
+            val br = new BufferedReader(new InputStreamReader(zis))
+            LazyList.continually(br.readLine()).takeWhile(_ != null)
+          }
+      }
+  }
 }

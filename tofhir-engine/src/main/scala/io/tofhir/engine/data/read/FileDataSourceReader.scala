@@ -2,7 +2,7 @@ package io.tofhir.engine.data.read
 
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.model.{FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.{FileUtils, SparkUtil}
 import org.apache.spark.sql.functions.{input_file_name, udf}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -34,6 +34,8 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
   override def read(mappingSourceBinding: FileSystemSource, mappingJobSourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
     // get the format of the file
     val sourceType = mappingSourceBinding.inferFileFormat
+    // check whether it is a zip file
+    val isZipFile = mappingSourceBinding.path.endsWith(".zip");
     // determine the final path
     // if it is a Hadoop path (starts with "hdfs://"), construct the URI directly without adding the context path
     val finalPath = if (mappingJobSourceSettings.dataFolderPath.startsWith("hdfs://")) {
@@ -85,7 +87,17 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               // add a dummy column called 'filename' using a udf function to print a log when the data reading is
               // started for a file.
               .withColumn("filename",logStartOfDataReading(processedFiles,logger = logger,jobId =  jobId)(input_file_name))
-          else
+          else if(isZipFile) {
+            import spark.implicits._
+            val unzippedFile = SparkUtil.readZip(finalPath, spark.sparkContext);
+            spark.read
+              .option("enforceSchema", false) //Enforce schema should be false
+              .option("header", includeHeader)
+              .option("inferSchema", inferSchema)
+              .options(otherOptions)
+              .schema(csvSchema.orNull)
+              .csv(unzippedFile.toDS())
+          } else
             spark.read
               .option("enforceSchema", false) //Enforce schema should be false
               .option("header", includeHeader)
@@ -99,6 +111,11 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
             spark.readStream.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file
               .withColumn("filename", logStartOfDataReading(processedFiles, logger = logger, jobId = jobId)(input_file_name))
+          else if(isZipFile){
+            import spark.implicits._
+            val unzippedFile = SparkUtil.readZip(finalPath, spark.sparkContext);
+            spark.read.options(mappingSourceBinding.options).schema(schema.orNull).json(unzippedFile.toDS())
+          }
           else
             spark.read.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
         case SourceFileFormats.PARQUET =>
