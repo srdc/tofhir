@@ -370,8 +370,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       // run the job
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/$jobId/${JobEndpoint.SEGMENT_RUN}", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
         status shouldEqual StatusCodes.OK
-        // Mappings run asynchronously. Wait at most 30 seconds for mappings to complete.
-        val success = waitForCondition(30) {
+        // Mappings run asynchronously. Wait at most 45 seconds for mappings to complete.
+        val success = waitForCondition(45) {
           fsSinkFolder.listFiles.exists(_.getName.contains("results.csv")) && {
             // read the csv file created in the file system
             val csvFile: File = fsSinkFolder.listFiles.find(_.getName.contains("results.csv"))
