@@ -33,15 +33,9 @@ class ProjectService(projectRepository: IProjectRepository,
    * Save project to the repository.
    *
    * @param project project to be saved
-   * @throws BadRequest when the given project is not valid
    * @return the created project
    */
   def createProject(project: Project): Future[Project] = {
-    try {
-      project.validate()
-    } catch {
-      case _: IllegalArgumentException => throw BadRequest("Invalid project content !", s"The given id ${project.id} is not a valid UUID.")
-    }
     projectRepository.createProject(project)
   }
 
@@ -56,7 +50,7 @@ class ProjectService(projectRepository: IProjectRepository,
   }
 
   /**
-   * Update the some fields of a project in the repository.
+   * Update some fields of a project in the repository.
    *
    * @param id      id of the project
    * @param project patch to be applied to the project
@@ -77,9 +71,9 @@ class ProjectService(projectRepository: IProjectRepository,
     // first delete the project from repository
     projectRepository.removeProject(id)
       // if project deletion is failed throw the error
-      .recover {case e: Throwable => throw e}
+      .recover { case e: Throwable => throw e }
       // else delete jobs, mappings, mapping contexts and schemas as well
-      .map(_=> {
+      .map(_ => {
         jobRepository.deleteProjectJobs(id)
         mappingRepository.deleteProjectMappings(id)
         mappingContextRepository.deleteProjectMappingContexts(id)
@@ -94,10 +88,20 @@ class ProjectService(projectRepository: IProjectRepository,
    * @throws BadRequest when the given patch is invalid
    */
   private def validateProjectPatch(patch: JObject): Unit = {
-    if (patch.obj.isEmpty || !patch.obj.forall {
-      case (ProjectEditableFields.DESCRIPTION, JString(_)) => true
-      case _ => false
-    })
+    // Define the allowed fields set from ProjectEditableFields
+    val allowedFields = Set(
+      ProjectEditableFields.DESCRIPTION,
+      ProjectEditableFields.SCHEMA_URL_PREFIX,
+      ProjectEditableFields.MAPPING_URL_PREFIX
+    )
+
+    // Extract the keys from the patch
+    val patchKeys = patch.obj.map(_._1).toSet
+
+    // Check for invalid fields
+    val invalidFields = patchKeys.diff(allowedFields)
+    if (invalidFields.nonEmpty) {
       throw BadRequest("Invalid Patch!", "Invalid project patch!")
+    }
   }
 }

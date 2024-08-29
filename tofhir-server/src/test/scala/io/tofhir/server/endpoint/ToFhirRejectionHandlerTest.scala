@@ -3,13 +3,12 @@ package io.tofhir.server.endpoint
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.endpoint.ProjectEndpoint
 import io.tofhir.server.model.Project
 import org.json4s.jackson.Serialization.writePretty
 
 
 class ToFhirRejectionHandlerTest extends BaseEndpointTest {
-  val project1: Project = Project(name = "example", url = "https://www.example.com", description = Some("example project"))
+  val project1: Project = Project(name = "example", description = Some("example project"))
 
   "ToFhirRejectionHandler" should {
 

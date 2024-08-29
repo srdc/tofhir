@@ -41,9 +41,9 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     val parsedProjects = if (file.exists()) {
       val projects: JArray = FileOperations.readFileIntoJson(file).asInstanceOf[JArray]
       val projectMap: Map[String, Project] = projects.arr.map(p => {
-        val project: Project = initProjectFromMetadata(p.asInstanceOf[JObject])
-        project.id -> project
-      })
+          val project: Project = initProjectFromMetadata(p.asInstanceOf[JObject])
+          project.id -> project
+        })
         .toMap
       collection.mutable.Map(projectMap.toSeq: _*)
     } else {
@@ -67,8 +67,9 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
   private def initProjectFromMetadata(projectMetadata: JObject): Project = {
     val id: String = (projectMetadata \ "id").extract[String]
     val name: String = (projectMetadata \ "name").extract[String]
-    val url: String = (projectMetadata \ "url").extract[String]
     val description: Option[String] = (projectMetadata \ "description").extractOpt[String]
+    val schemaUrlPrefix: Option[String] = (projectMetadata \ "schemaUrlPrefix").extractOpt[String]
+    val mappingUrlPrefix: Option[String] = (projectMetadata \ "mappingUrlPrefix").extractOpt[String]
     val mappingContexts: Seq[String] = (projectMetadata \ "mappingContexts").extract[Seq[String]]
     // resolve schemas via the schema repository
     val schemaFutures: Future[Seq[Option[SchemaDefinition]]] = Future.sequence(
@@ -109,7 +110,16 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     )
     val jobs: Seq[FhirMappingJob] = Await.result[Seq[Option[FhirMappingJob]]](mappingJobFutures, 2 seconds).map(_.get)
 
-    Project(id, name, url, description, schemas, mappings, mappingContexts, jobs)
+    Project(id, name, description, schemaUrlPrefix, mappingUrlPrefix, schemas, mappings, mappingContexts, jobs)
+  }
+
+  private def dropLastPart(url: String): String = {
+    // Remove trailing slash if it exists, to handle cases where URL ends with "/"
+    val cleanedUrl = if (url.endsWith("/")) url.dropRight(1) else url
+    // Find the last slash and drop everything after it
+    val lastSlashIndex = cleanedUrl.lastIndexOf('/')
+    if (lastSlashIndex != -1) cleanedUrl.substring(0, lastSlashIndex + 1)
+    else url // Return original URL if no slashes found
   }
 
   /**
@@ -125,8 +135,9 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     val schemas: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = schemaFolderRepository.getCachedSchemas()
     schemas.foreach(projectIdAndSchemas => {
       val projectId: String = projectIdAndSchemas._1
+      val schemaUrl: String = projectIdAndSchemas._2.head._2.url
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, convertToUrl(projectId), None))
+      val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId, schemaUrlPrefix = Some(dropLastPart(schemaUrl))))
       projects.put(projectId, project.copy(schemas = projectIdAndSchemas._2.values.toSeq))
     })
 
@@ -134,8 +145,9 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     val mappings: mutable.Map[String, mutable.Map[String, FhirMapping]] = mappingFolderRepository.getCachedMappings()
     mappings.foreach(projectIdAndMappings => {
       val projectId: String = projectIdAndMappings._1
+      val mappingUrl: String = projectIdAndMappings._2.head._2.url
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, convertToUrl(projectId), None))
+      val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId, mappingUrlPrefix = Some(dropLastPart(mappingUrl))))
       projects.put(projectId, project.copy(mappings = projectIdAndMappings._2.values.toSeq))
     })
 
@@ -144,7 +156,7 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     jobs.foreach(projectIdAndMappingsJobs => {
       val projectId: String = projectIdAndMappingsJobs._1
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, convertToUrl(projectId), None))
+      val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId))
       projects.put(projectId, project.copy(mappingJobs = projectIdAndMappingsJobs._2.values.toSeq))
     })
 
@@ -153,21 +165,11 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     mappingContexts.foreach(mappingContexts => {
       val projectId: String = mappingContexts._1
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(projectId, projectId, convertToUrl(projectId), None))
+      val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId))
       projects.put(projectId, project.copy(mappingContexts = mappingContexts._2))
     })
 
     projects
   }
 
-  /**
-   * Converts a project id to a url in a specific format.
-   * @param inputString
-   * @return
-   */
-  private def convertToUrl(inputString: String): String = {
-    val transformedString = inputString.replaceAll("\\s", "").toLowerCase
-    val url = s"https://www.$inputString.com"
-    url
-  }
 }
