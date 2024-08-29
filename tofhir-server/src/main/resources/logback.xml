@@ -85,6 +85,11 @@
 
     <appender name="ASYNC-AUDIT-FLUENT" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="FLUENT" />
+        <!-- The blocking queue discards events based on priority when its capacity drops below 20%.
+             By default, it drops TRACE, DEBUG, and INFO level events, retaining only WARN and ERROR level events.
+             Since INFO events are crucial for recording mapping job results, we set the discardingThreshold to 0
+             to prevent any INFO events from being dropped. -->
+        <discardingThreshold>0</discardingThreshold>
     </appender>
 
     <!-- By default, the level of the root level is set to ERROR -->
