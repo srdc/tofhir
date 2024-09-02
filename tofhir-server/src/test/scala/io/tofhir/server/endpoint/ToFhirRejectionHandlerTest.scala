@@ -3,13 +3,12 @@ package io.tofhir.server.endpoint
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.endpoint.ProjectEndpoint
 import io.tofhir.server.model.Project
 import org.json4s.jackson.Serialization.writePretty
 
 
 class ToFhirRejectionHandlerTest extends BaseEndpointTest {
-  val project1: Project = Project(name = "example", url = "https://www.example.com", description = Some("example project"))
+  val project1: Project = Project(name = "example", description = Some("example project"))
 
   "ToFhirRejectionHandler" should {
 
@@ -23,14 +22,14 @@ class ToFhirRejectionHandlerTest extends BaseEndpointTest {
     }
 
     "create an HTTP response with bad request status for content not complying with the data model" in {
-      // Send a POST request with a project without URL
-      val projectWithoutUrl = Map("name" -> "example3",
+      // Send a POST request with a project without name
+      val projectWithoutUrl = Map("url" -> "http://example3.com/example-project",
         "description" -> Some("example project"))
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}", akka.http.scaladsl.model.HttpEntity.apply(ContentTypes.`application/json`, writePretty(projectWithoutUrl))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/BadRequest")
-        response should include("Detail: No usable value for url")
+        response should include("Detail: No usable value for name")
       }
     }
 

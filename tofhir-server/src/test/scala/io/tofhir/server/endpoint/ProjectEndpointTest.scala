@@ -5,7 +5,6 @@ import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.endpoint.{ProjectEndpoint, SchemaDefinitionEndpoint}
 import io.tofhir.server.model.{Project, ProjectEditableFields}
 import io.tofhir.server.util.TestUtil
 import org.json4s.JArray
@@ -14,9 +13,9 @@ import org.json4s.jackson.Serialization.writePretty
 
 class ProjectEndpointTest extends BaseEndpointTest {
   // first project to be created
-  val project1: Project = Project(name = "example", url = "https://www.example.com", description = Some("example project"))
+  val project1: Project = Project(name = "example", description = Some("example project"), schemaUrlPrefix = Some("https://example.com/StructureDefinition/"), mappingUrlPrefix = Some("https://example.com/mappings/"))
   // second project to be created
-  val project2: Project = Project(name = "second example", url = "https://www.secondexample.com", description = Some("second example project"))
+  val project2: Project = Project(name = "second example", description = Some("second example project"))
   // patch to be applied to the existing project
   val projectPatch: (String, String) = ProjectEditableFields.DESCRIPTION -> "updated description"
   // schema definition
@@ -66,7 +65,8 @@ class ProjectEndpointTest extends BaseEndpointTest {
         val project: Project = JsonMethods.parse(responseAs[String]).extract[Project]
         project.id shouldEqual project1.id
         project.name shouldEqual project1.name
-        project.url shouldEqual project1.url
+        project.schemaUrlPrefix shouldEqual project1.schemaUrlPrefix
+        project.mappingUrlPrefix shouldEqual project1.mappingUrlPrefix
       }
       // get a project with invalid id
       Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/123123") ~> route ~> check {

@@ -228,7 +228,12 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
             System.exit(1)
         }
       }
-      map.put(projectDirectory.getName, fhirMappingMap)
+      if(fhirMappingMap.isEmpty) {
+        // No processable schema files under projectDirectory
+        logger.warn(s"There are no processable mapping files under ${projectDirectory.getAbsolutePath}. Skipping ${projectDirectory.getName}.")
+      } else {
+        map.put(projectDirectory.getName, fhirMappingMap)
+      }
     }
     map
   }

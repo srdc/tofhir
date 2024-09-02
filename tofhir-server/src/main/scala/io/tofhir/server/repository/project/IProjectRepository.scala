@@ -34,9 +34,9 @@ trait IProjectRepository {
   def getProject(id: String): Future[Option[Project]]
 
   /**
-   * Update the some fields of project in the repository.
+   * Update some fields of project in the repository.
    *
-   * @param id      id of the project
+   * @param id    id of the project
    * @param patch patch to be applied to the project
    * @return
    */

@@ -274,7 +274,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
             System.exit(1)
         }
       }
-      schemaDefinitionMap.put(projectFolder.getName, projectSchemas)
+      if(projectSchemas.isEmpty) {
+        // No processable schema files under projectFolder
+        logger.warn(s"There are no processable schema files under ${projectFolder.getAbsolutePath}. Skipping ${projectFolder.getName}.")
+      } else {
+        schemaDefinitionMap.put(projectFolder.getName, projectSchemas)
+      }
     })
     schemaDefinitionMap
   }

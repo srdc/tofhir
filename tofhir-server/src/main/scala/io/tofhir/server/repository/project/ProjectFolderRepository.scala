@@ -87,7 +87,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   }
 
   /**
-   * Update the some fields of project in the repository.
+   * Update some fields of the project in the repository.
    *
    * @param id    id of the project
    * @param patch patch to be applied to the project
@@ -100,8 +100,10 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
         throw ResourceNotFound("Project does not exist.", s"Project $id not found")
 
       // update the editable fields of project with new values
-      val newDescription = (patch \ ProjectEditableFields.DESCRIPTION).extract[String]
-      val updatedProject = projects(id).copy(description = Some(newDescription))
+      val newDescription = (patch \ ProjectEditableFields.DESCRIPTION).extractOpt[String]
+      val newSchemaUrlPrefix = (patch \ ProjectEditableFields.SCHEMA_URL_PREFIX).extractOpt[String]
+      val newMappingUrlPrefix = (patch \ ProjectEditableFields.MAPPING_URL_PREFIX).extractOpt[String]
+      val updatedProject = projects(id).copy(description = newDescription, schemaUrlPrefix = newSchemaUrlPrefix, mappingUrlPrefix = newMappingUrlPrefix)
       projects.put(id, updatedProject)
 
       // update the projects metadata
