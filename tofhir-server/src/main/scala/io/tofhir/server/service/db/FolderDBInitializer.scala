@@ -137,7 +137,10 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
       val projectId: String = projectIdAndSchemas._1
       val schemaUrl: String = projectIdAndSchemas._2.head._2.url
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId, schemaUrlPrefix = Some(dropLastPart(schemaUrl))))
+      val project: Project = projects.get(projectId) match {
+        case Some(existingProject) => existingProject.copy(schemaUrlPrefix = Some(dropLastPart(schemaUrl)))
+        case None => Project(id = projectId, name = projectId, schemaUrlPrefix = Some(dropLastPart(schemaUrl)))
+      }
       projects.put(projectId, project.copy(schemas = projectIdAndSchemas._2.values.toSeq))
     })
 
@@ -147,7 +150,10 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
       val projectId: String = projectIdAndMappings._1
       val mappingUrl: String = projectIdAndMappings._2.head._2.url
       // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId, mappingUrlPrefix = Some(dropLastPart(mappingUrl))))
+      val project: Project = projects.get(projectId) match {
+        case Some(existingProject) => existingProject.copy(mappingUrlPrefix = Some(dropLastPart(mappingUrl)))
+        case None => Project(id = projectId, name = projectId, mappingUrlPrefix = Some(dropLastPart(mappingUrl)))
+      }
       projects.put(projectId, project.copy(mappings = projectIdAndMappings._2.values.toSeq))
     })
 
