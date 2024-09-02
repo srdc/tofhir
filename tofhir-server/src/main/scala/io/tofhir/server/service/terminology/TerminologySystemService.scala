@@ -116,7 +116,7 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
             case None => jobToBeUpdated.copy(terminologyServiceSettings = None)
           }
           // Update job in the repository
-          mappingJobRepository.putJob(projectId, jobToBeUpdated.id, updatedJob)
+          mappingJobRepository.updateJob(projectId, jobToBeUpdated.id, updatedJob)
         }))
       }
     })).map {_ => ()}

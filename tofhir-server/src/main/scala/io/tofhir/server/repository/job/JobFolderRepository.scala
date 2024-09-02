@@ -59,12 +59,12 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
    * @param job       job to save
    * @return
    */
-  override def createJob(projectId: String, job: FhirMappingJob): Future[FhirMappingJob] = {
+  override def saveJob(projectId: String, job: FhirMappingJob): Future[FhirMappingJob] = {
     if (jobDefinitions.contains(projectId) && jobDefinitions(projectId).contains(job.id)) {
       throw AlreadyExists("Fhir mapping job already exists.", s"A job definition with id ${job.id} already exists in the job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Write to the repository as a new file
-    getFileForJob(projectId, job).map(file => {
+    getFileForJob(projectId, job.id).map(file => {
       val fw = new FileWriter(file)
       fw.write(writePretty(job))
       fw.close()
@@ -79,37 +79,34 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
    * Get the job by its id
    *
    * @param projectId project id the job belongs to
-   * @param id        job id
+   * @param jobId     job id
    * @return
    */
-override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob]] = {
-  Future {
-    jobDefinitions(projectId).get(id)
+  override def getJob(projectId: String, jobId: String): Future[Option[FhirMappingJob]] = {
+    Future {
+      jobDefinitions(projectId).get(jobId)
+    }
   }
-}
 
   /**
    * Update the job in the repository
    *
    * @param projectId project id the job belongs to
-   * @param id        job id
+   * @param jobId     job id
    * @param job       job to save
    * @return
    */
-  override def putJob(projectId: String, id: String, job: FhirMappingJob): Future[FhirMappingJob] = {
-    if (!id.equals(job.id)) {
-      throw BadRequest("Job definition is not valid.", s"Identifier of the job definition: ${job.id} does not match with explicit id: $id")
-    }
-    if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
-      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
+  override def updateJob(projectId: String, jobId: String, job: FhirMappingJob): Future[FhirMappingJob] = {
+    if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(jobId)) {
+      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // update the job in the repository
-    getFileForJob(projectId, job).map(file => {
+    getFileForJob(projectId, job.id).map(file => {
       val fw = new FileWriter(file)
       fw.write(writePretty(job))
       fw.close()
       // update the mapping job in the map
-      jobDefinitions(projectId).put(id, job)
+      jobDefinitions(projectId).put(jobId, job)
       // update the job in the project
       projectFolderRepository.updateJob(projectId, job)
       job
@@ -120,20 +117,20 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
    * Delete the job from the repository
    *
    * @param projectId project id the job belongs to
-   * @param id        job id
+   * @param jobId     job id
    * @return
    */
-  override def deleteJob(projectId: String, id: String): Future[Unit] = {
-    if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(id)) {
-      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $id does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
+  override def deleteJob(projectId: String, jobId: String): Future[Unit] = {
+    if (!jobDefinitions.contains(projectId) || !jobDefinitions(projectId).contains(jobId)) {
+      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository at ${FileUtils.getPath(jobRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
     // delete the mapping job from the repository
-    getFileForJob(projectId, jobDefinitions(projectId)(id)).map(file => {
+    getFileForJob(projectId, jobDefinitions(projectId)(jobId).id).map(file => {
       file.delete()
-      jobDefinitions(projectId).remove(id)
+      jobDefinitions(projectId).remove(jobId)
       // delete the job from the project
-      projectFolderRepository.deleteJob(projectId, Some(id))
+      projectFolderRepository.deleteJob(projectId, Some(jobId))
     })
   }
 
@@ -172,41 +169,28 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
    * @param fhirMapping
    * @return
    */
-  private def getFileForJob(projectId: String, fhirMapping: FhirMappingJob): Future[File] = {
-    val projectFuture: Future[Option[Project]] = projectFolderRepository.getProject(projectId)
-    projectFuture.map(project => {
-      val file: File = FileUtils.getPath(jobRepositoryFolderPath, project.get.id, getFileName(fhirMapping.id)).toFile
-      // If the project folder does not exist, create it
-      if (!file.getParentFile.exists()) {
-        file.getParentFile.mkdir()
-      }
-      file
-    })
-  }
-
-  /**
-   * Get the file name of the given job
-   * @param jobId job id
-   * @return
-   */
-  private def getFileName(jobId: String): String = {
-    s"$jobId${FileExtensions.JSON}"
+  private def getFileForJob(projectId: String, jobId: String): Future[File] = {
+    projectFolderRepository.getProject(projectId) map { project =>
+      if (project.isEmpty) throw new IllegalStateException(s"This should not be possible. ProjectId: $projectId does not exist in the project folder repository.")
+      FileOperations.getFileForEntityWithinProject(jobRepositoryFolderPath, project.get.id, jobId)
+    }
   }
 
   /**
    * Initialize the job definitions from the given folder
+   *
    * @param jobRepositoryFolderPath folder path to the job repository
    * @return
    */
   private def initMap(jobRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, FhirMappingJob]] = {
     val map = mutable.Map.empty[String, mutable.Map[String, FhirMappingJob]]
-    val folder = FileUtils.getPath(jobRepositoryFolderPath).toFile
-    if (!folder.exists()) {
-      folder.mkdirs()
+    val jobRepositoryFolder = FileUtils.getPath(jobRepositoryFolderPath).toFile
+    if (!jobRepositoryFolder.exists()) {
+      jobRepositoryFolder.mkdirs()
     }
-    var directories = Seq.empty[File]
-    directories = folder.listFiles.filter(_.isDirectory).toSeq
-    directories.foreach { projectDirectory =>
+    var projectDirectories = Seq.empty[File]
+    projectDirectories = jobRepositoryFolder.listFiles.filter(_.isDirectory).toSeq
+    projectDirectories.foreach { projectDirectory =>
       // job-id -> FhirMappingJob
       val fhirJobMap: mutable.Map[String, FhirMappingJob] = mutable.Map.empty
       val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
@@ -214,15 +198,15 @@ override def getJob(projectId: String, id: String): Future[Option[FhirMappingJob
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()
         // Try to parse the file content as FhirMappingJob
-        try{
+        try {
           val job = JsonMethods.parse(fileContent).extract[FhirMappingJob]
           // discard if the job id and file name not match
-          if(FileOperations.checkFileNameMatchesEntityId(job.id, file, "job")) {
+          if (FileOperations.checkFileNameMatchesEntityId(job.id, file, "job")) {
             fhirJobMap.put(job.id, job)
           }
-        }catch{
+        } catch {
           case e: Throwable =>
-            logger.error(s"Failed to parse mapping job definition at ${file.getPath}: ${e.getMessage}")
+            logger.error(s"Failed to parse mapping job definition at ${file.getPath}", e)
             System.exit(1)
         }
       }

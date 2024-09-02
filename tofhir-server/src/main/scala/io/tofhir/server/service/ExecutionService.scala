@@ -46,6 +46,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   val toFhirEngine = new ToFhirEngine(Some(mappingRepository), Some(schemaRepository), externalMappingFunctions)
 
   import Execution.actorSystem
+
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
   /**
@@ -145,9 +146,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       // Batch jobs
       else {
         // run the mapping job with scheduler
-        if(mappingJob.schedulingSettings.nonEmpty){
+        if (mappingJob.schedulingSettings.nonEmpty) {
           // check whether the job execution is already scheduled
-          if(executionId.nonEmpty && toFhirEngine.runningJobRegistry.isScheduled(mappingJob.id,executionId.get)){
+          if (executionId.nonEmpty && toFhirEngine.runningJobRegistry.isScheduled(mappingJob.id, executionId.get)) {
             throw BadRequest("The mapping job execution is already scheduled!", s"The mapping job execution is already scheduled!")
           }
           // schedule the mapping job
@@ -163,7 +164,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           // start scheduler
           mappingJobScheduler.scheduler.start()
           // register the job to the registry
-          toFhirEngine.runningJobRegistry.registerSchedulingJob(mappingJobExecution,mappingJobScheduler.scheduler)
+          toFhirEngine.runningJobRegistry.registerSchedulingJob(mappingJobExecution, mappingJobScheduler.scheduler)
         }
 
         // run the batch job without scheduling
@@ -236,8 +237,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   /**
    * Returns the ongoing (i.e. running or scheduled) mapping job executions.
    *
-   * @param projectId   project id the job belongs to
-   * @param jobId       job id
+   * @param projectId project id the job belongs to
+   * @param jobId     job id
    * @return a list of JSONs indicating the execution id and its status i.e. runningStatus or scheduled
    * @throws ResourceNotFound when mapping job does not exist
    */

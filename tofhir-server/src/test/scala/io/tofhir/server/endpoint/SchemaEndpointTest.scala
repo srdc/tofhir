@@ -144,7 +144,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
 
     "update a schema in a project" in {
       // update a schema
-      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${schema1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(schema1.copy(url = "https://example.com/fhir/StructureDefinition/schema3")))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${schema1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(schema1.copy(url = "https://example.com/fhir/StructureDefinition/schema3", name = schema3.name)))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned schema includes the update
         val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
@@ -250,9 +250,15 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
       }
     }
 
-    "cannot create a schema having the same url as another schema" in {
+    "cannot create a schema having the same id, url or name as another schema" in {
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5))) ~> route ~> check {
         // Expect a conflict status because schema5 has the same url as the schema2
+        status shouldEqual StatusCodes.Conflict
+      }
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5.copy(id = schema2.id)))) ~> route ~> check {
+        status shouldEqual StatusCodes.Conflict
+      }
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5.copy(name = schema2.name)))) ~> route ~> check {
         status shouldEqual StatusCodes.Conflict
       }
     }

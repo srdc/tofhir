@@ -72,10 +72,10 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * @param schemaDefinition
    * @return
    */
-  def putSchema(projectId: String, schemaId: String, schemaDefinition: SchemaDefinition): Future[Unit] = { // TODO: HTTP PUT methods should return the updated object w.r.t REST principles
+  def putSchema(projectId: String, schemaId: String, schemaDefinition: SchemaDefinition): Future[SchemaDefinition] = { // TODO: HTTP PUT methods should return the updated object w.r.t REST principles
     // Ensure that the provided schemaId matches the SchemaDefinition's schemaId
     if (!schemaId.equals(schemaDefinition.id)) {
-      throw BadRequest("Schema definition is not valid.", s"Identifier of the schema definition: ${schemaDefinition.id} does not match with the provided schemaId: $schemaId")
+      throw BadRequest("Schema definition is not valid.", s"Identifier of the schema definition: ${schemaDefinition.id} does not match with the provided schemaId: $schemaId in the path!")
     }
     schemaRepository.updateSchema(projectId, schemaId, schemaDefinition)
   }
@@ -84,20 +84,20 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * Delete the schema definition from the schema repository.
    *
    * @param projectId
-   * @param id
+   * @param schemaId
    * @throws ResourceNotFound when the schema does not exist
    * @throws BadRequest       when the schema is in use by some mappings
    * @return
    */
-  def deleteSchema(projectId: String, id: String): Future[Unit] = {
-    schemaRepository.getSchema(projectId, id).flatMap(schema => {
+  def deleteSchema(projectId: String, schemaId: String): Future[Unit] = {
+    schemaRepository.getSchema(projectId, schemaId).flatMap(schema => {
       if (schema.isEmpty)
-        throw ResourceNotFound("Schema does not exists.", s"A schema definition with id $id does not exists in the schema repository.")
+        throw ResourceNotFound("Schema does not exists.", s"A schema definition with id $schemaId does not exists in the schema repository.")
       mappingRepository.getMappingsReferencingSchema(projectId, schema.get.url).flatMap(mappingIds => {
         if (mappingIds.isEmpty)
-          schemaRepository.deleteSchema(projectId, id)
+          schemaRepository.deleteSchema(projectId, schemaId)
         else
-          throw BadRequest("Schema is referenced by some mappings.", s"Schema definition with id $id is referenced by the following mappings:${mappingIds.mkString(",")}")
+          throw BadRequest("Schema is referenced by some mappings.", s"Schema definition with id $schemaId is referenced by the following mappings:${mappingIds.mkString(",")}")
       })
     })
   }
