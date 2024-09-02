@@ -142,5 +142,6 @@ object SourceFileFormats {
   final val AVRO = "avro"
   final val TXT_NDJON = "txt-ndjson"
   final val TXT_CSV = "txt-csv"
+  final val TXT = "txt"
 }
 

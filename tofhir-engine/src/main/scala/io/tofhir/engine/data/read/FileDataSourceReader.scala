@@ -66,7 +66,9 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               mappingSourceBinding.options +
                 // use *.csv as pathGlobFilter by default if it is not set explicitly to ignore files without csv extension
                 ("pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.CSV}"))
-            case SourceFileFormats.TXT_CSV => mappingSourceBinding.options
+            case SourceFileFormats.TXT_CSV => mappingSourceBinding.options +
+                // use *.txt as pathGlobFilter by default if it is not set explicitly to ignore files without txt extension
+                ("pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.TXT}"))
           }
 
           //Options that we infer for csv
