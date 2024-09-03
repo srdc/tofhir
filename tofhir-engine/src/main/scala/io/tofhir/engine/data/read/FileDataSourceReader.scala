@@ -2,7 +2,7 @@ package io.tofhir.engine.data.read
 
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.model.{FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.{FileUtils, SparkUtil}
 import org.apache.spark.sql.functions.{input_file_name, udf}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -34,6 +34,8 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
   override def read(mappingSourceBinding: FileSystemSource, mappingJobSourceSettings:FileSystemSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
     // get the format of the file
     val sourceType = mappingSourceBinding.inferFileFormat
+    // check whether it is a zip file
+    val isZipFile = mappingSourceBinding.path.endsWith(".zip");
     // determine the final path
     // if it is a Hadoop path (starts with "hdfs://"), construct the URI directly without adding the context path
     val finalPath = if (mappingJobSourceSettings.dataFolderPath.startsWith("hdfs://")) {
@@ -52,7 +54,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
     val processedFiles: mutable.HashSet[String] =mutable.HashSet.empty
     //Based on source type
     val resultDf = sourceType match {
-        case SourceFileFormats.CSV | SourceFileFormats.TSV =>
+        case SourceFileFormats.CSV | SourceFileFormats.TSV | SourceFileFormats.TXT_CSV =>
           val updatedOptions = sourceType match {
             case SourceFileFormats.TSV =>
               // If the file format is tsv, use tab (\t) as separator by default if it is not set explicitly
@@ -64,6 +66,9 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               mappingSourceBinding.options +
                 // use *.csv as pathGlobFilter by default if it is not set explicitly to ignore files without csv extension
                 ("pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.CSV}"))
+            case SourceFileFormats.TXT_CSV => mappingSourceBinding.options +
+                // use *.txt as pathGlobFilter by default if it is not set explicitly to ignore files without txt extension
+                ("pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.TXT}"))
           }
 
           //Options that we infer for csv
@@ -84,7 +89,17 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               // add a dummy column called 'filename' using a udf function to print a log when the data reading is
               // started for a file.
               .withColumn("filename",logStartOfDataReading(processedFiles,logger = logger,jobId =  jobId)(input_file_name))
-          else
+          else if(isZipFile) {
+            import spark.implicits._
+            val unzippedFile = SparkUtil.readZip(finalPath, spark.sparkContext);
+            spark.read
+              .option("enforceSchema", false) //Enforce schema should be false
+              .option("header", includeHeader)
+              .option("inferSchema", inferSchema)
+              .options(otherOptions)
+              .schema(csvSchema.orNull)
+              .csv(unzippedFile.toDS())
+          } else
             spark.read
               .option("enforceSchema", false) //Enforce schema should be false
               .option("header", includeHeader)
@@ -93,11 +108,16 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               .schema(csvSchema.orNull)
               .csv(finalPath)
         // assume that each line in the txt files contains a separate JSON object.
-        case SourceFileFormats.JSON | SourceFileFormats.TXT=>
+        case SourceFileFormats.JSON | SourceFileFormats.TXT_NDJON=>
           if(mappingJobSourceSettings.asStream)
             spark.readStream.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file
               .withColumn("filename", logStartOfDataReading(processedFiles, logger = logger, jobId = jobId)(input_file_name))
+          else if(isZipFile){
+            import spark.implicits._
+            val unzippedFile = SparkUtil.readZip(finalPath, spark.sparkContext);
+            spark.read.options(mappingSourceBinding.options).schema(schema.orNull).json(unzippedFile.toDS())
+          }
           else
             spark.read.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
         case SourceFileFormats.PARQUET =>
