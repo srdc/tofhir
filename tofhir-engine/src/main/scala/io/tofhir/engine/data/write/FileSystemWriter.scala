@@ -6,7 +6,7 @@ import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings}
 import org.apache.spark.sql.functions.collect_list
 import org.apache.spark.sql.types.{ArrayType, StructType}
-import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
+import org.apache.spark.sql.{DataFrame, DataFrameWriter, Dataset, Row, SaveMode, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 import org.json4s.jackson.JsonMethods
 
@@ -90,11 +90,7 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
           // Define the output path based on the resourceType, ensuring that each resource type is saved in its own folder.
           val outputPath = s"${sinkSettings.path}/$resourceType"
           // Write the resources to the specified path based on the chosen format.
-          val writer = resourcesDF
-            .coalesce(sinkSettings.numOfPartitions)
-            .write
-            .mode(SaveMode.Append)
-            .options(sinkSettings.options)
+          val writer = getWriter(resourcesDF, sinkSettings)
 
           // Handle the specific formats
           sinkSettings.sinkType match {
@@ -104,39 +100,21 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
           }
         })
       case SinkFileFormats.NDJSON =>
-        val writer =
-          df
-            .map(_.mappedResource.get)
-            .coalesce(sinkSettings.numOfPartitions)
-            .write
-            .mode(SaveMode.Append)
-            .options(sinkSettings.options)
-        writer.text(sinkSettings.path)
+        getWriter(df.map(_.mappedResource.get), sinkSettings).text(sinkSettings.path)
       case SinkFileFormats.PARQUET =>
         // Convert the DataFrame to a Dataset of JSON strings
         val jsonDS = df.select("mappedResource").as[String]
         // Create a DataFrame from the Dataset of JSON strings
         val jsonDF = spark.read.json(jsonDS)
-        val writer =
-          jsonDF
-            .coalesce(sinkSettings.numOfPartitions)
-            .write
-            .mode(SaveMode.Append)
-            .options(sinkSettings.options)
-        writer.parquet(sinkSettings.path)
+        getWriter(jsonDF, sinkSettings).parquet(sinkSettings.path)
       case SinkFileFormats.DELTA_LAKE =>
         // Convert the DataFrame to a Dataset of JSON strings
         val jsonDS = df.select("mappedResource").as[String]
         // Create a DataFrame from the Dataset of JSON strings
         val jsonDF = spark.read.json(jsonDS)
-        val writer =
-          jsonDF
-            .coalesce(sinkSettings.numOfPartitions)
-            .write
-            .format(SinkFileFormats.DELTA_LAKE) // Specify Delta Lake format
-            .mode(SaveMode.Append)
-            .options(sinkSettings.options)
-        writer.save(sinkSettings.path)
+        getWriter(jsonDF, sinkSettings)
+          .format(SinkFileFormats.DELTA_LAKE) // Specify Delta Lake format
+          .save(sinkSettings.path)
       case SinkFileFormats.CSV =>
         // read the mapped resource json column and load it to a new data frame
         val mappedResourceDF = spark.read.json(df.select("mappedResource").as[String])
@@ -149,12 +127,7 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
         if(!mappedResourceDF.isEmpty){
           val filteredDF = mappedResourceDF.select(nonArrayAndStructCols.head, nonArrayAndStructCols.tail: _*)
           // write the mapped resources to a CSV file
-          filteredDF
-            .coalesce(sinkSettings.numOfPartitions)
-            .write
-            .mode(SaveMode.Append)
-            .options(sinkSettings.options)
-            .csv(sinkSettings.path)
+          getWriter(filteredDF, sinkSettings).csv(sinkSettings.path)
         }
       case _ =>
         throw new NotImplementedError()
@@ -167,6 +140,23 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
    * For the FileSystemWriter, validation is not implemented and this method does nothing.
    */
   override def validate(): Unit = {}
+
+  /**
+   * Creates a configured DataFrameWriter for a given Dataset based on the provided sink settings.
+   *
+   * @param dataset      The Dataset to be written. The Dataset can be of any type `T`.
+   * @param sinkSettings The settings used to configure the DataFrameWriter, including
+   *                     the number of partitions, write mode, and options.
+   * @tparam T The type of the Dataset elements.
+   * @return A DataFrameWriter[T] configured according to the provided sink settings.
+   */
+  private def getWriter[T](dataset: Dataset[T], sinkSettings: FileSystemSinkSettings): DataFrameWriter[T] = {
+    dataset
+      .coalesce(sinkSettings.numOfPartitions)
+      .write
+      .mode(SaveMode.Append)
+      .options(sinkSettings.options)
+  }
 }
 
 object FileSystemWriter {
