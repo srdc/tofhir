@@ -56,7 +56,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
     val processedFiles: mutable.HashSet[String] =mutable.HashSet.empty
     //Based on source type
     val resultDf = sourceType match {
-        case SourceFileFormats.CSV | SourceFileFormats.TSV | SourceFileFormats.TXT_CSV =>
+        case SourceFileFormats.CSV | SourceFileFormats.TSV | SourceFileFormats.TXT_CSV | SourceFileFormats.TXT_TSV =>
           val updatedOptions = sourceType match {
             case SourceFileFormats.TSV =>
               // If the file format is tsv, use tab (\t) as separator by default if it is not set explicitly
@@ -71,6 +71,10 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
             case SourceFileFormats.TXT_CSV => mappingSourceBinding.options +
                 // use *.txt as pathGlobFilter by default if it is not set explicitly to ignore files without txt extension
                 ("pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.TXT}"))
+            case SourceFileFormats.TXT_TSV => mappingSourceBinding.options +
+              ("sep" -> mappingSourceBinding.options.getOrElse("sep", "\\t"),
+              // use *.txt as pathGlobFilter by default if it is not set explicitly to ignore files without txt extension
+              "pathGlobFilter" -> mappingSourceBinding.options.getOrElse("pathGlobFilter", s"*.${SourceFileFormats.TXT}"))
           }
 
           //Options that we infer for csv
