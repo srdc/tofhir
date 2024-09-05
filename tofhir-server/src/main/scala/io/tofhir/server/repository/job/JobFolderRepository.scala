@@ -185,7 +185,7 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
   private def initMap(jobRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, FhirMappingJob]] = {
     val map = mutable.Map.empty[String, mutable.Map[String, FhirMappingJob]]
     val jobRepositoryFolder = FileUtils.getPath(jobRepositoryFolderPath).toFile
-    logger.info(s"Initializing the Mapping Repository from path ${jobRepositoryFolder.getAbsolutePath}.")
+    logger.info(s"Initializing the Mapping Job Repository from path ${jobRepositoryFolder.getAbsolutePath}.")
     if (!jobRepositoryFolder.exists()) {
       jobRepositoryFolder.mkdirs()
     }
