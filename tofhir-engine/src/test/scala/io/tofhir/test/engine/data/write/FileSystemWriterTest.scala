@@ -188,6 +188,74 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   }
 
   /**
+   * Tests whether FileSystemWriter can write a DataFrame into a parquet file, partitioned by different columns.
+   *
+   * The test uses the following FileSystemSinkSettings:
+   * {
+   *  "path": "output-parquet-by-partition",
+   *  "fileFormat": "parquet",
+   *  "partitionByResourceType": true,
+   *  "partitioningColumns": {
+   *    "Patient": ["gender"],
+   *    "Condition": ["subject.reference"]
+   *  }
+   * }
+   *
+   * The expected output structure is:
+   *
+   * > output-parquet-by-partition
+   *  > Condition
+   *    > subject.reference=Patient%2F0b3a0b23a0c6e223b941e63787f15a6a
+   *      > .part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet.crc
+   *      > part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet
+   *    > subject.reference=Patient%2F0bbad2343eb86d5cdc16a1b292537576
+   *      > .part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet.crc
+   *      > part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet
+   *    > subject.reference=Patient%2F7b650be0176d6d29351f84314a5efbe3
+   *      > .part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet.crc
+   *      > part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet
+   *    > subject.reference=Patient%2F34dc88d5972fd5472a942fc80f69f35c
+   *      > .part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet.crc
+   *      > part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet
+   *    > subject.reference=Patient%2F49d3c335681ab7fb2d4cdf19769655db
+   *      > .part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet.crc
+   *      > part-00000-4a3c7bc0-164c-471c-9ddf-e8117aa445af.c000.snappy.parquet
+   *  > Patient
+   *    > gender=female
+   *      > .part-00000-84ddd340-5ee0-41f8-a566-0e480e36870a.c000.snappy.parquet.crc
+   *      > .part-00000-84ddd340-5ee0-41f8-a566-0e480e36870a.c000.snappy.parquet
+   *    > gender=male
+   *      > .part-00000-84ddd340-5ee0-41f8-a566-0e480e36870a.c000.snappy.parquet.crc
+   *      > .part-00000-84ddd340-5ee0-41f8-a566-0e480e36870a.c000.snappy.parquet
+   * */
+  it should "write DataFrame as partitioned parquet files based on Patient's gender and Condition's reference of subject" in {
+    // Define the output path for the parquet files
+    val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-parquet-by-partition"
+    // Instantiate the FileSystemWriter with parquet file format and partitioning
+    val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
+      path = outputFolderPath, fileFormat = Some(SinkFileFormats.PARQUET), partitionByResourceType = true,
+      partitioningColumns = Map("Patient" -> List("gender"), "Condition" -> List("subject.reference"))
+    ))
+    // Write the DataFrame using the FileSystemWriter
+    fileSystemWriter.write(sparkSession, df, sparkSession.sparkContext.collectionAccumulator[FhirMappingResult])
+
+    // Verify that the data was correctly written and partitioned under "Condition"
+    val conditionDf = sparkSession.read
+      .parquet(s"$outputFolderPath/Condition")
+    conditionDf.count() shouldBe 5
+    val patientConditionDf = sparkSession.read
+      .parquet(s"$outputFolderPath/Condition/subject.reference=Patient%2F49d3c335681ab7fb2d4cdf19769655db")
+    patientConditionDf.count() shouldBe 1
+    // Verify that the data was correctly written and partitioned under "Patient"
+    val femalePatientDf = sparkSession.read
+      .parquet(s"$outputFolderPath/Patient/gender=female")
+    femalePatientDf.count() shouldBe 5
+    val malePatientDf = sparkSession.read
+      .parquet(s"$outputFolderPath/Patient/gender=male")
+    malePatientDf.count() shouldBe 5
+  }
+
+  /**
    * Tests whether FileSystemWriter can write a DataFrame into a Delta Lake file.
    *
    * The test uses the following FileSystemSinkSettings:
