@@ -32,8 +32,8 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
       val projectId: String = request.projectId.get
       pathEndOrSingleSlash {
         parameterMap { queryParams =>
-          queryParams.get("url") match {
-            case Some(url) => getSchemaByUrl(url)
+          queryParams.get(SchemaDefinitionEndpoint.QUERY_PARAM_URL) match {
+            case Some(url) => getSchemaByUrl(url, queryParams.get(SchemaDefinitionEndpoint.QUERY_PARAM_TYPE))
             case None => getAllSchemas(request) ~ createSchema(projectId, queryParams.getOrElse("format", SchemaFormats.SIMPLE_STRUCTURE_DEFINITION)) // Operations on all schemas
           }
         }
@@ -114,11 +114,20 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
     }
   }
 
-  private def getSchemaByUrl(url: String): Route = {
+  private def getSchemaByUrl(url: String, returnType: Option[String]): Route = {
     get {
       complete {
         service.getSchemaByUrl(url) map {
-          case Some(schemaDefinition) => StatusCodes.OK -> schemaDefinition
+          case Some(schemaDefinition) =>
+            returnType match {
+              case Some(SchemaFormats.SIMPLE_STRUCTURE_DEFINITION) =>
+                // Return only the element definitions within the schema, excluding metadata such as name and description.
+                // This is useful when only the element-level details are needed, without additional schema metadata.
+                StatusCodes.OK -> schemaDefinition.fieldDefinitions.get
+              case _ =>
+                // Return the full schema definition, including all metadata and element definitions.
+                StatusCodes.OK -> schemaDefinition
+            }
           case None => StatusCodes.NotFound -> {
             throw ResourceNotFound("Schema not found", s"Schema definition with url $url not found")
           }
@@ -245,13 +254,25 @@ object SchemaDefinitionEndpoint {
   val SEGMENT_REDCAP = "redcap"
   val SEGMENT_IMPORT = "import"
   val SEGMENT_IMPORT_ZIP = "import-zip"
+  val QUERY_PARAM_TYPE = "type"
+  val QUERY_PARAM_URL = "url"
 }
 
 /**
  * The schema formats available for POST and GET schema methods
  */
-object SchemaFormats{
+object SchemaFormats {
+  /**
+   * Specifies that the format of the schema to be created or retrieved follows the FHIR StructureDefinition resource format.
+   * For more information on this format, see the FHIR StructureDefinition documentation at:
+   * https://www.hl7.org/fhir/structuredefinition.html.
+   */
   val STRUCTURE_DEFINITION = "StructureDefinition"
+
+  /**
+   * Specifies a format that retrieves only the element definitions of a schema, where each element is represented
+   * by a {@link io.tofhir.common.model.SimpleStructureDefinition}. This format provides a simplified structure for the schema's elements.
+   */
   val SIMPLE_STRUCTURE_DEFINITION = "SimpleStructureDefinition"
 }
 

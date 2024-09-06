@@ -10,14 +10,12 @@ import io.tofhir.engine.util.MajorFhirVersion
 import io.tofhir.server.common.model.{BadRequest, ToFhirRestCall}
 import io.tofhir.server.endpoint.FhirDefinitionsEndpoint._
 import io.tofhir.server.fhir.FhirDefinitionsConfig
-import io.tofhir.server.repository.mapping.IMappingRepository
-import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.service.fhir.FhirDefinitionsService
 import io.tofhir.server.service.fhir.base.FhirBaseProfilesService
 
-class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig, schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
+class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig) extends LazyLogging {
 
-  val service: FhirDefinitionsService = new FhirDefinitionsService(fhirDefinitionsConfig, schemaRepository, mappingRepository)
+  val service: FhirDefinitionsService = new FhirDefinitionsService(fhirDefinitionsConfig)
 
   def route(request: ToFhirRestCall): Route =
     pathPrefix(SEGMENT_FHIR_DEFINITIONS) {
