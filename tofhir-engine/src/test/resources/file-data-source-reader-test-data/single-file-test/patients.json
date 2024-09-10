@@ -1,0 +1,11 @@
+{ "pid": "p1", "gender": "male", "birthDate": "2000-05-10", "deceasedDateTime": null, "homePostalCode": null },
+{ "pid": "p2", "gender": "male", "birthDate": "1985-05-08", "deceasedDateTime": "2017-03-10", "homePostalCode": "G02547" },
+{ "pid": "p3", "gender": "male", "birthDate": "1997-02", "deceasedDateTime": null, "homePostalCode": null },
+{ "pid": "p4", "gender": "male", "birthDate": "1999-06-05", "deceasedDateTime": null, "homePostalCode": "H10564" },
+{ "pid": "p5", "gender": "male", "birthDate": "1965-10-01", "deceasedDateTime": "2019-04-21", "homePostalCode": "G02547" },
+{ "pid": "p6", "gender": "female", "birthDate": "1991-03", "deceasedDateTime": null, "homePostalCode": null },
+/* This line is a comment to test spark options */
+{ "pid": "p7", "gender": "female", "birthDate": "1972-10-25", "deceasedDateTime": null, "homePostalCode": "V13135" },
+{ "pid": "p8", "gender": "female", "birthDate": "2010-01-10", "deceasedDateTime": null, "homePostalCode": "Z54564" },
+{ "pid": "p9", "gender": "female", "birthDate": "1999-05-12", "deceasedDateTime": null, "homePostalCode": null },
+{ "pid": "p10", "gender": "female", "birthDate": "2003-11", "deceasedDateTime": null, "homePostalCode": null }
