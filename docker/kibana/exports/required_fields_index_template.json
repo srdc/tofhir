@@ -12,7 +12,7 @@
 		  }
 		}
 	  },
-	  "mappingUrl": {
+	  "mappingTaskName": {
 		"type": "text",
 		"fields": {
 		  "keyword": {
