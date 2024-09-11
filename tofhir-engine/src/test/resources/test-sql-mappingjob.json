@@ -20,6 +20,7 @@
   },
   "mappings": [
     {
+      "name": "care-site-sql-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/care-site-sql-mapping",
       "sourceBinding": {
         "source": {
@@ -29,6 +30,7 @@
       }
     },
     {
+      "name": "location-sql-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
       "sourceBinding": {
         "source": {
@@ -38,6 +40,7 @@
       }
     },
     {
+      "name": "patient-sql-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-sql-mapping",
       "sourceBinding": {
         "source": {

@@ -50,7 +50,7 @@ class SinkHandlerTest extends AnyFlatSpec {
     }), ArgumentMatchers.any())).thenThrow(new Exception())
 
     // Start streaming
-    val streamingQuery = SinkHandler.writeStream(sparkSession, execution, df, mockWriter, "someUrl")
+    val streamingQuery = SinkHandler.writeStream(sparkSession, execution, df, mockWriter, "someMappingTaskName")
 
     // Wait for data generation for 5 seconds and then terminate the query
     streamingQuery.awaitTermination(5000)

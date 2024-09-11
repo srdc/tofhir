@@ -36,17 +36,20 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
     sparkSession)
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "patient-fhir-mapping",
     mappingRef = "https://datatools4heart.eu/fhir/mappings/patient-fhir-mapping",
     sourceBinding = Map("source" -> FhirServerSource(resourceType = "Patient"))
   )
 
   val patientMappingTaskWith2Sources: FhirMappingTask = FhirMappingTask(
+    name = "patient-fhir-mapping-two-sources",
     mappingRef = "https://datatools4heart.eu/fhir/mappings/patient-fhir-mapping-two-sources",
     sourceBinding = Map("patient" -> FhirServerSource(resourceType = "Patient"), "observations" -> FhirServerSource(resourceType = "Observation"))
   )
 
   // Observation mapping task
   val observationMappingTaskWith2Sources: FhirMappingTask = FhirMappingTask(
+    name = "observation-mapping-from-fhir-with-two-sources",
     mappingRef = "http://observation-mapping-from-fhir-with-two-sources",
     sourceBinding = Map("observation" -> FhirServerSource(resourceType = "Observation"), "patient" -> FhirServerSource(resourceType = "Patient")))
 
@@ -118,6 +121,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       dataProcessingSettings = DataProcessingSettings()
     )
     val mappingTask: FhirMappingTask = FhirMappingTask(
+      name ="encounter-summary",
       mappingRef = "http://encounter-summary",
       sourceBinding = Map(
         "encounter" -> FhirServerSource(resourceType = "Encounter", sourceRef = Some("fhirServer")),

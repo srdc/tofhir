@@ -18,12 +18,13 @@ class MissingFileFormatException(message: String) extends RuntimeException(messa
  * {@link mapping} will be executed if it is provided. Otherwise, the mapping referenced by {@link mappingRef} is
  * retrieved from the repository and executed.
  *
+ * @param name              Name of the given FhirMappingTask
  * @param mappingRef        Canonical URL of the FhirMapping definition to execute
  * @param sourceBinding     A map that provides details on how to load each source data for the mapping.
  *                          It links the source settings of a mapping job to the sources of a mapping.
  * @param mapping           FhirMapping definition to execute
  */
-case class FhirMappingTask(mappingRef: String, sourceBinding: Map[String, MappingSourceBinding], mapping: Option[FhirMapping] = None)
+case class FhirMappingTask(name: String, mappingRef: String, sourceBinding: Map[String, MappingSourceBinding], mapping: Option[FhirMapping] = None)
 
 
 /**

@@ -34,7 +34,7 @@ case class FhirMappingJobExecution(id: String,
                                    isScheduledJob: Boolean
                                   ) {
   /**
-   * Returns the map of streaming queries i.e. map of (mapping url -> streaming query)
+   * Returns the map of streaming queries i.e. map of (mappingTask name -> streaming query)
    * @return
    */
   def getStreamingQueryMap(): collection.mutable.Map[String, StreamingQuery] = {
@@ -51,10 +51,10 @@ case class FhirMappingJobExecution(id: String,
    * Returns the [[StreamingQuery]] from this execution, if any. It throws a [[IllegalStateException]], if the query is not available.
    * @return
    */
-  def getStreamingQuery(mappingUrl: String): StreamingQuery = {
-    getStreamingQueryMap().get(mappingUrl) match {
+  def getStreamingQuery(mappingTaskName: String): StreamingQuery = {
+    getStreamingQueryMap().get(mappingTaskName) match {
       case Some(query) => query
-      case None => throw new IllegalStateException(s"Trying to access StreamingQuery, but none exists for the given mapping url: $mappingUrl")
+      case None => throw new IllegalStateException(s"Trying to access StreamingQuery, but none exists for the given mappingTask name: $mappingTaskName")
     }
   }
 
@@ -75,67 +75,45 @@ case class FhirMappingJobExecution(id: String,
   /**
    * Creates a checkpoint directory for a mapping included in a job
    *
-   * @param mappingUrl Url of the mapping
+   * @param mappingTaskName Name of the mappingTask
    * @return Directory path in which the checkpoints will be managed
    */
-  def getCheckpointDirectory(mappingUrl: String): String =
-    Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString).toString
+  def getCheckpointDirectory(mappingTaskName: String): String =
+    Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingTaskName.hashCode.toString).toString
 
   /**
    * Creates a commit directory for a mapping included in a job
    *
-   * @param mappingUrl Url of the mapping
+   * @param mappingTaskName Name of the mappingTask
    * @return Directory path in which the commits will be managed
    */
-  def getCommitDirectory(mappingUrl: String): String = {
-    SparkUtil.getCommitDirectoryPath(Paths.get(getCheckpointDirectory(mappingUrl)))
+  def getCommitDirectory(mappingTaskName: String): String = {
+    SparkUtil.getCommitDirectoryPath(Paths.get(getCheckpointDirectory(mappingTaskName)))
   }
 
   /**
    * Creates a source directory for a mapping included in a job
    *
-   * @param mappingUrl Url of the mapping
+   * @param mappingTaskName Name of the mappingTask
    * @return Directory path in which the sources will be managed
    */
-  def getSourceDirectory(mappingUrl: String): String = {
-    SparkUtil.getSourceDirectoryPath(Paths.get(getCheckpointDirectory(mappingUrl)))
+  def getSourceDirectory(mappingTaskName: String): String = {
+    SparkUtil.getSourceDirectoryPath(Paths.get(getCheckpointDirectory(mappingTaskName)))
   }
 
   /**
    * Creates a error output directory for a mapping execution included in a job and an execution
-   * error-folder-path\<error-type>\job-<jobId>\execution-<executionId>\<mappingUrl>\<random-generated-name-by-spark>.csv
+   * error-folder-path\<error-type>\job-<jobId>\execution-<executionId>\<mappingTaskName>\<random-generated-name-by-spark>.csv
    * e.g. error-folder-path\invalid_input\job-d13b5044-f05c-4698-86c2-d83b3c5083f8\execution-59733de5-1c92-4741-b032-6e9e13ee4550\-521848504\part-00000-1d7d9467-0195-4d28-964d-89171727fa41-c000.csv
    *
-   * @param mappingUrl
+   * @param mappingTaskName
    * @param errorType
    * @return
    */
-  def getErrorOutputDirectory(mappingUrl: String, errorType: String): String =
+  def getErrorOutputDirectory(mappingTaskName: String, errorType: String): String =
     Paths.get(ToFhirConfig.engineConfig.erroneousRecordsFolder, errorType, s"job-${jobId}", s"execution-${id}",
-      this.convertUrlToAlphaNumeric(mappingUrl)).toString
+      mappingTaskName).toString
 
-
-  /**
-   * Convert mapping url to alphanumeric string to be used as folder name
-   * e.g. https://aiccelerate.eu/fhir/mappings/streaming-test/patient-mapping -> https_aiccelerate_eu_fhir_mappings_streaming_test_patient_mapping
-   * @param url
-   * @return
-   */
-  private def convertUrlToAlphaNumeric(url: String): String = {
-    // Define a regular expression pattern to match alphanumeric parts
-    val pattern = Pattern.compile("[a-zA-Z0-9]+")
-    val matcher = pattern.matcher(url)
-    // Extract meaningful words and transform them
-    val extractedWords = scala.collection.mutable.ListBuffer[String]()
-    while (matcher.find()) {
-      val word = matcher.group()
-      // You can further transform the word if needed (e.g., removing spaces or special characters)
-      // For simplicity, we are not doing any additional transformation here.
-      extractedWords += word
-    }
-    // Combine the transformed words to create a folder name
-    extractedWords.mkString("-")
-  }
 }
 
 /**

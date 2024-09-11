@@ -33,6 +33,7 @@
   "useFhirSinkAsIdentityService": true,
   "mappings": [
     {
+      "name": "patient-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       "sourceBinding": {
         "source": {
@@ -42,6 +43,7 @@
       }
     },
     {
+      "name": "mapping-using-identity-service",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/mapping-using-identity-service",
       "sourceBinding": {
         "source": {

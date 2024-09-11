@@ -68,14 +68,14 @@ class FhirMappingJobManager(
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         // log the start of the FHIR mapping task execution
-        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED ,Some(task.mappingRef))
+        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED ,Some(task.name))
         readSourceExecuteAndWriteInChunks(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
           fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
       }.recover {
         // Check whether the job is stopped
         case se: SparkThrowable if se.getMessage.contains("cancelled part of cancelled job group") =>
           // log the execution status as "STOPPED"
-          ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STOPPED, Some(task.mappingRef))
+          ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STOPPED, Some(task.name))
           throw FhirMappingJobStoppedException(s"Execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project ${mappingJobExecution.projectId}' terminated manually!")
         // Exceptions from Spark executors are wrapped inside a SparkException, which are caught below
         case se: SparkThrowable =>
@@ -83,16 +83,16 @@ class FhirMappingJobManager(
             // log the mapping job result and exception for the errors encountered while reading the schema or writing the FHIR Resources
             case _ =>
               // log the execution status as "FAILURE"
-              ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.FAILURE, Some(task.mappingRef), Some(se))
+              ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.FAILURE, Some(task.name), Some(se))
           }
         // Pass the stop exception to the upstream Futures in the chain laid out by foldLeft above
         case t: FhirMappingJobStoppedException =>
           // log the execution status as "SKIPPED"
-          ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.SKIPPED, Some(task.mappingRef))
+          ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.SKIPPED, Some(task.name))
           throw t
         case e: Throwable =>
           // log the execution status as "FAILURE"
-          ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.FAILURE, Some(task.mappingRef), Some(e))
+          ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.FAILURE, Some(task.name), Some(e))
       }
     } map { _ => logger.debug(s"MappingJob execution finished for MappingJob: ${mappingJobExecution.jobId}.") }
   }
@@ -117,19 +117,19 @@ class FhirMappingJobManager(
     fhirWriter.validate()
     mappingJobExecution.mappingTasks
       .map(t => {
-        logger.debug(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping url ${t.mappingRef} is started and waiting for the data...")
+        logger.debug(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping name ${t.name} is started and waiting for the data...")
         // log the start of the FHIR mapping task execution
-        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED ,Some(t.mappingRef))
-        // Construct a tuple of (mapping url, Future[StreamingQuery])
-        t.mappingRef ->
+        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED ,Some(t.name))
+        // Construct a tuple of (mapping name, Future[StreamingQuery])
+        t.name ->
           readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
             .map(ts => {
-              SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.mappingRef)
+              SinkHandler.writeStream(spark, mappingJobExecution, ts, fhirWriter, t.name)
             })
             .recover {
               case e: Throwable =>
                 // log the execution status as "FAILURE"
-                ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.FAILURE, Some(t.mappingRef), Some(e))
+                ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.FAILURE, Some(t.name), Some(e))
                 throw e
             }
       })
@@ -256,7 +256,7 @@ class FhirMappingJobManager(
     readSourceAndExecuteTask(mappingJobExecution.jobId, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
       .map {
         dataset =>
-          SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingJobExecution.mappingTasks.head.mappingRef), dataset, fhirWriter)
+          SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingJobExecution.mappingTasks.head.name), dataset, fhirWriter)
       }
   }
 
@@ -285,7 +285,7 @@ class FhirMappingJobManager(
     // Using Future.apply to convert the result of readJoinSourceData into a Future
     // ensuring that if there's an error in readJoinSourceData, it will be propagated as a failed future
     Future.apply(readJoinSourceData(task, sourceSettings, timeRange, jobId = Some(jobId))) flatMap {
-      case (fhirMapping, mds, df) => executeTask(jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId, projectId = projectId)
+      case (fhirMapping, mds, df) => executeTask(jobId, task.name, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, executionId, projectId = projectId)
     }
   }
 
@@ -308,33 +308,33 @@ class FhirMappingJobManager(
                                                  identityServiceSettings: Option[IdentityServiceSettings] = None,
                                                  timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
     val mappingTask = mappingJobExecution.mappingTasks.head
-    logger.debug(s"Reading source data for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
+    logger.debug(s"Reading source data for mapping ${mappingTask.name} within mapping job ${mappingJobExecution.jobId} ...")
     val (fhirMapping, mds, df) = readJoinSourceData(mappingTask, sourceSettings, timeRange, jobId = Some(mappingJobExecution.jobId))
     val sizeOfDf: Long = df.count()
-    logger.debug(s"$sizeOfDf records read for mapping ${mappingTask.mappingRef} within mapping job ${mappingJobExecution.jobId} ...")
+    logger.debug(s"$sizeOfDf records read for mapping ${mappingTask.name} within mapping job ${mappingJobExecution.jobId} ...")
 
     val result = ToFhirConfig.engineConfig.maxChunkSizeForMappingJobs match {
       //If not specify run it as single chunk
       case None =>
-        logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.jobId} ...")
-        executeTask(mappingJobExecution.jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), Some(mappingJobExecution.projectId))
-          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
+        logger.debug(s"Executing the mapping ${mappingTask.name} within job ${mappingJobExecution.jobId} ...")
+        executeTask(mappingJobExecution.jobId, mappingTask.name, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), Some(mappingJobExecution.projectId))
+          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.name), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
       case Some(chunkSize) if sizeOfDf < chunkSize =>
-        logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.jobId} ...")
-        executeTask(mappingJobExecution.jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), Some(mappingJobExecution.projectId))
-          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
+        logger.debug(s"Executing the mapping ${mappingTask.name} within job ${mappingJobExecution.jobId} ...")
+        executeTask(mappingJobExecution.jobId, mappingTask.name, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), Some(mappingJobExecution.projectId))
+          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.name), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
       //Otherwise divide the data into chunks
       case Some(chunkSize) =>
         val numOfChunks: Int = Math.ceil(sizeOfDf * 1.0 / chunkSize * 1.0).toInt
-        logger.debug(s"Executing the mapping ${mappingTask.mappingRef} within job ${mappingJobExecution.jobId} in $numOfChunks chunks ...")
+        logger.debug(s"Executing the mapping ${mappingTask.name} within job ${mappingJobExecution.jobId} in $numOfChunks chunks ...")
         val splitDf = df.randomSplit((1 to numOfChunks).map(_ => 1.0).toArray[Double])
         splitDf
           .zipWithIndex
           .foldLeft(Future.apply(())) {
             case (fj, (df, i)) => fj.flatMap(_ =>
-              executeTask(mappingJobExecution.jobId, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
-                .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.mappingRef), dataset, fhirWriter))
-                .map(_ => logger.debug(s"Chunk ${i + 1} is completed for mapping ${mappingTask.mappingRef} within MappingJob: ${mappingJobExecution.jobId}..."))
+              executeTask(mappingJobExecution.jobId, mappingTask.name, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
+                .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.name), dataset, fhirWriter))
+                .map(_ => logger.debug(s"Chunk ${i + 1} is completed for mapping ${mappingTask.name} within MappingJob: ${mappingJobExecution.jobId}..."))
             )
           }
     }
@@ -412,6 +412,7 @@ class FhirMappingJobManager(
    * Execute a single mapping task.
    *
    * @param jobId                      Job identifier
+   * @param mappingTaskName            Name of the mappingTask
    * @param fhirMapping                toFHIR Mapping definition
    * @param df                         Source data to be mapped
    * @param mainSourceSettings         Main source data settings of the mapping job
@@ -422,13 +423,14 @@ class FhirMappingJobManager(
    * @return
    */
   def executeTask(jobId: String,
+                  mappingTaskName: String,
                   fhirMapping: FhirMapping,
                   df: DataFrame,
                   mainSourceSettings: MappingJobSourceSettings,
                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                   identityServiceSettings: Option[IdentityServiceSettings] = None,
                   executionId: Option[String] = None,
-                  projectId: Option[String] = None
+                  projectId: Option[String] = None,
                  ): Future[Dataset[FhirMappingResult]] = {
     //Load the contextual data for the mapping
     Future
@@ -442,7 +444,7 @@ class FhirMappingJobManager(
         val configurationContext = mainSourceSettings.toConfigurationContext
         //Construct the mapping service
         val fhirMappingService = new FhirMappingService(jobId, fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries, projectId)
-        MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, executionId)
+        MappingTaskExecutor.executeMapping(spark, mappingTaskName, df, fhirMappingService, executionId)
       })
   }
 
@@ -595,17 +597,17 @@ class FhirMappingJobManager(
     // fold over the mapping tasks to chain the futures sequentially
     mappingJobExecution.mappingTasks.foldLeft(Future.successful(initialDataFrame)) { (accFuture, task) =>
       accFuture.flatMap { accDataFrame =>
-        logger.info(s"Executing mapping task ${task.mappingRef} within mapping job: ${mappingJobExecution.jobId}")
+        logger.info(s"Executing mapping task ${task.name} within mapping job: ${mappingJobExecution.jobId}")
         readSourceAndExecuteTask(mappingJobExecution.jobId, task, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
           .map { dataFrame =>
-            logger.info(s"Completed the execution of mapping task ${task.mappingRef} within mapping job: ${mappingJobExecution.jobId}")
+            logger.info(s"Completed the execution of mapping task ${task.name} within mapping job: ${mappingJobExecution.jobId}")
             // notify the caller that the mapping task execution is complete by invoking the taskCompletionCallback function
             taskCompletionCallback()
             // combine the accumulated DataFrame with the current task's DataFrame
             accDataFrame.union(dataFrame)
           }.recover {
             case e: Throwable =>
-              logger.error(s"Failed to execute mapping task ${task.mappingRef} within mapping job: ${mappingJobExecution.jobId}",e)
+              logger.error(s"Failed to execute mapping task ${task.name} within mapping job: ${mappingJobExecution.jobId}",e)
               throw e
           }
       }

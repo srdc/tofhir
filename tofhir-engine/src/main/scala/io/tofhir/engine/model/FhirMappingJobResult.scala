@@ -5,7 +5,7 @@ import ch.qos.logback.more.appenders.marker.MapMarker
  * Result of a mapping job execution
  *
  * @param mappingJobExecution Fhir Mapping Job execution
- * @param mappingUrl          Url of the mapping if this is reporting single mapping
+ * @param mappingTaskName     Name of the mapping if this is reporting single mapping
  * @param numOfInvalids       Total number of invalid input rows
  * @param numOfNotMapped      Total number of mappings per row that is not successful
  * @param numOfFhirResources  Total number of FHIR resources created as a result mapping(s)
@@ -14,7 +14,7 @@ import ch.qos.logback.more.appenders.marker.MapMarker
  * @param chunkResult         Whether it represents the result of a chunk (applicable only for the batch mapping job) or the execution of a mapping task
  */
 case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
-                                mappingUrl: Option[String],
+                                mappingTaskName: Option[String],
                                 numOfInvalids: Long = 0,
                                 numOfNotMapped: Long = 0,
                                 numOfFhirResources: Long = 0,
@@ -46,7 +46,7 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
     // get the status of execution
     val status: String = result
     // construct the message for the execution of mapping job
-    var message = s"toFHIR ${if (chunkResult) "chunk " else "" }mapping result ($status) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingUrl.map(u => s" for mapping '$u'").getOrElse("")}!\n"
+    var message = s"toFHIR ${if (chunkResult) "chunk " else "" }mapping result ($status) for execution '${mappingJobExecution.id}' of job '${mappingJobExecution.jobId}' in project '${mappingJobExecution.projectId}'${mappingTaskName.map(u => s" for mappingTask '$u'").getOrElse("")}!\n"
     // if it is not the start log, print the result of execution
     if(!status.contentEquals(FhirMappingJobResult.STARTED)){
       message = message +
@@ -70,7 +70,7 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
     markerMap.put("jobId", mappingJobExecution.jobId)
     markerMap.put("projectId", mappingJobExecution.projectId)
     markerMap.put("executionId", mappingJobExecution.id)
-    markerMap.put("mappingUrl", mappingUrl.orNull)
+    markerMap.put("mappingTaskName", mappingTaskName.orNull)
     markerMap.put("result", result)
     markerMap.put("chunkResult", chunkResult)
     markerMap.put("numOfInvalids", numOfInvalids)

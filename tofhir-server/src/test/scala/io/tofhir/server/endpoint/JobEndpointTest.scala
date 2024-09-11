@@ -28,11 +28,11 @@ class JobEndpointTest extends BaseEndpointTest {
   val kafkaSourceSettings: KafkaSourceSettings = KafkaSourceSettings(name = "kafka-source", sourceUri = "http://example.com/kafka", bootstrapServers = "http://some-kafka-server:9092")
   val mappingJobSourceSettings: Map[String, MappingJobSourceSettings] =
     Map("source1" -> kafkaSourceSettings)
-  val kafkaMappingTask: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingRef1", Map("sourceBinding1" -> KafkaSource(topicName = "topic", sourceRef = Some("source1"), groupId = "group", startingOffsets = "latest"))))
+  val kafkaMappingTask: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingTest1", "mappingRef1", Map("sourceBinding1" -> KafkaSource(topicName = "topic", sourceRef = Some("source1"), groupId = "group", startingOffsets = "latest"))))
   val kafkaSourceJob: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = mappingJobSourceSettings, sinkSettings = sinkSettings, mappings = kafkaMappingTask, dataProcessingSettings = DataProcessingSettings())
   // a malformed job with a source reference to a missing data source in the mapping tasks, to be rejected
-  val malformedMappings: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingRef1", Map("sourceBinding1" -> SqlSource(tableName = Some("table"), sourceRef = Some("source2")))))
-  val mappingTaskMalformedJob: FhirMappingJob = FhirMappingJob(name = Some("malformedJob1"), sourceSettings = mappingJobSourceSettings, sinkSettings = sinkSettings, mappings = malformedMappings, dataProcessingSettings = DataProcessingSettings())
+  val malformedMappingTasks: Seq[FhirMappingTask] = Seq(FhirMappingTask("mappingTest2","mappingRef1", Map("sourceBinding1" -> SqlSource(tableName = Some("table"), sourceRef = Some("source2")))))
+  val mappingTaskMalformedJob: FhirMappingJob = FhirMappingJob(name = Some("malformedJob1"), sourceSettings = mappingJobSourceSettings, sinkSettings = sinkSettings, mappings = malformedMappingTasks, dataProcessingSettings = DataProcessingSettings())
   // a malformed job which is a scheduling job and has a stream file system data source, to be rejected
   val streamFileSystemSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings(name = "file-system-source", sourceUri = "http://example.co/filesystem", dataFolderPath = "test/data", asStream = true)
   val streamAndSchedulingMalformedJob: FhirMappingJob = FhirMappingJob(name = Some("malformedJob2"), schedulingSettings = Some(SchedulingSettings(cronExpression = "* * * * *")) ,sourceSettings = Map("source1" -> streamFileSystemSourceSettings.copy(asStream = false), "source2" -> streamFileSystemSourceSettings), sinkSettings = sinkSettings, mappings = Seq.empty, dataProcessingSettings = DataProcessingSettings())
@@ -133,7 +133,7 @@ class JobEndpointTest extends BaseEndpointTest {
         status shouldEqual StatusCodes.BadRequest
         // validate error message
         val response = responseAs[String]
-        response should include("Detail: The data source referenced by source name 'source2' in the mapping task 'mappingRef1' is not found in the source settings of the job.")
+        response should include("Detail: The data source referenced by source name 'source2' in the mapping task 'mappingTest2' is not found in the source settings of the job.")
         // validate that job metadata file is still the same
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
         (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
@@ -153,6 +153,26 @@ class JobEndpointTest extends BaseEndpointTest {
         // check job folder is not created
         FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${mappingTaskMalformedJob.id}${FileExtensions.JSON}").toFile shouldNot exist
       }
+    }
+  }
+
+
+  "prevent creation of a job with two mappingTask share same name" in {
+
+    val mappingTask: FhirMappingTask = FhirMappingTask("testname1", "mappingref1", sourceBinding = Map.empty)
+    val mappingTask2: FhirMappingTask = FhirMappingTask("testname1", "mappingref1", sourceBinding = Map.empty)
+    val jobWithSameMappingTaskName = job1.copy(id = "jobWithSameMappingTaskName", name = Option("jobWithSameMappingTaskName"),mappings = Seq(mappingTask, mappingTask2))
+    // try to create a job with two mappingTask share same name
+    Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(jobWithSameMappingTaskName))) ~> route ~> check {
+      status shouldEqual StatusCodes.BadRequest
+      // validate error message
+      val response = responseAs[String]
+      response should include("Detail: Duplicate mappingTask name. Ensure each MappingTask has a unique name!")
+      // validate that job metadata file is still the same
+      val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+      (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1
+      // check job folder is not created
+      FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${jobWithSameMappingTaskName.id}${FileExtensions.JSON}").toFile shouldNot exist
     }
   }
 

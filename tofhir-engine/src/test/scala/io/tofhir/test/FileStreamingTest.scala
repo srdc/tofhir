@@ -121,6 +121,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     // Patient Mapping Task
     val patientArchivePath: String = archiveFolders("patientArchiveFolder").getAbsolutePath
     val patientMappingTask: FhirMappingTask = FhirMappingTask(
+      name = "patient-mapping",
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       sourceBinding = Map("source" -> FileSystemSource(
         path = "patients_csv",
@@ -134,6 +135,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     // Observation Mapping Task
     val ObservationArchivePath: String = archiveFolders("observationArchiveFolder").getAbsolutePath
     val observationMappingTask: FhirMappingTask = FhirMappingTask(
+      name = "other-observation-mapping",
       mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
       sourceBinding = Map("source" -> FileSystemSource(
         path = "observations_csv",
@@ -170,6 +172,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     // Json Mapping Task
     val jsonArchivePath: String = archiveFolders("observationArchiveFolder").getAbsolutePath
     val jsonMappingTask: FhirMappingTask = FhirMappingTask(
+      name = "patient-mapping",
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       sourceBinding = Map("source" -> FileSystemSource(
         path = "",
@@ -205,6 +208,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     // Parquet Mapping Task
     val parquetArchivePath: String = archiveFolders("observationArchiveFolder").getAbsolutePath
     val parquetMappingTask: FhirMappingTask = FhirMappingTask(
+      name = "patient-mapping",
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       sourceBinding = Map("source" -> FileSystemSource(
         path = "",

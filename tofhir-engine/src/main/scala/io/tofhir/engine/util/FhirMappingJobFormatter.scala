@@ -1,7 +1,7 @@
 package io.tofhir.engine.util
 
-import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirRepositorySinkSettings, FhirServerSource, FhirServerSourceSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, FixedTokenAuthenticationSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SQLSchedulingSettings, SchedulingSettings, SqlSource, SqlSourceSettings}
-import org.json4s.{Formats, ShortTypeHints}
+import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirMappingTask, FhirRepositorySinkSettings, FhirServerSource, FhirServerSourceSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, FixedTokenAuthenticationSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SQLSchedulingSettings, SchedulingSettings, SqlSource, SqlSourceSettings}
+import org.json4s.{Formats, MappingException, ShortTypeHints}
 import org.json4s.jackson.Serialization
 
 import java.nio.charset.StandardCharsets
@@ -59,7 +59,12 @@ object FhirMappingJobFormatter {
   def readMappingJobFromFile(filePath: String): FhirMappingJob = {
     val source = Source.fromFile(filePath, StandardCharsets.UTF_8.name())
     val fileContent = try replaceEnvironmentVariables(source.mkString) finally source.close()
-    org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
+    val mappingJob = org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
+    // check there are no duplicate name on mappingTasks of the job
+    if(!this.checkMappingTaskNamesUnique(mappingJob.mappings)){
+      throw new MappingException("Duplicate 'name' fields found in the MappingTasks within the MappingJob! Ensure each MappingTask has a unique name.")
+    }
+    mappingJob
   }
 
   private def replaceEnvironmentVariables(fileContent: String): String = {
@@ -76,6 +81,16 @@ object FhirMappingJobFormatter {
     type EnvironmentVariable = Value
     final val FHIR_REPO_URL = Value("FHIR_REPO_URL");
     final val DATA_FOLDER_PATH= Value("DATA_FOLDER_PATH");
+  }
+
+  /**
+   * Check whether names of the mappingTask array is unique
+   * @param mappingTasks mappingTask array from mappingJob definition
+   * @return
+   */
+  def checkMappingTaskNamesUnique(mappingTasks: Seq[FhirMappingTask]): Boolean = {
+    val nameSet = mappingTasks.map(_.name).toSet
+    nameSet.size == mappingTasks.size
   }
 
 }

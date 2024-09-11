@@ -5,12 +5,13 @@ import io.onfhir.api.util.IOUtil
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
-import io.tofhir.engine.util.FileUtils
+import io.tofhir.engine.util.{FhirMappingJobFormatter, FileUtils}
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
 import io.tofhir.server.model._
 import io.tofhir.server.repository.project.ProjectFolderRepository
 import io.tofhir.server.util.FileOperations
+import org.json4s.MappingException
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
 
@@ -201,6 +202,10 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
         // Try to parse the file content as FhirMappingJob
         try {
           val job = JsonMethods.parse(fileContent).extract[FhirMappingJob]
+          // check there are no duplicate name on mappingTasks of the job
+          if(!FhirMappingJobFormatter.checkMappingTaskNamesUnique(job.mappings)){
+            throw new MappingException(s"Duplicate 'name' fields found in the MappingTasks within the ${job.id}! Ensure each MappingTask has an unique name.")
+          }
           // discard if the job id and file name not match
           if (FileOperations.checkFileNameMatchesEntityId(job.id, file, "job")) {
             fhirJobMap.put(job.id, job)

@@ -61,10 +61,10 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
                 descheduleJobExecution(jobId, executionId)
               }
             } ~ pathPrefix(SEGMENT_MAPPINGS) { // jobs/<jobId>/executions/<executionId>/mappings
-              pathPrefix(Segment) { mappingUrl: String => // jobs/<jobId>/executions/<executionId>/mappings/<mappingUrl>
-                pathPrefix(SEGMENT_STOP) { // jobs/<jobId>/executions/<executionId>/mappings/<mappingUrl>/stop
+              pathPrefix(Segment) { mappingTaskName: String => // jobs/<jobId>/executions/<executionId>/mappings/<mappingTaskName>
+                pathPrefix(SEGMENT_STOP) { // jobs/<jobId>/executions/<executionId>/mappings/<mappingTaskName>/stop
                   pathEndOrSingleSlash {
-                    stopMappingExecution(jobId, executionId, mappingUrl)
+                    stopMappingExecution(jobId, executionId, mappingTaskName)
                   }
                 }
               }
@@ -263,14 +263,14 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
   /**
    * Route to stop an individual mapping task inside a job.
    *
-   * @param jobId      Identifier of the job containing the mapping.
-   * @param mappingUrl Url of the mapping to be stopped
+   * @param jobId           Identifier of the job containing the mapping.
+   * @param mappingTaskName Name of the mappingTask to be stopped
    * @return
    */
-  private def stopMappingExecution(jobId: String, executionId: String, mappingUrl: String): Route = {
+  private def stopMappingExecution(jobId: String, executionId: String, mappingTaskName: String): Route = {
     delete {
       complete {
-        executionService.stopMappingExecution(jobId, executionId, mappingUrl).map(_ => StatusCodes.OK)
+        executionService.stopMappingExecution(jobId, executionId, mappingTaskName).map(_ => StatusCodes.OK)
       }
     }
   }

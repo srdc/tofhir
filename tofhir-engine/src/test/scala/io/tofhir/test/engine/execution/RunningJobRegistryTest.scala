@@ -83,9 +83,9 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
 
     runningTaskRegistry.stopMappingExecution("j4", "e", "m1")
     verify(streamingQueryFuture.value.get.get).stop()
-    val runningMappingUrls: Seq[String] = runningTaskRegistry.getRunningExecutions()("j4").find(_._1.equals("e")).get._2
-    runningMappingUrls.length === 1
-    runningMappingUrls.head === "m2"
+    val runningMappingTaskNames: Seq[String] = runningTaskRegistry.getRunningExecutions()("j4").find(_._1.equals("e")).get._2
+    runningMappingTaskNames.length === 1
+    runningMappingTaskNames.head === "m2"
   }
 
   "it" should "register batch jobs" in {
@@ -106,14 +106,14 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     runningTaskRegistry.getRunningExecutions().contains("j4") shouldBe false
   }
 
-  private def getTestInput(jobId: String, executionId: String, mappingUrls: Seq[String], isStream: Boolean = true): (FhirMappingJobExecution, Seq[String], Future[StreamingQuery]) = {
+  private def getTestInput(jobId: String, executionId: String, mappingTaskNames: Seq[String], isStream: Boolean = true): (FhirMappingJobExecution, Seq[String], Future[StreamingQuery]) = {
     (
       FhirMappingJobExecution(
         id = executionId,
         job = FhirMappingJob(id = jobId, sourceSettings = Map("s" -> FileSystemSourceSettings("n", "s", "d", isStream)), sinkSettings = null, mappings = Seq.empty),
-        mappingTasks = mappingUrls.map(url => FhirMappingTask(url, Map.empty))
+        mappingTasks = mappingTaskNames.map(name => FhirMappingTask(name, s"http://${name}", Map.empty))
       ),
-      mappingUrls,
+      mappingTaskNames,
       Future.apply(
         mock[StreamingQuery]
       )
