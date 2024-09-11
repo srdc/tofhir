@@ -18,6 +18,7 @@
   },
   "mappings": [
     {
+      "name": "patient-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       "sourceBinding": {
         "source": {

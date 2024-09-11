@@ -22,6 +22,7 @@
 	"returnMinimal" : true
   },
   "mappings" : [ {
+	"name": "patient-mapping-with-two-sources",
 	"mappingRef" : "http://patient-mapping-with-two-sources",
 	"sourceBinding" : {
 	  "patient" : {

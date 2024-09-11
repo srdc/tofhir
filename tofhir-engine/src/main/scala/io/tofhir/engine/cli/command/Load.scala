@@ -21,7 +21,7 @@ class Load extends Command {
       try {
         val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(filePath)
         println("The following FhirMappingJob successfully loaded.")
-        val newContext = command.CommandExecutionContext(context.toFhirEngine, Some(mappingJob), Load.getMappingNameUrlTuples(mappingJob.mappings, context.toFhirEngine.mappingRepo))
+        val newContext = command.CommandExecutionContext(context.toFhirEngine, Some(mappingJob), Load.getTaskNameUrlTuples(mappingJob.mappings, context.toFhirEngine.mappingRepo))
         println(Load.serializeMappingJobToCommandLine(newContext))
         newContext
       } catch {
@@ -37,9 +37,9 @@ class Load extends Command {
 }
 
 object Load {
-  def getMappingNameUrlTuples(tasks: Seq[FhirMappingTask], mappingRepository: IFhirMappingRepository): Map[String, String] = {
+  def getTaskNameUrlTuples(tasks: Seq[FhirMappingTask], mappingRepository: IFhirMappingRepository): Map[String, String] = {
     tasks.foldLeft(Map.empty[String, String]) { (map, task) => // Convert to tuple (name -> url)
-      map + (mappingRepository.getFhirMappingByUrl(task.mappingRef).name -> task.mappingRef)
+      map + (task.name -> task.mappingRef)
     }
   }
 

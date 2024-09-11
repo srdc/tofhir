@@ -29,7 +29,7 @@ object CommandLineInterface {
           val mappingJob = FhirMappingJobFormatter.readMappingJobFromFile(mappingJobFilePath.get)
           CommandExecutionContext(toFhirEngine = toFhirEngine,
             fhirMappingJob = Some(mappingJob),
-            mappingNameUrlMap = Load.getMappingNameUrlTuples(mappingJob.mappings, toFhirEngine.mappingRepo))
+            mappingNameUrlMap = Load.getTaskNameUrlTuples(mappingJob.mappings, toFhirEngine.mappingRepo))
         } catch {
           case _: FileNotFoundException =>
             println(s"The file cannot be found at the specified path found in the config:${mappingJobFilePath.get}")

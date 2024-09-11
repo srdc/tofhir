@@ -82,14 +82,17 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   val fhirSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = onFhirClient.getBaseUrl())
 
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "patient-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
     sourceBinding = Map("source" -> KafkaSource(topicName = "patients", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
   )
   val otherObservationMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "other-observation-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
     sourceBinding = Map("source" -> KafkaSource(topicName = "observations", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
   )
   val familyMemberHistoryMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "family-member-history-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/family-member-history-mapping",
     sourceBinding = Map("source" -> KafkaSource(topicName = "familyMembers", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
   )
@@ -248,7 +251,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
 
     streamingQuery.awaitTermination(20000L)
     streamingQuery.stop()
-    io.FileUtils.deleteDirectory(new File(execution.getCheckpointDirectory(mappingTask.mappingRef))) // Clear checkpoint directory to prevent conflicts with other tests
+    io.FileUtils.deleteDirectory(new File(execution.getCheckpointDirectory(mappingTask.name))) // Clear checkpoint directory to prevent conflicts with other tests
   }
 }
 

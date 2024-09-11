@@ -10,7 +10,7 @@ import java.nio.file.Paths
 class FhirMappingJobExecutionTest extends AnyFlatSpec with Matchers{
 
   // Create test execution
-  val mappingUrl = "mocked_mapping_url"
+  val mappingTaskName = "mocked_mappingTask_name"
   val jobId = "mocked_job_id"
   val testSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "test")
   val testJob: FhirMappingJob = FhirMappingJob(id = jobId, sinkSettings = testSinkSettings, sourceSettings = Map.empty, mappings = Seq.empty)
@@ -18,13 +18,13 @@ class FhirMappingJobExecutionTest extends AnyFlatSpec with Matchers{
 
   "FhirMappingJobExecution" should "get source file" in {
     // Test whether source directory is right
-    testExecution.getSourceDirectory(mappingUrl) shouldBe
-      SparkUtil.getSourceDirectoryPath(Paths.get(testExecution.getCheckpointDirectory(mappingUrl)))
+    testExecution.getSourceDirectory(mappingTaskName) shouldBe
+      SparkUtil.getSourceDirectoryPath(Paths.get(testExecution.getCheckpointDirectory(mappingTaskName)))
   }
 
   "FhirMappingJobExecution" should "get commit file" in {
     // Test whether commit directory is right
-    testExecution.getCommitDirectory(mappingUrl) shouldBe
-      SparkUtil.getCommitDirectoryPath(Paths.get(testExecution.getCheckpointDirectory(mappingUrl)))
+    testExecution.getCommitDirectory(mappingTaskName) shouldBe
+      SparkUtil.getCommitDirectoryPath(Paths.get(testExecution.getCheckpointDirectory(mappingTaskName)))
   }
 }

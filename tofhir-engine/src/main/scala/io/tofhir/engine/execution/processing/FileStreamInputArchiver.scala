@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters._
 /**
  * This class manages archiving of input files after mappings are executed in the file. It periodically runs an archiving thread, which checks the configured checkpoint directory for streaming jobs.
  * The checkpoint directory has a hierarchical structure such that it contains subdirectories keeping checkpoints for each job and mapping tasks included in the job
- * e.g. <checkpointDir> / <jobId> / <hash of mappingUrl>. Each such folder further contains "commits", "offsets", and "sources" folders created by Spark. Spark creates a commit file
+ * e.g. <checkpointDir> / <jobId> / <hash of mappingTaskName>. Each such folder further contains "commits", "offsets", and "sources" folders created by Spark. Spark creates a commit file
  * after processing a file with a name as a number e.g. 0,1,2,...
  *
  * The "sources" folder contains corresponding files with the same name of commit files. These files in turn contain names of the actual files processed.
@@ -42,19 +42,19 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
    *
    * @param taskExecution
    */
-  def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingUrl: String): Unit = {
+  def applyArchivingOnStreamingJob(taskExecution: FhirMappingJobExecution, mappingTaskName: String): Unit = {
     val archiveMode: ArchiveModes = taskExecution.archiveMode
     if (archiveMode != ArchiveModes.OFF) {
       // Get the commit file directory for this execution
-      val commitDirectory: File = new File(taskExecution.getCommitDirectory(mappingUrl))
+      val commitDirectory: File = new File(taskExecution.getCommitDirectory(mappingTaskName))
 
       // Get the sources file directory for this execution
-      val sourcesDirectory: String = taskExecution.getSourceDirectory(mappingUrl)
+      val sourcesDirectory: String = taskExecution.getSourceDirectory(mappingTaskName)
 
       // There won't be any file (with name as an integer) during the initialization or after checkpoints are cleared
       if (commitDirectory.listFiles().exists(file => file.isFile && !file.getName.contains("."))) {
         // Apply archiving for the files as of the last processed offset until the last unprocessed offset
-        val lastProcessedOffset: Int = processedOffsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingUrl), -1)
+        val lastProcessedOffset: Int = processedOffsets.getOrElseUpdate(getOffsetKey(taskExecution.id, mappingTaskName), -1)
         val lastOffsetSet: Int = SparkUtil.getLastCommitOffset(commitDirectory)
 
         Range.inclusive(lastProcessedOffset + 1, lastOffsetSet) // +1 for skipping the last processed offset
@@ -65,7 +65,7 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
               inputFiles.foreach(inputFile => {
                 processArchiveMode(inputFile, archiveMode)
               })
-              processedOffsets.put(getOffsetKey(taskExecution.id, mappingUrl), sourceFileName)
+              processedOffsets.put(getOffsetKey(taskExecution.id, mappingTaskName), sourceFileName)
             }
           })
       }
@@ -73,13 +73,13 @@ class FileStreamInputArchiver(runningJobRegistry: RunningJobRegistry) {
   }
 
   /**
-   * Resets the offset to -1 for the given execution and mapping url so that the archiving starts from scratch
+   * Resets the offset to -1 for the given execution and mappingTask name so that the archiving starts from scratch
    *
    * @param execution
-   * @param mappingUrl
+   * @param mappingTaskName
    */
-  def resetOffset(execution: FhirMappingJobExecution, mappingUrl: String): Unit = {
-    processedOffsets.put(getOffsetKey(execution.id, mappingUrl), -1)
+  def resetOffset(execution: FhirMappingJobExecution, mappingTaskName: String): Unit = {
+    processedOffsets.put(getOffsetKey(execution.id, mappingTaskName), -1)
   }
 }
 
@@ -131,14 +131,14 @@ object FileStreamInputArchiver {
   }
 
   /**
-   * Computes hash code of the concatenation of the execution id and the mapping url
+   * Computes hash code of the concatenation of the execution id and the mappingTask name
    *
    * @param executionId
-   * @param mappingUrl
+   * @param mappingTaskName
    * @return
    */
-  private def getOffsetKey(executionId: String, mappingUrl: String): String = {
-    (executionId + mappingUrl).hashCode.toString
+  private def getOffsetKey(executionId: String, mappingTaskName: String): String = {
+    (executionId + mappingTaskName).hashCode.toString
   }
 
   /**
@@ -183,8 +183,8 @@ class StreamingArchiverTask(archiver: FileStreamInputArchiver, runningJobRegistr
     val executions = runningJobRegistry.getRunningExecutionsWithCompleteMetadata()
       .filter(execution => execution.isStreamingJob && execution.fileSystemSourceDataFolderPath.nonEmpty)
     executions.foreach(execution => {
-      execution.getStreamingQueryMap().keys.foreach(mappingUrl => {
-        archiver.applyArchivingOnStreamingJob(execution, mappingUrl)
+      execution.getStreamingQueryMap().keys.foreach(mappingTaskName => {
+        archiver.applyArchivingOnStreamingJob(execution, mappingTaskName)
       })
     })
   }
