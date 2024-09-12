@@ -30,6 +30,11 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
   val patientArchiveFolder: File = FileUtils.getPath(streamingTestArchiveFolderPath, "patients_csv").toFile
   val observationArchiveFolder: File = FileUtils.getPath(streamingTestArchiveFolderPath, "observations_csv").toFile
 
+  val jsonWatchFolder: File = FileUtils.getPath(streamingTestWatchFolderPath, "patients_json").toFile
+  val jsonArchiveFolder: File = FileUtils.getPath(streamingTestArchiveFolderPath, "patients_json").toFile
+  val parquetWatchFolder: File = FileUtils.getPath(streamingTestWatchFolderPath, "patients_parquet").toFile
+  val parquetArchiveFolder: File = FileUtils.getPath(streamingTestArchiveFolderPath, "patients_parquet").toFile
+
   val testDataFolderPath: String = Paths.get(getClass.getResource("/test-data").toURI).toAbsolutePath.toString
 
   val mappingJobSourceSettings: Map[String, MappingJobSourceSettings] = Map(
@@ -47,6 +52,16 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
   val observationMappingTask: FhirMappingTask = FhirMappingTask(
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
     sourceBinding = Map("source" -> FileSystemSource(path = "observations_csv", fileFormat = Some("csv"), options = Map("cleanSource" -> "archive", "sourceArchiveDir" -> observationArchiveFolder.getAbsolutePath)))
+  )
+
+  val jsonMappingTask: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+    sourceBinding = Map("source" -> FileSystemSource(path = "", fileFormat = Some(SourceFileFormats.JSON), options = Map("cleanSource" -> "archive", "sourceArchiveDir" -> jsonArchiveFolder.getAbsolutePath)))
+  )
+
+  val parquetMappingTask: FhirMappingTask = FhirMappingTask(
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
+    sourceBinding = Map("source" -> FileSystemSource(path = "", fileFormat = Some(SourceFileFormats.PARQUET), options = Map("cleanSource" -> "archive", "sourceArchiveDir" -> parquetArchiveFolder.getAbsolutePath)))
   )
 
   //create a fhir mapping job for testing
@@ -71,6 +86,10 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     observationWatchFolder.mkdirs()
     patientArchiveFolder.mkdirs()
     observationArchiveFolder.mkdirs()
+    jsonWatchFolder.mkdirs()
+    parquetWatchFolder.mkdirs()
+    jsonArchiveFolder.mkdirs()
+    parquetArchiveFolder.mkdirs()
   }
 
   private def cleanUp(): Unit = {
@@ -97,4 +116,26 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
 //    println("TESTINNGGGG") shouldBe ()
   }
 
+
+  it should "start a streaming job reading from JSON files" in {
+
+    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "patients.json").toFile, FileUtils.getPath(jsonWatchFolder.getAbsolutePath, "patients.json").toFile)
+
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession)
+    val streamingQueryFutures = fhirMappingJobManager.startMappingJobStream(FhirMappingJobExecution(mappingTasks = Seq(jsonMappingTask), job = fhirMappingJob), mappingJobSourceSettings, fileSinkSettings)
+    val streamingQueries = Await.result(Future.sequence(streamingQueryFutures.values), FiniteDuration(5, TimeUnit.SECONDS))
+    streamingQueries.foreach(sq => sq.isActive shouldBe true)
+    streamingQueries.foreach(sq => sq.stop() shouldBe ())
+  }
+
+  it should "start a streaming job reading from Parquet files" in {
+
+    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "patients.parquet").toFile, FileUtils.getPath(parquetWatchFolder.getAbsolutePath, "patients.parquet").toFile)
+
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession)
+    val streamingQueryFutures = fhirMappingJobManager.startMappingJobStream(FhirMappingJobExecution(mappingTasks = Seq(parquetMappingTask), job = fhirMappingJob), mappingJobSourceSettings, fileSinkSettings)
+    val streamingQueries = Await.result(Future.sequence(streamingQueryFutures.values), FiniteDuration(5, TimeUnit.SECONDS))
+    streamingQueries.foreach(sq => sq.isActive shouldBe true)
+    streamingQueries.foreach(sq => sq.stop() shouldBe ())
+  }
 }

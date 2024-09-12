@@ -252,7 +252,7 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
    * |1999-05-12  |            NULL|female|          NULL| p9|
    * |2003-11     |            NULL|female|          NULL|p10|
    * +------------+----------------+------+--------------+---+
-   *
+   * (Row order appears randomly due to 'distinct' option)
    */
   it should "correctly read from JSON and TXT-NDJSON files" in {
     // Folder including the test files
@@ -272,6 +272,7 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
     // Spark options to test if options are working
     val sparkOptions = Map(
       "allowComments" -> "true",
+      "distinct" -> "true" // 'distinct' option randomly changes the order of the rows in the result.
     )
 
     // Loop through each source binding configuration to run the test
@@ -285,8 +286,9 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
       // Validate the result
       result.count() shouldBe expectedRowNumber
       result.columns shouldBe expectedColumns
-      result.first() shouldBe expectedFirstRow
-      result.collect().last shouldBe expectedLastRow
+      // Check that the result contains the first and last row of the source data
+      result.collect().contains(expectedFirstRow) shouldBe true
+      result.collect().contains(expectedLastRow) shouldBe true
     }
   }
 
@@ -468,4 +470,139 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
       result.collect().toSet should contain allElementsOf expectedRows
     }
   }
+
+  /**
+   * Tests that the FileDataSourceReader correctly reads multiple CSV, TSV, and TXT_CSV files from a zip file.
+   *
+   * This test verifies that the reader can handle multiple files inside a zip archive with different file formats
+   * and produce the expected results. The test covers reading from a zip file containing:
+   * 1. CSV files
+   * 2. TSV files
+   * 3. TXT_CSV (Text files with CSV format)
+   *
+   * The expected read result for all formats:
+   * +---+------+-------------------+
+   * |pid|gender|          birthDate|
+   * +---+------+-------------------+
+   * | p1|  male|2000-05-10 00:00:00|
+   * | p2|  male|1985-05-08 00:00:00|
+   * | p3|  male|1997-02-01 00:00:00|
+   * | p4|  male|1999-06-05 00:00:00|
+   * | p5|  male|1965-10-01 00:00:00|
+   * | p6|female|1991-03-01 00:00:00|
+   * | p7|female|1972-10-25 00:00:00|
+   * | p8|female|2010-01-10 00:00:00|
+   * | p9|female|1999-05-12 00:00:00|
+   * +---+------+-------------------+
+   * (Rows may appear in different order, grouped by each file.)
+   *
+   */
+  it should "correctly read multiple CSV, TSV and TXT-CSV files from a zip archive" in {
+    // Path to the zip file containing the test data
+    val folderPath = "/zip-test"
+
+    // Expected values for validation
+    val expectedRowNumber = 9
+    val expectedColumns = Array("pid", "gender", "birthDate")
+    val expectedRows = Set(
+      Row("p1", "male", new Timestamp(dateFormat.parse("2000-05-10").getTime)),
+      Row("p4", "male", new Timestamp(dateFormat.parse("1999-06-05").getTime)),
+      Row("p7", "female", new Timestamp(dateFormat.parse("1972-10-25").getTime))
+    )
+
+    // A sequence of file formats and their configuration for the test
+    val sourceBindingConfigurations = Seq(
+      ("csv.zip", Some(SourceFileFormats.CSV)),
+      ("tsv.zip", Some(SourceFileFormats.TSV)),
+      ("txt-csv.zip", Some(SourceFileFormats.TXT_CSV))
+    )
+
+    // Spark options to test if options are working
+    val sparkOptions = Map(
+      "ignoreTrailingWhiteSpace" -> "true",
+      "comment" -> "!"
+    )
+
+    // Test the reading from the zip file using the source configurations
+    val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest7", sourceUri = "zip-file-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
+    sourceBindingConfigurations.foreach { case (zipFileName, fileFormat) =>
+      // Read the data using the reader and the defined settings
+      val mappingSourceBinding = FileSystemSource(path = zipFileName, fileFormat = fileFormat, options = sparkOptions)
+      val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
+
+      // Validate the result
+      result.count() shouldBe expectedRowNumber
+      result.columns shouldBe expectedColumns
+      result.collect().toSet should contain allElementsOf expectedRows
+    }
+  }
+
+  /**
+   * Tests that the FileDataSourceReader correctly reads data from JSON and TXT_NDJSON files inside a zip archive.
+   *
+   * This test verifies that the reader can handle different file formats (JSON, TXT_NDJSON) compressed in a zip file
+   * and produce the expected results.
+   *
+   * The test covers the following formats inside a zip:
+   * 1. JSON
+   * 2. TXT_NDJSON (Text file with newline-delimited JSON format)
+   *
+   * The expected result for both file formats:
+   * +------------+----------------+------+--------------+---+
+   * |  birthDate |deceasedDateTime|gender|homePostalCode|pid|
+   * +------------+----------------+------+--------------+---+
+   * |2000-05-10  |            NULL|  male|          NULL| p1|
+   * |1985-05-08  |      2017-03-10|  male|        G02547| p2|
+   * |1997-02     |            NULL|  male|          NULL| p3|
+   * |1999-06-05  |            NULL|  male|        H10564| p4|
+   * |1965-10-01  |      2019-04-21|  male|        G02547| p5|
+   * |1991-03     |            NULL|female|          NULL| p6|
+   * |1972-10-25  |            NULL|female|        V13135| p7|
+   * |2010-01-10  |            NULL|female|        Z54564| p8|
+   * |1999-05-12  |            NULL|female|          NULL| p9|
+   * |2003-11     |            NULL|female|          NULL|p10|
+   * +------------+----------------+------+--------------+---+
+   */
+  it should "correctly read from JSON and TXT-NDJSON files inside a zip archive" in {
+
+    // Path to the zip file containing the test files
+    val folderPath = "/zip-test"
+
+    // Expected values for validation
+    val expectedRowNumber = 9
+    val expectedColumns = Array("birthDate", "gender", "pid")
+    // Expected rows for validation, one row from each file
+    val expectedRows = Set(
+      Row("2000-05-10", "male", "p1"),
+      Row("1999-06-05", "male", "p4"),
+      Row("1972-10-25", "female", "p7")
+    )
+
+    // Define the zip file names and their corresponding formats to be tested
+    val sourceBindingConfigurations = Seq(
+      ("json.zip", Some(SourceFileFormats.JSON)), // JSON inside zip
+      ("txt-ndjson.zip", Some(SourceFileFormats.TXT_NDJSON)) // Newline-delimited JSON inside zip
+    )
+
+    // Spark options for testing (e.g., allowing comments in the files)
+    val sparkOptions = Map(
+      "allowComments" -> "true"
+    )
+
+    // Loop through each zip file and perform the test
+    val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest8", sourceUri = "zip-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
+
+    sourceBindingConfigurations.foreach { case (zipFileName, fileFormat) =>
+
+      // Define the source binding and read the data from the zip file
+      val mappingSourceBinding = FileSystemSource(path = zipFileName, fileFormat = fileFormat, options = sparkOptions)
+      val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
+
+      // Validate the result
+      result.count() shouldBe expectedRowNumber
+      result.columns shouldBe expectedColumns
+      result.collect().toSet should contain allElementsOf expectedRows
+    }
+  }
+
 }
