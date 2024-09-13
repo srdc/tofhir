@@ -23,10 +23,12 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
   /**
    * Read the source data
    *
-   * @param mappingSourceBinding Configuration information for mapping source
-   * @param schema        Optional schema for the source
-   * @param limit         Limit the number of rows to read
-   * @param jobId         The identifier of mapping job which executes the mapping
+   * @param mappingSourceBinding   Configuration information for the mapping source
+   * @param mappingJobSourceSettings  Common settings for the source system
+   * @param schema          Optional schema for the source
+   * @param timeRange       Time range for the data to read if given
+   * @param limit           Limit the number of rows to read
+   * @param jobId           The identifier of mapping job which executes the mapping
    * @return
    * @throws IllegalArgumentException If the path is not a directory for streaming jobs.
    * @throws NotImplementedError      If the specified source format is not implemented.
@@ -108,7 +110,7 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
               .schema(csvSchema.orNull)
               .csv(finalPath)
         // assume that each line in the txt files contains a separate JSON object.
-        case SourceFileFormats.JSON | SourceFileFormats.TXT_NDJON=>
+        case SourceFileFormats.JSON | SourceFileFormats.TXT_NDJSON =>
           if(mappingJobSourceSettings.asStream)
             spark.readStream.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
               // add a dummy column called 'filename' to print a log when the data reading is started for a file
