@@ -39,6 +39,9 @@ fi
 if [ ! -z "$DB_PATH" ]; then
   JAVA_CMD+="-Dtofhir.db-path=$DB_PATH "
 fi
+if [ ! -z "$FHIR_DEFINITIONS_ENDPOINT" ]; then
+  JAVA_CMD+="-Dfhir.definitions-fhir-endpoint=$FHIR_DEFINITIONS_ENDPOINT "
+fi
 
 # Delay the execution for this amount of seconds
 if [ ! -z "$DELAY_EXECUTION" ]; then
