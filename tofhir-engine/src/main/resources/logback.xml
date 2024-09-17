@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- Set the host for fluentd, if not given localhost is used -->
-    <property name="FLUENT_HOST" value="${efk.fluent-host:-localhost}"/>
     <!-- Stop output INFO at start -->
     <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
 
@@ -60,19 +58,6 @@
         <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
             <MaxFileSize>10MB</MaxFileSize>
         </triggeringPolicy>
-    </appender>
-
-    <!-- Appender for Fluentd -->
-    <appender name="FLUENT" class="ch.qos.logback.more.appenders.DataFluentAppender">
-        <!-- Configure the host and port for fluentd -->
-        <remoteHost>${FLUENT_HOST}</remoteHost>
-        <port>24224</port>
-        <!-- We need only INFO logs. -->
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
-        </filter>
-        <!-- If true, Map Marker is expanded instead of nesting in the marker name -->
-        <flattenMapMarker>true</flattenMapMarker>
     </appender>
 
     <appender name="ASYNC-AUDIT" class="ch.qos.logback.classic.AsyncAppender">
