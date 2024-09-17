@@ -423,7 +423,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -435,7 +436,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -447,7 +449,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -459,7 +462,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -471,7 +475,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -483,7 +488,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -495,7 +501,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -507,7 +514,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -519,7 +527,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -531,7 +540,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Patient")
       ),
       // Conditions
       FhirMappingResult(
@@ -544,7 +554,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Condition")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -556,7 +567,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Condition")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -568,7 +580,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Condition")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -580,7 +593,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Condition")
       ),
       FhirMappingResult(
         jobId = "job",
@@ -592,7 +606,8 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
         error = None,
         fhirInteraction = None,
         executionId = Some("exec"),
-        projectId = Some("project")
+        projectId = Some("project"),
+        resourceType = Some("Condition")
       ),
     ).toDS()
   }

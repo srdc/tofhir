@@ -203,7 +203,8 @@ object MappingTaskExecutor {
                 mappedResource = Some(Serialization.write(r)),
                 fhirInteraction = fhirInteraction,
                 executionId = executionId,
-                projectId = fhirMappingService.projectId
+                projectId = fhirMappingService.projectId,
+                resourceType = (r\ "resourceType").extractOpt[String]
               )
             )
         }

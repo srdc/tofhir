@@ -1,14 +1,12 @@
 package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.common.model.Json4sSupport.formats
 import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings}
 import org.apache.spark.sql.functions.{col, collect_list}
 import org.apache.spark.sql.types.{ArrayType, StructType}
 import org.apache.spark.sql.{DataFrameWriter, Dataset, SaveMode, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
-import org.json4s.jackson.JsonMethods
 
 class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWriter(sinkSettings) {
   private val logger: Logger = Logger(this.getClass)
@@ -24,23 +22,6 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
       // Handle cases where the file format is either NDJSON, PARQUET, or DELTA_LAKE,
       // and the output needs to be partitioned by FHIR resource type.
       case SinkFileFormats.NDJSON | SinkFileFormats.PARQUET | SinkFileFormats.DELTA_LAKE if sinkSettings.partitionByResourceType =>
-        // Transform the DataFrame (df) to include the resource type.
-        // parsedDF will have the following structure:
-        // +------------+-------------------------+
-        // | resourceType | mappedResourceJson    |
-        // +------------+-------------------------+
-        // | Patient      | {"resourceType": "... |
-        // | Patient      | {"resourceType": "... |
-        // +------------+-------------------------+
-        val parsedDF = df
-          .map(row => {
-            // extract `mappedResource` and parse the resourceType from the JSON.
-            val mappedResourceJson = row.mappedResource.get
-            val resourceType: String = (JsonMethods.parse(mappedResourceJson) \ "resourceType").extract[String]
-            (resourceType, mappedResourceJson)
-          })
-          .toDF("resourceType", "mappedResourceJson")
-
         // Group the DataFrame by resourceType to aggregate all resources of the same type.
         // groupedDFs will have the following structure:
         // +------------+--------------------+
@@ -48,8 +29,7 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
         // +------------+--------------------+
         // | Patient |[ {"resourceType":...|
         // +------------+--------------------+
-        val groupedDFs = parsedDF.groupBy("resourceType").agg(collect_list("mappedResourceJson").as("resources"))
-
+        val groupedDFs = df.groupBy("resourceType").agg(collect_list("mappedResource").as("resources"))
         // Iterate through each group (by resourceType) and write the data to separate folders.
         groupedDFs.collect().foreach(rDf => {
           // Extract the resourceType for the current group.
