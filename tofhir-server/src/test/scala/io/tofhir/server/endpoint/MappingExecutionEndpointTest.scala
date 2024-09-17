@@ -374,12 +374,10 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         val success = waitForCondition(45) {
           fsSinkFolder.listFiles.exists(_.getName.contains("results.csv")) && {
             // read the csv file created in the file system
-            val csvFile: File = fsSinkFolder.listFiles.find(_.getName.contains("results.csv"))
-              .get.listFiles().find(file => file.getName.endsWith(".csv"))
-              .get
+            val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("results.csv")).get
             val results = sparkSession.read
               .option("header","true")
-              .csv(csvFile.getPath)
+              .csv(outputFolder.getPath)
             // verify the row count
             results.count() == 1
             // verify the content of row
