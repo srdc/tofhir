@@ -2,6 +2,7 @@ package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
+import io.tofhir.engine.data.write.FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
@@ -29,7 +30,7 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
   val terminologySystem2: TerminologySystem = TerminologySystem(name = "testTerminology2", description = "example terminology 2", codeSystems = Seq.empty, conceptMaps = Seq.empty)
 
   // Create job for test update on job terminology
-  val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
+  val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir", contentType = SinkContentTypes.CSV)
   val terminologyServiceSettings: TerminologyServiceSettings = LocalFhirTerminologyServiceSettings(s"/${toFhirEngineConfig.terminologySystemFolderPath}/${terminologySystem1.id}", codeSystemFiles = Seq.empty, conceptMapFiles = Seq.empty)
   val jobTest: FhirMappingJob = FhirMappingJob(name = Some("mappingJobTest"), sourceSettings = Map.empty, sinkSettings = sinkSettings, terminologyServiceSettings = Some(terminologyServiceSettings), mappings = Seq.empty, dataProcessingSettings = DataProcessingSettings())
 

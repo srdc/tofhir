@@ -11,7 +11,8 @@
   },
   "sinkSettings": {
     "jsonClass": "FileSystemSinkSettings",
-    "path": "/test-data/sink/streaming-test-fhir.ndjson"
+    "path": "/test-data/sink/streaming-test-fhir.ndjson",
+    "contentType" : "ndjson"
   },
   "dataProcessingSettings": {
     "saveErroneousRecords": false,
@@ -25,7 +26,7 @@
         "source": {
           "jsonClass": "FileSystemSource",
           "path": "patients_csv",
-          "fileFormat": "csv",
+          "contentType": "csv",
           "options": {
             "cleanSource": "delete"
           }

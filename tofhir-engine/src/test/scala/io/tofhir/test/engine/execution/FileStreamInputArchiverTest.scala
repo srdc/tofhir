@@ -24,7 +24,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   val sourceFolderPath = "test-archiver-batch"
   val inputFilePath = "test-input-file"
   val testSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings(name = "test", sourceUri = "test", dataFolderPath = sourceFolderPath)
-  val testFileSystemSource: FileSystemSource = FileSystemSource(path = inputFilePath)
+  val testFileSystemSource: FileSystemSource = FileSystemSource(path = inputFilePath, contentType = SourceContentTypes.CSV)
   val testMappingTask: FhirMappingTask = FhirMappingTask(name = "test", sourceBinding = Map("_" -> testFileSystemSource), mappingRef = "test")
   val testSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "test")
   val testDataProcessingSettings: DataProcessingSettings = DataProcessingSettings(archiveMode = ArchiveModes.ARCHIVE)

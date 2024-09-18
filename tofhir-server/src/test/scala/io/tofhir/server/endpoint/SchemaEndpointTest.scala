@@ -292,7 +292,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
           dataFolderPath = "data-integration-suite/test-data"
         )),
-        sourceBinding = FileSystemSource("WRONG.wrong")
+        sourceBinding = FileSystemSource("WRONG.wrong", contentType = SourceContentTypes.CSV)
       )
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -308,7 +308,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
           dataFolderPath = "data-integration-suite/test-data"
         )),
-        sourceBinding = FileSystemSource("lab-results.csv")
+        sourceBinding = FileSystemSource("lab-results.csv", contentType = SourceContentTypes.CSV)
       )
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest

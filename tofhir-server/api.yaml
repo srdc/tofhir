@@ -1955,14 +1955,14 @@ components:
               type: string
               description: "Path of the file inside the data folder"
               example: "C:\\ToFhir"
-            fileFormat:
+            contentType:
               type: string
               enum:
                 - csv
                 - tsv
                 - parquet
                 - json
-              description: "File format of configured file inside of the data folder"
+              description: "Content type of configured file inside of the data folder"
           required:
             - path
 
@@ -2208,9 +2208,9 @@ components:
         path:
           type: string
           description: "Path to the folder or file to write the resources"
-        fileFormat:
+        contentType:
           type: string
-          description: "File format if not inferred from the path"
+          description: "Content type of the sink"
         numOfPartitions:
           type: integer
           description: "Number of partitions for the file (for distributed fs)"
@@ -2234,7 +2234,7 @@ components:
           example: "http://localhost:8081/fhir"
         securitySettings:
           type: object
-          description: "File format if not inferred from the path"
+          description: "Security settings for Fhir Repository"
           oneOf:
             - $ref: "#/components/schemas/BearerTokenAuthorizationSettings"
             - $ref: "#/components/schemas/BasicAuthenticationSettings"

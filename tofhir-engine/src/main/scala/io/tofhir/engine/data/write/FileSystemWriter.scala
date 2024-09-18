@@ -1,7 +1,7 @@
 package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
+import FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings}
 import org.apache.spark.sql.functions.{col, collect_list}
 import org.apache.spark.sql.types.{ArrayType, StructType}
@@ -18,10 +18,10 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
   override def write(spark:SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator:CollectionAccumulator[FhirMappingResult]): Unit = {
     import spark.implicits._
     logger.debug("Created FHIR resources will be written to the given URL:{}", sinkSettings.path)
-    sinkSettings.sinkType match {
-      // Handle cases where the file format is either NDJSON, PARQUET, or DELTA_LAKE,
+    sinkSettings.contentType match {
+      // Handle cases where the content type is either NDJSON, PARQUET, or DELTA_LAKE,
       // and the output needs to be partitioned by FHIR resource type.
-      case SinkFileFormats.NDJSON | SinkFileFormats.PARQUET | SinkFileFormats.DELTA_LAKE if sinkSettings.partitionByResourceType =>
+      case SinkContentTypes.NDJSON | SinkContentTypes.PARQUET | SinkContentTypes.DELTA_LAKE if sinkSettings.partitionByResourceType =>
         // Group the DataFrame by resourceType to aggregate all resources of the same type.
         // groupedDFs will have the following structure:
         // +------------+--------------------+
@@ -41,8 +41,8 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
 
           // Generate the DataFrame that will be written to the file system.
           // If the sink type is NDJSON, the DataFrame should have a single column containing the JSON strings.
-          // For other formats, the DataFrame should have multiple columns corresponding to the keys in the JSON objects.
-          val resourcesDF = if(sinkSettings.sinkType.contentEquals(SinkFileFormats.NDJSON)) {
+          // For other content types, the DataFrame should have multiple columns corresponding to the keys in the JSON objects.
+          val resourcesDF = if(sinkSettings.contentType.contentEquals(SinkContentTypes.NDJSON)) {
             // Convert the list of JSON strings into a DataFrame with a single column named "mappedResourceJson".
             // The resulting DataFrame will contain one row per JSON string, where each row is a single JSON object.
             // The structure of this DataFrame will be as follows:
@@ -91,7 +91,7 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
 
           // Define the output path based on the resourceType, ensuring that each resource type is saved in its own folder.
           val outputPath = s"${sinkSettings.path}/$resourceType"
-          // Write the resources to the specified path based on the chosen format.
+          // Write the resources to the specified path based on the chosen content type.
           val writer = getWriter(resourcesDF, sinkSettings)
 
           // Apply partitioning if partition columns are specified
@@ -101,30 +101,30 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
             writer
           }
 
-          // Handle the specific formats
-          sinkSettings.sinkType match {
-            case SinkFileFormats.NDJSON => partitionedWriter.text(outputPath)
-            case SinkFileFormats.PARQUET => partitionedWriter.parquet(outputPath)
-            case SinkFileFormats.DELTA_LAKE => partitionedWriter.format(SinkFileFormats.DELTA_LAKE).save(outputPath)
+          // Handle the specific content types
+          sinkSettings.contentType match {
+            case SinkContentTypes.NDJSON => partitionedWriter.text(outputPath)
+            case SinkContentTypes.PARQUET => partitionedWriter.parquet(outputPath)
+            case SinkContentTypes.DELTA_LAKE => partitionedWriter.format(SinkContentTypes.DELTA_LAKE).save(outputPath)
           }
         })
-      case SinkFileFormats.NDJSON =>
+      case SinkContentTypes.NDJSON =>
         getWriter(df.map(_.mappedResource.get), sinkSettings).text(sinkSettings.path)
-      case SinkFileFormats.PARQUET =>
+      case SinkContentTypes.PARQUET =>
         // Convert the DataFrame to a Dataset of JSON strings
         val jsonDS = df.select("mappedResource").as[String]
         // Create a DataFrame from the Dataset of JSON strings
         val jsonDF = spark.read.json(jsonDS)
         getWriter(jsonDF, sinkSettings).parquet(sinkSettings.path)
-      case SinkFileFormats.DELTA_LAKE =>
+      case SinkContentTypes.DELTA_LAKE =>
         // Convert the DataFrame to a Dataset of JSON strings
         val jsonDS = df.select("mappedResource").as[String]
         // Create a DataFrame from the Dataset of JSON strings
         val jsonDF = spark.read.json(jsonDS)
         getWriter(jsonDF, sinkSettings)
-          .format(SinkFileFormats.DELTA_LAKE) // Specify Delta Lake format
+          .format(SinkContentTypes.DELTA_LAKE) // Specify Delta Lake content type
           .save(sinkSettings.path)
-      case SinkFileFormats.CSV =>
+      case SinkContentTypes.CSV =>
         // read the mapped resource json column and load it to a new data frame
         val mappedResourceDF = spark.read.json(df.select("mappedResource").as[String])
         // select the columns that are not array type or struct type
@@ -169,7 +169,7 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
 }
 
 object FileSystemWriter {
-  object SinkFileFormats {
+  object SinkContentTypes {
     final val NDJSON = "ndjson"
     final val CSV = "csv"
     final val PARQUET = "parquet"
