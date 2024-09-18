@@ -637,7 +637,7 @@ Example of a Mapping Job definition file with csv source type in streaming mode:
         "patient": {
           "jsonClass": "FileSystemSource",
           "path": "patients",
-          "fileFormat": "csv"
+          "contentType": "csv"
         }
       }
     }
@@ -649,7 +649,7 @@ The json snippet above illustrates the structure of an example mapping job in st
 Similar to the batch mode, most of the fields are the same. The only differences are:
 - `asStream` field in the source settings
 - `path`  in the source binding of the mapping. `path` should be the name of the **folder** this time, and it is where toFHIR will monitor the changes.
-- `fileFormat` in the source binding of the mapping. `fileFormat` field is mandatory for streams and filters to process only files with the given format.
+- `contentType` in the source binding of the mapping. `contentType` field is mandatory.
 
 ##### SQL
 
@@ -808,7 +808,7 @@ To give any spark option, you can use the `options` field in the source binding 
     "source": {
       "jsonClass": "FileSystemSource",
       "path": "patients",
-      "fileFormat": "csv",
+      "contentType": "csv",
       "options": {
         "sep": "\\t" // tab separated file
       }
@@ -890,7 +890,7 @@ Next, specify the source bindings for your mappings in the job. Here's an exampl
       "patient" : {
         "jsonClass" : "FileSystemSource",
         "path" : "patient-simple.csv",
-        "fileFormat" : "csv",
+        "contentType" : "csv",
         "options" : { },
         "sourceRef": "patientSource"
       },
@@ -920,14 +920,14 @@ If the `genderSource` was connected to file system in the job definition, the `s
       "patient" : {
         "jsonClass" : "FileSystemSource",
         "path" : "patient-simple.csv",
-        "fileFormat" : "csv",
+        "contentType" : "csv",
         "options" : { },
         "sourceRef": "patientSource"
       },
       "patientGender" : {
         "jsonClass" : "FileSystemSource",
         "path" : "patient-gender-simple.csv",
-        "fileFormat" : "csv",
+        "contentType" : "csv",
         "options" : { },
         "sourceRef": "genderSource"
       }

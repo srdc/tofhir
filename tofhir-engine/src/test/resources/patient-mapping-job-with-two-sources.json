@@ -28,14 +28,14 @@
 	  "patient" : {
 		"jsonClass" : "FileSystemSource",
 		"path" : "patient-simple.csv",
-		"fileFormat" : "csv",
+		"contentType" : "csv",
 		"options" : { },
 		"sourceRef": "patientSource"
 	  },
 	  "patientGender" : {
 		"jsonClass" : "FileSystemSource",
 		"path" : "patient-gender-simple.csv",
-		"fileFormat" : "csv",
+		"contentType" : "csv",
 		"options" : { },
 		"sourceRef": "genderSource"
 	  }

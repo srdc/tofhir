@@ -1,8 +1,8 @@
 package io.tofhir.test.engine.data.write
 
 import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.data.write.FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.data.write.FileSystemWriter
-import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
 import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings}
 import io.tofhir.engine.util.FileUtils
 import org.apache.spark.sql.delta.implicits.longEncoder
@@ -16,7 +16,7 @@ import java.sql.Timestamp
 
 /**
  * Unit tests for the FileSystemWriter class.
- * The tests validate the functionality of writing a DataFrame to a file system in different formats.
+ * The tests validate the functionality of writing a DataFrame to a file system in different content types.
  */
 class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   /**
@@ -34,7 +34,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
    * FileSystemSinkSettings used for this test:
    * {
    *  "path": "output-ndjson",
-   *  "fileFormat": "ndjson"
+   *  "contentType": "ndjson"
    * }
    *
    * The expected output structure is:
@@ -46,11 +46,10 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   it should "write DataFrame into a ndjson file" in {
     // Define the output path for the NDJSON files
     val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-ndjson"
-    // Create a FileSystemWriter with NDJSON as the output format
+    // Create a FileSystemWriter with NDJSON as the output content type
     val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
-      path = outputFolderPath, fileFormat = Some(SinkFileFormats.NDJSON)
-    ))
-    // Write the DataFrame to the file system in NDJSON format
+      path = outputFolderPath, contentType = SinkContentTypes.NDJSON))
+    // Write the DataFrame to the file system in NDJSON content type
     fileSystemWriter.write(sparkSession, df, sparkSession.sparkContext.collectionAccumulator[FhirMappingResult])
 
     // Read the written NDJSON files back into a DataFrame
@@ -74,7 +73,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
    * The test uses the following FileSystemSinkSettings:
    * {
    *  "path": "output-ndjson",
-   *  "fileFormat": "ndjson"
+   *  "contentType": "ndjson"
    * }
    *
    * The expected output structure is:
@@ -90,9 +89,9 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   it should "write DataFrame as partitioned NDJSON files based on resource type" in {
     // Define the output path for the NDJSON files
     val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-ndjson-by-resource"
-    // Instantiate the FileSystemWriter with NDJSON file format and resource type partitioning
+    // Instantiate the FileSystemWriter with NDJSON content type and resource type partitioning
     val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
-      path = outputFolderPath, fileFormat = Some(SinkFileFormats.NDJSON), partitionByResourceType = true
+      path = outputFolderPath, contentType = SinkContentTypes.NDJSON, partitionByResourceType = true
     ))
     // Write the DataFrame using the FileSystemWriter
     fileSystemWriter.write(sparkSession, df, sparkSession.sparkContext.collectionAccumulator[FhirMappingResult])
@@ -113,7 +112,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
    * The test uses the following FileSystemSinkSettings:
    * {
    *  "path": "output-parquet",
-   *  "fileFormat": "parquet"
+   *  "contentType": "parquet"
    * }
    *
    * The expected output structure is:
@@ -125,9 +124,9 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   it should "write DataFrame into a parquet file" in {
     // Define the output path for the parquet files
     val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-parquet"
-    // Instantiate the FileSystemWriter with Parquet file format
+    // Instantiate the FileSystemWriter with Parquet content type
     val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
-      path = outputFolderPath, fileFormat = Some(SinkFileFormats.PARQUET)
+      path = outputFolderPath, contentType = SinkContentTypes.PARQUET
     ))
     // Write the DataFrame using the FileSystemWriter
     fileSystemWriter.write(sparkSession, df, sparkSession.sparkContext.collectionAccumulator[FhirMappingResult])
@@ -153,7 +152,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
    * The test uses the following FileSystemSinkSettings:
    * {
    *  "path": "output-parquet-by-resource",
-   *  "fileFormat": "parquet",
+   *  "contentType": "parquet",
    *  "partitionByResourceType": true
    * }
    *
@@ -170,9 +169,9 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   it should "write DataFrame as partitioned parquet files based on resource type" in {
     // Define the output path for the parquet files
     val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-parquet-by-resource"
-    // Instantiate the FileSystemWriter with parquet file format and resource type partitioning
+    // Instantiate the FileSystemWriter with parquet content type and resource type partitioning
     val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
-      path = outputFolderPath, fileFormat = Some(SinkFileFormats.PARQUET), partitionByResourceType = true
+      path = outputFolderPath, contentType = SinkContentTypes.PARQUET, partitionByResourceType = true
     ))
     // Write the DataFrame using the FileSystemWriter
     fileSystemWriter.write(sparkSession, df, sparkSession.sparkContext.collectionAccumulator[FhirMappingResult])
@@ -193,7 +192,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
    * The test uses the following FileSystemSinkSettings:
    * {
    *  "path": "output-parquet-by-partition",
-   *  "fileFormat": "parquet",
+   *  "contentType": "parquet",
    *  "partitionByResourceType": true,
    *  "partitioningColumns": {
    *    "Patient": ["gender"],
@@ -231,9 +230,9 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   it should "write DataFrame as partitioned parquet files based on Patient's gender and Condition's reference of subject" in {
     // Define the output path for the parquet files
     val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-parquet-by-partition"
-    // Instantiate the FileSystemWriter with parquet file format and partitioning
+    // Instantiate the FileSystemWriter with parquet content type and partitioning
     val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
-      path = outputFolderPath, fileFormat = Some(SinkFileFormats.PARQUET), partitionByResourceType = true,
+      path = outputFolderPath, contentType = SinkContentTypes.PARQUET, partitionByResourceType = true,
       partitioningColumns = Map("Patient" -> List("gender"), "Condition" -> List("subject.reference"))
     ))
     // Write the DataFrame using the FileSystemWriter
@@ -261,7 +260,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
    * The test uses the following FileSystemSinkSettings:
    * {
    *  "path": "output-delta",
-   *  "fileFormat": "delta"
+   *  "contentType": "delta"
    * }
    *
    * The expected output structure is:
@@ -276,16 +275,16 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   it should "write DataFrame into a Delta Lake file" in {
     // Define the output path for the Delta Lake files
     val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-delta"
-    // Instantiate the FileSystemWriter with Delta Lake file format
+    // Instantiate the FileSystemWriter with Delta Lake file contentType
     val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
-      path = outputFolderPath, fileFormat = Some(SinkFileFormats.DELTA_LAKE)
+      path = outputFolderPath, contentType = SinkContentTypes.DELTA_LAKE
     ))
     // Write the DataFrame using the FileSystemWriter
     fileSystemWriter.write(sparkSession, df, sparkSession.sparkContext.collectionAccumulator[FhirMappingResult])
 
     // Read the written Delta Lake file back into a DataFrame
     val writtenDf = sparkSession.read
-      .format(SinkFileFormats.DELTA_LAKE)
+      .format(SinkContentTypes.DELTA_LAKE)
       .load(outputFolderPath)
     // Verify the total record count
     writtenDf.count() shouldBe 15
@@ -305,7 +304,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
    * The test uses the following FileSystemSinkSettings:
    * {
    *  "path": "output-delta-by-resource",
-   *  "fileFormat": "delta",
+   *  "contentType": "delta",
    *  "partitionByResourceType": true
    * }
    *
@@ -328,21 +327,21 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   it should "write DataFrame as partitioned Delta Lake files based on resource type" in {
     // Define the output path for the Delta Lake files
     val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-delta-by-resource"
-    // Instantiate the FileSystemWriter with Delta Lake file format and resource type partitioning
+    // Instantiate the FileSystemWriter with Delta Lake content type and resource type partitioning
     val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
-      path = outputFolderPath, fileFormat = Some(SinkFileFormats.DELTA_LAKE), partitionByResourceType = true
+      path = outputFolderPath, contentType = SinkContentTypes.DELTA_LAKE, partitionByResourceType = true
     ))
     // Write the DataFrame using the FileSystemWriter
     fileSystemWriter.write(sparkSession, df, sparkSession.sparkContext.collectionAccumulator[FhirMappingResult])
 
     // Verify that the data was correctly written and partitioned under "Condition"
     val conditionDf = sparkSession.read
-      .format(SinkFileFormats.DELTA_LAKE)
+      .format(SinkContentTypes.DELTA_LAKE)
       .load(s"$outputFolderPath/Condition")
     conditionDf.count() shouldBe 5
     // Verify that the data was correctly written and partitioned under "Patient"
     val patientDf = sparkSession.read
-      .format(SinkFileFormats.DELTA_LAKE)
+      .format(SinkContentTypes.DELTA_LAKE)
       .load(s"$outputFolderPath/Patient")
     patientDf.count() shouldBe 10
   }
@@ -353,7 +352,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
    * The test uses the following FileSystemSinkSettings:
    * {
    *  "path": "output-csv",
-   *  "fileFormat": "csv",
+   *  "contentType": "csv",
    *  "options": {
    *    "header": true
    *  }
@@ -368,9 +367,9 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
   it should "write DataFrame into a CSV file" in {
     // Define the output path for the csv files
     val outputFolderPath = s"${ToFhirConfig.engineConfig.contextPath}/output-csv"
-    // Instantiate the FileSystemWriter with csv file format
+    // Instantiate the FileSystemWriter with csv content type
     val fileSystemWriter = new FileSystemWriter(sinkSettings = FileSystemSinkSettings(
-      path = outputFolderPath, fileFormat = Some(SinkFileFormats.CSV), options = Map("header" -> "true")
+      path = outputFolderPath, contentType = SinkContentTypes.CSV, options = Map("header" -> "true")
     ))
     // Write the DataFrame using the FileSystemWriter
     fileSystemWriter.write(sparkSession, df, sparkSession.sparkContext.collectionAccumulator[FhirMappingResult])
@@ -381,7 +380,7 @@ class FileSystemWriterTest extends AnyFlatSpec with BeforeAndAfterAll {
       .csv(outputFolderPath)
     // Verify the total record count
     writtenDf.count() shouldBe 15
-    // Since CSV is a flat file format, the DataFrame should only contain primitive fields, excluding any nested fields.
+    // Since CSV is a flat content type, the DataFrame should only contain primitive fields, excluding any nested fields.
     writtenDf.columns.length shouldBe 8
 
     // Group by resourceType and count
