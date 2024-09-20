@@ -8,7 +8,7 @@ import java.sql.Timestamp
 /**
  * Mapping process result
  * @param jobId             Identifier of the job that this mapping is performed within
- * @param mappingUrl        URL of the mapping definition that this mapping is based on
+ * @param mappingTaskName   Name of the mappingTask that is executed
  * @param mappingExpr       Name of the mapping expression (FhirMapping.mapping.expression.name) that this mapping is based on
  * @param timestamp         Timestamp of the result
  * @param mappedResource    If successful, JSON serialization of the FHIR resource generated via the mapping
@@ -22,7 +22,7 @@ import java.sql.Timestamp
  */
 case class FhirMappingResult(
                               jobId:String,
-                              mappingUrl:String,
+                              mappingTaskName:String,
                               mappingExpr:Option[String] = None,
                               timestamp:Timestamp,
                               mappedResource:Option[String] = None,
@@ -35,7 +35,7 @@ case class FhirMappingResult(
                             ) {
   final val eventId:String = "MAPPING_RESULT"
   override def toString: String = {
-    s"Mapping failure (${error.get.code}) for job '$jobId' and mapping '$mappingUrl'${mappingExpr.map(e => s" within expression '$e'").getOrElse("")} execution '${executionId.getOrElse("")}'!\n"+
+    s"Mapping failure (${error.get.code}) for job '$jobId' and mappingTask '$mappingTaskName'${mappingExpr.map(e => s" within expression '$e'").getOrElse("")} execution '${executionId.getOrElse("")}'!\n"+
     s"\tSource: ${source.get}\n"+
     s"\tError: ${error.get.description}" +
       error.get.expression.map(e =>  s"\n\tExpression: $e").getOrElse("")
@@ -53,7 +53,7 @@ case class FhirMappingResult(
     markerMap.put("jobId", jobId)
     markerMap.put("projectId", projectId.getOrElse(""))
     markerMap.put("executionId", executionId.getOrElse(""))
-    markerMap.put("mappingUrl", mappingUrl)
+    markerMap.put("mappingTaskName", mappingTaskName)
     markerMap.put("mappingExpr", mappingExpr.orElse(null))
     markerMap.put("source", source.get)
     markerMap.put("errorCode", error.get.code)

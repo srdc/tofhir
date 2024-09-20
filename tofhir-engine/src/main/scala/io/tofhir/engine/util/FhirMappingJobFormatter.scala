@@ -1,7 +1,7 @@
 package io.tofhir.engine.util
 
-import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirRepositorySinkSettings, FhirServerSource, FhirServerSourceSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, FixedTokenAuthenticationSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SQLSchedulingSettings, SchedulingSettings, SqlSource, SqlSourceSettings}
-import org.json4s.{Formats, ShortTypeHints}
+import io.tofhir.engine.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FhirMappingJob, FhirMappingTask, FhirRepositorySinkSettings, FhirServerSource, FhirServerSourceSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, FixedTokenAuthenticationSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SQLSchedulingSettings, SchedulingSettings, SqlSource, SqlSourceSettings}
+import org.json4s.{Formats, MappingException, ShortTypeHints}
 import org.json4s.jackson.Serialization
 
 import java.nio.charset.StandardCharsets
@@ -59,7 +59,13 @@ object FhirMappingJobFormatter {
   def readMappingJobFromFile(filePath: String): FhirMappingJob = {
     val source = Source.fromFile(filePath, StandardCharsets.UTF_8.name())
     val fileContent = try replaceEnvironmentVariables(source.mkString) finally source.close()
-    org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
+    val mappingJob = org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
+    // check there are no duplicate name on mappingTasks of the job
+    val duplicateMappingTasks = FhirMappingJobFormatter.findDuplicateMappingTaskNames(mappingJob.mappings)
+    if (duplicateMappingTasks.nonEmpty) {
+      throw new MappingException(s"Duplicate 'name' fields detected in the MappingTasks of the MappingJob: ${duplicateMappingTasks.mkString(", ")}. Please ensure that each MappingTask has a unique name.")
+    }
+    mappingJob
   }
 
   private def replaceEnvironmentVariables(fileContent: String): String = {
@@ -76,6 +82,16 @@ object FhirMappingJobFormatter {
     type EnvironmentVariable = Value
     final val FHIR_REPO_URL = Value("FHIR_REPO_URL");
     final val DATA_FOLDER_PATH= Value("DATA_FOLDER_PATH");
+  }
+
+  /**
+   * Check for duplicate names in the mappingTask array from the mappingJob definition.
+   *
+   * @param mappingTasks mappingTask array from the mappingJob definition.
+   * @return A sequence of duplicate names, if any. Returns an empty sequence if all names are unique.
+   */
+  def findDuplicateMappingTaskNames(mappingTasks: Seq[FhirMappingTask]): Seq[String] = {
+      mappingTasks.groupBy(_.name).view.mapValues(_.size).filter(_._2 > 1).keys.toSeq
   }
 
 }

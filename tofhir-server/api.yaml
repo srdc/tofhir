@@ -1169,7 +1169,7 @@ paths:
         '200':
           description: Job execution stopped successfully
 
-  /projects/{projectId}/jobs/{jobId}/executions/{executionId}/mappings/{mappingUrl}/stop:
+  /projects/{projectId}/jobs/{jobId}/executions/{executionId}/mappings/{mappingTaskName}/stop:
     delete:
       tags:
         - Execution
@@ -1177,7 +1177,7 @@ paths:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
         - $ref: "#/components/parameters/executionId"
-        - $ref: "#/components/parameters/mappingUrl"
+        - $ref: "#/components/parameters/mappingTaskName"
       summary: Stops the individual mapping task inside the job
       responses:
         '200':
@@ -2426,12 +2426,12 @@ components:
 
     ExecuteJobTask:
       type: object
-      description: "The data transfer object to keep mapping urls to be executed and corresponding mapping error handling."
+      description: "The data transfer object to keep mappingTask names to be executed and corresponding mapping error handling."
       properties:
         clearCheckpoints:
           type: boolean
-        mappingUrls:
-          description: "mapping urls of the mappingTask's that to be executed"
+        mappingTaskNames:
+          description: "mapping names of the mappingTask's that to be executed"
           type: array
           items:
             type: string
@@ -2444,12 +2444,12 @@ components:
           type: string
           description: "Identifier of the execution"
           example: "c531d5b0-40fc-42a9-8f2d-c6105e3a5d39"
-        mappingUrls:
+        mappingTaskNames:
           type: array
           items:
             type: string
-            description: "Url of the mapping runned in the execution"
-            example: "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping"
+            description: "Name of the mappingTask runned in the execution"
+            example: "anesthesia-observations-mapping"
         startTime:
           type: string
           description: "Start time of the execution"
@@ -2505,10 +2505,10 @@ components:
         mappingExpr:
           type: string
           description: "Mapping expression, if any"
-        mappingUrl:
+        mappingTaskName:
           type: string
-          description: "URL of the mapping"
-          example: "https://aiccelerate.eu/fhir/mappings/pilot1/anesthesia-observations-mapping"
+          description: "Name of the mappingTask"
+          example: "anesthesia-observations-mapping"
         message:
           type: string
           description: "Log message"
@@ -2783,14 +2783,13 @@ components:
       schema:
         type: string
 
-    mappingUrl:
+    mappingTaskName:
       in: path
-      name: "mappingUrl"
+      name: "mappingTaskName"
       schema:
         type: string
-        format: url
       required: true
-      description: "Url of a mapping"
+      description: "Name of a mappingTask"
 
     mappingContextId:
       in: path

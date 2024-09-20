@@ -83,7 +83,7 @@ object MappingTaskExecutor {
             case Some(validationError) =>
               Seq(FhirMappingResult(
                 jobId = fhirMappingService.jobId,
-                mappingUrl = fhirMappingService.mappingUrl,
+                mappingTaskName = fhirMappingService.mappingTaskName,
                 mappingExpr = None,
                 timestamp = Timestamp.from(Instant.now()),
                 source = Some(Serialization.write(jo)),
@@ -145,7 +145,7 @@ object MappingTaskExecutor {
             case _ =>
               Seq(FhirMappingResult(
                 jobId = fhirMappingService.jobId,
-                mappingUrl = fhirMappingService.mappingUrl,
+                mappingTaskName = fhirMappingService.mappingTaskName,
                 mappingExpr = None,
                 timestamp = Timestamp.from(Instant.now()),
                 source = Some(Serialization.write(jo)),
@@ -182,7 +182,7 @@ object MappingTaskExecutor {
           case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "patch") && resources.length > 1 =>
             Seq(FhirMappingResult(
               jobId = fhirMappingService.jobId,
-              mappingUrl = fhirMappingService.mappingUrl,
+              mappingTaskName = fhirMappingService.mappingTaskName,
               mappingExpr = Some(mappingExpr),
               timestamp = Timestamp.from(Instant.now()),
               source = Some(Serialization.write(jo)),
@@ -196,7 +196,7 @@ object MappingTaskExecutor {
             resources.map(r =>
               FhirMappingResult(
                 jobId = fhirMappingService.jobId,
-                mappingUrl = fhirMappingService.mappingUrl,
+                mappingTaskName = fhirMappingService.mappingTaskName,
                 mappingExpr = Some(mappingExpr),
                 timestamp = Timestamp.from(Instant.now()),
                 source = Some(Serialization.write(jo)),
@@ -228,7 +228,7 @@ object MappingTaskExecutor {
           }
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
-            mappingUrl = fhirMappingService.mappingUrl,
+            mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = Some(mappingExpr),
             timestamp = Timestamp.from(Instant.now()),
             source = Some(Serialization.write(jo)),
@@ -243,7 +243,7 @@ object MappingTaskExecutor {
         case e: FhirMappingException =>
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
-            mappingUrl = fhirMappingService.mappingUrl,
+            mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
             source = Some(Serialization.write(jo)),
@@ -257,7 +257,7 @@ object MappingTaskExecutor {
           logger.debug("Mapping timeout, continuing the processing of mappings...")
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
-            mappingUrl = fhirMappingService.mappingUrl,
+            mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
             source = Some(Serialization.write(jo)),
@@ -271,7 +271,7 @@ object MappingTaskExecutor {
           logger.error("Unexpected problem while executing the mappings...", oth)
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
-            mappingUrl = fhirMappingService.mappingUrl,
+            mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
             source = Some(Serialization.write(jo)),

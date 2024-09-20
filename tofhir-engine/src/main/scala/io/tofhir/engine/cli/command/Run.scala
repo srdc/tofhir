@@ -38,26 +38,18 @@ class Run extends Command {
               context.toFhirEngine.runningJobRegistry.registerBatchJob(
                 mappingJobExecution,
                 Some(f),
-                s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
+                s"Spark job for job: ${mappingJobExecution.jobId} mappingTasks: ${mappingJobExecution.mappingTasks.map(_.name).mkString(" ")}"
               )
             } else {
-              // Understand whether the argument is the name or the URL of the mapping and then find/execute it.
-              if (args.length > 2) {
-                println(s"There are more than one arguments to run command. I will only process: ${args.head} and optionaly second")
-              }
-              val mappingUrl = if (context.mappingNameUrlMap.contains(args.head)) {
-                context.mappingNameUrlMap(args.head)
-              } else {
-                args.head
+              // Find the mappingTask with given name and execute it
+              if (args.length > 1) {
+                println(s"There are more than one arguments to run command. I will only process: ${args.head}")
               }
 
-              val indexAmongMappingToRun = args.drop(1).headOption.flatMap(ind => Try(ind.toInt).toOption).getOrElse(1)
-
-              val task = mappingJob.mappings.filter(_.mappingRef == mappingUrl).drop(indexAmongMappingToRun - 1).headOption
-              if (task.isEmpty) {
-                println(s"There is no such mapping: $mappingUrl with index $indexAmongMappingToRun")
-
+              if(!context.mappingNameUrlMap.contains(args.head)){
+                println(s"There are no mappingTask with name ${args.head}!")
               } else {
+                val task = mappingJob.mappings.find(_.name == args.head)
                 val mappingJobExecution: FhirMappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(task.get), job = mappingJob)
                 val f =
                   fhirMappingJobManager
@@ -71,7 +63,7 @@ class Run extends Command {
                 context.toFhirEngine.runningJobRegistry.registerBatchJob(
                   mappingJobExecution,
                   Some(f),
-                  s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingJobExecution.mappingTasks.map(_.mappingRef).mkString(" ")}"
+                  s"Spark job for job: ${mappingJobExecution.jobId} mappingTasks: ${mappingJobExecution.mappingTasks.map(_.name).mkString(" ")}"
                 )
               }
             }

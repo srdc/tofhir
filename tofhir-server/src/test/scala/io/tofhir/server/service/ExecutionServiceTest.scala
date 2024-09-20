@@ -32,6 +32,7 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
     sinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir"),
     mappings = Seq.apply(
       FhirMappingTask(
+        name = "patient-mapping",
         mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
         sourceBinding = Map("source" -> FileSystemSource(path = ".", fileFormat = Some("csv")))
       )
@@ -50,7 +51,7 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
   "The Execution Service" should {
     "should clear checkpoint directory" in {
       // create an example file for the mapping job in the corresponding checkpoint directory
-      val path: String = Paths.get(ToFhirConfig.sparkCheckpointDirectory, testJob.id, testJob.mappings.head.mappingRef.hashCode.toString).toString
+      val path: String = Paths.get(ToFhirConfig.sparkCheckpointDirectory, testJob.id, testJob.mappings.head.name.hashCode.toString).toString
       val testFile: File = new File(s"$path/test.txt")
       io.FileUtils.createParentDirectories(testFile)
       val fileOutputStream = new FileOutputStream(testFile)

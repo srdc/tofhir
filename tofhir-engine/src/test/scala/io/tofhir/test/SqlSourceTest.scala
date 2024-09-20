@@ -69,15 +69,18 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
 
   // sql tablename mappings tasks
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "patient-sql-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-sql-mapping",
     sourceBinding = Map("source" -> SqlSource(tableName = Some("patients"))))
 
   val otherObsMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "other-observation-sql-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-sql-mapping",
     sourceBinding = Map("source" -> SqlSource(tableName = Some("otherobservations"))))
 
   // sql query mappings tasks
   val careSiteMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "care-site-sql-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/care-site-sql-mapping",
     sourceBinding = Map("source" -> SqlSource(
       query = Some("select cs.care_site_id, cs.care_site_name, c.concept_code, c.vocabulary_id, c.concept_name, l.address_1, l.address_2, l.city, l.state, l.zip " +
@@ -85,11 +88,13 @@ class SqlSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToFhirTest
         "where cs.location_id = l.location_id and cs.place_of_service_concept_id = c.concept_id"))))
 
   val locationMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "location-sql-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
     sourceBinding = Map("source" -> SqlSource(
       query = Some("select * from location"))))
 
   val procedureOccurrenceMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "procedure-occurrence-sql-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/procedure-occurrence-sql-mapping",
     sourceBinding = Map("source" -> SqlSource(
       query = Some("select po.procedure_occurrence_id, po.visit_occurrence_id, po.person_id, c.concept_code, c.vocabulary_id, c.concept_name, " +

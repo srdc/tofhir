@@ -1,5 +1,6 @@
 package io.tofhir.engine.model
 
+import io.tofhir.engine.util.FhirMappingJobFormatter
 import org.json4s.JsonAST.{JObject, JString}
 
 import java.util.UUID
@@ -41,11 +42,17 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
       throw new BadRequestException("Streaming jobs cannot be scheduled.")
     }
 
+    // Check names of the mappingTasks, if a duplicate name is found, throw an error
+    val duplicateMappingTasks = FhirMappingJobFormatter.findDuplicateMappingTaskNames(mappings)
+    if(duplicateMappingTasks.nonEmpty){
+      throw new BadRequestException(s"Duplicate MappingTask name(s) found: ${duplicateMappingTasks.mkString(", ")}. Each MappingTask must have a unique name.")
+    }
+
     // Check mapping tasks of the job, if a data source of a mapping task is missing, throw an error
     mappings.foreach(mappingTask => {
       mappingTask.sourceBinding.foreach(sourceBinding => {
         if(sourceBinding._2.sourceRef.nonEmpty && !sourceSettings.contains(sourceBinding._2.sourceRef.get)) {
-          throw new BadRequestException(s"The data source referenced by source name '${sourceBinding._2.sourceRef.get}' in the mapping task '${mappingTask.mappingRef}' is not found in the source settings of the job.")
+          throw new BadRequestException(s"The data source referenced by source name '${sourceBinding._2.sourceRef.get}' in the mapping task '${mappingTask.name}' is not found in the source settings of the job.")
         }
       })
     })

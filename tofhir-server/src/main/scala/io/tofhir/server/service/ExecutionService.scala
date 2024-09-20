@@ -65,8 +65,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
 
     // get the list of mapping task to be executed
-    val mappingTasks = executeJobTask.flatMap(_.mappingUrls) match {
-      case Some(urls) => urls.flatMap(url => mappingJob.mappings.find(p => p.mappingRef.contentEquals(url)))
+    val mappingTasks = executeJobTask.flatMap(_.mappingTaskNames) match {
+      case Some(names) => names.flatMap(name => mappingJob.mappings.find(p => p.name.contentEquals(name)))
       case None => mappingJob.mappings
     }
 
@@ -78,23 +78,23 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     val JobExecutionMap = toFhirEngine.runningJobRegistry.getRunningExecutions()
     val jobExecution = JobExecutionMap.get(jobId)
     if (jobExecution.isDefined) {
-      val runningMappingUrls = jobExecution.get.flatMap(_._2)
-      val runningMappingUrlsSet = runningMappingUrls.toSet
-      val mappingUrlsSet = mappingTasks.map(_.mappingRef).toSet
-      val intersection = runningMappingUrlsSet.intersect(mappingUrlsSet)
+      val runningMappingTaskNames = jobExecution.get.flatMap(_._2)
+      val runningMappingTaskNamesSet = runningMappingTaskNames.toSet
+      val mappingTaskNamesSet = mappingTasks.map(_.name).toSet
+      val intersection = runningMappingTaskNamesSet.intersect(mappingTaskNamesSet)
       if (intersection.nonEmpty) {
-        // create jvalue json response with already running mapping urls as list string in values and execution ids in keys
-        // find execution ids for the intersection mapping urls
+        // create jvalue json response with already running mappingTask names as list string in values and execution ids in keys
+        // find execution ids for the intersection mappingTask names
         val executionIds = jobExecution.get
-          .filter(p => p._2.exists(mappingUrl => intersection.contains(mappingUrl)))
+          .filter(p => p._2.exists(name => intersection.contains(name)))
           .map(x => {
-            (x._1, x._2.filter(mappingUrl => intersection.contains(mappingUrl)))
+            (x._1, x._2.filter(name => intersection.contains(name)))
           })
         // convert execution ids to json response
         val jValueResponse = JArray(executionIds.map(x => {
           JObject(
             "executionId" -> JString(x._1),
-            "mappingUrls" -> JArray(x._2.map(JString(_)).toList)
+            "mappingTaskNames" -> JArray(x._2.map(JString(_)).toList)
           )
         }).toList)
         // use it in the response message
@@ -122,13 +122,13 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       if (mappingJob.sourceSettings.exists(_._2.asStream)) {
         // Delete checkpoint directory if set accordingly
         if (executeJobTask.exists(_.clearCheckpoints)) {
-          mappingTasks.foreach(mapping => {
+          mappingTasks.foreach(mappingTask => {
             // Reset the archiving offset so that the archiving starts from scratch
-            toFhirEngine.fileStreamInputArchiver.resetOffset(mappingJobExecution, mapping.mappingRef)
+            toFhirEngine.fileStreamInputArchiver.resetOffset(mappingJobExecution, mappingTask.name)
 
-            val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(mapping.mappingRef))
+            val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(mappingTask.name))
             io.FileUtils.deleteDirectory(checkpointDirectory)
-            logger.debug(s"Deleted checkpoint directory for jobId: ${mappingJobExecution.jobId}, executionId: ${mappingJobExecution.id}, mappingUrl: ${mapping.mappingRef}, path: ${checkpointDirectory.getAbsolutePath}")
+            logger.debug(s"Deleted checkpoint directory for jobId: ${mappingJobExecution.jobId}, executionId: ${mappingJobExecution.id}, mappingTaskName: ${mappingTask.name}, path: ${checkpointDirectory.getAbsolutePath}")
           })
         }
 
@@ -181,7 +181,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           toFhirEngine.runningJobRegistry.registerBatchJob(
             mappingJobExecution,
             Some(executionFuture),
-            s"Spark job for job: ${mappingJobExecution.jobId} mappings: ${mappingTasks.map(_.mappingRef).mkString(" ")}"
+            s"Spark job for job: ${mappingJobExecution.jobId} mappingTaskNames: ${mappingTasks.map(_.name).mkString(" ")}"
           )
         }
       }
@@ -226,7 +226,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     )
     val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId))
     val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
-    fhirMappingJobManager.executeTask(mappingJob.id, fhirMapping, selected, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId))
+    fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selected, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId))
       .map { dataFrame =>
         dataFrame
           .collect() // Collect into an Array[String]
@@ -321,17 +321,17 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   /**
    * Stops the execution of the specific mapping task
    *
-   * @param executionId Execution in which the mapping is run
-   * @param mappingUrl  Mapping to be stopped
+   * @param executionId     Execution in which the mapping is run
+   * @param mappingTaskName Mapping to be stopped
    * @return
    */
-  def stopMappingExecution(jobId: String, executionId: String, mappingUrl: String): Future[Unit] = {
+  def stopMappingExecution(jobId: String, executionId: String, mappingTaskName: String): Future[Unit] = {
     Future {
-      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, Some(mappingUrl))) {
-        toFhirEngine.runningJobRegistry.stopMappingExecution(jobId, executionId, mappingUrl)
-        logger.debug(s"Mapping execution stopped. jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl")
+      if (toFhirEngine.runningJobRegistry.executionExists(jobId, executionId, Some(mappingTaskName))) {
+        toFhirEngine.runningJobRegistry.stopMappingExecution(jobId, executionId, mappingTaskName)
+        logger.debug(s"Mapping execution stopped. jobId: $jobId, executionId: $executionId, mappingTaskName: $mappingTaskName")
       } else {
-        throw ResourceNotFound("Mapping execution does not exists.", s"A mapping execution with jobId: $jobId, executionId: $executionId, mappingUrl: $mappingUrl does not exists.")
+        throw ResourceNotFound("Mapping execution does not exists.", s"A mapping execution with jobId: $jobId, executionId: $executionId, mappingTaskName: $mappingTaskName does not exists.")
       }
     }
   }

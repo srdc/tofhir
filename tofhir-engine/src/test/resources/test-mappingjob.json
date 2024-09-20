@@ -14,6 +14,7 @@
   },
   "mappings": [
     {
+      "name": "patient-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       "sourceBinding": {
         "source": {
@@ -23,6 +24,7 @@
       }
     },
     {
+      "name": "other-observation-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
       "sourceBinding": {
         "source": {

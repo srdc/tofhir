@@ -19,13 +19,13 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   val fileStreamInputArchiver = new FileStreamInputArchiver(runningJobRegistryMock)
 
   // Create test objects for archive mode
-  val mappingUrl = "mocked_mapping_url"
+  val mappingTaskName = "mocked_mappingTask_name"
   val jobId = "mocked_job_id"
   val sourceFolderPath = "test-archiver-batch"
   val inputFilePath = "test-input-file"
   val testSourceSettings: FileSystemSourceSettings = FileSystemSourceSettings(name = "test", sourceUri = "test", dataFolderPath = sourceFolderPath)
   val testFileSystemSource: FileSystemSource = FileSystemSource(path = inputFilePath)
-  val testMappingTask: FhirMappingTask = FhirMappingTask(sourceBinding = Map("_" -> testFileSystemSource), mappingRef = "test")
+  val testMappingTask: FhirMappingTask = FhirMappingTask(name = "test", sourceBinding = Map("_" -> testFileSystemSource), mappingRef = "test")
   val testSinkSettings: FhirRepositorySinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "test")
   val testDataProcessingSettings: DataProcessingSettings = DataProcessingSettings(archiveMode = ArchiveModes.ARCHIVE)
   val testJob: FhirMappingJob = FhirMappingJob(id = jobId, dataProcessingSettings = testDataProcessingSettings,
@@ -42,13 +42,13 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
   "FileStreamInputArchiver" should "not apply archiving/deletion for a streaming job with archive mode is off" in {
     // Initialize spark files for this test
-    val testCsvFile: File = initializeSparkFiles(jobId3, mappingUrl)
+    val testCsvFile: File = initializeSparkFiles(jobId3, mappingTaskName)
 
     // Check whether csv file exists
     testCsvFile.exists() shouldBe true
 
     // Call archiving function
-    fileStreamInputArchiver.applyArchivingOnStreamingJob(testExecutionWithOff, mappingUrl)
+    fileStreamInputArchiver.applyArchivingOnStreamingJob(testExecutionWithOff, mappingTaskName)
 
     // Check whether csv file remains
     testCsvFile.exists() shouldBe true
@@ -60,7 +60,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   "FileStreamInputArchiver" should "apply archiving for a streaming job" in {
 
     // Initialize spark files for this test
-    val testCsvFile: File = initializeSparkFiles(jobId, mappingUrl)
+    val testCsvFile: File = initializeSparkFiles(jobId, mappingTaskName)
 
     // Find the relative path between the workspace folder and the file to be archived
     val relPath = FileUtils.getPath("").toAbsolutePath.relativize(Paths.get(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toAbsolutePath)
@@ -72,14 +72,14 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     testCsvFile.exists() shouldBe true
 
     // Call archiving function
-    fileStreamInputArchiver.applyArchivingOnStreamingJob(testExecution, mappingUrl)
+    fileStreamInputArchiver.applyArchivingOnStreamingJob(testExecution, mappingTaskName)
 
     // Check whether archiving file exists and csv file is moved
     finalArchivePath.toFile.exists() shouldBe true
     testCsvFile.exists() shouldBe false
 
     // Apply archiving using a new FileStreamInputArchiver to simulate the rerun of a streaming job
-    new FileStreamInputArchiver(runningJobRegistryMock).applyArchivingOnStreamingJob(testExecution, mappingUrl)
+    new FileStreamInputArchiver(runningJobRegistryMock).applyArchivingOnStreamingJob(testExecution, mappingTaskName)
     // Check whether archiving file still exists
     finalArchivePath.toFile.exists() shouldBe true
     // Clean test directory
@@ -90,13 +90,13 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   "FileStreamInputArchiver" should "apply deletion for a streaming job" in {
 
     // Initialize spark files for this test
-    val testCsvFile: File = initializeSparkFiles(jobId2, mappingUrl)
+    val testCsvFile: File = initializeSparkFiles(jobId2, mappingTaskName)
 
     // Check whether csv file exists
     testCsvFile.exists() shouldBe true
 
     // Call archiving function
-    fileStreamInputArchiver.applyArchivingOnStreamingJob(testExecutionWithDelete, mappingUrl)
+    fileStreamInputArchiver.applyArchivingOnStreamingJob(testExecutionWithDelete, mappingTaskName)
 
     // Check whether csv file is deleted
     testCsvFile.exists() shouldBe false
@@ -169,11 +169,11 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
   "FileStreamInputArchiver" should "get input files" in {
 
-    val mappingUrl = "mocked_mapping_url"
+    val mappingTaskName = "mocked_mappingTask_name"
     val jobId = "mocked_job_id_3"
 
     // Create a source file to refer location of test.csv
-    val sourceFile = getSourceFileFromTestArchiver(jobId, mappingUrl, "0")
+    val sourceFile = getSourceFileFromTestArchiver(jobId, mappingTaskName, "0")
 
     // Path of test.csv and test2.csv
     val testCsvFile = FileUtils.getPath("test-archiver", "test.csv").toFile
@@ -208,13 +208,13 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
   "FileStreamInputArchiver" should "get last commit offset" in {
 
-    val mappingUrl = "mocked_mapping_url"
+    val mappingTaskName = "mocked_mappingTask_name"
     val jobId = "mocked_job_id_4"
 
     // Create a source file to refer location of test.csv
-    val commitFile = getCommitFileFromTestArchiver(jobId, mappingUrl, "0")
-    val commitFile2 = getCommitFileFromTestArchiver(jobId, mappingUrl, "1")
-    val commitDirectory = new File(SparkUtil.getCommitDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString)))
+    val commitFile = getCommitFileFromTestArchiver(jobId, mappingTaskName, "0")
+    val commitFile2 = getCommitFileFromTestArchiver(jobId, mappingTaskName, "1")
+    val commitDirectory = new File(SparkUtil.getCommitDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingTaskName.hashCode.toString)))
     // Ensure the parent directories exist, if not, create them
     commitFile.getParentFile.mkdirs()
     commitFile2.getParentFile.mkdirs()
@@ -244,7 +244,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
 
   "FileStreamInputArchiver" should "get last processed offset" in {
 
-    val mappingUrl = "mocked_mapping_url"
+    val mappingTaskName = "mocked_mappingTask_name"
     val jobId = "mocked_job_id_5"
 
     // Get map of processed offset
@@ -257,15 +257,15 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     val getOffsetKeyMethod = methodMirror.reflectMethod(methodSymbol)
 
     // Call reflected getOffsetKey function
-    val  lastProccessedOffset = processedOffsetMap.getOrElseUpdate(getOffsetKeyMethod(jobId, mappingUrl).asInstanceOf[String], -1)
+    val  lastProccessedOffset = processedOffsetMap.getOrElseUpdate(getOffsetKeyMethod(jobId, mappingTaskName).asInstanceOf[String], -1)
     // Check whether lastProccessedOffset is as expected
     lastProccessedOffset shouldBe -1
 
     // Update lastProccessedOffset
-    processedOffsetMap.put(getOffsetKeyMethod(jobId, mappingUrl).asInstanceOf[String], 2)
+    processedOffsetMap.put(getOffsetKeyMethod(jobId, mappingTaskName).asInstanceOf[String], 2)
 
     // Call reflected getOffsetKey function
-    val newLastProccessedOffset = processedOffsetMap.getOrElseUpdate(getOffsetKeyMethod(jobId, mappingUrl).asInstanceOf[String], -1)
+    val newLastProccessedOffset = processedOffsetMap.getOrElseUpdate(getOffsetKeyMethod(jobId, mappingTaskName).asInstanceOf[String], -1)
 
     // Check whether lastProccessedOffset is updated
     newLastProccessedOffset shouldBe 2
@@ -295,12 +295,12 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
    *  - A source file
    *  - A test csv file
    * @param jobId Job id of the execution.
-   * @param mappingUrl Selected mapping url.
+   * @param mappingTaskName Selected mappingTask name.
    * @return Return test csv file
    */
-  private def initializeSparkFiles(jobId: String, mappingUrl: String): File = {
+  private def initializeSparkFiles(jobId: String, mappingTaskName: String): File = {
     // Create a source file to refer location of test.csv
-    val sourceFile = getSourceFileFromSparkArchiver(jobId, mappingUrl, "0")
+    val sourceFile = getSourceFileFromSparkArchiver(jobId, mappingTaskName, "0")
     // Path of test.csv
     val testCsvFile = Paths.get(ToFhirConfig.sparkCheckpointDirectory, "test.csv").toFile
     // Ensure the parent directories exist, if not, create them
@@ -317,7 +317,7 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
     testCsvWriter.close()
 
     // Create a commit file inorder to start range function in applyArchivingOnStreamingJob
-    val commitFile = getCommitFileFromSparkArchiver(jobId, mappingUrl, "0")
+    val commitFile = getCommitFileFromSparkArchiver(jobId, mappingTaskName, "0")
     // Ensure the parent directories exist, if not, create them
     commitFile.getParentFile.mkdirs()
     val commitWriter = new PrintWriter(commitFile)
@@ -330,14 +330,14 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   /**
    * Get source file from test-archiver directory.
    *
-   * @param jobId      Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @param fileName   source file name
+   * @param jobId           Job id of the execution.
+   * @param mappingTaskName Selected mappingTask name.
+   * @param fileName        source file name
    * @return Return source file
    */
-  def getSourceFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+  def getSourceFileFromTestArchiver(jobId: String, mappingTaskName: String, fileName: String): File = {
     Paths.get(
-      SparkUtil.getSourceDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString)),
+      SparkUtil.getSourceDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingTaskName.hashCode.toString)),
       fileName
     ).toFile
   }
@@ -345,14 +345,14 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   /**
    * Get source file from spark directory.
    *
-   * @param jobId      Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @param fileName   source file name
+   * @param jobId           Job id of the execution.
+   * @param mappingTaskName Selected mappingTask name.
+   * @param fileName        source file name
    * @return Return source file
    */
-  def getSourceFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+  def getSourceFileFromSparkArchiver(jobId: String, mappingTaskName: String, fileName: String): File = {
     Paths.get(
-      SparkUtil.getSourceDirectoryPath(Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString)),
+      SparkUtil.getSourceDirectoryPath(Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingTaskName.hashCode.toString)),
       fileName
     ).toFile
   }
@@ -360,14 +360,14 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   /**
    * Get commit file from test-archiver directory.
    *
-   * @param jobId      Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @param fileName   commit file name
+   * @param jobId           Job id of the execution.
+   * @param mappingTaskName Selected mappingTask name.
+   * @param fileName        commit file name
    * @return Return commit file
    */
-  def getCommitFileFromTestArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+  def getCommitFileFromTestArchiver(jobId: String, mappingTaskName: String, fileName: String): File = {
     Paths.get(
-      SparkUtil.getCommitDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingUrl.hashCode.toString)),
+      SparkUtil.getCommitDirectoryPath(FileUtils.getPath("test-archiver", jobId, mappingTaskName.hashCode.toString)),
       fileName
     ).toFile
   }
@@ -375,14 +375,14 @@ class FileStreamInputArchiverTest extends AnyFlatSpec with Matchers {
   /**
    * Get commit file from spark directory.
    *
-   * @param jobId      Job id of the execution.
-   * @param mappingUrl Selected mapping url.
-   * @param fileName   commit file name
+   * @param jobId           Job id of the execution.
+   * @param mappingTaskName Selected mapping name.
+   * @param fileName        commit file name
    * @return Return commit file
    */
-  def getCommitFileFromSparkArchiver(jobId: String, mappingUrl: String, fileName: String): File = {
+  def getCommitFileFromSparkArchiver(jobId: String, mappingTaskName: String, fileName: String): File = {
     Paths.get(
-      SparkUtil.getCommitDirectoryPath(Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingUrl.hashCode.toString)),
+      SparkUtil.getCommitDirectoryPath(Paths.get(ToFhirConfig.sparkCheckpointDirectory, jobId, mappingTaskName.hashCode.toString)),
       fileName
     ).toFile
   }

@@ -48,6 +48,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data", Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString))
   var sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_1", Some(SinkFileFormats.NDJSON))
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "patient-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
     sourceBinding = Map("source" -> FileSystemSource(path = "patients.csv")),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))
@@ -72,6 +73,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
     Map("source" ->
       FileSystemSourceSettings("streaming-test-source", "https://some-url-for-data-source", Paths.get(getClass.getResource(s"/$parentStreamingFolderName").toURI).normalize().toAbsolutePath.toString, asStream = true))
   val patientStreamingMappingTask: FhirMappingTask = FhirMappingTask(
+    name = "some-url-for-streaming-patient-mapping",
     mappingRef = "https://some-url-for-streaming-patient-mapping",
     sourceBinding = Map("source" -> FileSystemSource(path = s"$patientStreamingFolderName", fileFormat = Some(SourceFileFormats.CSV))),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))
@@ -160,6 +162,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
 
       // Update the job with the new mapping and new sink configuration
       val observationsMappingTask: FhirMappingTask = FhirMappingTask(
+        name = "other-observation-mapping2",
         mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping2",
         sourceBinding = Map("source" -> FileSystemSource(path = "other-observations.csv"))
       )
@@ -234,7 +237,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         status shouldEqual StatusCodes.OK
         val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
         results.length shouldEqual 3
-        results.head.mappingUrl shouldEqual "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping"
+        results.head.mappingTaskName shouldEqual "patient-mapping"
         results.head.mappedResource.get shouldEqual "{\"resourceType\":\"Patient\"," +
           "\"id\":\"34dc88d5972fd5472a942fc80f69f35c\"," +
           "\"meta\":{\"profile\":[\"https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient\"]," +
@@ -252,7 +255,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         status shouldEqual StatusCodes.OK
         val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
         results.length shouldEqual 3
-        results.head.mappingUrl shouldEqual "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping2"
+        results.head.mappingTaskName shouldEqual "patient-mapping2"
         results.head.mappedResource.get shouldEqual "{\"resourceType\":\"Patient\"," +
           "\"id\":\"34dc88d5972fd5472a942fc80f69f35c\"," +
           "\"meta\":{\"profile\":[\"https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient\"]," +
@@ -278,7 +281,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         status shouldEqual StatusCodes.OK
         val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
         results.length shouldEqual 3
-        results.head.mappingUrl shouldEqual "https://aiccelerate.eu/fhir/mappings/other-observation-mapping"
+        results.head.mappingTaskName shouldEqual "other-observation-mapping"
 
         val result: JObject = JsonMethods.parse(results.head.mappedResource.get).asInstanceOf[JObject]
         (result \ "meta" \ "profile").asInstanceOf[JArray].arr.head.extract[String] shouldEqual "https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation"
@@ -359,6 +362,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         sourceSettings = Map("source" -> FhirServerSourceSettings(name="fhir-server",sourceUri = "http://fhir-server", serverUrl = onFhirClient.getBaseUrl())),
         sinkSettings = FileSystemSinkSettings(path = s"$fsSinkFolder/results.csv", options = Map("header" -> "true")),
         mappings = Seq(FhirMappingTask(
+          name = "patient-flat-mapping",
           mappingRef = "http://patient-flat-mapping",
           sourceBinding = Map("patient" -> FhirServerSource(resourceType = "Patient")),
           mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-flat-mapping.json").getPath)))
@@ -476,6 +480,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
    */
   private def initializeTestMappingQuery(jobId: String, mappingRef: String, sourceBinding: Map[String, MappingSourceBinding], mapping: Option[FhirMapping] = None): RouteTestResult = {
     val otherObservationsMappingTask: FhirMappingTask = FhirMappingTask(
+      name = mappingRef.split("/").last,
       mappingRef = mappingRef,
       sourceBinding = sourceBinding,
       mapping
