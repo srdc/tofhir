@@ -203,8 +203,9 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
         try {
           val job = JsonMethods.parse(fileContent).extract[FhirMappingJob]
           // check there are no duplicate name on mappingTasks of the job
-          if(!FhirMappingJobFormatter.checkMappingTaskNamesUnique(job.mappings)){
-            throw new MappingException(s"Duplicate 'name' fields found in the MappingTasks within the ${job.id}! Ensure each MappingTask has an unique name.")
+          val duplicateMappingTasks = FhirMappingJobFormatter.findDuplicateMappingTaskNames(job.mappings)
+          if (duplicateMappingTasks.nonEmpty) {
+            throw new MappingException(s"Duplicate 'name' fields detected in the MappingTasks of job '${job.id}': ${duplicateMappingTasks.mkString(", ")}. Please ensure that each MappingTask has a unique name.")
           }
           // discard if the job id and file name not match
           if (FileOperations.checkFileNameMatchesEntityId(job.id, file, "job")) {

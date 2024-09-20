@@ -43,8 +43,9 @@ case class FhirMappingJob(id: String = UUID.randomUUID().toString,
     }
 
     // Check names of the mappingTasks, if a duplicate name is found, throw an error
-    if(!FhirMappingJobFormatter.checkMappingTaskNamesUnique(mappings)){
-      throw new BadRequestException("Duplicate mappingTask name. Ensure each MappingTask has a unique name!")
+    val duplicateMappingTasks = FhirMappingJobFormatter.findDuplicateMappingTaskNames(mappings)
+    if(duplicateMappingTasks.nonEmpty){
+      throw new BadRequestException(s"Duplicate MappingTask name(s) found: ${duplicateMappingTasks.mkString(", ")}. Each MappingTask must have a unique name.")
     }
 
     // Check mapping tasks of the job, if a data source of a mapping task is missing, throw an error

@@ -18,7 +18,7 @@ import scala.concurrent.Future
  * Mapping service for a specific FhirMapping together with contextual data and mapping scripts
  *
  * @param jobId                      Identifier of the job referring to the mapping
- * @param mappingUrl                 Url of the mapping being executed
+ * @param mappingTaskName            The name of the mapping task being executed
  * @param sources                    List of source aliases
  * @param context                    Context data for mappings
  * @param mappings                   Mapping scripts
@@ -30,7 +30,7 @@ import scala.concurrent.Future
  */
 class FhirMappingService(
                           val jobId: String,
-                          val mappingUrl: String,
+                          val mappingTaskName: String,
                           val sources: Seq[String],
                           context: Map[String, FhirMappingContext],
                           mappings: Seq[FhirMappingExpression],

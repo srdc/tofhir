@@ -430,7 +430,7 @@ class FhirMappingJobManager(
                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                   identityServiceSettings: Option[IdentityServiceSettings] = None,
                   executionId: Option[String] = None,
-                  projectId: Option[String] = None,
+                  projectId: Option[String] = None
                  ): Future[Dataset[FhirMappingResult]] = {
     //Load the contextual data for the mapping
     Future
@@ -443,8 +443,8 @@ class FhirMappingJobManager(
         //Get configuration context
         val configurationContext = mainSourceSettings.toConfigurationContext
         //Construct the mapping service
-        val fhirMappingService = new FhirMappingService(jobId, fhirMapping.url, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries, projectId)
-        MappingTaskExecutor.executeMapping(spark, mappingTaskName, df, fhirMappingService, executionId)
+        val fhirMappingService = new FhirMappingService(jobId, mappingTaskName, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries, projectId)
+        MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, executionId)
       })
   }
 

@@ -167,7 +167,7 @@ class JobEndpointTest extends BaseEndpointTest {
       status shouldEqual StatusCodes.BadRequest
       // validate error message
       val response = responseAs[String]
-      response should include("Detail: Duplicate mappingTask name. Ensure each MappingTask has a unique name!")
+      response should include("Detail: Duplicate MappingTask name(s) found: testname1. Each MappingTask must have a unique name.")
       // validate that job metadata file is still the same
       val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
       (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 1

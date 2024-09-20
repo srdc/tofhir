@@ -61,8 +61,9 @@ object FhirMappingJobFormatter {
     val fileContent = try replaceEnvironmentVariables(source.mkString) finally source.close()
     val mappingJob = org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
     // check there are no duplicate name on mappingTasks of the job
-    if(!this.checkMappingTaskNamesUnique(mappingJob.mappings)){
-      throw new MappingException("Duplicate 'name' fields found in the MappingTasks within the MappingJob! Ensure each MappingTask has a unique name.")
+    val duplicateMappingTasks = FhirMappingJobFormatter.findDuplicateMappingTaskNames(mappingJob.mappings)
+    if (duplicateMappingTasks.nonEmpty) {
+      throw new MappingException(s"Duplicate 'name' fields detected in the MappingTasks of the MappingJob: ${duplicateMappingTasks.mkString(", ")}. Please ensure that each MappingTask has a unique name.")
     }
     mappingJob
   }
@@ -84,13 +85,13 @@ object FhirMappingJobFormatter {
   }
 
   /**
-   * Check whether names of the mappingTask array is unique
-   * @param mappingTasks mappingTask array from mappingJob definition
-   * @return
+   * Check for duplicate names in the mappingTask array from the mappingJob definition.
+   *
+   * @param mappingTasks mappingTask array from the mappingJob definition.
+   * @return A sequence of duplicate names, if any. Returns an empty sequence if all names are unique.
    */
-  def checkMappingTaskNamesUnique(mappingTasks: Seq[FhirMappingTask]): Boolean = {
-    val nameSet = mappingTasks.map(_.name).toSet
-    nameSet.size == mappingTasks.size
+  def findDuplicateMappingTaskNames(mappingTasks: Seq[FhirMappingTask]): Seq[String] = {
+      mappingTasks.groupBy(_.name).view.mapValues(_.size).filter(_._2 > 1).keys.toSeq
   }
 
 }
