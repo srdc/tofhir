@@ -20,6 +20,7 @@ object SchemaUtil {
       ("id" -> schemaDefinition.id) ~
         ("resourceType" -> "StructureDefinition") ~
         ("url" -> schemaDefinition.url) ~
+        ("version" -> schemaDefinition.version) ~
         ("name" -> schemaDefinition.name)
     if (schemaDefinition.description.isDefined) { // If the description exists, add it here in order not to break the order of JSON elements (better to see the description close to the name)
       structureDefinitionResource = structureDefinitionResource ~ ("description" -> schemaDefinition.description.get)

@@ -2,6 +2,7 @@ package io.tofhir.server.util
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.Resource
+import io.onfhir.api.util.IOUtil
 import io.onfhir.util.OnFhirZipInputStream
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils.FileExtensions
@@ -123,7 +124,7 @@ object FileOperations {
    * @return true if the file name matches with the entity id, false otherwise
    */
   def checkFileNameMatchesEntityId(entityId: String, file: File, entityType: String): Boolean = {
-    if (!entityId.equals(file.getName.replace(FileExtensions.JSON.toString, ""))) {
+    if (!entityId.equals(IOUtil.removeFileExtension(file.getName))) {
       logger.warn(s"Discarding $entityType definition with id $entityId as it does not match with the file name ${file.getName}")
       false
     } else {

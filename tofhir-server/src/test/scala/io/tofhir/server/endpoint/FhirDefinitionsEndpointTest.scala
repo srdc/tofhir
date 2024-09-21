@@ -179,7 +179,7 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest with OnFhirTestContai
     "retrieve simplified element definitions of a schema" in {
       // create a schema with two elements
       val schemaUrl: String = "https://example.com/fhir/StructureDefinition/schema"
-      val schema: SchemaDefinition = SchemaDefinition(url = schemaUrl, `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = Some(Seq(
+      val schema: SchemaDefinition = SchemaDefinition(url = schemaUrl, version = "1.4.2", `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = Some(Seq(
         SimpleStructureDefinition(id = "element-with-definition",
           path = "Ty.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
           isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,

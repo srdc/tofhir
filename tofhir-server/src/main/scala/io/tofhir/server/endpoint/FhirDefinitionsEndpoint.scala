@@ -5,19 +5,19 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
-import io.tofhir.server.common.model.{BadRequest, ToFhirRestCall}
-import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_FHIRVALIDATIONURL, QUERY_PARAM_FHIR_VERSION, QUERY_PARAM_PROFILE, QUERY_PARAM_Q, QUERY_PARAM_RTYPE, SEGMENT_BASE_PROFILES, SEGMENT_FHIR_DEFINITIONS, SEGMENT_VALIDATE}
-import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.engine.util.MajorFhirVersion
+import io.tofhir.server.common.model.{BadRequest, ToFhirRestCall}
+import io.tofhir.server.endpoint.FhirDefinitionsEndpoint._
+import io.tofhir.server.fhir.FhirDefinitionsConfig
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.service.fhir.FhirDefinitionsService
 import io.tofhir.server.service.fhir.base.FhirBaseProfilesService
 
-class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig,schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
+class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig, schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {
 
-  val service: FhirDefinitionsService = new FhirDefinitionsService(fhirDefinitionsConfig,schemaRepository,mappingRepository)
+  val service: FhirDefinitionsService = new FhirDefinitionsService(fhirDefinitionsConfig, schemaRepository, mappingRepository)
 
   def route(request: ToFhirRestCall): Route =
     pathPrefix(SEGMENT_FHIR_DEFINITIONS) {
@@ -35,7 +35,7 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig,schem
                     }
                   case DefinitionsQuery.ELEMENTS =>
                     queryParams.get(QUERY_PARAM_PROFILE) match {
-                      case Some(profileUrl) => complete(service.getElementDefinitionsOfProfile(profileUrl))
+                      case Some(profileUrl) => complete(service.getElementDefinitionsOfProfile(profileUrl, queryParams.get(QUERY_PARAM_PROFILE_VERSION)))
                       case None => complete(HttpResponse(StatusCodes.BadRequest)) // FIXME
                     }
                   case unk => throw BadRequest("Invalid parameter value.", s"$QUERY_PARAM_Q on $SEGMENT_FHIR_DEFINITIONS cannot take the value:$unk. Possible values are: ${DefinitionsQuery.values.mkString}")
@@ -46,10 +46,10 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig,schem
         }
       }
     } ~ pathPrefix(SEGMENT_VALIDATE) {
-        pathEndOrSingleSlash {
-          validateResource()
-        }
-      } ~ pathPrefix(SEGMENT_BASE_PROFILES) {
+      pathEndOrSingleSlash {
+        validateResource()
+      }
+    } ~ pathPrefix(SEGMENT_BASE_PROFILES) {
       pathEndOrSingleSlash {
         get {
           parameterMap { queryParams =>
@@ -80,6 +80,7 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig,schem
 
   /**
    * Validates a FHIR resource against a given FHIR validation URL in 'fhirValidationUrl' query param.
+   *
    * @return
    */
   private def validateResource(): Route = {
@@ -112,6 +113,7 @@ object FhirDefinitionsEndpoint {
   val QUERY_PARAM_Q = "q"
   val QUERY_PARAM_RTYPE = "rtype"
   val QUERY_PARAM_PROFILE = "profile"
+  val QUERY_PARAM_PROFILE_VERSION = "profileVersion"
   val QUERY_PARAM_FHIRVALIDATIONURL = "fhirValidationUrl"
   val QUERY_PARAM_FHIR_VERSION = "fhirVersion"
 

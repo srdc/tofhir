@@ -1,6 +1,7 @@
 {
   "id": "Ext-plt1-other-observation",
   "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-other-observation",
+  "version": "latest",
   "type": "Ext-plt1-other-observation",
   "name": "Ext-plt1-other-observation",
   "rootDefinition": {
