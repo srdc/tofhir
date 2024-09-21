@@ -40,14 +40,14 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
 
 
   // first schema to be created
-  val schema1: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema", `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = None)
+  val schema1: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = None)
   // second schema to be created
-  val schema2: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", `type` = "Ty2", name = "name2", description = Some("description2"), rootDefinition = None, fieldDefinitions = None)
+  val schema2: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty2", name = "name2", description = Some("description2"), rootDefinition = None, fieldDefinitions = None)
   // third schema to be created
   // it includes two elements:
   //  - element-with-definition => An element having a definition
   //  - element-with-no-definition => An element having no definition
-  val schema3: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema3", `type` = "Ty3", name = "name3", description = Some("description3"), rootDefinition = None, fieldDefinitions = Some(
+  val schema3: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema3", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty3", name = "name3", description = Some("description3"), rootDefinition = None, fieldDefinitions = Some(
     Seq(
       SimpleStructureDefinition(id = "element-with-definition",
         path = "Ty3.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
@@ -65,7 +65,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   // it includes two elements:
   //  - element-with-short => An element having a short
   //  - element-with-no-short => An element having no short
-  val schema4: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema4", `type` = "Ty4", name = "name4", description = Some("description4"), rootDefinition = None, fieldDefinitions = Some(
+  val schema4: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema4", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty4", name = "name4", description = Some("description4"), rootDefinition = None, fieldDefinitions = Some(
     Seq(
       SimpleStructureDefinition(id = "element-with-short",
         path = "Ty4.element-with-short", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
@@ -80,7 +80,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     )
   ))
   // fifth schema with the same url as the second schema, to be rejected
-  val schema5: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", `type` = "Ty5", name = "name5", description = Some("description5"), rootDefinition = None, fieldDefinitions = None)
+  val schema5: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty5", name = "name5", description = Some("description5"), rootDefinition = None, fieldDefinitions = None)
 
   // mapping using schema2
   val mapping: FhirMapping = FhirMapping(id = "mapping", url = "http://example.com/mapping", name = "mapping", source = Seq(FhirMappingSource(alias = "test", url = "https://example.com/fhir/StructureDefinition/schema2")), context = Map.empty, mapping = Seq.empty)

@@ -1,6 +1,7 @@
 {
   "id": "Ext-plt1-patient",
   "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-patient",
+  "version": "latest",
   "type": "Ext-plt1-patient",
   "name": "Ext-plt1-patient",
   "abstract": false,

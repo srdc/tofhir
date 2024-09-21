@@ -20,6 +20,7 @@ class ProjectEndpointTest extends BaseEndpointTest {
   val projectPatch: (String, String) = ProjectEditableFields.DESCRIPTION -> "updated description"
   // schema definition
   val schemaDefinition: SchemaDefinition = SchemaDefinition(id = "id",
+    version = SchemaDefinition.VERSION_LATEST,
     url = "https://example.com/fhir/StructureDefinition/schema",
     `type` = "Ty",
     name = "name",

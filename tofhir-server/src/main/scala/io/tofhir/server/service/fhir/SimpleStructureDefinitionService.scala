@@ -20,32 +20,35 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
     val rootElementDefinition = createRootElement(profileRestrictions.resourceType)
     SchemaDefinition(id = schemaId,
       url = profileRestrictions.url,
+      version = profileRestrictions.version.getOrElse(SchemaDefinition.VERSION_LATEST),
       `type` = profileRestrictions.resourceType,
       name = profileRestrictions.resourceName.getOrElse(profileRestrictions.resourceType),
       description = profileRestrictions.resourceDescription,
       rootDefinition = Some(rootElementDefinition),
-      fieldDefinitions = Some(simplifyStructureDefinition(profileRestrictions.url, withResourceTypeInPaths = true)))
+      fieldDefinitions = Some(simplifyStructureDefinition(profileRestrictions.url, profileRestrictions.version, withResourceTypeInPaths = true)))
   }
 
   /**
    * Given a URL for a profile, return a sequence of definitions for all elements of the resource type indicated by this profile.
    *
    * @param profileUrl              The URL of the profile to be simplified.
+   * @param profileVersion          Version of the profile to be simplified. (profileUrl, version) tuple provides the uniqueness. The same profileUrl can have multiple versions.
    * @param withResourceTypeInPaths If true, the resource type of the given profileUrl will be added to the beginning of all FHIR paths of the inner elements.
    * @return
    */
-  def simplifyStructureDefinition(profileUrl: String, withResourceTypeInPaths: Boolean = false): Seq[SimpleStructureDefinition] = {
+  def simplifyStructureDefinition(profileUrl: String, profileVersion: Option[String], withResourceTypeInPaths: Boolean = false): Seq[SimpleStructureDefinition] = {
 
     /**
      * Recursive helper function to create the SimpleStructureDefinition sequence for a given profile, carrying the ElementRestrictions to inner elements.
      *
      * @param profileUrl                    URL of a FHIR profile which can be empty. If empty, only restrictionsFromParentElement will be considered while creating the element definitions.
+     * @param profileVersion                Version of the FHIR profile.
      * @param parentPath                    FHIRPath until now. The SimpleStructureDefinitions will be created under the given parentPath.
      * @param restrictionsFromParentElement ElementRestrictions from parent profiles.
      * @param accumulatingTypeUrls          Data types throughout the recursive chain so that recursion can stop if a loop over the data types exists.
      * @return
      */
-    def simplifier(profileUrl: Option[String], parentPath: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: CountingMap[String]): Seq[SimpleStructureDefinition] = {
+    def simplifier(profileUrl: Option[String], profileVersion: Option[String], parentPath: Option[String], restrictionsFromParentElement: Seq[(String, ElementRestrictions)], accumulatingTypeUrls: CountingMap[String]): Seq[SimpleStructureDefinition] = {
 
       /**
        * Helper function to create a single SimpleStructureDefinition for a slice of a field (e.g., valueQuantity under value[x])
@@ -92,6 +95,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
           val definitionsOfChoiceTypeElementsChildren =
             simplifier(
               profileUrl = if (dataTypeOfCreatedTypeElement.isDefined) dataTypeOfCreatedTypeElement else profileUrlForDataType,
+              profileVersion = None,
               parentPath = Some(createdChoiceTypeElement.path),
               restrictionsFromParentElement = navigatedRestrictionsOnChildren,
               accumulatingTypeUrls = accumulatingTypeUrls.apply(profileUrl))
@@ -109,11 +113,11 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
         // Stop the recursion here because we are entering into a recursive type chain (e.g., Identifier -> Reference -> Identifier)
         Seq.empty[SimpleStructureDefinition]
       } else {
-        val profileRestrictionsSeq: Seq[ProfileRestrictions] = profileUrl.map(fhirConfig.findProfileChain).getOrElse(Seq.empty[ProfileRestrictions])
+        val profileRestrictionsSeq: Seq[ProfileRestrictions] = profileUrl.map(url => fhirConfig.findProfileChain(url, profileVersion)).getOrElse(Seq.empty[ProfileRestrictions])
         val elementRestrictionsFromProfile = profileRestrictionsSeq
           .flatMap { pr =>
             // Make a list of all ElementRestrictions (respect their order)
-            // But, filter out extension, modifierExtension and id fields if they come from Element and BackboneElement profiles. Otherwise the SimpleStructureDefinition becomes huge!
+            // But, filter out extension, modifierExtension and id fields if they come from Element and BackboneElement profiles. Otherwise, the SimpleStructureDefinition becomes huge!
             if (pr.url.endsWith("Element") || pr.url.endsWith("BackboneElement"))
               pr.elementRestrictions.filterNot(er => er._1 == "extension" || er._1 == "modifierExtension" || er._1 == "id")
             // remove the extensions coming from DomainResource. SimpleStructureDefinition will include "extension" element
@@ -179,12 +183,13 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
                 val createdNoSliceElement = generateSimpleDefinition("No Slice", parentPath, Seq.empty[ElementRestrictions])
                 val navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
                 val createdNoSliceElementWithChildren = createdNoSliceElement
-                  .withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, Some(createdNoSliceElement.path), navigatedRestrictionsOnChildren, accumulatingTypeUrls.apply(profileUrl)))
+                  .withElements(simplifier(createdElementDefinition.getProfileUrlForDataType, None, Some(createdNoSliceElement.path), navigatedRestrictionsOnChildren, accumulatingTypeUrls.apply(profileUrl)))
                 Some(createdElementDefinition.withElements(createdNoSliceElementWithChildren +: definitionsOfSlices))
               } else {
                 val navigatedRestrictionsOnChildren = restrictionsOnChildren.map(navigateFhirPathFromField(fieldName, _))
                 val definitionsOfChildren =
                   simplifier(profileUrl = createdElementDefinition.getProfileUrlForDataType,
+                    profileVersion = None,
                     parentPath = Some(createdElementDefinition.path),
                     restrictionsFromParentElement = navigatedRestrictionsOnChildren,
                     accumulatingTypeUrls = accumulatingTypeUrls.apply(profileUrl))
@@ -198,6 +203,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
     // Start of the simplifyStructureDefinition method
     val simplifiedElementsOfProfile = simplifier(
       profileUrl = Some(profileUrl),
+      profileVersion = profileVersion,
       parentPath = if (withResourceTypeInPaths) fhirConfig.findResourceType(profileUrl) else Option.empty[String],
       restrictionsFromParentElement = Seq.empty[(String, ElementRestrictions)],
       accumulatingTypeUrls = CountingMap.empty[String])

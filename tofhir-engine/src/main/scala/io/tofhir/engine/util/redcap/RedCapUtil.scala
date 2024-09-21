@@ -89,6 +89,7 @@ object RedCapUtil {
       })
       SchemaDefinition(id = schemaId,
         url = s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId",
+        version = SchemaDefinition.VERSION_LATEST, // Set the schema version to latest for the REDCap schemas
         `type` = schemaId,
         name = schemaName,
         description = None,

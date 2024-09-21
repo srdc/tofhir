@@ -221,7 +221,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
           // discard if the mapping id and file name not match
           if (FileOperations.checkFileNameMatchesEntityId(fhirMapping.id, file, "mapping")) {
             fhirMappingMap.put(fhirMapping.id, fhirMapping)
-          }
+          } // else case is logged within FileOperations.checkFileNameMatchesEntityId
         } catch {
           case e: Throwable =>
             logger.error(s"Failed to parse mapping definition at ${file.getPath}", e)

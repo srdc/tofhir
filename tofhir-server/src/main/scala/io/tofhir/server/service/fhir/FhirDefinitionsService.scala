@@ -16,6 +16,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.{FileUtils, MajorFhirVersion}
 import io.tofhir.server.common.model.BadRequest
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
+import io.tofhir.server.model.ProfileInfo
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.service.SchemaDefinitionService
@@ -78,7 +79,6 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig,schema
                          valueSetsPath = valueSetsPath)
   }
 
-
   val baseFhirConfig: BaseFhirConfig = fhirDefinitionsConfig.majorFhirVersion match {
     case MajorFhirVersion.R4 =>
       new FhirR4Configurator().initializePlatform(fhirConfigReader)
@@ -90,7 +90,10 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig,schema
 
   val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
 
-  val profilesCache: mutable.Map[String, Set[String]] = mutable.HashMap()
+  // A cache to hold rtype -> ProfileInfo tuples which mean the profileUrl is of type rtype
+  val profileInfoCache: mutable.Map[String, Set[ProfileInfo]] = mutable.HashMap()
+
+  // TODO: Add comment to explain what this cache does
   val simplifiedStructureDefinitionCache: mutable.Map[String, Seq[SimpleStructureDefinition]] = mutable.HashMap()
 
   /**
@@ -108,29 +111,13 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig,schema
    * @param rtype Resource type (e.g., Condition)
    * @return
    */
-  def getProfilesFor(rtype: String): Set[String] = {
-    val resourceUrl = s"${api.FHIR_ROOT_URL_FOR_DEFINITIONS}/StructureDefinition/$rtype"
-    profilesCache.getOrElseUpdate(resourceUrl, getProfilesForUrl(resourceUrl, Set.empty[String]))
-  }
-
-  /**
-   * Helper function to recursively find the profiles defined based on a given profile.
-   *
-   * @param url
-   * @param set
-   * @return
-   */
-  private def getProfilesForUrl(url: String, set: Set[String]): Set[String] = {
-    val foundProfiles = baseFhirConfig.profileRestrictions
-      .filter(e => e._2.baseUrl.isDefined && e._2.baseUrl.get == url).keySet
-    if (foundProfiles.isEmpty || foundProfiles.diff(set).isEmpty) {
-      set
-    }
-    else {
-      foundProfiles
-        .map(purl => getProfilesForUrl(purl, set ++ foundProfiles))
-        .reduce((s1, s2) => s1 ++ s2)
-    }
+  def getProfilesFor(rtype: String): Set[ProfileInfo] = {
+    val profileInfoSet = baseFhirConfig.profileRestrictions
+      .filter(urlMap => // (url -> (version -> ProfileRestrictions)) Filter the ones whose ProfileRestrictions contain the rtype
+        urlMap._2.exists(versionMap => versionMap._2.resourceType == rtype)) // The resourceType must be the same for all ProfileRestrictions of a URL (the StructureDefinition). .exists and .forall should evaluate to the same thing
+      .flatMap(urlMap => urlMap._2.keySet.map(version => ProfileInfo(urlMap._1, version))) // Create the Set of ProfileInfo for each version of each url (and flatten with flatMap)
+      .toSet
+    profileInfoCache.getOrElseUpdate(rtype, profileInfoSet)
   }
 
   /**
@@ -140,12 +127,14 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig,schema
    * If the profile is not found, it queries the Schema Repository.
    *
    * @param url The URL of the FHIR profile or Schema to retrieve the structure definition for.
+   * @param version The version of the FHIR profile (the version of the StructureDefinition)
    * @return A sequence of SimpleStructureDefinition objects representing the simplified structure definition of the profile or schema.
    */
-  def getElementDefinitionsOfProfile(url: String): Seq[SimpleStructureDefinition] = {
+  def getElementDefinitionsOfProfile(url: String, version: Option[String]): Seq[SimpleStructureDefinition] = {
     // retrieve the simplified structure definitions from the cache, or simplify it using SimpleStructureDefinitionService if not cached
-    var simpleStructureDefinitions: Seq[SimpleStructureDefinition] = simplifiedStructureDefinitionCache.getOrElseUpdate(url, simpleStructureDefinitionService.simplifyStructureDefinition(url))
+    var simpleStructureDefinitions: Seq[SimpleStructureDefinition] = simplifiedStructureDefinitionCache.getOrElseUpdate(url, simpleStructureDefinitionService.simplifyStructureDefinition(url, version))
     // if not found in SimpleStructureDefinitionService, check the Schema Repository
+    // This is because the schema can be created into the SchemaRepository through toFHIR API, and it is being used as the target schema for mapping definitions (e.g., flat schemas for FHIR-2-tabular mappings)
     if(simpleStructureDefinitions.isEmpty){
       // fetch the schema from the schema repository
       val schema = Await.result(schemaDefinitionService.getSchemaByUrl(url), Duration.Inf)
