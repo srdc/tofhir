@@ -43,6 +43,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   val schema1: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = None)
   // second schema to be created
   val schema2: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty2", name = "name2", description = Some("description2"), rootDefinition = None, fieldDefinitions = None)
+  val schema2_2: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", version = "0.9.12", `type` = "Ty2", name = "name2", description = Some("old-version-description2"), rootDefinition = None, fieldDefinitions = None)
   // third schema to be created
   // it includes two elements:
   //  - element-with-definition => An element having a definition
@@ -79,8 +80,8 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = None, definition = None, comment = None, elements = None)
     )
   ))
-  // fifth schema with the same url as the second schema, to be rejected
-  val schema5: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema2", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty5", name = "name5", description = Some("description5"), rootDefinition = None, fieldDefinitions = None)
+  // fifth schema with the same url and version as the second schema (but different id's)
+  val schema5: SchemaDefinition = SchemaDefinition(id = "schema5", url = "https://example.com/fhir/StructureDefinition/schema2", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty5", name = "name5", description = Some("description5"), rootDefinition = None, fieldDefinitions = None)
 
   // mapping using schema2
   val mapping: FhirMapping = FhirMapping(id = "mapping", url = "http://example.com/mapping", name = "mapping", source = Seq(FhirMappingSource(alias = "test", url = "https://example.com/fhir/StructureDefinition/schema2")), context = Map.empty, mapping = Seq.empty)
@@ -250,9 +251,20 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
       }
     }
 
+    "create schemas having the same URL but different versions" in {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5.copy(version = "some-version-other-than-latest")))) ~> route ~> check {
+        // Expect a successful write
+        status shouldEqual StatusCodes.Created
+        // validate that schema metadata file is updated
+        val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "schemas").asInstanceOf[JArray].arr.length shouldEqual 4
+        FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema5.id}${FileExtensions.JSON}").toFile should exist
+      }
+    }
+
     "cannot create a schema having the same id, url or name as another schema" in {
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5))) ~> route ~> check {
-        // Expect a conflict status because schema5 has the same url as the schema2
+        // Expect a conflict status because schema5 has the same url and version as the schema2
         status shouldEqual StatusCodes.Conflict
       }
       Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5.copy(id = schema2.id)))) ~> route ~> check {
