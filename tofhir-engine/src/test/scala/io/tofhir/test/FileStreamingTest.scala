@@ -2,7 +2,7 @@ package io.tofhir.test
 
 import io.onfhir.path.FhirPathUtilFunctionsFactory
 import io.tofhir.ToFhirTestSpec
-import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
+import io.tofhir.engine.data.write.FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.mapping.job.FhirMappingJobManager
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.{FhirMappingJobFormatter, FileUtils}
@@ -54,7 +54,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
    * FHIR mapping job to use in tests
    */
   // Sink and source settings of the job to be used
-  val fileSinkSettings: FileSystemSinkSettings = FileSystemSinkSettings(path = fileSinkPath, fileFormat = Some(SinkFileFormats.NDJSON))
+  val fileSinkSettings: FileSystemSinkSettings = FileSystemSinkSettings(path = fileSinkPath, contentType = SinkContentTypes.NDJSON)
   val mappingJobSourceSettings: Map[String, MappingJobSourceSettings] = Map(
     "source" -> FileSystemSourceSettings(name = "test-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", dataFolderPath = streamingTestWatchFolderPath, asStream = true)
   )
@@ -125,7 +125,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       sourceBinding = Map("source" -> FileSystemSource(
         path = "patients_csv",
-        fileFormat = Some("csv"),
+        contentType = SourceContentTypes.CSV,
         options = Map(
           "cleanSource" -> "archive",
           "sourceArchiveDir" -> patientArchivePath
@@ -139,7 +139,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
       mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
       sourceBinding = Map("source" -> FileSystemSource(
         path = "observations_csv",
-        fileFormat = Some("csv"),
+        contentType = SourceContentTypes.CSV,
         options = Map(
           "cleanSource" -> "archive",
           "sourceArchiveDir" -> ObservationArchivePath
@@ -176,7 +176,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       sourceBinding = Map("source" -> FileSystemSource(
         path = "",
-        fileFormat = Some(SourceFileFormats.JSON),
+        contentType = SourceContentTypes.JSON,
         options = Map(
           "cleanSource" -> "archive",
           "sourceArchiveDir" -> jsonArchivePath
@@ -212,7 +212,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
       sourceBinding = Map("source" -> FileSystemSource(
         path = "",
-        fileFormat = Some(SourceFileFormats.PARQUET),
+        contentType = SourceContentTypes.PARQUET,
         options = Map(
           "cleanSource" -> "archive",
           "sourceArchiveDir" -> parquetArchivePath

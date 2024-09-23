@@ -2,6 +2,7 @@ package io.tofhir.server.service
 
 import com.typesafe.config.ConfigFactory
 import io.tofhir.engine.config.{ToFhirConfig, ToFhirEngineConfig}
+import io.tofhir.engine.data.write.FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.model.ExecuteJobTask
@@ -29,12 +30,12 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
   val testJob: FhirMappingJob = FhirMappingJob(
     name = Some("testJob"),
     sourceSettings = Map("test" -> FileSystemSourceSettings(name = "test-source", sourceUri = "test-source", dataFolderPath = testDataFolder, asStream = true)),
-    sinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir"),
+    sinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir", contentType = SinkContentTypes.CSV),
     mappings = Seq.apply(
       FhirMappingTask(
         name = "patient-mapping",
         mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-        sourceBinding = Map("source" -> FileSystemSource(path = ".", fileFormat = Some("csv")))
+        sourceBinding = Map("source" -> FileSystemSource(path = ".", contentType = SourceContentTypes.CSV))
       )
     ),
     dataProcessingSettings = DataProcessingSettings(archiveMode = ArchiveModes.OFF)

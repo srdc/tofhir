@@ -1,6 +1,7 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import io.tofhir.engine.data.write.FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.util.FileOperations
 import io.tofhir.engine.model.{FhirMapping, FhirMappingContextDefinition, FhirMappingJob, FhirMappingTask, FhirSinkSettings, FileSystemSinkSettings}
@@ -22,7 +23,7 @@ class MappingEndpointTest extends BaseEndpointTest {
   // second mapping to be created
   val mapping2: FhirMapping = FhirMapping(id = "mapping2", url = "http://example.com/mapping2", name = "mapping2", source = Seq.empty, context = Map.empty, mapping = Seq.empty)
   // job using mapping2
-  val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir")
+  val sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = "http://example.com/fhir", contentType = SinkContentTypes.CSV)
   val job: FhirMappingJob = FhirMappingJob(
     name = Some("mappingJob"),
     sourceSettings = Map.empty,

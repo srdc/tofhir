@@ -31,13 +31,13 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     name = "patient-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceBinding = Map("source" -> FileSystemSource(path = "patients.csv"))
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV))
   )
 
   val patientMappingTaskWithError: FhirMappingTask = FhirMappingTask(
     name = "patient-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceBinding = Map("source" -> FileSystemSource(path = "patients-erroneous.csv"))
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients-erroneous.csv", contentType = SourceContentTypes.CSV))
   )
 
   val patientMappingTaskWithPreprocess: FhirMappingTask = FhirMappingTask(
@@ -46,6 +46,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     sourceBinding = Map("source" ->
       FileSystemSource(
         path = "patients-column-renamed.csv",
+        contentType = SourceContentTypes.CSV,
         preprocessSql = Some(
           "SELECT pid,sex as gender,to_date(birth) as birthDate,NULL as deceasedDateTime,NULL as homePostalCode FROM source"))
     )
@@ -54,31 +55,31 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
   val otherObservationMappingTask: FhirMappingTask = FhirMappingTask(
     name = "other-observation-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-    sourceBinding = Map("source" -> FileSystemSource(path = "other-observations.csv"))
+    sourceBinding = Map("source" -> FileSystemSource(path = "other-observations.csv", contentType = SourceContentTypes.CSV))
   )
 
   val patientExtraMappingWithPatch: FhirMappingTask = FhirMappingTask(
     name = "patient-mapping-with-patch",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping-with-patch",
-    sourceBinding = Map("source" -> FileSystemSource(path = "patients-extra.csv"))
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients-extra.csv", contentType = SourceContentTypes.CSV))
   )
 
   val patientExtraMappingWithConditionalPatch: FhirMappingTask = FhirMappingTask(
     name = "patient-mapping-with-patch2",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping-with-patch2",
-    sourceBinding = Map("source" -> FileSystemSource(path = "patients-extra.csv"))
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients-extra.csv", contentType = SourceContentTypes.CSV))
   )
 
   val patientTsvFileMappingTask: FhirMappingTask = FhirMappingTask(
     name = "patient-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceBinding = Map("source" -> FileSystemSource(path = "patients.tsv"))
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients.tsv", contentType = SourceContentTypes.TSV))
   )
 
   val patientZipFileMappingTask: FhirMappingTask = FhirMappingTask(
     name = "patient-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceBinding = Map("source" -> FileSystemSource(path = "patients.zip", fileFormat = Option.apply("txt-csv")))
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients.zip", contentType = SourceContentTypes.CSV))
   )
 
   val testMappingJobFilePath: String = getClass.getResource("/test-mappingjob.json").toURI.getPath
@@ -392,7 +393,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, new MappingContextLoader, schemaRepository, Map.empty, sparkSession)
 
-    val mappingTask = FhirMappingTask("specimen-mapping-using-ts", "https://aiccelerate.eu/fhir/mappings/specimen-mapping-using-ts", Map("source" -> FileSystemSource("specimen.csv")))
+    val mappingTask = FhirMappingTask("specimen-mapping-using-ts", "https://aiccelerate.eu/fhir/mappings/specimen-mapping-using-ts", Map("source" -> FileSystemSource("specimen.csv", SourceContentTypes.CSV)))
 
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(mappingTask)), mappingJobSourceSettings, Some(terminologyServiceSettings)) flatMap { result =>
       val resources = result.map(mappingResult => {

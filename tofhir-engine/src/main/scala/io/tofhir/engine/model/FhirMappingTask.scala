@@ -1,19 +1,6 @@
 package io.tofhir.engine.model
 
 /**
- * Custom exception class for signaling errors related to missing or invalid file formats.
- *
- * This exception is thrown when a required file format is not provided or is determined
- * to be invalid during processing.
- *
- * @param message A descriptive message providing more information about the exception.
- * @throws RuntimeException This exception extends the RuntimeException class for signaling runtime errors.
- *
- */
-class MissingFileFormatException(message: String) extends RuntimeException(message)
-
-
-/**
  * FHIR Mapping task instance
  * {@link mapping} will be executed if it is provided. Otherwise, the mapping referenced by {@link mappingRef} is
  * retrieved from the repository and executed.
@@ -51,58 +38,26 @@ trait MappingSourceBinding extends Serializable {
 /**
  * Context/configuration for one of the sources of the mapping that will read the source data from the file system.
  *
- * For batch jobs, you should either provide a file name in the "path" field with a file extension or provide the folder name
- * in the "path" field and indicate the extension in the "fileFormat" field. In the latter case, it reads the files with
- * the specified file format in the given folder.
+ * For batch jobs, you should provide the folder name in the "path" field and indicate the content type in the "contentType"
+ * field. It reads the files with the specified content type in the given folder.
  *
- * Examples for Batch Jobs:
+ * Example for Batch Jobs:
  *   - With extension in path:
  *     FileSystemSource(path = "data/patients.csv") => Will read the "data/patients.csv" file.
- *   - Providing folder name and file format:
- *     FileSystemSource(path = "data/patients", fileFormat = Some("csv")) => Will read all "csv" files in the "data/patients" folder.
+ *   - Providing folder name and content type:
+ *     FileSystemSource(path = "data/patients", contentType = "csv") => Will read all files in the "data/patients" folder and interpret them as a csv.
  *
- * For streaming jobs, you should provide a folder name in the "path" field and a file format in the "fileFormat" field so that
- * it can read the files with the specified file format in the given folder.
+ * For streaming jobs, you should provide a folder name in the "path" field and a content type in the "contentType" field so that
+ * it can read the files with the specified content type in the given folder.
  *
  * Examples for Streaming Jobs:
- *   - Providing folder name and file format:
- *     FileSystemSource(path = "data/streaming/patients", fileFormat = Some("json")) => Will read all "json" files in the "data/streaming/patients" folder.
+ *   - Providing folder name and content type:
+ *     FileSystemSource(path = "data/streaming/patients", contentType = "json") => Will read all files in the "data/streaming/patients" folder in json content type.
  * @param path        File path to the source file or folder, e.g., "patients.csv" or "patients".
- * @param fileFormat  Format of the file (csv | json | parquet) if it cannot be inferred from the path, e.g., csv.
- * @param options     Further options for the format (Spark Data source options for the format, e.g., for csv -> https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option).
+ * @param contentType Content of the file
+ * @param options     Further options for the content type (Spark Data source options for the content type, e.g., for csv -> https://spark.apache.org/docs/latest/sql-data-sources-csv.html#data-source-option).
  */
-case class FileSystemSource(path: String, fileFormat:Option[String] = None, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding {
-  /**
-   * Infers the file format based on the provided path and file format.
-   *
-   * This method attempts to determine the file format using the following logic:
-   * 1. If `fileFormat` is provided, it is used as the determined format.
-   * 2. If `fileFormat` is not provided and the `path` contains an extension (determined by the presence of a period),
-   *    the extension of the `path` is used as the format.
-   * 3. If neither `fileFormat` is provided nor an extension is found in the `path`, a `MissingFileFormatException` is thrown.
-   *
-   * @return The inferred file format.
-   * @throws MissingFileFormatException If the file format cannot be determined.
-   */
-  def inferFileFormat: String = {
-    var format = fileFormat
-    // split the path into segments based on the period ('.')
-    val pathSegments = path.split('.')
-
-    // if the file format is empty and path is a file i.e. there are at least two segments in the path,
-    // set the file format based on the last segment of the path
-    if (format.isEmpty && pathSegments.length > 1) {
-      format = Some(pathSegments.last)
-    }
-
-    // if the file format is empty, throw an exception
-    if (format.isEmpty) {
-      throw new MissingFileFormatException("File format is missing for FileSystemSource. Please provide a valid file format.")
-    }
-    format.get
-  }
-
-}
+case class FileSystemSource(path: String, contentType:String, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding {}
 /**
  * Context/configuration for one of the source of the mapping that will read the source data from an SQL database
  * Any of tableName and query must be defined. Not both, not neither
@@ -133,16 +88,14 @@ case class KafkaSource(topicName: String, groupId: String, startingOffsets: Stri
 case class FhirServerSource(resourceType: String, query: Option[String] = None, override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding
 
 /**
- * List of source file formats supported by tofhir
+ * List of source content types supported by tofhir
  */
-object SourceFileFormats {
+object SourceContentTypes {
   final val CSV = "csv"
   final val TSV = "tsv"
   final val PARQUET = "parquet"
   final val JSON = "json"
   final val AVRO = "avro"
-  final val TXT_NDJSON = "txt-ndjson"
-  final val TXT_CSV = "txt-csv"
-  final val TXT = "txt"
+  final val NDJSON = "ndjson"
 }
 

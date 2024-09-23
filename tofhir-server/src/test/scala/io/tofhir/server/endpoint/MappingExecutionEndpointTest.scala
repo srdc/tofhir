@@ -9,7 +9,7 @@ import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.tofhir.OnFhirTestContainer
 import io.tofhir.common.model.SchemaDefinition
 import io.tofhir.engine.config.ToFhirConfig
-import io.tofhir.engine.data.write.FileSystemWriter.SinkFileFormats
+import io.tofhir.engine.data.write.FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
@@ -46,11 +46,11 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
   val mappingJobSourceSettings: Map[String, MappingJobSourceSettings] =
     Map("source" ->
       FileSystemSourceSettings("test-source", "https://aiccelerate.eu/data-integration-suite/test-data", Paths.get(getClass.getResource("/test-data").toURI).normalize().toAbsolutePath.toString))
-  var sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_1", Some(SinkFileFormats.NDJSON))
+  var sinkSettings: FhirSinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_1", SinkContentTypes.NDJSON)
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     name = "patient-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
-    sourceBinding = Map("source" -> FileSystemSource(path = "patients.csv")),
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV)),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))
   )
   val batchJob: FhirMappingJob = FhirMappingJob(
@@ -68,14 +68,14 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
   val patientStreamingFolderName = "patients"
   val patientStreamingFolder: File = new File(patientStreamingFolderName)
 
-  var sinkSettingsForStreaming: FhirSinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job3", Some(SinkFileFormats.NDJSON))
+  var sinkSettingsForStreaming: FhirSinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job3", SinkContentTypes.NDJSON)
   val streamingMappingJobSourceSettings: Map[String, MappingJobSourceSettings] =
     Map("source" ->
       FileSystemSourceSettings("streaming-test-source", "https://some-url-for-data-source", Paths.get(getClass.getResource(s"/$parentStreamingFolderName").toURI).normalize().toAbsolutePath.toString, asStream = true))
   val patientStreamingMappingTask: FhirMappingTask = FhirMappingTask(
     name = "some-url-for-streaming-patient-mapping",
     mappingRef = "https://some-url-for-streaming-patient-mapping",
-    sourceBinding = Map("source" -> FileSystemSource(path = s"$patientStreamingFolderName", fileFormat = Some(SourceFileFormats.CSV))),
+    sourceBinding = Map("source" -> FileSystemSource(path = s"$patientStreamingFolderName", contentType = SourceContentTypes.CSV)),
     mapping = Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))
   )
 
@@ -164,9 +164,9 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       val observationsMappingTask: FhirMappingTask = FhirMappingTask(
         name = "other-observation-mapping2",
         mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping2",
-        sourceBinding = Map("source" -> FileSystemSource(path = "other-observations.csv"))
+        sourceBinding = Map("source" -> FileSystemSource(path = "other-observations.csv", contentType = SourceContentTypes.CSV))
       )
-      sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_2", Some(SinkFileFormats.NDJSON))
+      sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job1_2", SinkContentTypes.NDJSON)
       val job1Updated = batchJob.copy(mappings = Seq(observationsMappingTask), sinkSettings = sinkSettings, name = Some("updatedJob"))
 
       Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/$job1Id", HttpEntity(ContentTypes.`application/json`, writePretty(job1Updated))) ~> route ~> check {
@@ -211,7 +211,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       }
     }
 
-    sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job2", Some(SinkFileFormats.NDJSON))
+    sinkSettings = FileSystemSinkSettings(path = s"./$fsSinkFolderName/job2", SinkContentTypes.NDJSON)
     val job2: FhirMappingJob = FhirMappingJob(name = Some("mappingJob2"), sourceSettings = mappingJobSourceSettings, sinkSettings = sinkSettings, mappings = Seq(patientMappingTask), dataProcessingSettings = DataProcessingSettings())
 
     "execute a mapping that is included in the mapping task" in {
@@ -231,7 +231,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       // Run mapping and verify results
       initializeTestMappingQuery(job2.id,
         "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
-        Map("source" -> FileSystemSource(path = "patients.csv")),
+        Map("source" -> FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV)),
         Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))) ~> check {
 
         status shouldEqual StatusCodes.OK
@@ -251,7 +251,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       // create the mapping that will be tested
       createMappingAndVerify("test-mappings/patient-mapping2.json", 2)
 
-      initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping2", Map("source" -> FileSystemSource(path = "patients.csv"))) ~> check {
+      initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping2", Map("source" -> FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV))) ~> check {
         status shouldEqual StatusCodes.OK
         val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
         results.length shouldEqual 3
@@ -277,7 +277,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       createMappingAndVerify("test-mappings/other-observation-mapping.json", 3)
 
       // test a mapping
-      initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/other-observation-mapping", Map("source" -> FileSystemSource(path = "other-observations.csv"))) ~> check {
+      initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/other-observation-mapping", Map("source" -> FileSystemSource(path = "other-observations.csv", contentType = SourceContentTypes.CSV))) ~> check {
         status shouldEqual StatusCodes.OK
         val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
         results.length shouldEqual 3
@@ -360,7 +360,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         id = jobId,
         name = Some("patient-flat-job"),
         sourceSettings = Map("source" -> FhirServerSourceSettings(name="fhir-server",sourceUri = "http://fhir-server", serverUrl = onFhirClient.getBaseUrl())),
-        sinkSettings = FileSystemSinkSettings(path = s"$fsSinkFolder/results.csv", options = Map("header" -> "true")),
+        sinkSettings = FileSystemSinkSettings(path = s"$fsSinkFolder/results.csv", contentType = SinkContentTypes.CSV, options = Map("header" -> "true")),
         mappings = Seq(FhirMappingTask(
           name = "patient-flat-mapping",
           mappingRef = "http://patient-flat-mapping",

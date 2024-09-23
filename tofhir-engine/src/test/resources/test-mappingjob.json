@@ -19,7 +19,8 @@
       "sourceBinding": {
         "source": {
           "jsonClass": "FileSystemSource",
-          "path": "patients.csv"
+          "path": "patients.csv",
+          "contentType" : "csv"
         }
       }
     },
@@ -29,7 +30,8 @@
       "sourceBinding": {
         "source": {
           "jsonClass": "FileSystemSource",
-          "path": "other-observations.csv"
+          "path": "other-observations.csv",
+          "contentType" : "csv"
         }
       }
     }

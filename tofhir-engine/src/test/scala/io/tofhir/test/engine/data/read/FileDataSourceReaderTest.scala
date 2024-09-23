@@ -2,7 +2,7 @@ package io.tofhir.test.engine.data.read
 
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.FileDataSourceReader
-import io.tofhir.engine.model.{FileSystemSource, FileSystemSourceSettings, SourceFileFormats}
+import io.tofhir.engine.model.{FileSystemSource, FileSystemSourceSettings, SourceContentTypes}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
@@ -50,18 +50,17 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
    *
    * The test case covers two scenarios:
    * 1. Providing a file path instead of a directory for a streaming job should result in an IllegalArgumentException.
-   * 2. Providing unsupported file formats or extensions should result in a NotImplementedError.
+   * 2. Providing unsupported content types should result in a NotImplementedError.
    *
    * The following configurations are used for the tests:
    * - `illegalArgumentSourceBinding`: A source binding with a 'file' path to test the directory requirement for streaming jobs.
-   * - `unsupportedFileFormatSourceBinding`: A source binding with an unsupported file format to test the unsupported format handling.
-   * - `unsupportedExtensionSourceBinding`: A source binding with an unsupported file extension to test the unsupported extension handling.
+   * - `unsupportedContentTypeSourceBinding`: A source binding with an unsupported content type to test the unsupported format handling.
    * - `streamJobSourceSettings`: Mapping job source settings configured for a streaming job.
    * - `batchJobSourceSettings`: Mapping job source settings configured for a batch job.
    *
    * The test verifies the following:
    * 1. An IllegalArgumentException is thrown with the expected message when a file path is provided instead of a directory for a streaming job.
-   * 2. A NotImplementedError is thrown for unsupported file formats and extensions, indicating that these cases are not yet implemented or handled.
+   * 2. A NotImplementedError is thrown for unsupported content types, indicating that these cases are not yet implemented or handled.
    *
    */
   it should "throw IllegalArgumentException, NotImplementedError when necessary" in {
@@ -70,40 +69,36 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
 
     // Test case 1: Verify that providing a file path instead of a directory throws an IllegalArgumentException
     val fileName: String = "patients.csv"
-    val illegalArgumentSourceBinding = FileSystemSource(path = fileName)
+    val illegalArgumentSourceBinding = FileSystemSource(path = fileName, contentType = SourceContentTypes.CSV)
     val streamJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest0", sourceUri = "test-uri", dataFolderPath = testDataFolderPath.concat(folderPath), asStream = true)
     val exception = intercept[IllegalArgumentException] {
       fileDataSourceReader.read(illegalArgumentSourceBinding, streamJobSourceSettings, Option.empty)
     }
     exception.getMessage should include(s"${fileName} is not a directory. For streaming job, you should provide a directory.")
 
-    // Test case 2: Verify that unsupported file formats and extensions throw a NotImplementedError
-    val unsupportedFileFormatSourceBinding = FileSystemSource(path = fileName, fileFormat = Some("UNSUPPORTED"))
-    val unsupportedExtensionSourceBinding = FileSystemSource(path = "patients.UNSUPPORTED")
+    // Test case 2: Verify that unsupported content types throw a NotImplementedError
+    val unsupportedContentTypeSourceBinding = FileSystemSource(path = fileName, contentType = "UNSUPPORTED")
     val batchJobSourceSettings = streamJobSourceSettings.copy(asStream = false)
     assertThrows[NotImplementedError] {
-      fileDataSourceReader.read(unsupportedFileFormatSourceBinding, batchJobSourceSettings, Option.empty)
-    }
-    assertThrows[NotImplementedError] {
-      fileDataSourceReader.read(unsupportedExtensionSourceBinding, batchJobSourceSettings, Option.empty)
+      fileDataSourceReader.read(unsupportedContentTypeSourceBinding, batchJobSourceSettings, Option.empty)
     }
   }
 
   /**
-   * Tests that the FileDataSourceReader correctly reads data from CSV, TSV, and TXT_CSV files.
+   * Tests that the FileDataSourceReader correctly reads data from CSV, TSV, and TXT(csv) file.
    *
-   * This test verifies that the reader can handle different file formats and produce the expected results.
+   * This test verifies that the reader can handle different content types and produce the expected results.
    * The test covers the following formats:
    * 1. CSV
    * 2. TSV
-   * 3. TXT_CSV (Text file with CSV-like format)
+   * 3. TXT(csv) (Text file with CSV content type)
    *
    * The test uses the following source binding configurations:
-   * FileSystemSource(path = "patients.csv", fileFormat = None, options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
-   * FileSystemSource(path = "patients.tsv", fileFormat = None, options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
-   * FileSystemSource(path = "patients.txt", fileFormat = "txt-csv", options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
+   * FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV, options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
+   * FileSystemSource(path = "patients.tsv", contentType = SourceContentTypes.TSV, options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
+   * FileSystemSource(path = "patients.txt", contentType = SourceContentTypes.CSV, options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
    *
-   * The expected read result for all file formats:
+   * The expected read result for all content types:
    * +---+------+-------------------+----------------+--------------+
    * |pid|gender|          birthDate|deceasedDateTime|homePostalCode|
    * +---+------+-------------------+----------------+--------------+
@@ -120,7 +115,7 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
    * +---+------+-------------------+----------------+--------------+
    *
    */
-  it should "correctly read from CSV, TSV, and TXT_CSV files" in {
+  it should "correctly read from CSV, TSV, and TXT(csv) files" in {
     // Folder containing the test files for this test
     val folderPath = "/single-file-test"
 
@@ -132,9 +127,9 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
 
     // A sequence of file names and their corresponding formats to be tested
     val sourceBindingConfigurations = Seq(
-      ("patients.csv", None),
-      ("patients.tsv", None),
-      ("patients.txt", Some(SourceFileFormats.TXT_CSV))
+      ("patients.csv", SourceContentTypes.CSV),
+      ("patients.tsv", SourceContentTypes.TSV),
+      ("patients.txt", SourceContentTypes.CSV)
     )
 
     // Spark options to test if options are working
@@ -145,9 +140,9 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
 
     // Loop through each source binding configuration to run the test
     val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest1", sourceUri = "test-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
-    sourceBindingConfigurations.foreach { case (fileName, fileFormat) =>
+    sourceBindingConfigurations.foreach { case (fileName, contentType) =>
       // Read the data using the reader and the defined settings
-      val mappingSourceBinding = FileSystemSource(path = fileName, fileFormat = fileFormat, options = sparkOptions)
+      val mappingSourceBinding = FileSystemSource(path = fileName, contentType = contentType, options = sparkOptions)
       val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
 
       // Validate the result
@@ -159,16 +154,16 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
   }
 
   /**
-   * Tests that the FileDataSourceReader correctly reads multiple files from CSV and TXT_CSV folders.
+   * Tests that the FileDataSourceReader correctly reads multiple files from CSV and TXT(csv) folders.
    *
-   * This test verifies that the reader can handle multiple files across different file formats
+   * This test verifies that the reader can handle multiple files across different content types
    * and produce the expected results. The test covers reading from folders containing:
    * 1. CSV files
-   * 2. TXT_CSV (Text files with CSV-like format)
+   * 2. TXT(csv) (Text files with csv content type)
    *
    * The test uses the following source binding configurations:
-   * FileSystemSource(path = "csv", fileFormat = Some(SourceFileFormats.CSV), options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
-   * FileSystemSource(path = "txt-csv", fileFormat = Some(SourceFileFormats.TXT_CSV), options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
+   * FileSystemSource(path = "csv", contentType = SourceContentTypes.CSV, options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
+   * FileSystemSource(path = "txt-csv", contentType = SourceContentTypes.CSV, options = Map("ignoreTrailingWhiteSpace" -> "true", "comment" -> "!"))
    *
    * The expected read result for both folder formats:
    * +---+------+-------------------+
@@ -187,7 +182,7 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
    * (Rows may appear in different groupings, with each file contributing a distinct set of 3 rows.)
    *
    */
-  it should "correctly read multiple files from CSV, TXT_CSV folders" in {
+  it should "correctly read multiple files from CSV, TXT(csv) folders" in {
     // Folder including the test folders belong to this test
     val folderPath = "/folder-test"
 
@@ -200,10 +195,10 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
       Row("p7", "female", new Timestamp(dateFormat.parse("1972-10-25").getTime))
     )
 
-    // A sequence of folder names and file format of the files to be selected
+    // A sequence of folder names and content types of the files to be selected
     val sourceBindingConfigurations = Seq(
-      ("csv", Some(SourceFileFormats.CSV)),
-      ("txt-csv", Some(SourceFileFormats.TXT_CSV))
+      ("csv", SourceContentTypes.CSV),
+      ("txt-csv", SourceContentTypes.CSV)
     )
     // Spark options to test if options are working
     val sparkOptions = Map(
@@ -213,9 +208,9 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
 
     // Loop through each source binding configuration to run the test
     val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest2", sourceUri = "test-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
-    sourceBindingConfigurations.foreach { case (folderName, fileFormat) =>
+    sourceBindingConfigurations.foreach { case (folderName, contentType) =>
       // Read the data using the reader and the defined settings
-      val mappingSourceBinding = FileSystemSource(path = folderName, fileFormat = fileFormat, options = sparkOptions)
+      val mappingSourceBinding = FileSystemSource(path = folderName, contentType = contentType, options = sparkOptions)
       val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
 
       // Validate the result
@@ -226,18 +221,18 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
   }
 
   /**
-   * Tests that the FileDataSourceReader correctly reads data from JSON and TXT_NDJSON files.
+   * Tests that the FileDataSourceReader correctly reads data from JSON and NDJSON files.
    *
-   * This test verifies that the reader can handle different file formats and produce the expected results.
+   * This test verifies that the reader can handle different content types and produce the expected results.
    * The test covers the following formats:
    * 1. JSON
-   * 2. TXT_NDJSON (Text file with newline-delimited JSON format)
+   * 2. NDJSON (Text file with newline-delimited JSON content type)
    *
    * The test uses the following source binding configurations:
-   * FileSystemSource(path = "patients.json", fileFormat = None, options = Map("allowComments" -> "true"))
-   * FileSystemSource(path = "patients-ndjson.txt", fileFormat = Some(SourceFileFormats.TXT_NDJSON), options = Map("allowComments" -> "true"))
+   * FileSystemSource(path = "patients.json", contentType = SourceContentTypes.JSON, options = Map("allowComments" -> "true"))
+   * FileSystemSource(path = "patients-ndjson.txt", contentType = SourceContentTypes.NDJSON, options = Map("allowComments" -> "true"))
    *
-   * The expected read result is for both file formats:
+   * The expected read result is for both content types:
    * +------------+----------------+------+--------------+---+
    * |  birthDate |deceasedDateTime|gender|homePostalCode|pid|
    * +------------+----------------+------+--------------+---+
@@ -254,7 +249,7 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
    * +------------+----------------+------+--------------+---+
    * (Row order appears randomly due to 'distinct' option)
    */
-  it should "correctly read from JSON and TXT-NDJSON files" in {
+  it should "correctly read from JSON and NDJSON files" in {
     // Folder including the test files
     val folderPath = "/single-file-test"
 
@@ -266,8 +261,8 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
 
     // Define the file names and their corresponding formats to be tested
     val sourceBindingConfigurations = Seq(
-      ("patients.json", None),
-      ("patients-ndjson.txt", Some(SourceFileFormats.TXT_NDJSON))
+      ("patients.json", SourceContentTypes.JSON),
+      ("patients-ndjson.txt", SourceContentTypes.NDJSON)
     )
     // Spark options to test if options are working
     val sparkOptions = Map(
@@ -277,9 +272,9 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
 
     // Loop through each source binding configuration to run the test
     val mappingJobSourceSettings = FileSystemSourceSettings(name = s"FileDataSourceReaderTest3", sourceUri = "test-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
-    sourceBindingConfigurations.foreach { case (fileName, fileFormat) =>
+    sourceBindingConfigurations.foreach { case (fileName, contentType) =>
       // Define the source binding and settings for reading the file
-      val mappingSourceBinding = FileSystemSource(path = fileName, fileFormat = fileFormat, options = sparkOptions)
+      val mappingSourceBinding = FileSystemSource(path = fileName, contentType = contentType, options = sparkOptions)
       // Read the data from the specified file
       val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
 
@@ -295,14 +290,14 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
   /**
    * Tests that the FileDataSourceReader correctly reads multiple files from JSON and NDJSON folders.
    *
-   * This test verifies that the reader can handle multiple files across different file formats
+   * This test verifies that the reader can handle multiple files across different content types
    * and produce the expected results. The test covers reading from folders containing:
    * 1. JSON (standard JSON files in the "json" folder)
-   * 2. TXT_NDJSON (newline-delimited JSON files in the "txt-ndjson" folder)
+   * 2. NDJSON (newline-delimited JSON files in the "ndjson" folder)
    *
    * The test uses the following source binding configurations:
-   * FileSystemSource(path = "json", fileFormat = Some(SourceFileFormats.JSON))
-   * FileSystemSource(path = "txt-ndjson", fileFormat = Some(SourceFileFormats.TXT_NDJSON))
+   * FileSystemSource(path = "json", contentType = SourceContentTypes.JSON)
+   * FileSystemSource(path = "ndjson", contentType = SourceContentTypes.NDJSON)
    *
    * The expected read result for both formats:
    * +----------+------+---+
@@ -334,17 +329,17 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
       Row("1972-10-25", "female", "p7")
     )
 
-    // A sequence of folder names and file format of the files to be selected
+    // A sequence of folder names and content type of the files to be selected
     val sourceBindingConfigurations = Seq(
-      ("json", Some(SourceFileFormats.JSON)),
-      ("txt-ndjson", Some(SourceFileFormats.TXT_NDJSON))
+      ("json", SourceContentTypes.JSON),
+      ("txt-ndjson", SourceContentTypes.NDJSON)
     )
 
     // Loop through each source binding configuration to run the test
     val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest4", sourceUri = "test-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
-    sourceBindingConfigurations.foreach { case (folderName, fileFormat) =>
+    sourceBindingConfigurations.foreach { case (folderName, contentType) =>
       // Read the data using the reader and the defined settings
-      val mappingSourceBinding = FileSystemSource(path = folderName, fileFormat = fileFormat)
+      val mappingSourceBinding = FileSystemSource(path = folderName, contentType = contentType)
       val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
 
       // Validate the result
@@ -357,12 +352,12 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
   /**
    * Tests that the FileDataSourceReader correctly reads data from a Parquet file.
    *
-   * This test verifies that the reader can handle Parquet file format and produce the expected results.
+   * This test verifies that the reader can handle Parquet content type and produce the expected results.
    * The test covers the following format:
    * 1. PARQUET
    *
    * The test uses the following source binding configuration:
-   * FileSystemSource(path = "patients.parquet", fileFormat = Some(SourceFileFormats.PARQUET))
+   * FileSystemSource(path = "patients.parquet", contentType = SourceContentTypes.PARQUET)
    *
    * The expected read result for the Parquet file is:
    * +---+------+----------+-------------------+--------------+
@@ -391,16 +386,16 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
     val expectedFirstRow = Row("p1", "male", "2000-05-10", null, null)
     val expectedLastRow = Row("p10", "female", "2003-11", null, null)
 
-    // Define the file name and its corresponding format for Parquet
+    // Define the file name and its corresponding content type for Parquet
     val sourceBindingConfigurations = Seq(
-      ("patients.parquet", Some(SourceFileFormats.PARQUET))
+      ("patients.parquet", SourceContentTypes.PARQUET)
     )
 
     // Loop through each source binding configuration to run the test
     val mappingJobSourceSettings = FileSystemSourceSettings(name = s"FileDataSourceReaderTest5", sourceUri = "test-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
-    sourceBindingConfigurations.foreach { case (fileName, fileFormat) =>
+    sourceBindingConfigurations.foreach { case (fileName, contentType) =>
       // Define the source binding and settings for reading the file
-      val mappingSourceBinding = FileSystemSource(path = fileName, fileFormat = fileFormat)
+      val mappingSourceBinding = FileSystemSource(path = fileName, contentType = contentType)
       // Read the data from the specified file
       val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
 
@@ -415,12 +410,12 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
   /**
    * Tests that the FileDataSourceReader correctly reads data from Parquet files.
    *
-   * This test verifies that the reader can handle Parquet file format and produce the expected results.
+   * This test verifies that the reader can handle Parquet content type and produce the expected results.
    * The test covers the following format:
    * 1. PARQUET
    *
    * The test uses the following source binding configuration:
-   * FileSystemSource(path = "parquet", fileFormat = Some(SourceFileFormats.PARQUET))
+   * FileSystemSource(path = "parquet", contentType = SourceContentTypes.PARQUET)
    *
    * The expected read result for the Parquet files is:
    * +---+------+----------+
@@ -452,16 +447,16 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
       Row("p7", "female", "1972-10-25")
     )
 
-    // A sequence of folder names and file format of the files to be selected
+    // A sequence of folder names and content type of the files to be selected
     val sourceBindingConfigurations = Seq(
-      ("parquet", Some(SourceFileFormats.PARQUET))
+      ("parquet", SourceContentTypes.PARQUET)
     )
 
     // Loop through each source binding configuration to run the test
     val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest6", sourceUri = "test-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
-    sourceBindingConfigurations.foreach { case (folderName, fileFormat) =>
+    sourceBindingConfigurations.foreach { case (folderName, contentType) =>
       // Read the data using the reader and the defined settings
-      val mappingSourceBinding = FileSystemSource(path = folderName, fileFormat = fileFormat)
+      val mappingSourceBinding = FileSystemSource(path = folderName, contentType = contentType)
       val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
 
       // Validate the result
@@ -472,13 +467,13 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
   }
 
   /**
-   * Tests that the FileDataSourceReader correctly reads multiple CSV, TSV, and TXT_CSV files from a zip file.
+   * Tests that the FileDataSourceReader correctly reads multiple CSV, TSV, and TXT(csv) files from a zip file.
    *
-   * This test verifies that the reader can handle multiple files inside a zip archive with different file formats
+   * This test verifies that the reader can handle multiple files inside a zip archive with different content types
    * and produce the expected results. The test covers reading from a zip file containing:
    * 1. CSV files
    * 2. TSV files
-   * 3. TXT_CSV (Text files with CSV format)
+   * 3. TXT(csv) (Text files with CSV content type)
    *
    * The expected read result for all formats:
    * +---+------+-------------------+
@@ -497,7 +492,7 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
    * (Rows may appear in different order, grouped by each file.)
    *
    */
-  it should "correctly read multiple CSV, TSV and TXT-CSV files from a zip archive" in {
+  it should "correctly read multiple CSV, TSV and TXT(csv) files from a zip archive" in {
     // Path to the zip file containing the test data
     val folderPath = "/zip-test"
 
@@ -510,11 +505,11 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
       Row("p7", "female", new Timestamp(dateFormat.parse("1972-10-25").getTime))
     )
 
-    // A sequence of file formats and their configuration for the test
+    // A sequence of content types and their configuration for the test
     val sourceBindingConfigurations = Seq(
-      ("csv.zip", Some(SourceFileFormats.CSV)),
-      ("tsv.zip", Some(SourceFileFormats.TSV)),
-      ("txt-csv.zip", Some(SourceFileFormats.TXT_CSV))
+      ("csv.zip", SourceContentTypes.CSV),
+      ("tsv.zip", SourceContentTypes.TSV),
+      ("txt-csv.zip", SourceContentTypes.CSV)
     )
 
     // Spark options to test if options are working
@@ -525,9 +520,9 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
 
     // Test the reading from the zip file using the source configurations
     val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest7", sourceUri = "zip-file-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
-    sourceBindingConfigurations.foreach { case (zipFileName, fileFormat) =>
+    sourceBindingConfigurations.foreach { case (zipFileName, contentType) =>
       // Read the data using the reader and the defined settings
-      val mappingSourceBinding = FileSystemSource(path = zipFileName, fileFormat = fileFormat, options = sparkOptions)
+      val mappingSourceBinding = FileSystemSource(path = zipFileName, contentType = contentType, options = sparkOptions)
       val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
 
       // Validate the result
@@ -538,16 +533,16 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
   }
 
   /**
-   * Tests that the FileDataSourceReader correctly reads data from JSON and TXT_NDJSON files inside a zip archive.
+   * Tests that the FileDataSourceReader correctly reads data from JSON and NDJSON files inside a zip archive.
    *
-   * This test verifies that the reader can handle different file formats (JSON, TXT_NDJSON) compressed in a zip file
+   * This test verifies that the reader can handle different content types (JSON, NDJSON) compressed in a zip file
    * and produce the expected results.
    *
    * The test covers the following formats inside a zip:
    * 1. JSON
-   * 2. TXT_NDJSON (Text file with newline-delimited JSON format)
+   * 2. NDJSON (Text file with newline-delimited JSON format)
    *
-   * The expected result for both file formats:
+   * The expected result for both content types:
    * +------------+----------------+------+--------------+---+
    * |  birthDate |deceasedDateTime|gender|homePostalCode|pid|
    * +------------+----------------+------+--------------+---+
@@ -563,7 +558,7 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
    * |2003-11     |            NULL|female|          NULL|p10|
    * +------------+----------------+------+--------------+---+
    */
-  it should "correctly read from JSON and TXT-NDJSON files inside a zip archive" in {
+  it should "correctly read from JSON and NDJSON files inside a zip archive" in {
 
     // Path to the zip file containing the test files
     val folderPath = "/zip-test"
@@ -580,8 +575,8 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
 
     // Define the zip file names and their corresponding formats to be tested
     val sourceBindingConfigurations = Seq(
-      ("json.zip", Some(SourceFileFormats.JSON)), // JSON inside zip
-      ("txt-ndjson.zip", Some(SourceFileFormats.TXT_NDJSON)) // Newline-delimited JSON inside zip
+      ("json.zip", SourceContentTypes.JSON), // JSON inside zip
+      ("txt-ndjson.zip", SourceContentTypes.NDJSON) // Newline-delimited JSON inside zip
     )
 
     // Spark options for testing (e.g., allowing comments in the files)
@@ -592,10 +587,10 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
     // Loop through each zip file and perform the test
     val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest8", sourceUri = "zip-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
 
-    sourceBindingConfigurations.foreach { case (zipFileName, fileFormat) =>
+    sourceBindingConfigurations.foreach { case (zipFileName, contentType) =>
 
       // Define the source binding and read the data from the zip file
-      val mappingSourceBinding = FileSystemSource(path = zipFileName, fileFormat = fileFormat, options = sparkOptions)
+      val mappingSourceBinding = FileSystemSource(path = zipFileName, contentType = contentType, options = sparkOptions)
       val result: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, Option.empty)
 
       // Validate the result

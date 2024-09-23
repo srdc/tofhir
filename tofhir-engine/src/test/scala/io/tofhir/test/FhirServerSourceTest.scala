@@ -5,6 +5,7 @@ import io.onfhir.api.Resource
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.path.{FhirPathAggFunctionsFactory, FhirPathUtilFunctionsFactory}
 import io.onfhir.util.JsonFormatter._
+import io.tofhir.engine.data.write.FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.mapping.job.FhirMappingJobManager
 import io.tofhir.engine.model._
 import io.tofhir.{OnFhirTestContainer, ToFhirTestSpec}
@@ -117,7 +118,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       sourceSettings = Map(
         "fhirServer" -> FhirServerSourceSettings(name = "fhirServer", sourceUri = "http://fhir-server-source", serverUrl = onFhirClient.getBaseUrl())
       ),
-      sinkSettings = FileSystemSinkSettings(path = s"${fsSinkFolder.getPath}/results.csv", options = Map("header" -> "true")),
+      sinkSettings = FileSystemSinkSettings(path = s"${fsSinkFolder.getPath}/results.csv", contentType= SinkContentTypes.CSV, options = Map("header" -> "true")),
       dataProcessingSettings = DataProcessingSettings()
     )
     val mappingTask: FhirMappingTask = FhirMappingTask(
