@@ -127,12 +127,15 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig,schema
    * If the profile is not found, it queries the Schema Repository.
    *
    * @param url The URL of the FHIR profile or Schema to retrieve the structure definition for.
-   * @param version The version of the FHIR profile (the version of the StructureDefinition)
    * @return A sequence of SimpleStructureDefinition objects representing the simplified structure definition of the profile or schema.
    */
-  def getElementDefinitionsOfProfile(url: String, version: Option[String]): Seq[SimpleStructureDefinition] = {
+  def getElementDefinitionsOfProfile(url: String): Seq[SimpleStructureDefinition] = {
+    // parse the canonical URL to extract URL and optional version part
+    val canonicalParts = url.split('|')
+    val urlWithoutVersion = canonicalParts.head
+    val version = canonicalParts.drop(1).lastOption
     // retrieve the simplified structure definitions from the cache, or simplify it using SimpleStructureDefinitionService if not cached
-    var simpleStructureDefinitions: Seq[SimpleStructureDefinition] = simplifiedStructureDefinitionCache.getOrElseUpdate(url, simpleStructureDefinitionService.simplifyStructureDefinition(url, version))
+    var simpleStructureDefinitions: Seq[SimpleStructureDefinition] = simplifiedStructureDefinitionCache.getOrElseUpdate(url, simpleStructureDefinitionService.simplifyStructureDefinition(urlWithoutVersion, version))
     // if not found in SimpleStructureDefinitionService, check the Schema Repository
     // This is because the schema can be created into the SchemaRepository through toFHIR API, and it is being used as the target schema for mapping definitions (e.g., flat schemas for FHIR-2-tabular mappings)
     if(simpleStructureDefinitions.isEmpty){
