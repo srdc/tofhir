@@ -35,7 +35,7 @@ class FhirDefinitionsEndpoint(fhirDefinitionsConfig: FhirDefinitionsConfig, sche
                     }
                   case DefinitionsQuery.ELEMENTS =>
                     queryParams.get(QUERY_PARAM_PROFILE) match {
-                      case Some(profileUrl) => complete(service.getElementDefinitionsOfProfile(profileUrl, queryParams.get(QUERY_PARAM_PROFILE_VERSION)))
+                      case Some(profileUrl) => complete(service.getElementDefinitionsOfProfile(profileUrl))
                       case None => complete(HttpResponse(StatusCodes.BadRequest)) // FIXME
                     }
                   case unk => throw BadRequest("Invalid parameter value.", s"$QUERY_PARAM_Q on $SEGMENT_FHIR_DEFINITIONS cannot take the value:$unk. Possible values are: ${DefinitionsQuery.values.mkString}")
@@ -113,7 +113,6 @@ object FhirDefinitionsEndpoint {
   val QUERY_PARAM_Q = "q"
   val QUERY_PARAM_RTYPE = "rtype"
   val QUERY_PARAM_PROFILE = "profile"
-  val QUERY_PARAM_PROFILE_VERSION = "profileVersion"
   val QUERY_PARAM_FHIRVALIDATIONURL = "fhirValidationUrl"
   val QUERY_PARAM_FHIR_VERSION = "fhirVersion"
 
