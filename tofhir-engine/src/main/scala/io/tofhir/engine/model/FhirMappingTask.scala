@@ -42,6 +42,8 @@ trait MappingSourceBinding extends Serializable {
  * field. It reads the files with the specified content type in the given folder.
  *
  * Example for Batch Jobs:
+ *   - With extension in path:
+ *     FileSystemSource(path = "data/patients.csv") => Will read the "data/patients.csv" file.
  *   - Providing folder name and content type:
  *     FileSystemSource(path = "data/patients", contentType = "csv") => Will read all files in the "data/patients" folder and interpret them as a csv.
  *

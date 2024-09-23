@@ -547,20 +547,24 @@ Example of a Mapping Job definition file with csv source type:
   },
   "mappings": [
     {
+      "name": "patient-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
       "sourceBinding": {
         "patient": {
           "jsonClass": "FileSystemSource",
-          "path": "patients.csv"    
+          "path": "patients.csv",
+          "contentType": "csv"
         }
       }
     },
     {
+      "name": "practitioner-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/practitioner-mapping",
       "sourceBinding": {
         "practitioner": {
           "jsonClass": "FileSystemSource",
-          "path": "practitioners.csv"
+          "path": "practitioners.csv",
+          "contentType": "csv"
         }
       }
     }
@@ -632,6 +636,7 @@ Example of a Mapping Job definition file with csv source type in streaming mode:
   },
   "mappings": [
     {
+      "name": "patient-mapping",
       "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
       "sourceBinding": {
         "patient": {
@@ -649,7 +654,6 @@ The json snippet above illustrates the structure of an example mapping job in st
 Similar to the batch mode, most of the fields are the same. The only differences are:
 - `asStream` field in the source settings
 - `path`  in the source binding of the mapping. `path` should be the name of the **folder** this time, and it is where toFHIR will monitor the changes.
-- `contentType` in the source binding of the mapping. `contentType` field is mandatory.
 
 ##### SQL
 
@@ -670,6 +674,7 @@ Similarly, if we had a source with SQL type, `sourceSettings` and `mappings` par
 ```
 ```json
 {
+  "name": "location-sql-mapping",
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
   "sourceBinding": {
     "source": {
@@ -682,6 +687,7 @@ Similarly, if we had a source with SQL type, `sourceSettings` and `mappings` par
 We can give a table name with the `tableName` field, as well as write a query with the `query` field:
 ```json
 {
+  "name": "location-sql-mapping",
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
   "sourceBinding": {
     "source": {
@@ -709,6 +715,7 @@ Mapping job and mapping examples shown below for the streaming type of sources l
 ```
 ```json
 {
+  "name": "location-sql-mapping",
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/location-sql-mapping",
   "sourceBinding": {
     "source": {
@@ -778,6 +785,7 @@ In addition to specifying the server URL (**serverUrl**), you can configure secu
 Within the mapping source, you can define the resource type (e.g., Patient, Observation) and apply filters using a query string:
 ```json
 {
+  "name": "patient-mapping",
   "mappingRef" : "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping",
   "sourceBinding" : {
     "source" : {
@@ -803,6 +811,7 @@ To give any spark option, you can use the `options` field in the source binding 
 
 ```json
 {
+  "name": "patient-mapping",
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/project1/patient-mapping",
   "sourceBinding": {
     "source": {
@@ -885,6 +894,7 @@ Next, specify the source bindings for your mappings in the job. Here's an exampl
 ```json
 {
   "mappings" : [ {
+    "name": "patient-mapping-with-two-sources",
     "mappingRef" : "http://patient-mapping-with-two-sources",
     "sourceBinding" : {
       "patient" : {
@@ -915,6 +925,7 @@ If the `genderSource` was connected to file system in the job definition, the `s
 ```json
 {
   "mappings" : [ {
+    "name": "patient-mapping-with-two-sources",
     "mappingRef" : "http://patient-mapping-with-two-sources",
     "sourceBinding" : {
       "patient" : {
@@ -1001,7 +1012,8 @@ Or you can use a local file system to persist the generated FHIR resources:
 {
   "sinkSettings": {
     "jsonClass": "FileSystemSinkSettings",
-    "path": "sink/project1"
+    "path": "sink/project1",
+    "contentType": "csv"
   }
 }
 ```
@@ -1133,7 +1145,8 @@ you can specify the initial time in your mapping job definition as follows:
 `mapping.json`
 ```json
 {
-  ...
+  ...,
+  "name": "procedure-occurrence-mapping",
   "mappingRef": "https://aiccelerate.eu/fhir/mappings/omop/procedure-occurrence-mapping",
   "sourceBinding": {
     "source": {
