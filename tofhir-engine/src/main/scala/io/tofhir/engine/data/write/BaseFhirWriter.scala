@@ -1,6 +1,6 @@
 package io.tofhir.engine.data.write
 
-import io.tofhir.engine.model.{FhirMappingResult, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSinkSettings}
+import io.tofhir.engine.model.{FhirMappingResult, FhirRepositorySinkSettings, FhirSinkSettings, FileSystemSinkSettings, MappedFhirResource}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 
@@ -15,7 +15,7 @@ abstract class BaseFhirWriter(sinkSettings: FhirSinkSettings) extends Serializab
    *
    * @param df
    */
-  def write(sparkSession: SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator: CollectionAccumulator[FhirMappingResult]): Unit
+  def write(sparkSession: SparkSession, df: Dataset[MappedFhirResource], problemsAccumulator: CollectionAccumulator[MappedFhirResource]): Unit
 
   /**
    * Validates the current FHIR writer. This method should be implemented by concrete subclasses to perform any necessary validation checks.

@@ -10,9 +10,10 @@ import io.tofhir.common.util.ExceptionUtil
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.model.exception.FhirMappingException
-import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingResult}
+import io.tofhir.engine.model.{FhirInteraction, FhirMappingError, FhirMappingErrorCodes, MappedFhirResource, FhirMappingResult}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.JsonAST.{JArray, JObject, JValue}
+import org.json4s.JsonDSL._
 
 import java.sql.Timestamp
 import java.time.Instant
@@ -70,7 +71,7 @@ object MappingTaskExecutor {
     import spark.implicits._
     val result =
       df
-        .flatMap(row => {
+        .map(row => {
           val jo =
             convertRowToJObject(row) //convert the row to JSON object
               .removeField(_._1 == SourceHandler.INPUT_VALIDITY_ERROR) //Remove the extra field appended during validation
@@ -81,7 +82,7 @@ object MappingTaskExecutor {
             case None => executeMappingOnInput(jo, Map.empty[String, JValue], fhirMappingService, executionId)
             //If the input is not valid, return the error
             case Some(validationError) =>
-              Seq(FhirMappingResult(
+              FhirMappingResult(
                 jobId = fhirMappingService.jobId,
                 mappingTaskName = fhirMappingService.mappingTaskName,
                 mappingExpr = None,
@@ -93,7 +94,7 @@ object MappingTaskExecutor {
                 )),
                 executionId = executionId,
                 projectId = fhirMappingService.projectId
-              ))
+              )
           }
         })
     result
@@ -107,7 +108,7 @@ object MappingTaskExecutor {
     import spark.implicits._
     val result =
       df
-        .flatMap(row => {
+        .map(row => {
           val otherSourceRows =
             sources
               .tail
@@ -143,7 +144,7 @@ object MappingTaskExecutor {
             case Nil => executeMappingOnInput(jo, otherObjectMap, fhirMappingService, executionId)
             //If the input is not valid, return the error
             case _ =>
-              Seq(FhirMappingResult(
+              FhirMappingResult(
                 jobId = fhirMappingService.jobId,
                 mappingTaskName = fhirMappingService.mappingTaskName,
                 mappingExpr = None,
@@ -155,7 +156,7 @@ object MappingTaskExecutor {
                 )),
                 executionId = executionId,
                 projectId = fhirMappingService.projectId
-              ))
+              )
           }
         })
     result
@@ -164,50 +165,35 @@ object MappingTaskExecutor {
   /**
    * Execute the mapping on an JSON converted input
    *
-   * @param jo                 Input object
+   * @param jo                 Main input data source as JSON object
+   * @param otherInputs        Secondary input data sources as JSON objects
    * @param fhirMappingService Mapping service
-   * @param executionId        Id of FhirMappingJobExecution object
+   * @param executionId        ID of FhirMappingJobExecution object
    * @return
    */
   private def executeMappingOnInput(jo: JObject,
                                     otherInputs: Map[String, JValue],
                                     fhirMappingService: FhirMappingService,
-                                    executionId: Option[String] = None): Seq[FhirMappingResult] = {
+                                    executionId: Option[String] = None): FhirMappingResult = {
 
     val results =
       try {
         val mappedResources = Await.result(fhirMappingService.mapToFhir(jo, otherInputs), ToFhirConfig.engineConfig.mappingTimeout)
-        mappedResources.flatMap {
-          //If this is a JSON Patch, the resources are patches so return it as single result
-          case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "patch") && resources.length > 1 =>
-            Seq(FhirMappingResult(
-              jobId = fhirMappingService.jobId,
-              mappingTaskName = fhirMappingService.mappingTaskName,
-              mappingExpr = Some(mappingExpr),
-              timestamp = Timestamp.from(Instant.now()),
-              source = Some(Serialization.write(jo)),
-              mappedResource = Some(Serialization.write(JArray(resources.toList))),
-              fhirInteraction = fhirInteraction,
-              executionId = executionId,
-              projectId = fhirMappingService.projectId
-            ))
-          //Otherwise return each resource as a separate mapping result
+
+        val flattenedResources = mappedResources.flatMap {
           case (mappingExpr, resources, fhirInteraction) =>
-            resources.map(r =>
-              FhirMappingResult(
-                jobId = fhirMappingService.jobId,
-                mappingTaskName = fhirMappingService.mappingTaskName,
-                mappingExpr = Some(mappingExpr),
-                timestamp = Timestamp.from(Instant.now()),
-                source = Some(Serialization.write(jo)),
-                mappedResource = Some(Serialization.write(r)),
-                fhirInteraction = fhirInteraction,
-                executionId = executionId,
-                projectId = fhirMappingService.projectId,
-                resourceType = (r\ "resourceType").extractOpt[String]
-              )
-            )
+            resources.map(resource => (mappingExpr, resource, fhirInteraction))
         }
+
+        FhirMappingResult(
+          jobId = fhirMappingService.jobId,
+          mappingTaskName = fhirMappingService.mappingTaskName,
+          mappedFhirResources = flattenedResources.map(r => MappedFhirResource(Some(r._1), Some(Serialization.write(r._2)), r._3)),
+          timestamp = Timestamp.from(Instant.now()),
+          source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
+          executionId = executionId,
+          projectId = fhirMappingService.projectId,
+        )
       } catch {
         // Exception in expression evaluation
         case FhirMappingException(mappingExpr, t: FhirExpressionException) =>
@@ -226,61 +212,61 @@ object MappingTaskExecutor {
               }
             }
           }
-          Seq(FhirMappingResult(
+          FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = Some(mappingExpr),
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(Serialization.write(jo)),
+            source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = errorDescription,
               expression = t.expression
             )),
             executionId = executionId,
-            projectId = fhirMappingService.projectId))
+            projectId = fhirMappingService.projectId)
         //Other general exceptions
         case e: FhirMappingException =>
-          Seq(FhirMappingResult(
+          FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(Serialization.write(jo)),
+            source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = ExceptionUtil.extractExceptionMessages(e)
             )),
             executionId = executionId,
-            projectId = fhirMappingService.projectId))
+            projectId = fhirMappingService.projectId)
         case e: TimeoutException =>
           logger.debug("Mapping timeout, continuing the processing of mappings...")
-          Seq(FhirMappingResult(
+          FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(Serialization.write(jo)),
+            source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_TIMEOUT,
               description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.engineConfig.mappingTimeout.toString}!"
             )),
             executionId = executionId,
-            projectId = fhirMappingService.projectId))
+            projectId = fhirMappingService.projectId)
         case oth: Exception =>
           logger.error("Unexpected problem while executing the mappings...", oth)
-          Seq(FhirMappingResult(
+          FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(Serialization.write(jo)),
+            source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.UNEXPECTED_PROBLEM,
               description = "Exception:" + oth.getMessage
             )),
             executionId = executionId,
-            projectId = fhirMappingService.projectId))
+            projectId = fhirMappingService.projectId)
       }
     results
   }

@@ -25,13 +25,14 @@ case class FhirMappingResult(
                               mappingTaskName:String,
                               mappingExpr:Option[String] = None,
                               timestamp:Timestamp,
-                              mappedResource:Option[String] = None,
+                              mappedFhirResources: Seq[MappedFhirResource] = Seq.empty,
+                              //mappedResource:Option[String] = None,
                               source:Option[String] = None,
                               error:Option[FhirMappingError] = None,
-                              fhirInteraction:Option[FhirInteraction] = None,
+                              // fhirInteraction:Option[FhirInteraction] = None,
                               executionId: Option[String] = None,
                               projectId: Option[String] = None,
-                              resourceType: Option[String] = None
+                              //  resourceType: Option[String] = None
                             ) {
   final val eventId:String = "MAPPING_RESULT"
   override def toString: String = {
@@ -69,8 +70,8 @@ case class FhirMappingResult(
     // create a new MapMarker using the marker map
     val marker: MapMarker = new MapMarker("marker", markerMap)
     // add mappedResource to the marker map if error code is INVALID_RESOURCE
-    if (mappedResource.isDefined && error.get.code == FhirMappingErrorCodes.INVALID_RESOURCE)
-      markerMap.put("mappedResource", mappedResource.get)
+//    if (mappedResource.isDefined && error.get.code == FhirMappingErrorCodes.INVALID_RESOURCE)
+//      markerMap.put("mappedResource", mappedResource.get)
     marker
   }
 
@@ -102,4 +103,43 @@ object FhirMappingErrorCodes {
   final val SERVICE_PROBLEM = "service_error"
 
   final val UNEXPECTED_PROBLEM = "unexpected_problem"
+}
+
+/**
+ * Mapped FHIR resources model after the mapping process
+ * @param mappingExpr Mapping expression that this mapping is based on
+ * @param mappedResource JSON serialization of the FHIR resource generated via the mapping
+ * @param fhirInteraction FHIR interaction details
+ */
+case class MappedFhirResource(mappingExpr:Option[String] = None,
+                              mappedResource: Option[String] = None,
+                              fhirInteraction: Option[FhirInteraction],
+                              error: Option[FhirMappingError] = None,
+                              resourceType: Option[String] = None,
+                              executionId: Option[String] = None) {
+  def toMapMarker(projectId: Option[String], jobId: String, executionId: Option[String], mappingTaskName: String): MapMarker = {
+    // create a new HashMap to store the marker attributes
+    val markerMap: java.util.Map[String, Any] = new java.util.HashMap[String, Any]()
+    // add attributes to the marker map
+    markerMap.put("jobId", jobId)
+    markerMap.put("projectId", projectId.getOrElse(""))
+    markerMap.put("executionId", executionId.getOrElse(""))
+    markerMap.put("mappingTaskName", mappingTaskName)
+    markerMap.put("errorCode", error.get.code)
+    markerMap.put("errorDesc", error.get.description)
+    markerMap.put("errorExpr", error.get.expression.getOrElse(""))
+    markerMap.put("eventId", "MAPPING_RESULT")
+    // The current timestamp is automatically added to the log entry when it is sent to Elasticsearch or written to a file.
+    // As a result, there is no need to manually add a "@timestamp" field.
+    // However, during the process of writing the log to Elasticsearch, the timestamp is rounded, resulting in a loss of precision.
+    // For example, "2024-08-28_13:54:44.740" may be rounded to "2024-08-28_13:54:44.000" in Elasticsearch.
+    // This rounding leads to the loss of crucial millisecond information, which is important for accurately sorting logs.
+    markerMap.put("@timestamp", System.currentTimeMillis.toString)
+    // create a new MapMarker using the marker map
+    val marker: MapMarker = new MapMarker("marker", markerMap)
+    // add mappedResource to the marker map if error code is INVALID_RESOURCE
+    if (mappedResource.isDefined && error.get.code == FhirMappingErrorCodes.INVALID_RESOURCE)
+      markerMap.put("mappedResource", mappedResource.get)
+    marker
+  }
 }

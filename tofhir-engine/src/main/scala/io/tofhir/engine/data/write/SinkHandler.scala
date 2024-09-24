@@ -25,18 +25,21 @@ object SinkHandler {
   def writeMappingResult(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, mappingTaskName: Option[String], df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter): Unit = {
     //Cache the dataframe
     df.cache()
+    import spark.implicits._
     //Filter out the errors
     val invalidInputs = df.filter(_.error.map(_.code).contains(FhirMappingErrorCodes.INVALID_INPUT))
     val mappingErrors = df.filter(_.error.exists(_.code != FhirMappingErrorCodes.INVALID_INPUT))
-    val mappedResults = df.filter(_.mappedResource.isDefined)
+    val mappedResults = df.filter(_.mappedFhirResources.exists(_.mappedResource.isDefined))
+    val flattenMappedResults = df.flatMap(_.mappedFhirResources).filter(_.mappedResource.isDefined)
+    // val mappedResults = df.filter(_.mappedResource.isDefined)
     //Create an accumulator to accumulate the results that cannot be written
     val accumName = s"${mappingJobExecution.jobId}:${mappingTaskName.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
-    val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
+    val fhirWriteProblemsAccum: CollectionAccumulator[MappedFhirResource] = spark.sparkContext.collectionAccumulator[MappedFhirResource](accumName)
     fhirWriteProblemsAccum.reset()
     //Write the FHIR resources
-    resourceWriter.write(spark, mappedResults, fhirWriteProblemsAccum)
-    logMappingJobResult(mappingJobExecution,mappingTaskName,mappedResults,fhirWriteProblemsAccum.value,mappingErrors,invalidInputs)
-    ErroneousRecordWriter.saveErroneousRecords(spark, mappingJobExecution, mappingTaskName, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
+    resourceWriter.write(spark, flattenMappedResults, fhirWriteProblemsAccum)
+    logMappingJobResult(mappingJobExecution, mappingTaskName, flattenMappedResults, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
+    //ErroneousRecordWriter.saveErroneousRecords(spark, mappingJobExecution, mappingTaskName, fhirWriteProblemsAccum.value, mappingErrors, invalidInputs)
     //Unpersist the data frame
     df.unpersist()
   }
@@ -80,8 +83,8 @@ object SinkHandler {
    * */
   private def logMappingJobResult(mappingJobExecution:FhirMappingJobExecution,
                                   mappingTaskName:Option[String],
-                                  fhirResources: Dataset[FhirMappingResult],
-                                  notWrittenResources:util.List[FhirMappingResult],
+                                  fhirResources: Dataset[MappedFhirResource],
+                                  notWrittenResources:util.List[MappedFhirResource],
                                   mappingErrors:Dataset[FhirMappingResult],
                                   invalidInputs:Dataset[FhirMappingResult]) = {
     //Get the not written resources
@@ -109,7 +112,12 @@ object SinkHandler {
     }
     if (numOfNotWritten > 0)
       notWrittenResources.forEach(r =>
-        logger.warn(r.copy(executionId = Some(mappingJobExecution.id)).toMapMarker,
+        logger.warn(
+          r.toMapMarker(
+          executionId = Some(mappingJobExecution.id),
+          projectId = Some(mappingJobExecution.projectId),
+          jobId = mappingJobExecution.jobId,
+          mappingTaskName = mappingTaskName.getOrElse("")),
           r.copy(executionId = Some(mappingJobExecution.id)).toString)
       )
   }

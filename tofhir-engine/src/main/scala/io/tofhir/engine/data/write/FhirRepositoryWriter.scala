@@ -36,10 +36,10 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    *
    * @param df
    */
-  override def write(spark: SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator: CollectionAccumulator[FhirMappingResult]): Unit = {
+  override def write(spark: SparkSession, df: Dataset[MappedFhirResource], problemsAccumulator: CollectionAccumulator[MappedFhirResource]): Unit = {
     logger.debug("Created FHIR resources will be written to the given FHIR repository URL:{}", sinkSettings.fhirRepoUrl)
     df
-      .foreachPartition { partition: Iterator[FhirMappingResult] =>
+      .foreachPartition { partition: Iterator[MappedFhirResource] =>
         import Execution.actorSystem
         implicit val ec: ExecutionContext = actorSystem.dispatcher
         val onFhirClient = sinkSettings.createOnFhirClient // A FhirClient for each partition
@@ -97,7 +97,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @param onFhirClient   OnFhirClient
    * @return
    */
-  private def prepareBatchRequest(mappingResults: Seq[(String, FhirMappingResult)], onFhirClient: OnFhirNetworkClient): FhirBatchTransactionRequestBuilder = {
+  private def prepareBatchRequest(mappingResults: Seq[(String, MappedFhirResource)], onFhirClient: OnFhirNetworkClient): FhirBatchTransactionRequestBuilder = {
     import io.onfhir.util.JsonFormatter._
     // Construct a FHIR batch operation from each entry
     var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
@@ -159,8 +159,8 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @return
    */
   private def executeFhirBatch(batchRequest: FhirBatchTransactionRequestBuilder,
-                               mappingResults: Seq[(String, FhirMappingResult)],
-                               problemsAccumulator: CollectionAccumulator[FhirMappingResult]
+                               mappingResults: Seq[(String, MappedFhirResource)],
+                               problemsAccumulator: CollectionAccumulator[MappedFhirResource]
                               )(implicit ec: ExecutionContext): Option[FHIRTransactionBatchBundle] = {
     try {
       Some(Await.result(batchRequest.executeAndReturnBundle(), FiniteDuration(20, TimeUnit.SECONDS)))
@@ -268,10 +268,10 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @param onFhirClient        Client for FHIR API
    * @param retry               The number of retry for persistence
    */
-  private def checkResults(mappingResultMap: Map[String, FhirMappingResult],
+  private def checkResults(mappingResultMap: Map[String, MappedFhirResource],
                            responseBundle: FHIRTransactionBatchBundle,
                            batchRequest: FhirBatchTransactionRequestBuilder,
-                           problemsAccumulator: CollectionAccumulator[FhirMappingResult],
+                           problemsAccumulator: CollectionAccumulator[MappedFhirResource],
                            onFhirClient: OnFhirNetworkClient,
                            retry: Int = 1
                           )(implicit ec: ExecutionContext): Unit = {
@@ -312,7 +312,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @param responseBundle   FHIR batch response bundle
    * @return
    */
-  private def getNonTransientErrorUUIDs(mappingResultMap: Map[String, FhirMappingResult], responseBundle: FHIRTransactionBatchBundle): Seq[String] = {
+  private def getNonTransientErrorUUIDs(mappingResultMap: Map[String, MappedFhirResource], responseBundle: FHIRTransactionBatchBundle): Seq[String] = {
     responseBundle
       .responses
       .filter(r =>
@@ -335,9 +335,9 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @param retry               The number of retry for persistence
    * @param ec
    */
-  private def retryRequestsWithTransientError(mappingResultMap: Map[String, FhirMappingResult],
+  private def retryRequestsWithTransientError(mappingResultMap: Map[String, MappedFhirResource],
                                               responseBundle: FHIRTransactionBatchBundle,
-                                              problemsAccumulator: CollectionAccumulator[FhirMappingResult],
+                                              problemsAccumulator: CollectionAccumulator[MappedFhirResource],
                                               onFhirClient: OnFhirNetworkClient,
                                               retry: Int = 1
                                              )(implicit ec: ExecutionContext): Unit = {

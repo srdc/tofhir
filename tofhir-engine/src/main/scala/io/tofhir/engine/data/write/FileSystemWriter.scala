@@ -2,7 +2,7 @@ package io.tofhir.engine.data.write
 
 import com.typesafe.scalalogging.Logger
 import FileSystemWriter.SinkContentTypes
-import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings}
+import io.tofhir.engine.model.{FhirMappingResult, FileSystemSinkSettings, MappedFhirResource}
 import org.apache.spark.sql.functions.{col, collect_list}
 import org.apache.spark.sql.types.{ArrayType, StructType}
 import org.apache.spark.sql.{DataFrameWriter, Dataset, SaveMode, SparkSession}
@@ -15,7 +15,7 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
    *
    * @param df Dataframe of serialized jsons
    */
-  override def write(spark:SparkSession, df: Dataset[FhirMappingResult], problemsAccumulator:CollectionAccumulator[FhirMappingResult]): Unit = {
+  override def write(spark:SparkSession, df: Dataset[MappedFhirResource], problemsAccumulator:CollectionAccumulator[MappedFhirResource]): Unit = {
     import spark.implicits._
     logger.debug("Created FHIR resources will be written to the given URL:{}", sinkSettings.path)
     sinkSettings.contentType match {
