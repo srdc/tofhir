@@ -27,7 +27,7 @@ class FileSystemTreeStructureEndpoint {
   private def getFolderTreeStructure: Route = {
     get {
       parameterMap { queryParams =>
-        val basePath = queryParams.getOrElse(QUERY_PARAM_BASE_PATH, "/")
+        val basePath = queryParams.getOrElse(QUERY_PARAM_BASE_PATH, ".")
         val includeFiles = queryParams.getOrElse(QUERY_PARAM_INCLUDE_FILES, "false").toBoolean
         complete {
           service.getFolderTreeStructure(basePath, includeFiles)
