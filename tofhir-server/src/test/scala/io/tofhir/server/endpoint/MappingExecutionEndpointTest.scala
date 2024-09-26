@@ -377,24 +377,29 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         // Mappings run asynchronously. Wait at most 45 seconds for mappings to complete.
         val success = waitForCondition(45) {
           fsSinkFolder.listFiles.exists(_.getName.contains("results.csv")) && {
-            // read the csv file created in the file system
-            val outputFolder: File = fsSinkFolder.listFiles.find(_.getName.contains("results.csv")).get
-            val results = sparkSession.read
-              .option("header","true")
-              .csv(outputFolder.getPath)
-            // verify the row count
-            results.count() == 1
-            // verify the content of row
-            val row = results.head()
-            row.getAs[String]("active").contentEquals("true")
-            row.getAs[String]("birthDate").contentEquals("1974-12-25")
-            row.getAs[String]("gender").contentEquals("male")
-            row.getAs[String]("homeCountry").contentEquals("Australia")
-            row.getAs[String]("id").contentEquals("db03a265-0194-460e-8625-69e25daec2d7")
-            row.getAs[String]("officialName").contentEquals("Peter Chalmers")
-            row.getAs[String]("phone").contentEquals("(03) 5555 6473")
+            // catch any exception that might throw by spark during reading the results file
+            // because the file might not be ready yet (e.g. file is created but still being written)
+            try {
+              val outputFolder = fsSinkFolder.listFiles.find(_.getName.contains("results.csv")).get
+              val results = sparkSession.read.option("header", "true").csv(outputFolder.getPath)
+              results.count() == 1 && {
+                val row = results.head()
+                val isValid = row.getAs[String]("active") == "true" &&
+                  row.getAs[String]("birthDate") == "1974-12-25" &&
+                  row.getAs[String]("gender") == "male" &&
+                  row.getAs[String]("homeCountry") == "Australia" &&
+                  row.getAs[String]("id") == "example" &&
+                  row.getAs[String]("officialName") == "Peter Chalmers" &&
+                  row.getAs[String]("phone") == "(03) 5555 6473"
+                isValid
+              }
+            }
+            catch {
+              case e: Exception => false
+            }
           }
         }
+
         if (!success) fail("Failed to find expected number of results. Either the results are not available or the number of results does not match")
       }
     }
