@@ -28,6 +28,12 @@ tags:
     description: "Represents a logical grouping for fhir definition entities"
   - name: "Fhir Path Functions"
     description: "Represents a logical grouping for fhir path function entities"
+  - name: "File System Path"
+    description: "Represents a logical grouping for file system path entities."
+  - name: "Metadata"
+    description: "Represents a logical grouping for metadata entities."
+  - name: "REDCap"
+    description: "Represents a logical grouping for REDCap function entities"
 
 
 paths:
@@ -37,7 +43,7 @@ paths:
     get:
       tags:
         - "Terminology"
-      summary: "Gets all terminologies"
+      summary: "Gets all terminologies excluding their code systems and concept maps"
       operationId: "getTerminologies"
       responses:
         '200':
@@ -48,6 +54,13 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TerminologySystem"
+                example: [{
+                  "id": "test-id",
+                  "name": "test-name",
+                  "description": "test-description",
+                  "conceptMaps": [],
+                  "codeSystems": []
+                }]
 
     post:
       tags:
@@ -211,11 +224,6 @@ paths:
           schema:
             type: string
           required: false
-        - in: query
-          name: size
-          schema:
-            type: string
-          required: false
       requestBody:
         content:
           multipart/form-data:
@@ -249,14 +257,26 @@ paths:
         - $ref: "#/components/parameters/terminologyId"
         - $ref: "#/components/parameters/conceptMapId"
       requestBody:
+        description: "
+          The array of CSV headers must include the following columns:
+          `source_system`
+          `source_code`
+          `target_system`
+          `target_code`
+          Ensure that these column names are included as currentName in the array for a successful operation.
+          Following columns are optional column names for concept maps:
+          `target_display`
+          `equivalence`
+          Any other column name is forbidden for concept maps."
         content:
           application/json:
             schema:
               type: array
               items:
-                type: string
-            example:
-              ["column-name1", "column-name2", "column-name3"]
+                $ref: "#/components/examples/CodeSystemCsvHeadersExample"
+            examples:
+              HeadersExample:
+                $ref: "#/components/examples/ConceptMapCsvHeadersExample"
       responses:
         '200':
           description: "Successful operation"
@@ -405,11 +425,6 @@ paths:
           schema:
             type: string
           required: false
-        - in: query
-          name: size
-          schema:
-            type: string
-          required: false
       requestBody:
         content:
           multipart/form-data:
@@ -443,14 +458,20 @@ paths:
         - $ref: "#/components/parameters/terminologyId"
         - $ref: "#/components/parameters/codeSystemId"
       requestBody:
+        description: "
+          The array of CSV headers must include the following columns:
+          `code`
+          `display`
+          Ensure that these column names are included as currentName in the array for a successful operation."
         content:
           application/json:
             schema:
               type: array
               items:
-                type: string
-            example:
-              ["column-name1", "column-name2", "column-name3"]
+                $ref: "#/components/schemas/CsvHeader"
+            examples:
+              HeadersExample:
+                $ref: "#/components/examples/CodeSystemCsvHeadersExample"
       responses:
         '200':
           description: "Successful operation"
@@ -579,10 +600,17 @@ paths:
     patch:
       tags:
         - "Project"
-      summary: "Updates the project with the given patch"
+      summary: "Updates the description, schemaUrlPrefix and mappingUrlPrefix project with the given patch"
       operationId: "patchProject"
       parameters:
         - $ref: '#/components/parameters/projectId'
+      requestBody:
+        description: "description, schemaUrlPrefix and mappingUrlPrefix"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchProjectSchema"
       responses:
         '200':
           description: "Successful operation"
@@ -778,6 +806,66 @@ paths:
                   $ref: "#/components/schemas/SchemaDefinition"
         '400':
           $ref: '#/components/responses/400BadRequest'
+  
+  /projects/{projectId}/schemas/import:
+    post:
+      tags:
+        - Schema
+      summary: Imports a schema from the specified FHIR server using the provided settings.
+      operationId: importFhirProfile
+      parameters:
+        - $ref: '#/components/parameters/projectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportSchemaSettings"
+            examples:
+              ImportSchemaSettings:
+                $ref: '#/components/examples/ImportSchemaSettingsExample'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SchemaDefinition"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+  
+  /projects/{projectId}/schemas/import-zip:
+    post:
+      tags:
+        - Schema
+      summary: Import FHIR profiles (structure definitions) from a ZIP file uploaded to the server.
+      operationId: importFhirProfileFromZip
+      parameters:
+        - $ref: '#/components/parameters/projectId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: "The ZIP file containing FHIR structure definitions."
+        description: "Upload a ZIP file containing FHIR structure definitions for schema import."
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SchemaDefinition"
+
 
   # Beginning of the Mappings tag
   /projects/{projectId}/mappings:
@@ -920,6 +1008,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/FhirMappingJob"
+            examples:
+              FhirMappingJobExample:
+                $ref: "#/components/examples/FhirMappingJobExample"
         description: Fhir mappping job to be created
       responses:
         '201':
@@ -963,6 +1054,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/FhirMappingJob"
+            examples:
+              FhirMappingJobExample:
+                $ref: "#/components/examples/FhirMappingJobExample"
       responses:
         '200':
           description: Mapping job updated successfully
@@ -1047,33 +1141,6 @@ paths:
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
-        # Filter parameters for lazy load
-        - name: page
-          in: query
-          required: true
-          description: requested page of the executions
-          schema:
-            type: integer
-            example: 1
-        - name: dateBefore
-          in: query
-          required: false
-          description: Executions started before this date
-          schema:
-            type: string
-        - name: dateAfter
-          in: query
-          required: false
-          description: Executions started after this date
-          schema:
-            type: string
-        - name: errorStatuses
-          in: query
-          required: false
-          description: Request type of executions written as comma seperated
-          schema:
-            type: string
-
       responses:
         '200':
           description: Successful operation
@@ -1087,54 +1154,13 @@ paths:
     delete:
       tags:
         - Execution
-      summary: Stops executions of the mapping job
+      summary: Stops all executions of the mapping job
       parameters:
         - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/jobId"
       responses:
         '200':
           description: Executions stopped successfully
-        '404':
-          $ref: "#/components/responses/404NotFound"
-
-
-  /projects/{projectId}/jobs/{jobId}/executions/{executionId}:
-    get:
-      tags:
-        - Execution
-      summary: Gets the details of the specified execution
-      parameters:
-        - $ref: "#/components/parameters/projectId"
-        - $ref: "#/components/parameters/jobId"
-        - $ref: "#/components/parameters/executionId"
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Execution"
-        '404':
-          $ref: "#/components/responses/404NotFound"
-
-  /projects/{projectId}/jobs/{jobId}/executions/{executionId}/logs:
-    get:
-      tags:
-        - Execution
-      summary: Gets execution logs
-      parameters:
-        - $ref: "#/components/parameters/projectId"
-        - $ref: "#/components/parameters/jobId"
-        - $ref: "#/components/parameters/executionId"
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Log"
         '404':
           $ref: "#/components/responses/404NotFound"
 
@@ -1168,6 +1194,19 @@ paths:
       responses:
         '200':
           description: Job execution stopped successfully
+  
+  /projects/{projectId}/jobs/{jobId}/executions/{executionId}/deschedule:
+    delete:
+      tags:
+        - Execution
+      summary: Stops the scheduled job execution
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/jobId"
+        - $ref: "#/components/parameters/executionId"
+      responses:
+        '200':
+          description: Job execution descheduled successfull
 
   /projects/{projectId}/jobs/{jobId}/executions/{executionId}/mappings/{mappingTaskName}/stop:
     delete:
@@ -1282,11 +1321,6 @@ paths:
           schema:
             type: string
           required: false
-        - in: query
-          name: size
-          schema:
-            type: string
-          required: false
       requestBody:
         content:
           multipart/form-data:
@@ -1314,7 +1348,7 @@ paths:
     post:
       tags:
         - "Mapping Context"
-      summary: "Updates the header of mapping context CSV"
+      summary: "Updates the header of mapping context CSV. This request must include all headers of the csv content. Otherwise, data may be lost."
       operationId: "updateMappingContextHeader"
       parameters:
         - $ref: "#/components/parameters/projectId"
@@ -1326,8 +1360,9 @@ paths:
               type: array
               items:
                 type: string
-            example:
-              ["column-name1", "column-name2", "column-name3"]
+            examples:
+              HeaderExample:
+                $ref: "#/components/examples/ConceptMapCsvHeadersExample"
       responses:
         '200':
           description: "Successful operation"
@@ -1434,12 +1469,36 @@ paths:
         '500':
           description: Proxy request failed
 
+  /base-profiles:
+    get:
+      tags:
+        - Fhir Definition
+      summary: Gets FHIR Definitions
+      description: If a specific profile is provided as a query parameter, the response will include only that profile's definition. If no profile is specified, the response will contain all base profiles for the given FHIR version.
+      parameters:
+        - $ref: "#/components/parameters/fhirVersion"
+        - $ref: "#/components/parameters/profile"
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SimpleStructureDefinition'
+        '400':
+          $ref: "#/components/responses/400BadRequest"
+
   # Beginning of the Fhir Path Functions tag
   /fhir-path-functions:
     get:
       tags:
         - Fhir Path Functions
       summary: Returns the documentations of Fhir path functions
+      parameters:
+        - $ref: '#/components/parameters/base_path'
+        - $ref: '#/components/parameters/include_files'
       responses:
         '200':
           description: Successful operation
@@ -1467,6 +1526,7 @@ paths:
               examples:
                 FilePathNodeExample:
                   $ref: "#/components/examples/FilePathNodeExample"
+
   # Beginning of the metadata tag
   /metadata:
     get:
@@ -1483,6 +1543,84 @@ paths:
               examples:
                 MetadataExample:
                   $ref: "#/components/examples/MetadataExample"
+
+  # Beginning of the REDCap tag
+  /redcap:
+    get:
+      summary: Retrieve REDCap Projects
+      description: Retrieves the list of REDCap project configurations from the tofhir-redcap service.
+      operationId: getRedCapProjects
+      tags:
+        - REDCap
+      responses:
+        '200':
+          description: A list of REDCap projects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RedCapProjectConfig'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    post:
+      summary: Save REDCap Projects
+      description: |
+        Saves the provided REDCap project configurations to the tofhir-redcap service.
+      operationId: saveRedCapProjects
+      tags:
+        - REDCap
+      requestBody:
+        description: List of REDCap project configurations to save.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/RedCapProjectConfig'
+      responses:
+        '200':
+          description: Projects saved successfully.
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Projects saved successfully."
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '415':
+          $ref: '#/components/responses/415UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+
+  /redcap/notification:
+    get:
+      summary: Retrieve REDCap Notification URL
+      description: |
+        Fetches the notification URL used by the REDCap project. The source of this URL is configured in the tofhir-redcap service.
+
+      operationId: getNotificationUrl
+      tags:
+        - REDCap
+      responses:
+        '200':
+          description: Notification URL returned successfully.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "https://example.com/redcap/notification"
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
 
 
 components:
@@ -1570,24 +1708,51 @@ components:
       required:
         - id
         - name
-        - url
       properties:
         id:
-          type: "string"
-          description: "Identifier of the project"
-          pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-        url:
           type: string
-          description: "Url of the project derived from the name"
-          example: "www.ProjectName.com"
-
+          description: "Unique identifier for the project. First given name to the project is used as id."
+          example: "projectName"
         name:
-          type: "string"
-          description: "Name of the project"
+          type: string
+          description: "Name of the project."
           example: "ProjectName"
         description:
-          type: "string"
-          description: "Description of the project"
+          type: string
+          description: "A detailed description of the project."
+          example: "This project is aimed at ..."
+        schemaUrlPrefix:
+          type: string
+          description: "Prefix (beginning) of the URLs to be used while creating schema definitions within this project."
+          example: "https://aiccelerate.eu/fhir/StructureDefinition/"
+        mappingUrlPrefix:
+          type: string
+          description: "Prefix (beginning) of the URLs to be used while creating mapping definitions within this project."
+          example: "https://aiccelerate.eu/fhir/mappings/pilot1/"
+        schemas:
+          type: array
+          description: "List of schema definitions associated with the project."
+          items:
+            $ref: "#/components/schemas/SchemaDefinition"
+          example: []
+        mappings:
+          type: array
+          description: "List of mapping definitions associated with the project."
+          items:
+            $ref: "#/components/schemas/FhirMapping"
+          example: []
+        mappingContext:
+          type: array
+          description: "List of identifiers for mapping contexts defined in this project."
+          items:
+            type: string
+          example: []
+        mappingJobs:
+          type: array
+          description: "List of mapping jobs defined in this project."
+          items:
+            $ref: "#/components/schemas/FhirMappingJob"
+          example: []
 
     SchemaDefinition:
       type: "object"
@@ -1603,22 +1768,34 @@ components:
         url:
           type: "string"
           description: "Url of the schema"
-          example: "https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-anesthesia-observations"
+          example: "https://aiccelerate.eu/fhir/StructureDefinition/Schema-id"
+        version:
+          description: "Major FHIR version (must be either R4 or R5)"
+          type: string
+          enum:
+            - R4
+            - R5
         type:
           type: "string"
           description: "Type of the schema"
-          example: "Ext-plt1-anesthesia-observations"
+          example: "Schema-id"
+        description:
+          type: "string"
+          description: "Description of the schema"
+          example: "Sample description"
         name:
           type: "string"
           description: "Name of the schema"
-          example: "Ext-plt1-anesthesia-observations"
+          example: "Schema-id"
         rootDefinition:
-          $ref: '#/components/schemas/SimpleStructureDefinition'
+          example: {}
 
         fieldDefinitions:
           type: array
           items:
             $ref: '#/components/schemas/SimpleStructureDefinition'
+          example:
+            $ref: '#/components/examples/SchemaFieldDefinitionsExample'
 
     SimpleStructureDefinition:
       type: "object"
@@ -1634,6 +1811,11 @@ components:
           type: string
         path:
           type: string
+        version:
+          type: string
+          enum:
+            - R4
+            - R5
         dataTypes:
           type: array
           items:
@@ -1822,75 +2004,73 @@ components:
           type: string
           description: "Name for source binding"
           example: "source"
-        sourceSettings:
-          $ref: '#/components/schemas/MappingJobSourceSettings'
+        mappingJobSourceSettings:
+          type: object
+          properties:
+            source:
+              oneOf:
+                - $ref: '#/components/schemas/FileSystemSourceSettings'
+                - $ref: '#/components/schemas/SqlSourceSettings'
         sourceBinding:
           oneOf:
             - $ref: "#/components/schemas/FileSystemSource"
             - $ref: "#/components/schemas/SqlSource"
-            - $ref: "#/components/schemas/KafkaSource"
       required:
         - name
         - sourceSettings
-        - sourceBinding
+        - mappingJobSourceSettings
+
+    SourceSettings:
+      type: object
+      description: Array including data sources of the job
+      additionalProperties:
+        oneOf:
+          - $ref: "#/components/schemas/FileSystemSourceSettings"
+          - $ref: "#/components/schemas/SqlSourceSettings"
+          - $ref: "#/components/schemas/KafkaSourceSettings"
+          - $ref: "#/components/schemas/FhirServerSourceSettings"
 
     MappingJobSourceSettings:
       type: object
-      description: Factory class for creating a data source from a JSON object"
-      properties:
-        source:
-          oneOf:
-            - $ref: "#/components/schemas/FileSystemSourceSettings"
-            - $ref: "#/components/schemas/SqlSourceSettings"
-            - $ref: "#/components/schemas/KafkaSourceSettings"
-      required:
-        - source
-
-    BaseDataSource:
-      type: object
-      description: "Base class for data sources."
+      description: Interface for data source settings/configurations of a mapping job
       properties:
         name:
           type: string
-          description: "Human friendly name for the source organization for data source"
-          example: "pilot2-source"
+          description: Human friendly name for the source organization for data source
+          example: "source"
         sourceUri:
           type: string
-          description: "Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)"
-          example: "https://aiccelerate.eu/data-integration-suite/pilot2-data"
+          description: Computer friendly canonical url indicating the source of the data (May be used for Resource.meta.source)
+          example: "https://aiccelerate.eu/data-integration-suite/test-data"
         asStream:
           type: boolean
-          description: "Indicates whether the source is a stream or not"
+          description: Whether the data is coming in streaming mode
+          example: false
         jsonClass:
           type: string
-          description: "Indicates the type of the data source (ex: FileSystemSourceSettings, SqlSourceSettings, KafkaSourceSettings)"
+          description: "Indicates the type of the data source (ex: FileSystemSourceSettings)"
           enum:
             - FileSystemSourceSettings
             - SqlSourceSettings
             - KafkaSourceSettings
-      required:
-        - name
-        - sourceUri
-        - asStream
-        - jsonClass
+            - FhirServerSourceSettings
 
     FileSystemSourceSettings:
       description: "Context/configuration for the source of the mapping-job that will read the source data from a file system"
       allOf:
-        - $ref: '#/components/schemas/BaseDataSource'
+        - $ref: '#/components/schemas/MappingJobSourceSettings'
         - type: object
           properties:
             dataFolderPath:
               type: string
               description: "The data folder path of the file source"
-              example: "D:/codes/onfhir-io/tofhir/data"
+              example: "test-data/pilot1"
           required:
             - dataFolderPath
-
     SqlSourceSettings:
       description: "Context/configuration for the source of the mapping-job that will read the source data from a SQL source"
       allOf:
-        - $ref: '#/components/schemas/BaseDataSource'
+        - $ref: '#/components/schemas/MappingJobSourceSettings'
         - type: object
           properties:
             databaseUrl:
@@ -1909,23 +2089,39 @@ components:
             - databaseUrl
             - username
             - password
-
     KafkaSourceSettings:
-      description: "Context/configuration for the source of the mapping-job that will read the source data from a kafka as stream"
+      description: "Context/configuration for the source of the mapping-job that will read the source data from Kafka as a stream"
       allOf:
-        - $ref: '#/components/schemas/BaseDataSource'
+        - $ref: '#/components/schemas/MappingJobSourceSettings'
         - type: object
           properties:
             bootstrapServers:
-              description: "Kafka bootstrap server(s) with port, may be comma seperated list (localhost:9092,localhost:9091)"
               type: string
+              description: "Kafka bootstrap server(s) with port, may be comma-separated list (localhost:9092,localhost:9091)"
             asRedCap:
-              description: "Indicate whether it is a RedCap source"
               type: boolean
+              description: "Indicate whether it is a RedCap source"
           required:
             - bootstrapServers
+    FhirServerSourceSettings:
+      description: "Context/configuration for the source of the mapping-job that will read the source data from a FHIR server"
+      allOf:
+        - $ref: '#/components/schemas/MappingJobSourceSettings'
+        - type: object
+          properties:
+            serverUrl:
+              type: string
+              description: "URL of the FHIR server"
+              example: "https://fhir.example.com"
+            securitySettings:
+              oneOf:
+                - $ref: "#/components/schemas/BearerTokenAuthorizationSettings"
+                - $ref: "#/components/schemas/BasicAuthenticationSettings"
+                - $ref: "#/components/schemas/FixedTokenAuthenticationSettings"
+          required:
+            - serverUrl
 
-    MappingBase:
+    MappingSourceBinding:
       type: object
       properties:
         jsonClass:
@@ -1934,27 +2130,31 @@ components:
             - FileSystemSource
             - SqlSource
             - KafkaSource
+            - FhirServerSource
           description: "Indicates the type of the mapping (e.g., FileSystemSource, SqlSource, KafkaSource)"
         preprocessSql:
           type: string
           description: "Indicates preprocess SQL query"
-          example: ""
-        options:
-          type: object
-          description: "Indicates Spark options for the mapping"
+          example: "null"
+        sourceRef:
+          type: string
+          description: "Reference to the source specified in the sourceSettings of a mapping job."
+          example: "source1"
       required:
         - jsonClass
+        - preprocessSql
+        - sourceRef
 
     FileSystemSource:
       description: "Defines file system source configurations of a mapping in the mapping-job"
       allOf:
-        - $ref: '#/components/schemas/MappingBase'
+        - $ref: '#/components/schemas/MappingSourceBinding'
         - type: object
           properties:
             path:
               type: string
-              description: "Path of the file inside the data folder"
-              example: "C:\\ToFhir"
+              description: "File path to the source file or folder, e.g., 'patients.csv' or 'patients'."
+              example: "patients.csv"
             contentType:
               type: string
               enum:
@@ -1963,13 +2163,15 @@ components:
                 - parquet
                 - json
               description: "Content type of configured file inside of the data folder"
+            options:
+              $ref: "#/components/schemas/SparkOptions"
           required:
             - path
 
     SqlSource:
       description: "Defines SQL source configurations of a mapping in the mapping-job"
       allOf:
-        - $ref: '#/components/schemas/MappingBase'
+        - $ref: '#/components/schemas/MappingSourceBinding'
         - type: object
           properties:
             tableName:
@@ -1980,26 +2182,50 @@ components:
               type: string
               description: "Query to execute in the database"
               example: "SELECT * FROM table1"
+            options:
+              $ref: "#/components/schemas/SparkOptions"
+          required:
+            - tableName
+            - query
 
     KafkaSource:
       description: "Defines Kafka source configurations of a mapping in the mapping-job"
       allOf:
-        - $ref: '#/components/schemas/MappingBase'
+        - $ref: '#/components/schemas/MappingSourceBinding'
         - type: object
           properties:
             topicName:
               type: string
-              description: "Topic(s) to subscribe, may be comma seperated string list (topic1,topic2)"
+              description: "Topic(s) to subscribe to, may be comma-separated string list (topic1,topic2)"
             groupId:
               type: string
               description: "Kafka group id to use in Kafka consumer while reading from Kafka"
             startingOffsets:
               type: string
               description: "The start point when a query is started"
+            options:
+              $ref: "#/components/schemas/SparkOptions"
           required:
             - topicName
             - groupId
             - startingOffsets
+
+    FhirServerSource:
+      description: "Defines FHIR server source configurations of a mapping in the mapping-job"
+      allOf:
+        - $ref: '#/components/schemas/MappingSourceBinding'
+        - type: object
+          properties:
+            resourceType:
+              type: string
+              description: "Type of FHIR resource to query."
+              example: "Patient"
+            query:
+              type: string
+              description: "Optional query string to filter the FHIR resources."
+              example: "gender=male"
+          required:
+            - resourceType
 
     FhirMapping:
       type: object
@@ -2052,6 +2278,9 @@ components:
     FhirMappingExpression:
       type: object
       properties:
+        description:
+          type: string
+          example: Sample description
         precondition:
           allOf:
             - $ref: "#/components/schemas/FhirExpression"
@@ -2138,8 +2367,8 @@ components:
         - category
 
     FhirInteraction:
-      description: "Provides the details about FHIR interaction to persist the new information"
       type: object
+      description: "Provides the details about FHIR interaction to persist the new information"
       properties:
         type:
           type: string
@@ -2160,31 +2389,34 @@ components:
       properties:
         id:
           type: string
+          description: "Unique identifier for the mapping job"
           example: "pilot-example"
         name:
           type: string
-          example: "pilot-example"
+          description: "The name given by the user"
+          example: "Pilot-example"
         sourceSettings:
-          $ref: "#/components/schemas/MappingJobSourceSettings"
+          $ref: "#/components/schemas/SourceSettings"
         sinkSettings:
           $ref: "#/components/schemas/FhirSinkSettings"
         terminologyServiceSettings:
           oneOf:
             - $ref: "#/components/schemas/LocalFhirTerminologyServiceSettings"
+            - $ref: "#/components/schemas/FhirRepositorySinkSettings"
         identityServiceSettings:
-          allOf:
-            - $ref: "#/components/schemas/FhirSinkSettings"
-          description: "Interface for settings for identity service"
+          $ref: "#/components/schemas/FhirRepositorySinkSettings"
         mappings:
           type: array
           items:
-            $ref: "#/components/schemas/FhirMappingTask"
+            $ref: "#/components/schemas/MappingTask"
         schedulingSettings:
           $ref: "#/components/schemas/SchedulingSettings"
         dataProcessingSettings:
           $ref: "#/components/schemas/DataProcessingSettings"
         useFhirSinkAsIdentityService:
           type: boolean
+          description: If true it means the FHIR repository to write the mapped resources where the configuration is given in sink settings will be used as identity service (Override identityServiceSettings if given)
+          example: false
       required:
         - id
         - sinkSettings
@@ -2195,8 +2427,8 @@ components:
       type: object
       description: "Common interface for sink settings"
       oneOf:
-        - $ref: "#/components/schemas/FhirRepositorySinkSettings"
         - $ref: "#/components/schemas/FileSystemSinkSettings"
+        - $ref: "#/components/schemas/FhirRepositorySinkSettings"
 
     FileSystemSinkSettings:
       type: object
@@ -2208,15 +2440,26 @@ components:
         path:
           type: string
           description: "Path to the folder or file to write the resources"
+          example: "/path/to/folder"
         contentType:
           type: string
           description: "Content type of the sink"
+          example: "ndjson"
         numOfPartitions:
           type: integer
           description: "Number of partitions for the file (for distributed fs)"
         options:
-          type: string
-          description: "Further options (Spark data source write options)"
+          $ref: "#/components/schemas/SparkOptions"
+        partitionByResourceType:
+          type: boolean
+          description: "Flag to determine whether to partition the output files by FHIR resource type."
+        partitioningColumns:
+          type: object
+          description: "A map of resource types to a list of columns to partition by"
+          additionalProperties:
+            type: array
+            items:
+              type: string
       required:
         - jsonClass
         - path
@@ -2234,7 +2477,7 @@ components:
           example: "http://localhost:8081/fhir"
         securitySettings:
           type: object
-          description: "Security settings for Fhir Repository"
+          description: "File format if not inferred from the path"
           oneOf:
             - $ref: "#/components/schemas/BearerTokenAuthorizationSettings"
             - $ref: "#/components/schemas/BasicAuthenticationSettings"
@@ -2307,6 +2550,22 @@ components:
       required:
         - token
 
+    ImportSchemaSettings:
+      type: object
+      properties:
+        baseUrl:
+          type: string
+          description: "The base URL of the FHIR server from which to import the schema."
+          example: "https://fhir.server.com"
+        resourceId:
+          type: string
+          description: "The ID of the resource representing the schema i.e. StructureDefinition to be imported."
+        securitySettings:
+          $ref: '#/components/schemas/FhirRepositorySinkSettings'
+      required:
+        - baseUrl
+        - resourceId
+
     LocalFhirTerminologyServiceSettings:
       type: object
       description: "A local terminology service where each concept map is provided via a CSV file"
@@ -2373,10 +2632,14 @@ components:
         - name
         - codeSystem
 
-    FhirMappingTask:
+    MappingTask:
       description: "FHIR Mapping task instance"
       type: object
       properties:
+        name:
+          type: string
+          description: "Name of the given FhirMappingTask"
+          example: "example"
         mappingRef:
           type: string
           description: "Canonical URL of the FhirMapping definition to execute"
@@ -2384,12 +2647,12 @@ components:
         sourceBinding:
           type: object
           description: "Provide details how to load each source data for the mapping"
-          properties:
-            source:
-              anyOf:
-                - $ref: "#/components/schemas/FileSystemSource"
-                - $ref: "#/components/schemas/SqlSource"
-                - $ref: "#/components/schemas/KafkaSource"
+          additionalProperties:
+            oneOf:
+              - $ref: "#/components/schemas/FileSystemSource"
+              - $ref: "#/components/schemas/SqlSource"
+              - $ref: "#/components/schemas/KafkaSource"
+              - $ref: "#/components/schemas/FhirServerSource"
 
     SchedulingSettings:
       type: object
@@ -2398,9 +2661,10 @@ components:
         cronExpression:
           type: string
           description: "A UNIX crontab-like pattern is a string split in five space separated parts"
-        initialTime:
+        jsonClass:
           type: string
-          description: "If specified, toFhir generates a time range between initial time and next run time of task"
+          description: "Specifies the class of this object."
+          example: "SchedulingSettings"
       required:
         - cronExpression
 
@@ -2444,130 +2708,17 @@ components:
           type: string
           description: "Identifier of the execution"
           example: "c531d5b0-40fc-42a9-8f2d-c6105e3a5d39"
-        mappingTaskNames:
-          type: array
-          items:
-            type: string
-            description: "Name of the mappingTask runned in the execution"
-            example: "anesthesia-observations-mapping"
-        startTime:
-          type: string
-          description: "Start time of the execution"
-          example: "2024-01-26T10:19:39.538+03:00"
-        errorStatus:
-          type: string
-          description: "Result of the the mapping job"
-          enum:
-            - "SUCCESS"
-            - "FAILURE"
-            - "PARTIAL_SUCCESS"
-            - "STARTED"
-    Log:
-      type: object
-      description: "Logs of the individual executions"
-      properties:
-        "@timestamp":
-          type: string
-          description: "Timestamp of the event"
-          example: "2024-01-26T10:19:39.538+03:00"
-        errorCode:
-          type: string
-          description: "Error code, if any"
-        errorDesc:
-          type: string
-          description: "Error description, if any"
-        errorExpr:
-          type: string
-          description: "Expression that causes error, if any"
-        eventId:
-          type: string
-          description: "Identifier of the event"
-          example: "MAPPING_JOB_RESULT"
-        executionId:
-          type: string
-          description: "Identifier of the execution"
-          example: "c531d5b0-40fc-42a9-8f2d-c6105e3a5d39"
-        jobId:
-          type: string
-          description: "Identifier of the job"
-          example: "pilot1"
-        level:
-          type: string
-          description: "Level of the log"
-          example: "INFO"
-        logger_name:
-          type: string
-          description: "Name of the logger"
-          example: "io.tofhir.engine.mapping.job.FhirMappingJobManager"
-        mappedResource:
-          type: string
-          description: "Mapped resource, if any"
-        mappingExpr:
-          type: string
-          description: "Mapping expression, if any"
-        mappingTaskName:
-          type: string
-          description: "Name of the mappingTask"
-          example: "anesthesia-observations-mapping"
-        message:
-          type: string
-          description: "Log message"
-          example: "toFHIR chunk mapping result (STARTED) for execution 'c531d5b0-40fc-42a9-8f2d-c6105e3a5d39' of job 'pilot1' in project 'pilot1'"
-        numOfFailedWrites:
-          type: integer
-          description: "Number of failed writes, -1 if there is an error"
-          example: -1
-        numOfFhirResources:
-          type: integer
-          description: "Number of written FHIR resources, -1 if there is an error"
-          example: -1
-        numOfInvalids:
-          type: integer
-          description: "Number of invalid rows, -1 if there is an error"
-          example: -1
-        numOfNotMapped:
-          type: integer
-          description: "Number of not mapped rows, -1 if there is an error"
-          example: -1
-        projectId:
-          type: string
-          description: "Identifier of the project"
-          example: "pilot1"
-        result:
-          type: string
-          description: "Result of the mapping job"
-          example: "STARTED"
-        source:
-          type: string
-          description: "Source of the error, if any"
-        stack_trace:
-          type: string
-          description: "Stack trace of the error, if any"
-        error_logs:
-          type: array
-          description: "Logs of the errors, if any"
-          items:
-            $ref: "#/components/schemas/ErrorLog"
-    ErrorLog:
-      type: object
-      description: "Logs of the errors"
-      properties:
-        errorCode:
-          type: string
-          description: "Error code"
-          example: "mapping_error"
-        errorDesc:
-          type: string
-          description: "Error description"
-          example: "FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression"
-        message:
-          type: string
-          description: "Detailed error message"
-          example: "Mapping failure (mapping_error) for job 'pilot1' and mapping 'https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping' within expression 'Expression: result. Error: FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression' execution 'c531d5b0-40fc-42a9-8f2d-c6105e3a5d39'!\n\tSource: {\"pid\":\"p1\",\"code\":\"J13\",\"codeDisplay\":\"Pneumonia due to Streptococcus pneumoniae\",\"onsetDateTime\":\"2012-10-15\",\"abatementDateTime\":null,\"encounterId\":null,\"diagnosisType\":\"main\",\"isProlonged\":true,\"certainity\":\"confirmed\",\"asserter\":null}\n\tError: FHIR path expression returns empty although value is not marked as optional! Please use '?' mark in placeholder e.g. {{? <fhir-path-expression>}} or correct your expression\n\tExpression: Hello"
-        mappingUrl:
-          type: string
-          description: "URL of the mapping"
-          example: "https://aiccelerate.eu/fhir/mappings/pilot1/condition-mapping"
+      oneOf:
+        - properties:
+            runningStatus:
+              type: boolean
+              description: "Indicates whether the job is currently running"
+              example: true
+        - properties:
+            scheduled:
+              type: boolean
+              description: "Indicates whether the job is scheduled"
+              example: true
 
     TestResourceCreationRequest:
       type: object
@@ -2575,7 +2726,11 @@ components:
       properties:
         fhirMappingTask:
           allOf:
-            - $ref: "#/components/schemas/FhirMappingTask"
+            - $ref: "#/components/schemas/MappingTask"
+            - type: object
+              properties:
+                mapping:
+                  $ref: "#/components/schemas/FhirMapping"
           description: "task to be used for testing"
         resourceFilter:
           $ref: "#/components/schemas/ResourceFilter"
@@ -2701,6 +2856,55 @@ components:
           type: number
           description: "The period (in milliseconds) to run the archiving task for file streaming jobs."
 
+    CsvHeader:
+      type: object
+      description: Header of a csv column
+      properties:
+        currentName:
+          type: string
+          description: "The current name of the header."
+          example: "patient-id"
+        previousName:
+          type: string
+          description: "The previously saved name of the header, used for column name change without data loss"
+          example: "id"
+
+    # Fields that is used while editing a project
+    PatchProjectSchema:
+      type: object
+      properties:
+        description:
+          type: string
+          description: "A detailed description of the project."
+          example: "This project is aimed at ..."
+        schemaUrlPrefix:
+          type: string
+          description: "Prefix (beginning) of the URLs to be used while creating schema definitions within this project."
+          example: "https://aiccelerate.eu/fhir/StructureDefinition/"
+        mappingUrlPrefix:
+          type: string
+          description: "Prefix (beginning) of the URLs to be used while creating mapping definitions within this project."
+          example: "https://aiccelerate.eu/fhir/mappings/pilot1/"
+
+    SparkOptions:
+      type: object
+      description: Options used by Spark while reading data from File system, SQL or Kafka
+      additionalProperties:
+        type: string
+
+    RedCapProjectConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the REDCap project.
+        token:
+          type: string
+          description: The API token used for authentication with REDCap.
+      required:
+        - id
+        - token
+
   # HTTP responses for requests
   responses:
     400BadRequest:
@@ -2711,6 +2915,8 @@ components:
       description: "Given resource does not exist"
     415UnsupportedMediaType:
       description: "Given resource is not a valid application/json instance"
+    500InternalServerError:
+      description: "An unexpected error occurred on the server."
 
   # Path and query parameters for requests
   parameters:
@@ -2720,8 +2926,6 @@ components:
       required: true
       schema:
         type: string
-        format: uuid
-        pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
       description: "Identifier of the project"
 
     schemaId:
@@ -2730,8 +2934,6 @@ components:
       required: true
       schema:
         type: string
-        format: uuid
-        pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
       description: "Identifier of the schema"
 
     format:
@@ -2788,6 +2990,7 @@ components:
       name: "mappingTaskName"
       schema:
         type: string
+        format: url
       required: true
       description: "Name of a mappingTask"
 
@@ -2831,6 +3034,10 @@ components:
       description: Query parameter
       schema:
         type: string
+        enum:
+          - rtypes
+          - profiles
+          - elements
 
     rtype:
       name: rtype
@@ -2853,6 +3060,35 @@ components:
       description: FHIR validation URL
       schema:
         type: string
+    
+    base_path:
+      name: base_path
+      in: query
+      required: false
+      description: The base path of the file system from which to retrieve the folder tree structure. Defaults to the root ("/").
+      schema:
+        type: string
+        default: "/"
+    
+    fhirVersion:
+      name: fhirVersion
+      in: query
+      required: true
+      description: Major FHIR version (must be either R4 or R5)
+      schema:
+        type: string
+        enum:
+          - R4
+          - R5
+    
+    include_files:
+      name: include_files
+      in: query
+      required: false
+      description: Boolean flag indicating whether to include files in the folder tree structure. Defaults to `false`.
+      schema:
+        type: boolean
+        default: false
 
   # Examples to use in the swagger api
   examples:
@@ -2975,6 +3211,7 @@ components:
         url: https://aiccelerate.eu/fhir/StructureDefinition/Ext-plt1-condition-test
         type: Ext-plt1-condition-test
         name: Ext-plt1-condition-test
+        version: R4
         rootDefinition:
           id: Ext-plt1-condition-test
           path: Ext-plt1-condition-test
@@ -3105,3 +3342,220 @@ components:
                 - code: id
                   profile:
                     - http://hl7.org/fhir/StructureDefinition/id
+    
+    # Example response for the path: POST, /terminologies/{terminologyId}/code-systems/{codeSystemId}/header
+    CodeSystemCsvHeadersExample:
+      summary: "Example of code system headers which is used to update csv headers"
+      value:
+        - currentName: "code"
+          previousName: "code"
+        - currentName: "display"
+          previousName: "display"
+        - currentName: "new_column"
+          previousName: "new_column"
+        - currentName: "new_name"
+          previousName: "old_name"
+    
+    # Example response for the path: POST, /terminologies/{terminologyId}/concept-maps/{conceptMapId}/header
+    ConceptMapCsvHeadersExample:
+      summary: "Example of concept map headers which is used to update csv headers"
+      value:
+        - currentName: "source_system"
+          previousName: "source_system"
+        - currentName: "source_code"
+          previousName: "source_code"
+        - currentName: "target_system"
+          previousName: "target_system"
+        - currentName: "target_code"
+          previousName: "target_code"
+        - currentName: "new_name"
+          previousName: "target_display"
+    
+    # Example settings to import schema        
+    ImportSchemaSettingsExample:
+      value:
+        baseUrl: "fhir/example"
+        resourceId: "structureDefinitionId"
+        securitySettings:
+          jsonClass: "BasicAuthenticationSettings"
+          username: "username"
+          password: "password"
+    
+    # An example of schema field definitions      
+    SchemaFieldDefinitionsExample:
+      value:
+        - id: pid
+          path: Ext-plt1-anesthesia-observations.pid
+          dataTypes:
+            - dataType: id
+              profiles:
+                - http://hl7.org/fhir/StructureDefinition/id
+          isPrimitive: true
+          isChoiceRoot: false
+          isArray: false
+          minCardinality: 1
+          maxCardinality: 1
+          short: Patient identifier
+          definition: Unique patient identifier (a pseudonym)
+          elements: [ ]
+        - id: encounterId
+          path: Ext-plt1-anesthesia-observations.encounterId
+          dataTypes:
+            - dataType: id
+              profiles:
+                - http://hl7.org/fhir/StructureDefinition/id
+          isPrimitive: true
+          isChoiceRoot: false
+          isArray: false
+          minCardinality: 1
+          maxCardinality: 1
+          short: Encounter id
+          definition: Reference to the encounter that this assessment is done
+          elements: [ ]
+        - id: time
+          path: Ext-plt1-anesthesia-observations.time
+          dataTypes:
+            - dataType: dateTime
+              profiles:
+                - http://hl7.org/fhir/StructureDefinition/dateTime
+          isPrimitive: true
+          isChoiceRoot: false
+          isArray: false
+          minCardinality: 1
+          maxCardinality: 1
+          short: Time of evaluation
+          definition: Date or dateTime that this evaluation is done
+          elements: [ ]
+        - id: v1
+          path: Ext-plt1-anesthesia-observations.v1
+          dataTypes:
+            - dataType: decimal
+              profiles:
+                - http://hl7.org/fhir/StructureDefinition/decimal
+          isPrimitive: true
+          isChoiceRoot: false
+          isArray: false
+          minCardinality: 0
+          maxCardinality: 1
+          short: FiSevofl (%)
+          definition: FiSevofl (%)
+          elements: [ ]
+        - id: v2
+          path: Ext-plt1-anesthesia-observations.v2
+          dataTypes:
+            - dataType: decimal
+              profiles:
+                - http://hl7.org/fhir/StructureDefinition/decimal
+          isPrimitive: true
+          isChoiceRoot: false
+          isArray: false
+          minCardinality: 0
+          maxCardinality: 1
+          short: FiDesfl (%)
+          definition: FiDesfl (%)
+          elements: [ ]
+    
+    FhirMappingJobExample:
+      value:
+        id: "test-name"
+        name: "test-name"
+        useFhirSinkAsIdentityService: false
+        sourceSettings:
+          source1:
+            name: "source1"
+            sourceUri: "suri"
+            asStream: false
+            jsonClass: "FileSystemSourceSettings"
+            dataFolderPath: "test-data"
+          source2:
+            name: "source2"
+            sourceUri: "suri"
+            jsonClass: "SqlSourceSettings"
+            databaseUrl: "dat"
+            username: "us"
+            password: "pas"
+          source3:
+            name: "source3"
+            sourceUri: "suri"
+            asStream: true
+            jsonClass: "KafkaSourceSettings"
+            asRedCap: false
+            bootstrapServers: "bootstrap"
+          source4:
+            name: "source4"
+            sourceUri: "suri"
+            jsonClass: "FhirServerSourceSettings"
+            serverUrl: "fhirla"
+            securitySettings:
+              jsonClass: "BasicAuthenticationSettings"
+              username: "us"
+              password: "pas"
+        sinkSettings:
+          jsonClass: "FileSystemSinkSettings"
+          path: "/path/to/folder"
+          contentType: "ndjson"
+          options:
+            ignoreCorruptFiles: "val"
+            ignoreMissingFiles: "val"
+        terminologyServiceSettings:
+          jsonClass: "FhirRepositorySinkSettings"
+          fhirRepoUrl: "terminology-service"
+          securitySettings:
+            jsonClass: "FixedTokenAuthenticationSettings"
+            token: "token"
+        identityServiceSettings:
+          jsonClass: "FhirRepositorySinkSettings"
+          fhirRepoUrl: "idi"
+          securitySettings:
+            jsonClass: "BasicAuthenticationSettings"
+            username: "us"
+            password: "pas"
+        mappings:
+          - name: "example-mapping-1"
+            mappingRef: "https://aiccelerate.eu/fhir/mappings/pilot1/surgery-details-mapping"
+            sourceBinding:
+              source:
+                sourceRef: "source1"
+                jsonClass: "FileSystemSource"
+                options:
+                  ignoreCorruptFiles: "val"
+                path: "pilot1"
+                contentType: "csv"
+          - name: "example-mapping-2"
+            mappingRef: "https://aiccelerate.eu/fhir/mappings/pilot1/medication-administration-mapping"
+            sourceBinding:
+              source:
+                sourceRef: "source2"
+                jsonClass: "SqlSource"
+                options:
+                  prepareQuery: "q"
+                tableName: "table"
+              s1:
+                sourceRef: "source2"
+                jsonClass: "SqlSource"
+                options:
+                  prepareQuery: "q"
+                query: "query"
+          - name: "example-mapping-3"
+            mappingRef: "https://aiccelerate.eu/fhir/mappings/pilot1/medication-used-mapping"
+            sourceBinding:
+              source:
+                sourceRef: "source3"
+                jsonClass: "KafkaSource"
+                options:
+                  maxFilesPerTrigger: "1"
+                topicName: "topic"
+                groupId: "group"
+                startingOffsets: "latest"
+          - name: "example-mapping-4"
+            mappingRef: "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-risks-mapping"
+            sourceBinding:
+              source:
+                sourceRef: "source4"
+                jsonClass: "FhirServerSource"
+                resourceType: "resource"
+                query: "query"
+        dataProcessingSettings:
+          saveErroneousRecords: true
+          archiveMode: "delete"
+        schedulingSettings: null 
