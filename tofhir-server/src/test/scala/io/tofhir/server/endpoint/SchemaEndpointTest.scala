@@ -72,12 +72,12 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   val schema3: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema3", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty3", name = "name3", description = Some("description3"), rootDefinition = None, fieldDefinitions = Some(
     Seq(
       SimpleStructureDefinition(id = "element-with-definition",
-        path = "Ty3.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+        path = "Ty3.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.CANONICAL, profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
         isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
         boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
         sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-definition"), definition = Some("element definition"), comment = None, elements = None),
       SimpleStructureDefinition(id = "element-with-no-definition",
-        path = "Ty3.element-with-no-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+        path = "Ty3.element-with-no-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.CANONICAL, profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
         isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
         boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
         sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-no-definition"), definition = None, comment = None, elements = None)
@@ -90,12 +90,12 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   val schema4: SchemaDefinition = SchemaDefinition(url = "https://example.com/fhir/StructureDefinition/schema4", version = SchemaDefinition.VERSION_LATEST, `type` = "Ty4", name = "name4", description = Some("description4"), rootDefinition = None, fieldDefinitions = Some(
     Seq(
       SimpleStructureDefinition(id = "element-with-short",
-        path = "Ty4.element-with-short", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+        path = "Ty4.element-with-short", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.CANONICAL, profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
         isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
         boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
         sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-short"), definition = None, comment = None, elements = None),
       SimpleStructureDefinition(id = "element-with-no-short",
-        path = "Ty4.element-with-no-short", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+        path = "Ty4.element-with-no-short", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.CANONICAL, profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
         isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
         boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
         sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = None, definition = None, comment = None, elements = None)
@@ -705,12 +705,12 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
       val schemaUrl: String = "https://example.com/fhir/StructureDefinition/schema"
       val schema: SchemaDefinition = SchemaDefinition(url = schemaUrl, version = "1.4.2", `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = Some(Seq(
         SimpleStructureDefinition(id = "element-with-definition",
-          path = "Ty.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+          path = "Ty.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.CANONICAL, profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
           isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
           boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
           sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-definition"), definition = Some("element definition"), comment = None, elements = None),
         SimpleStructureDefinition(id = "element-with-no-definition",
-          path = "Ty.element-with-no-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+          path = "Ty.element-with-no-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.CANONICAL, profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
           isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
           boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
           sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-no-definition"), definition = None, comment = None, elements = None)
