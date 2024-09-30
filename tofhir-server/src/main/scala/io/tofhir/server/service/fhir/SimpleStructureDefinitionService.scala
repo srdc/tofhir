@@ -1,5 +1,6 @@
 package io.tofhir.server.service.fhir
 
+import io.onfhir.api.FHIR_DATA_TYPES
 import io.onfhir.api.validation.{ConstraintKeys, ElementRestrictions, ProfileRestrictions}
 import io.onfhir.config.BaseFhirConfig
 import io.onfhir.validation._
@@ -431,7 +432,7 @@ class SimpleStructureDefinitionService(fhirConfig: BaseFhirConfig) {
     SimpleStructureDefinition(
       id = resourceType,
       path = resourceType,
-      dataTypes = Some(Seq(DataTypeWithProfiles("Element", None))),
+      dataTypes = Some(Seq(DataTypeWithProfiles(FHIR_DATA_TYPES.ELEMENT, None))),
       isPrimitive = false,
       isChoiceRoot = false,
       isArray = false,
