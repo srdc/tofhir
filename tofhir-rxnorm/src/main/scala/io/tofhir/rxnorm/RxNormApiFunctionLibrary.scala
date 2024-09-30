@@ -1,5 +1,6 @@
 package io.tofhir.rxnorm
 
+import io.onfhir.api.FHIR_DATA_TYPES
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path.annotation.FhirPathFunction
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
@@ -27,8 +28,8 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
      detail = "rxn",
      label = "rxn:findRxConceptIdByNdc",
      kind = "Function",
-     returnType = Seq("string"),
-     inputType = Seq("string")
+     returnType = Seq(FHIR_DATA_TYPES.STRING),
+     inputType = Seq(FHIR_DATA_TYPES.STRING)
    )
   def findRxConceptIdsByNdc(ndcExpr:ExpressionContext):Seq[FhirPathResult] = {
      val ndc: Option[String] =
@@ -59,7 +60,7 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
     label = "rxn:getMedicationDetails",
     kind = "Function",
     returnType = Seq("complex"),
-    inputType = Seq("string")
+    inputType = Seq(FHIR_DATA_TYPES.STRING)
   )
   def getMedicationDetails(rxcuiExpr:ExpressionContext):Seq[FhirPathResult] = {
     val conceptIds = evaluator.visit(rxcuiExpr)
@@ -136,7 +137,7 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
     label = "rxn:findIngredientsOfDrug",
     kind = "Function",
     returnType = Seq("complex"),
-    inputType = Seq("string")
+    inputType = Seq(FHIR_DATA_TYPES.STRING)
   )
   def findIngredientsOfDrug(rxcuiExpr:ExpressionContext):Seq[FhirPathResult] = {
     val rxcui: Option[String] =
@@ -162,8 +163,8 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
     detail = "rxn",
     label = "rxn:getATC",
     kind = "Function",
-    returnType = Seq("string"),
-    inputType = Seq("string")
+    returnType = Seq(FHIR_DATA_TYPES.STRING),
+    inputType = Seq(FHIR_DATA_TYPES.STRING)
   )
   def getATC(rxcuiExpr:ExpressionContext): Seq[FhirPathResult] = {
     val rxcui: String =
