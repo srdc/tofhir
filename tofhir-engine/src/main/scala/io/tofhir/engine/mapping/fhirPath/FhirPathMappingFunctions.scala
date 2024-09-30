@@ -1,5 +1,6 @@
 package io.tofhir.engine.mapping.fhirPath
 
+import io.onfhir.api.FHIR_DATA_TYPES
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path._
 import io.onfhir.path.annotation.FhirPathFunction
@@ -30,7 +31,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
     detail = "mpp",
     label = "mpp:getHashedId",
     kind = "Function",
-    returnType = Seq("string"),
+    returnType = Seq(FHIR_DATA_TYPES.STRING),
     inputType = Seq()
   )
   def getHashedId(resourceTypeExp:ExpressionContext, inputExpr:ExpressionContext):Seq[FhirPathResult] = {
@@ -79,7 +80,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    */
   @FhirPathFunction(documentation = "\uD83D\uDCDC Creates a sequence of indices between from-to integers and concatenates them and prefix string to generate looped field names (i.e. prefix+from,...,prefix+to). After that, for each field, it checks whether it has a value or not and returns the list of field names which have values i.e the non-empty ones.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`prefixExpr`**  \nPrefix string to be used to generate field names.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`fromExpr`**  \nThe start index (inclusive).\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`toExpr`**  \nThe end index (inclusive).\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```\n[\"child_1\", \"child_3\", \"child_4\"]\n``` \n\uD83D\uDCA1 **E.g.** mpp:nonEmptyLoopedFields('child_',1,5)",
     insertText = "mpp:nonEmptyLoopedFields(<prefixExpr>, <fromExpr>, <toExpr>)",detail = "mpp", label = "mpp:nonEmptyLoopedFields", kind = "Function",
-    returnType = Seq("String"), inputType = Seq())
+    returnType = Seq(FHIR_DATA_TYPES.STRING), inputType = Seq())
   def nonEmptyLoopedFields(prefixExpr: ExpressionContext, fromExpr: ExpressionContext, toExpr: ExpressionContext): Seq[FhirPathResult] = {
     val prefix = new FhirPathExpressionEvaluator(context, current).visit(prefixExpr)
     if (prefix.length != 1 || !prefix.forall(_.isInstanceOf[FhirPathString]))
@@ -175,7 +176,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    */
   @FhirPathFunction(documentation = "\uD83D\uDCDC Get corresponding value from the given concept map with the given key and column name. If there is no concept found with given key (code), return empty. It returns a list of string.  \n⚠\uFE0F A mapping concept with specified reference **must** be registered to the mapping as a context to use this function.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`conceptMap`**  \nA reference to the concept map context e.g. %obsConceptMap\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`source_code`**  \nSource code to perform lookup operation in the concept map e.g. code\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`columnName`**  \nFHIRPath string literal providing the name of the interested column from the concept map context.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```json\n[\n  \"target-column-value-1\",\n  ...\n]\n``` \n\uD83D\uDCA1 **E.g.** mpp:getConcept(%obsConceptMap, code, 'target_code')",
     insertText = "mpp:getConcept(<%conceptMap>, <source_code>, <columnName>)", detail = "mpp", label = "mpp:getConcept"
-    , kind = "Function", returnType = Seq("string"), inputType = Seq())
+    , kind = "Function", returnType = Seq(FHIR_DATA_TYPES.STRING), inputType = Seq())
   def getConcept(conceptMap: ExpressionContext, keyExpr: ExpressionContext, columnName: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conceptMap.getText.substring(1) // skip the leading % character
     val conceptMapContext = getConceptMap(mapName)
