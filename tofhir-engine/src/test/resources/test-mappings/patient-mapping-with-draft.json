@@ -1,0 +1,74 @@
+{
+  "id": "patient-mapping-with-draft",
+  "url": "https://aiccelerate.eu/fhir/mappings/patient-mapping-with-draft",
+  "name": "patient-mapping-with-draft",
+  "isDraft": true,
+  "title": "Mapping of some patient data with draft",
+  "source": [{
+    "alias": "source",
+    "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-patient-extra"
+  }],
+  "mapping": [
+    {
+      "expression": {
+        "name": "result",
+        "language": "application/fhir-template+json",
+        "value": {
+          "resourceType": "Parameters",
+          "parameter": [
+            {
+              "name": "operation",
+              "part": [
+                {
+                  "name": "type",
+                  "valueCode": "add"
+                },
+                {
+                  "name": "path",
+                  "valueString": "Patient"
+                },
+                {
+                  "name": "name",
+                  "valueString": "maritalStatus"
+                },
+                {
+                  "name": "value",
+                  "valueCodeableConcept": {
+                    "coding": [
+                      {
+                        "system":"http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+                        "code": "{{maritalStatusCode}}",
+                        "display": "{{maritalStatusDisplay}}"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "operation",
+              "part": [
+                {
+                  "name": "type",
+                  "valueCode": "replace"
+                },
+                {
+                  "name": "path",
+                  "valueString": "Patient.gender"
+                },
+                {
+                  "name": "value",
+                  "valueCode": "{{gender}}"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "fhirInteraction": {
+        "type": "patch",
+        "rid": "Patient/{{mpp:getHashedId('Patient',pid)}}"
+      }
+    }
+  ]
+}
