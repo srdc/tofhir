@@ -191,7 +191,7 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       fail("The draft mapping should not be executed!")
     } recover {
       case fhirMappingException: FhirMappingException =>
-        fhirMappingException.getMessage shouldBe "Invalid mapping, the mapping is marked as draft: patient-mapping-with-draft"
+        fhirMappingException.getMessage shouldBe "Cannot execute mapping 'patient-mapping-with-draft' because it is currently marked as draft."
       case _ => fail("Unexpected error is thrown!")
     }
   }

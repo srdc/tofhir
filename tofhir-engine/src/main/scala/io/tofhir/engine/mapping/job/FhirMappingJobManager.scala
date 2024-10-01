@@ -366,9 +366,9 @@ class FhirMappingJobManager(
       case None => fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
     }
 
-    // Check whether the mapping is draft and the execution is not a test.
+    // ensure that the mapping is not marked as draft unless this is a test execution.
     if(mapping.isDraft && !isTestExecution){
-      throw FhirMappingException(s"Invalid mapping, the mapping is marked as draft: ${mapping.name}");
+      throw FhirMappingException(s"Cannot execute mapping '${mapping.name}' because it is currently marked as draft.");
     }
 
     // remove slice names from the mapping, otherwise FHIR resources will be created with slice names in fields starting with @
