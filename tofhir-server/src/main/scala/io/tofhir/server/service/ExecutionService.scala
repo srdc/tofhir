@@ -224,7 +224,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       toFhirEngine.functionLibraries,
       toFhirEngine.sparkSession
     )
-    val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId))
+    val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId), isTestExecution = true)
     val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
     fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selected, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId))
       .map { dataFrame =>

@@ -12,6 +12,7 @@ import java.util.UUID
  * @param url         Canonical url for the mapping
  * @param name        Computer friendly name
  * @param title       Human friendly title
+ * @param isDraft     Indicates whether the mapping is in a draft state and not yet ready for execution
  * @param description Description of the mapping
  * @param source      Metadata about source for the mapping
  * @param context     Further context to use for mapping evaluation e.g. ConceptMap for terminology mapping, definition of unit conversion functions
@@ -22,6 +23,7 @@ case class FhirMapping(id: String,
                        url: String,
                        name: String,
                        title: Option[String] = None,
+                       isDraft: Boolean = false,
                        description: Option[String] = None,
                        source: Seq[FhirMappingSource],
                        context: Map[String, FhirMappingContextDefinition] = Map.empty,

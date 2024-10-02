@@ -348,21 +348,29 @@ class FhirMappingJobManager(
   /**
    * Read and join the source data
    *
-   * @param task           FHIR Mapping task
-   * @param sourceSettings The source settings of the mapping job
-   * @param timeRange      Time range for the source data to load
-   * @param jobId          The identifier of mapping job which executes the mapping
+   * @param task            FHIR Mapping task
+   * @param sourceSettings  The source settings of the mapping job
+   * @param timeRange       Time range for the source data to load
+   * @param jobId           The identifier of mapping job which executes the mapping
+   * @param isTestExecution Indicates whether the execution is a test
    */
   def readJoinSourceData(task: FhirMappingTask,
                          sourceSettings: Map[String, MappingJobSourceSettings],
                          timeRange: Option[(LocalDateTime, LocalDateTime)] = None,
-                         jobId: Option[String] = None): (FhirMapping, MappingJobSourceSettings, DataFrame) = {
+                         jobId: Option[String] = None,
+                         isTestExecution: Boolean = false): (FhirMapping, MappingJobSourceSettings, DataFrame) = {
     // if the FhirMapping task includes the mapping to be executed (the case where the mapping is being tested), use it,
     // otherwise retrieve it from the repository
     val mapping = task.mapping match {
       case Some(mapping) => mapping
       case None => fhirMappingRepository.getFhirMappingByUrl(task.mappingRef)
     }
+
+    // ensure that the mapping is not marked as draft unless this is a test execution.
+    if(mapping.isDraft && !isTestExecution){
+      throw FhirMappingException(s"Cannot execute mapping '${mapping.name}' because it is currently marked as draft.");
+    }
+
     // remove slice names from the mapping, otherwise FHIR resources will be created with slice names in fields starting with @
     val fhirMapping = mapping.removeSliceNames()
     // verify that the provided source bindings in the mapping job match the source aliases defined in the mapping

@@ -82,6 +82,12 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     sourceBinding = Map("source" -> FileSystemSource(path = "patients.zip", contentType = SourceContentTypes.CSV))
   )
 
+  val patientMappingTaskWithDraftMapping: FhirMappingTask = FhirMappingTask(
+    name = "patient-mapping-with-draft",
+    mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping-with-draft",
+    sourceBinding = Map("source" -> FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV))
+  )
+
   val testMappingJobFilePath: String = getClass.getResource("/test-mappingjob.json").toURI.getPath
   val testMappingJobWithIdentityServiceFilePath: String = getClass.getResource("/test-mappingjob-using-services.json").toURI.getPath
 
@@ -173,6 +179,20 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       FHIRUtil.extractValue[String](patient10, "gender") shouldBe "female"
       FHIRUtil.extractValue[String](patient10, "birthDate") shouldBe "2003-11"
       FHIRUtil.extractValueOption[String](patient10, "deceasedDateTime").isEmpty shouldBe true
+    }
+  }
+
+  it should "not execute the draft patient mapping task and return error" in {
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession)
+    val fhirMappingJobWithDraftMapping = fhirMappingJob.copy(mappings = Seq(patientMappingTaskWithDraftMapping));
+    fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(
+      job = fhirMappingJobWithDraftMapping,
+      mappingTasks = Seq(patientMappingTaskWithDraftMapping)) , mappingJobSourceSettings = mappingJobSourceSettings) flatMap { _ =>
+      fail("The draft mapping should not be executed!")
+    } recover {
+      case fhirMappingException: FhirMappingException =>
+        fhirMappingException.getMessage shouldBe "Cannot execute mapping 'patient-mapping-with-draft' because it is currently marked as draft."
+      case _ => fail("Unexpected error is thrown!")
     }
   }
 
