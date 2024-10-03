@@ -29,13 +29,15 @@ object ExecutionLogger {
    * @param status                The status to log (e.g., STARTED, SKIPPED, STOPPED, FAILED)
    * @param mappingTaskName       The optional name of the mapping
    * @param exception             The optional exception that occurred
+   * @param isChunkResult         Indicate whether the log is result of a chunk
    */
   def logExecutionStatus(mappingJobExecution: FhirMappingJobExecution,
                          status: String,
                          mappingTaskName: Option[String] = None,
-                         exception: Option[Throwable] = None): Unit = {
+                         exception: Option[Throwable] = None,
+                         isChunkResult: Boolean = true): Unit = {
     // create the job result
-    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingTaskName, status = Some(status))
+    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingTaskName, status = Some(status), chunkResult = isChunkResult)
     // log the status with either info or error based on the presence of an exception
     exception match {
       case Some(e) => logger.error(jobResult.toMapMarker, jobResult.toString, e)
