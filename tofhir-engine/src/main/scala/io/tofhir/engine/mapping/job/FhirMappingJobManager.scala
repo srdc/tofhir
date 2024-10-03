@@ -428,6 +428,8 @@ class FhirMappingJobManager(
    * @param identityServiceSettings    Identity service settings
    * @param executionId                Id of FhirMappingJobExecution object
    * @param projectId                  Project identifier associated with the mapping job
+   * @param isForTesting               Flag indicating whether the mapping is being tested
+   *                                   (if true, mapped FHIR resources are grouped by input row in the FhirMappingResult)
    * @return
    */
   def executeTask(jobId: String,
@@ -438,7 +440,8 @@ class FhirMappingJobManager(
                   terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
                   identityServiceSettings: Option[IdentityServiceSettings] = None,
                   executionId: Option[String] = None,
-                  projectId: Option[String] = None
+                  projectId: Option[String] = None,
+                  isForTesting: Boolean = false
                  ): Future[Dataset[FhirMappingResult]] = {
     //Load the contextual data for the mapping
     Future
@@ -451,7 +454,7 @@ class FhirMappingJobManager(
         //Get configuration context
         val configurationContext = mainSourceSettings.toConfigurationContext
         //Construct the mapping service
-        val fhirMappingService = new FhirMappingService(jobId, mappingTaskName, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries, projectId)
+        val fhirMappingService = new FhirMappingService(jobId, mappingTaskName, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries, projectId, isForTesting)
         MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, executionId)
       })
   }
