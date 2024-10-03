@@ -238,7 +238,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
         results.length shouldEqual 3
         results.head.mappingTaskName shouldEqual "patient-mapping"
-        results.head.mappedResource.get shouldEqual "{\"resourceType\":\"Patient\"," +
+        results.head.mappedFhirResources.head.mappedResource.get shouldEqual "{\"resourceType\":\"Patient\"," +
           "\"id\":\"34dc88d5972fd5472a942fc80f69f35c\"," +
           "\"meta\":{\"profile\":[\"https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient\"]," +
           "\"source\":\"https://aiccelerate.eu/data-integration-suite/test-data\"}," +
@@ -256,7 +256,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
         results.length shouldEqual 3
         results.head.mappingTaskName shouldEqual "patient-mapping2"
-        results.head.mappedResource.get shouldEqual "{\"resourceType\":\"Patient\"," +
+        results.head.mappedFhirResources.head.mappedResource.get shouldEqual "{\"resourceType\":\"Patient\"," +
           "\"id\":\"34dc88d5972fd5472a942fc80f69f35c\"," +
           "\"meta\":{\"profile\":[\"https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient\"]," +
           "\"source\":\"https://aiccelerate.eu/data-integration-suite/test-data\"}," +
@@ -283,7 +283,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         results.length shouldEqual 3
         results.head.mappingTaskName shouldEqual "other-observation-mapping"
 
-        val result: JObject = JsonMethods.parse(results.head.mappedResource.get).asInstanceOf[JObject]
+        val result: JObject = JsonMethods.parse(results.head.mappedFhirResources.head.mappedResource.get).asInstanceOf[JObject]
         (result \ "meta" \ "profile").asInstanceOf[JArray].arr.head.extract[String] shouldEqual "https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation"
         (result \ "effectiveDateTime").extract[String] startsWith "2007-10-12T10:00:00"
         (result \ "valueQuantity" \ "value").extract[Int] shouldEqual 450
