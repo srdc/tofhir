@@ -20,6 +20,7 @@ import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import io.tofhir.engine.mapping.job.MappingJobScheduler
 import org.apache.commons.io
+import org.apache.spark.sql.KeyValueGroupedDataset
 import org.json4s.JsonAST.{JBool, JObject, JValue}
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JString}
@@ -198,7 +199,7 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @param testResourceCreationRequest test resource creation request to be executed
    * @return
    */
-  def testMappingWithJob(projectId: String, jobId: String, testResourceCreationRequest: TestResourceCreationRequest): Future[Seq[FhirMappingResult]] = {
+  def testMappingWithJob(projectId: String, jobId: String, testResourceCreationRequest: TestResourceCreationRequest): Future[Seq[FhirMappingResultsForInput]] = {
     if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
       throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository.")
     }
@@ -227,12 +228,19 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       toFhirEngine.sparkSession
     )
     val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId), isTestExecution = true)
-    val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
-    fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selected, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId), isForTesting = true)
+    val selectedDataFrame = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
+      .distinct() // Remove duplicate rows to ensure each FHIR Resource is represented only once per source.
+                  // This prevents confusion for users in the UI, as displaying the same resource multiple times could lead to misunderstandings.
+    fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selectedDataFrame, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId))
       .map { resultingDataFrame =>
-        resultingDataFrame
-          .collect() // Collect into an Array[String]
-          .toSeq // Convert to Seq[Resource]
+        resultingDataFrame.show()
+        // Import implicits for the Spark session
+        import toFhirEngine.sparkSession.implicits._
+        // Group by the 'source' column
+        val grouped: KeyValueGroupedDataset[String, FhirMappingResult] = resultingDataFrame
+          .groupByKey((result: FhirMappingResult) => result.source)
+        // Map each group to FhirMappingResultForInput
+        grouped.mapGroups(FhirMappingResultConverter.convertToFhirMappingResultsForInput).collect().toSeq
       }
   }
 
