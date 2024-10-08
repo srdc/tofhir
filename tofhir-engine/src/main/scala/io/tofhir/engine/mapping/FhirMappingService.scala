@@ -27,7 +27,6 @@ import scala.concurrent.Future
  * @param identityServiceSettings    Settings for identity service to use within mappings (e.g. resolveIdentifier)
  * @param functionLibraries          External function libraries containing functions to use in FHIRPath expressions
  * @param projectId                  Project identifier associated with the mapping job
- * @param isForTesting               Flag indicating whether the mapping is being tested
  *                                   (if true, mapped FHIR resources are grouped by input row in the FhirMappingResult)
  */
 class FhirMappingService(val jobId: String,
@@ -39,8 +38,7 @@ class FhirMappingService(val jobId: String,
                          terminologyServiceSettings: Option[TerminologyServiceSettings],
                          identityServiceSettings: Option[IdentityServiceSettings],
                          functionLibraries: Map[String, IFhirPathFunctionLibraryFactory],
-                         val projectId: Option[String],
-                         val isForTesting: Boolean = false
+                         val projectId: Option[String]
                         ) extends IFhirMappingService {
 
   lazy val terminologyService = terminologyServiceSettings.map(setting => IntegratedServiceFactory.createTerminologyService(setting))
