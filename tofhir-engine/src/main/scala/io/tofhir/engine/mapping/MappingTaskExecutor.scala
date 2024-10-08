@@ -214,7 +214,7 @@ object MappingTaskExecutor {
                 mappingTaskName = fhirMappingService.mappingTaskName,
                 mappingExpr = Some(mappingExpr),
                 timestamp = Timestamp.from(Instant.now()),
-                source = Some(Serialization.write(jo)),
+                source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
                 mappedResource = Some(Serialization.write(JArray(resources.toList))),
                 fhirInteraction = fhirInteraction,
                 executionId = executionId,
@@ -228,7 +228,7 @@ object MappingTaskExecutor {
                   mappingTaskName = fhirMappingService.mappingTaskName,
                   mappingExpr = Some(mappingExpr),
                   timestamp = Timestamp.from(Instant.now()),
-                  source = Some(Serialization.write(jo)),
+                  source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
                   mappedResource = Some(Serialization.write(r)),
                   fhirInteraction = fhirInteraction,
                   executionId = executionId,
@@ -261,7 +261,7 @@ object MappingTaskExecutor {
             mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = Some(mappingExpr),
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(Serialization.write(jo)),
+            source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = errorDescription,
@@ -276,7 +276,7 @@ object MappingTaskExecutor {
             mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(Serialization.write(jo)),
+            source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = ExceptionUtil.extractExceptionMessages(e)
@@ -290,7 +290,7 @@ object MappingTaskExecutor {
             mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(Serialization.write(jo)),
+            source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_TIMEOUT,
               description = s"A single row could not be mapped to FHIR in ${ToFhirConfig.engineConfig.mappingTimeout.toString}!"
@@ -304,7 +304,7 @@ object MappingTaskExecutor {
             mappingTaskName = fhirMappingService.mappingTaskName,
             mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
-            source = Some(Serialization.write(jo)),
+            source = Some(Serialization.write(JObject("mainSource" -> jo) ~ otherInputs)),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.UNEXPECTED_PROBLEM,
               description = "Exception:" + oth.getMessage
