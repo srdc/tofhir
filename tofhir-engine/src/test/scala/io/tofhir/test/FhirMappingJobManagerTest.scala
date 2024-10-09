@@ -101,8 +101,8 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       job = fhirMappingJob,
       mappingTasks = Seq(patientMappingTask)) , mappingJobSourceSettings = fhirMappingJob.sourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource should not be None
-        val resource = r.mappedResource.get.parseJson
+        r.mappedFhirResource.get.mappedResource should not be None
+        val resource = r.mappedFhirResource.get.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
       })
@@ -238,8 +238,8 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       job = fhirMappingJob,
       mappingTasks = Seq(patientTsvFileMappingTask)), mappingJobSourceSettings = fhirMappingJob.sourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource should not be None
-        val resource = r.mappedResource.get.parseJson
+        r.mappedFhirResource.get.mappedResource should not be None
+        val resource = r.mappedFhirResource.get.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
       })
@@ -275,8 +275,8 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
       job = fhirMappingJob,
       mappingTasks = Seq(patientZipFileMappingTask)), mappingJobSourceSettings = fhirMappingJob.sourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource should not be None
-        val resource = r.mappedResource.get.parseJson
+        r.mappedFhirResource.get.mappedResource should not be None
+        val resource = r.mappedFhirResource.get.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
       })
@@ -305,8 +305,8 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map(FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory), sparkSession)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(otherObservationMappingTask), job = fhirMappingJob) , mappingJobSourceSettings = fhirMappingJob.sourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource should not be None
-        val resource = r.mappedResource.get.parseJson
+        r.mappedFhirResource.get.mappedResource should not be None
+        val resource = r.mappedFhirResource.get.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
       })
@@ -411,8 +411,8 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
 
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(mappingTask)), fhirMappingJob.sourceSettings, Some(terminologyServiceSettings)) flatMap { result =>
       val resources = result.map(mappingResult => {
-        mappingResult.mappedResource should not be None
-        val resource = mappingResult.mappedResource.get.parseJson
+        mappingResult.mappedFhirResource.get.mappedResource should not be None
+        val resource = mappingResult.mappedFhirResource.get.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
       })
@@ -458,8 +458,8 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession)
     fhirMappingJobManager.executeMappingTaskAndReturn(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTaskWithPreprocess), job = fhirMappingJob), mappingJobSourceSettings = fhirMappingJob.sourceSettings) map { mappingResults =>
       val results = mappingResults.map(r => {
-        r.mappedResource should not be None
-        val resource = r.mappedResource.get.parseJson
+        r.mappedFhirResource.get.mappedResource should not be None
+        val resource = r.mappedFhirResource.get.mappedResource.get.parseJson
         resource shouldBe a[Resource]
         resource
       })
