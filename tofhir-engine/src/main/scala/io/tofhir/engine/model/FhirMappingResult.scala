@@ -28,7 +28,7 @@ case class FhirMappingResult(
                               mappingExpr:Option[String] = None,
                               timestamp:Timestamp,
                               mappedResource:Option[String] = None,
-                              source:Option[String] = None,
+                              source:String,
                               error:Option[FhirMappingError] = None,
                               fhirInteraction:Option[FhirInteraction] = None,
                               executionId: Option[String] = None,
@@ -39,7 +39,7 @@ case class FhirMappingResult(
   final val eventId:String = "MAPPING_RESULT"
   override def toString: String = {
     s"Mapping failure (${error.get.code}) for job '$jobId' and mappingTask '$mappingTaskName'${mappingExpr.map(e => s" within expression '$e'").getOrElse("")} execution '${executionId.getOrElse("")}'!\n"+
-    s"\tSource: ${source.get}\n"+
+    s"\tSource: ${source}\n"+
     s"\tError: ${error.get.description}" +
       error.get.expression.map(e =>  s"\n\tExpression: $e").getOrElse("")
   }
@@ -58,7 +58,7 @@ case class FhirMappingResult(
     markerMap.put("executionId", executionId.getOrElse(""))
     markerMap.put("mappingTaskName", mappingTaskName)
     markerMap.put("mappingExpr", mappingExpr.orElse(null))
-    markerMap.put("source", source.get)
+    markerMap.put("source", source)
     markerMap.put("errorCode", error.get.code)
     markerMap.put("errorDesc", error.get.description)
     markerMap.put("errorExpr", error.get.expression.getOrElse(""))
