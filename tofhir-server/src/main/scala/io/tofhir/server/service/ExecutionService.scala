@@ -233,7 +233,6 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
                   // This prevents confusion for users in the UI, as displaying the same resource multiple times could lead to misunderstandings.
     fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selectedDataFrame, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId))
       .map { resultingDataFrame =>
-        resultingDataFrame.show()
         // Import implicits for the Spark session
         import toFhirEngine.sparkSession.implicits._
         // Group by the 'source' column
