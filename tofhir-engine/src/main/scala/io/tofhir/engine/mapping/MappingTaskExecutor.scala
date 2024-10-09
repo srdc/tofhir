@@ -195,7 +195,19 @@ object MappingTaskExecutor {
           ))
         } else {
           mappedResources.flatMap {
-            //If this is a JSON Patch, the resources are patches so return it as single result
+            // JSON Patch is a document that represents a series of operations to be applied to a target resource,
+            // formatted as an array of objects. Each object describes a single operation, such as testing, adding,
+            // removing, or replacing values at specific paths in the resource. Example format:
+            //
+            // [
+            //   { "op": "test", "path": "/component/0/code/coding/0/code", "value": "80-6" },
+            //   { "op": "remove", "path": "/component/0/code/coding/2" },
+            //   { "op": "add", "path": "/component/0/code/coding/1", "value": { "system": "test", "code": "test" } },
+            //   { "op": "replace", "path": "/component/0/code/coding/2/code", "value": "test3" }
+            // ]
+            //
+            // If the input is recognized as a JSON Patch, return the patch document as a single result so it can be
+            // passed directly to the body of a FHIR Patch interaction request.
             case (mappingExpr, resources, fhirInteraction) if fhirInteraction.exists(_.`type` == "patch") && resources.length > 1 =>
               Seq(FhirMappingResult(
                 jobId = fhirMappingService.jobId,

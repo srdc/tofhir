@@ -1,0 +1,36 @@
+{
+  "id": "patient-mapping-with-json-patch",
+  "url": "https://aiccelerate.eu/fhir/mappings/patient-mapping-with-json-patch",
+  "name": "patient-mapping-with-json-patch",
+  "title": "Mapping of some patient data to a JSON patch for FHIR Patient resource",
+  "source": [
+	{
+	  "alias": "source",
+	  "url": "https://aiccelerate.eu/fhir/StructureDefinition/Ext-patient-extra"
+	}
+  ],
+  "mapping": [
+	{
+	  "expression": {
+		"name": "result",
+		"language": "application/fhir-template+json",
+		"value": [
+		  {
+			"op": "replace",
+			"path": "gender",
+			"value": "female"
+		  },
+		  {
+			"op": "replace",
+			"path": "birthDate",
+			"value": "2021-03-05"
+		  }
+		]
+	  },
+	  "fhirInteraction": {
+		"type": "patch",
+		"rid": "Patient/{{mpp:getHashedId('Patient',pid)}}"
+	  }
+	}
+  ]
+}

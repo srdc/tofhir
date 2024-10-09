@@ -208,6 +208,25 @@ class FhirMappingJobManagerTest extends AsyncFlatSpec with BeforeAndAfterAll wit
     )
   }
 
+  it should "execute the mapping with JSON patch" in {
+    val jsonPatchMapping: FhirMappingTask = FhirMappingTask(
+      name = "patient-mapping-with-json-patch",
+      mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping-with-json-patch",
+      sourceBinding = Map("source" -> FileSystemSource(path = "patients-extra.csv", contentType = SourceContentTypes.CSV))
+    )
+    val fhirMappingJobManager = new FhirMappingJobManager(mappingRepository, contextLoader, schemaRepository, Map.empty, sparkSession)
+
+    fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask), job = fhirMappingJob), sourceSettings = fhirMappingJob.sourceSettings, sinkSettings = fhirMappingJob.sinkSettings).flatMap(_ =>
+      fhirMappingJobManager.executeMappingJob(mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(jsonPatchMapping), job = fhirMappingJob), sourceSettings = fhirMappingJob.sourceSettings, sinkSettings = fhirMappingJob.sinkSettings) flatMap { response =>
+        response shouldBe()
+        onFhirClient.read("Patient", FhirMappingUtility.getHashedId("Patient", "p1")).executeAndReturnResource() flatMap { p1Resource =>
+          (p1Resource \ "gender").extract[String] shouldBe "female"
+          (p1Resource \ "birthDate").extract[String] shouldBe "2021-03-05"
+        }
+      }
+    )
+  }
+
   it should "execute the patient mapping task with given tsv file and return the results" in {
     val patientTsvFileMappingTask: FhirMappingTask = FhirMappingTask(
       name = "patient-mapping",
