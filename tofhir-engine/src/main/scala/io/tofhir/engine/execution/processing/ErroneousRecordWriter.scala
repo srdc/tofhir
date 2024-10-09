@@ -59,7 +59,7 @@ object ErroneousRecordWriter {
                                     mappingTaskName: String,
                                     errorType: String): Unit = {
     val outputPath = mappingJobExecution.getErrorOutputDirectory(mappingTaskName, errorType)
-    val schema = schema_of_json(dataset.rdd.takeSample(withReplacement = false, num = 1).head.source.get)
+    val schema = schema_of_json(dataset.rdd.takeSample(withReplacement = false, num = 1).head.source)
 
     dataset
       .withColumn("jsonData", from_json(col("source"), schema))
