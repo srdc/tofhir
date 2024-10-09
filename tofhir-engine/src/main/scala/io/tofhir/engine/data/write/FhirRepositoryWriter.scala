@@ -105,29 +105,30 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
       .foreach {
         case (uuid, mappingResult) =>
           mappingResult
+            .mappedFhirResource.get
             .fhirInteraction
             .getOrElse(FhirInteraction(FHIR_INTERACTIONS.UPDATE)) match {
             //FHIR Update (update or create by update)
             case FhirInteraction(FHIR_INTERACTIONS.UPDATE, _, None) =>
-              val resource = mappingResult.mappedResource.get.parseJson
+              val resource = mappingResult.mappedFhirResource.get.mappedResource.get.parseJson
               batchRequest = batchRequest.entry(uuid, _.update(resource))
             //FHIR Conditional update
             case FhirInteraction(FHIR_INTERACTIONS.UPDATE, _, Some(condition)) =>
-              val resource = mappingResult.mappedResource.get.parseJson
+              val resource = mappingResult.mappedFhirResource.get.mappedResource.get.parseJson
               val searchParams = Uri(condition).query().toMultiMap
               batchRequest = batchRequest.entry(uuid, _.update(resource).where(searchParams))
             //FHIR Create
             case FhirInteraction(FHIR_INTERACTIONS.CREATE, _, None) =>
-              val resource = mappingResult.mappedResource.get.parseJson
+              val resource = mappingResult.mappedFhirResource.get.mappedResource.get.parseJson
               batchRequest = batchRequest.entry(uuid, _.create(resource))
             // FHIR Conditional create, if not exists
             case FhirInteraction(FHIR_INTERACTIONS.CREATE, _, Some(condition)) =>
-              val resource = mappingResult.mappedResource.get.parseJson
+              val resource = mappingResult.mappedFhirResource.get.mappedResource.get.parseJson
               val searchParams = Uri(condition).query().toMultiMap
               batchRequest = batchRequest.entry(uuid, _.create(resource).where(searchParams))
             //FHIR Patch
             case FhirInteraction(FHIR_INTERACTIONS.PATCH, Some(rtypeAndId), None) =>
-              val patchContent = JsonMethods.parse(mappingResult.mappedResource.get)
+              val patchContent = JsonMethods.parse(mappingResult.mappedFhirResource.get.mappedResource.get)
               val (_, rtype, rid, _) = FHIRUtil.parseReferenceValue(rtypeAndId)
               batchRequest =
                 batchRequest
@@ -135,7 +136,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
                     .patchContent(patchContent))
             //Conditional patch
             case FhirInteraction(FHIR_INTERACTIONS.PATCH, Some(rtype), Some(condition)) =>
-              val patchContent = JsonMethods.parse(mappingResult.mappedResource.get)
+              val patchContent = JsonMethods.parse(mappingResult.mappedFhirResource.get.mappedResource.get)
               val searchParams = Uri(condition).query().toMultiMap
 
               batchRequest =
@@ -319,7 +320,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         r._2.isNonTransientError && //If this is a non-transient error, except the Conditional patch not found case, which we skip the update
           !(
             r._2.httpStatus.intValue() == HttpStatus.SC_NOT_FOUND &&
-              mappingResultMap(r._1.get).fhirInteraction.exists(fint => fint.`type` == FHIR_INTERACTIONS.PATCH && fint.condition.nonEmpty)
+              mappingResultMap(r._1.get).mappedFhirResource.get.fhirInteraction.exists(fint => fint.`type` == FHIR_INTERACTIONS.PATCH && fint.condition.nonEmpty)
             )
       )
       .map(_._1.get)

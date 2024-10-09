@@ -28,7 +28,7 @@ object SinkHandler {
     //Filter out the errors
     val invalidInputs = df.filter(_.error.map(_.code).contains(FhirMappingErrorCodes.INVALID_INPUT))
     val mappingErrors = df.filter(_.error.exists(_.code != FhirMappingErrorCodes.INVALID_INPUT))
-    val mappedResults = df.filter(_.mappedResource.isDefined)
+    val mappedResults = df.filter(_.mappedFhirResource.flatMap(_.mappedResource).isDefined)
     //Create an accumulator to accumulate the results that cannot be written
     val accumName = s"${mappingJobExecution.jobId}:${mappingTaskName.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
     val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
