@@ -10,7 +10,7 @@ import io.tofhir.common.util.ExceptionUtil
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.model.exception.FhirMappingException
-import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingResult}
+import io.tofhir.engine.model.{FhirMappingError, FhirMappingErrorCodes, FhirMappingResult, MappedFhirResource}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.json4s.JsonAST.{JArray, JObject, JValue}
 import org.json4s.JsonDSL._
@@ -85,7 +85,6 @@ object MappingTaskExecutor {
               Seq(FhirMappingResult(
                 jobId = fhirMappingService.jobId,
                 mappingTaskName = fhirMappingService.mappingTaskName,
-                mappingExpr = None,
                 timestamp = Timestamp.from(Instant.now()),
                 source = Serialization.write(jo),
                 error = Some(FhirMappingError(
@@ -147,7 +146,6 @@ object MappingTaskExecutor {
               Seq(FhirMappingResult(
                 jobId = fhirMappingService.jobId,
                 mappingTaskName = fhirMappingService.mappingTaskName,
-                mappingExpr = None,
                 timestamp = Timestamp.from(Instant.now()),
                 source = Serialization.write(jo),
                 error = Some(FhirMappingError(
@@ -196,11 +194,13 @@ object MappingTaskExecutor {
             Seq(FhirMappingResult(
               jobId = fhirMappingService.jobId,
               mappingTaskName = fhirMappingService.mappingTaskName,
-              mappingExpr = Some(mappingExpr),
               timestamp = Timestamp.from(Instant.now()),
               source = Serialization.write(JObject("mainSource" -> jo) ~ otherInputs),
-              mappedResource = Some(Serialization.write(JArray(resources.toList))),
-              fhirInteraction = fhirInteraction,
+              mappedFhirResource = Some(MappedFhirResource(
+                mappedResource = Some(Serialization.write(JArray(resources.toList))),
+                fhirInteraction = fhirInteraction,
+                mappingExpr = Some(mappingExpr),
+              )),
               executionId = executionId,
               projectId = fhirMappingService.projectId
             ))
@@ -210,11 +210,13 @@ object MappingTaskExecutor {
               FhirMappingResult(
                 jobId = fhirMappingService.jobId,
                 mappingTaskName = fhirMappingService.mappingTaskName,
-                mappingExpr = Some(mappingExpr),
                 timestamp = Timestamp.from(Instant.now()),
                 source = Serialization.write(JObject("mainSource" -> jo) ~ otherInputs),
-                mappedResource = Some(Serialization.write(r)),
-                fhirInteraction = fhirInteraction,
+                mappedFhirResource = Some(MappedFhirResource(
+                  mappedResource = Some(Serialization.write(r)),
+                  fhirInteraction = fhirInteraction,
+                  mappingExpr = Some(mappingExpr),
+                )),
                 executionId = executionId,
                 projectId = fhirMappingService.projectId,
                 resourceType = (r\ "resourceType").extractOpt[String]
@@ -242,13 +244,15 @@ object MappingTaskExecutor {
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingTaskName = fhirMappingService.mappingTaskName,
-            mappingExpr = Some(mappingExpr),
             timestamp = Timestamp.from(Instant.now()),
             source = Serialization.write(JObject("mainSource" -> jo) ~ otherInputs),
             error = Some(FhirMappingError(
               code = FhirMappingErrorCodes.MAPPING_ERROR,
               description = errorDescription,
               expression = t.expression
+            )),
+            mappedFhirResource = Some(MappedFhirResource(
+              mappingExpr = Some(mappingExpr)
             )),
             executionId = executionId,
             projectId = fhirMappingService.projectId))
@@ -257,7 +261,6 @@ object MappingTaskExecutor {
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingTaskName = fhirMappingService.mappingTaskName,
-            mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
             source = Serialization.write(JObject("mainSource" -> jo) ~ otherInputs),
             error = Some(FhirMappingError(
@@ -271,7 +274,6 @@ object MappingTaskExecutor {
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingTaskName = fhirMappingService.mappingTaskName,
-            mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
             source = Serialization.write(JObject("mainSource" -> jo) ~ otherInputs),
             error = Some(FhirMappingError(
@@ -285,7 +287,6 @@ object MappingTaskExecutor {
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
             mappingTaskName = fhirMappingService.mappingTaskName,
-            mappingExpr = None,
             timestamp = Timestamp.from(Instant.now()),
             source = Serialization.write(JObject("mainSource" -> jo) ~ otherInputs),
             error = Some(FhirMappingError(

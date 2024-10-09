@@ -195,8 +195,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         // test if erroneous records are written to error folder
         success = waitForCondition(30) {
           val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
-          erroneousRecordsFolder.toFile.exists() && {
-            val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
+          val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
+          jobFolder.exists() && {
             val csvFile = jobFolder.listFiles().head // execution folder
               .listFiles().head // mapping task folder
               .listFiles().head // source folder i.e. main source, secondary source etc.
