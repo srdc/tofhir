@@ -33,7 +33,7 @@ class SinkHandlerTest extends AnyFlatSpec {
       .load()
       .coalesce(1)
       .map(_ => { // Map the generated rows to some dummy mapping result
-        FhirMappingResult("someId", "someUrl", None, Timestamp.from(Instant.now()), Some(""))
+        FhirMappingResult("someId", "someUrl", None, Timestamp.from(Instant.now()), Some(""), "")
       })
 
     // Configure the mock writer such that it would throw an exception for the first chunk but not for the subsequent chunks
