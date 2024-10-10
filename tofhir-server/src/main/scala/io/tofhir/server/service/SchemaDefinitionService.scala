@@ -111,8 +111,9 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
   def inferSchema(inferTask: InferTask): Future[Option[SchemaDefinition]] = {
     // Execute SQL and get the dataFrame
     val dataFrame = try {
-      SourceHandler.readSource(inferTask.name, ToFhirConfig.sparkSession,
-        inferTask.sourceBinding, inferTask.mappingJobSourceSettings.head._2, None, None, Some(1))
+      SourceHandler
+        .readSource(inferTask.name, ToFhirConfig.sparkSession, inferTask.sourceBinding, inferTask.mappingJobSourceSettings.head._2, schema = None)
+        .limit(1) // It is enough to take the first row to infer the schema.
     } catch {
       case e: FhirMappingException =>
         // Remove the new lines and capitalize the error detail to show it in front-end properly.

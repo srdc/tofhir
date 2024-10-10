@@ -68,7 +68,7 @@ class FhirMappingJobManager(
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         // log the start of the FHIR mapping task execution
-        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED ,Some(task.name))
+        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED, Some(task.name))
         readSourceExecuteAndWriteInChunks(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
           fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
       }.recover {
@@ -119,7 +119,7 @@ class FhirMappingJobManager(
       .map(t => {
         logger.debug(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping name ${t.name} is started and waiting for the data...")
         // log the start of the FHIR mapping task execution
-        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED ,Some(t.name))
+        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED, Some(t.name))
         // Construct a tuple of (mapping name, Future[StreamingQuery])
         t.name ->
           readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
@@ -302,11 +302,11 @@ class FhirMappingJobManager(
    * @return
    */
   private def readSourceExecuteAndWriteInChunks(mappingJobExecution: FhirMappingJobExecution,
-                                                 sourceSettings: Map[String, MappingJobSourceSettings],
-                                                 fhirWriter: BaseFhirWriter,
-                                                 terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
-                                                 identityServiceSettings: Option[IdentityServiceSettings] = None,
-                                                 timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
+                                                sourceSettings: Map[String, MappingJobSourceSettings],
+                                                fhirWriter: BaseFhirWriter,
+                                                terminologyServiceSettings: Option[TerminologyServiceSettings] = None,
+                                                identityServiceSettings: Option[IdentityServiceSettings] = None,
+                                                timeRange: Option[(LocalDateTime, LocalDateTime)] = None): Future[Unit] = {
     val mappingTask = mappingJobExecution.mappingTasks.head
     logger.debug(s"Reading source data for mapping ${mappingTask.name} within mapping job ${mappingJobExecution.jobId} ...")
     val (fhirMapping, mds, df) = readJoinSourceData(mappingTask, sourceSettings, timeRange, jobId = Some(mappingJobExecution.jobId))
@@ -358,7 +358,8 @@ class FhirMappingJobManager(
                          sourceSettings: Map[String, MappingJobSourceSettings],
                          timeRange: Option[(LocalDateTime, LocalDateTime)] = None,
                          jobId: Option[String] = None,
-                         isTestExecution: Boolean = false): (FhirMapping, MappingJobSourceSettings, DataFrame) = {
+                         isTestExecution: Boolean = false
+                        ): (FhirMapping, MappingJobSourceSettings, DataFrame) = {
     // if the FhirMapping task includes the mapping to be executed (the case where the mapping is being tested), use it,
     // otherwise retrieve it from the repository
     val mapping = task.mapping match {
@@ -367,8 +368,8 @@ class FhirMappingJobManager(
     }
 
     // ensure that the mapping is not marked as draft unless this is a test execution.
-    if(mapping.isDraft && !isTestExecution){
-      throw FhirMappingException(s"Cannot execute mapping '${mapping.name}' because it is currently marked as draft.");
+    if (mapping.isDraft && !isTestExecution) {
+      throw FhirMappingException(s"Cannot execute mapping '${mapping.name}' because it is currently marked as draft.")
     }
 
     // remove slice names from the mapping, otherwise FHIR resources will be created with slice names in fields starting with @
@@ -397,6 +398,7 @@ class FhirMappingJobManager(
           timeRange
         )
       })
+
     //Read sources into Spark as DataFrame
     val sourceDataFrames =
       sources.map {
@@ -409,7 +411,11 @@ class FhirMappingJobManager(
 
     val repartitionedDf = ToFhirConfig.engineConfig.partitionsForMappingJobs match {
       case None => df
-      case Some(p) => df.repartition(p)
+      case Some(p) =>
+        // Repartitioning is a costly operation. And it might be the case that this function is called for testing while
+        //  the mapping job with which the tests are being executed configures the repartitioning. In that case we do not want
+        //  to apply the repartition operation. isTestExecution parameter has precedence over the mapping job configuration.
+        if (!isTestExecution) df.repartition(p) else df
     }
     //repartitionedDf.printSchema()
     //repartitionedDf.show(100)
@@ -454,7 +460,8 @@ class FhirMappingJobManager(
         //Get configuration context
         val configurationContext = mainSourceSettings.toConfigurationContext
         //Construct the mapping service
-        val fhirMappingService = new FhirMappingService(jobId, mappingTaskName, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap, fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries, projectId, isForTesting)
+        val fhirMappingService = new FhirMappingService(jobId, mappingTaskName, fhirMapping.source.map(_.alias), (loadedContextMap :+ configurationContext).toMap,
+          fhirMapping.mapping, fhirMapping.variable, terminologyServiceSettings, identityServiceSettings, functionLibraries, projectId, isForTesting)
         MappingTaskExecutor.executeMapping(spark, df, fhirMappingService, executionId)
       })
   }
@@ -477,8 +484,8 @@ class FhirMappingJobManager(
    *   - Join columns are identified by matching the columns defined in the sources configuration.
    *   - For each source data frame, null join columns are skipped.
    *   - The remaining join columns are paired with the corresponding join columns in the main data frame.
-   * - Columns are renamed in the source data frames to align with the main data frame's join columns for proper joining.
-   * - The join operation is performed based on these join columns.
+   *     - Columns are renamed in the source data frames to align with the main data frame's join columns for proper joining.
+   *     - The join operation is performed based on these join columns.
    *
    * @param sources          Defined sources within the mapping, including their aliases and join columns.
    * @param sourceDataFrames Source data frames loaded, with each frame associated with a source alias.
@@ -618,7 +625,7 @@ class FhirMappingJobManager(
             accDataFrame.union(dataFrame)
           }.recover {
             case e: Throwable =>
-              logger.error(s"Failed to execute mapping task ${task.name} within mapping job: ${mappingJobExecution.jobId}",e)
+              logger.error(s"Failed to execute mapping task ${task.name} within mapping job: ${mappingJobExecution.jobId}", e)
               throw e
           }
       }

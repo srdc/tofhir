@@ -24,10 +24,9 @@ case class ResourceFilter(numberOfRows: Int, order: String)
  */
 object RowSelectionOrder {
   final val START = "start"
-  final val END = "end"
   final val RANDOM = "random"
 
   def isValid(order: String): Boolean = allValues().contains(order)
 
-  private def allValues(): Set[String] = Set(START, END, RANDOM)
+  private def allValues(): Set[String] = Set(START, RANDOM)
 }

@@ -204,6 +204,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     }
     val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
 
+    logger.debug(s"Testing the mapping ${testResourceCreationRequest.fhirMappingTask.mappingRef} inside the job $jobId by selecting ${testResourceCreationRequest.resourceFilter.numberOfRows} ${testResourceCreationRequest.resourceFilter.order} records.")
+
     // If an unmanaged mapping is provided within the mapping task, normalize the context urls
     val mappingTask: FhirMappingTask =
       testResourceCreationRequest.fhirMappingTask.mapping match {
@@ -227,8 +229,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
     val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId), isTestExecution = true)
     val selected = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
     fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selected, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId), isForTesting = true)
-      .map { dataFrame =>
-        dataFrame
+      .map { resultingDataFrame =>
+        resultingDataFrame
           .collect() // Collect into an Array[String]
           .toSeq // Convert to Seq[Resource]
       }
