@@ -79,7 +79,7 @@ class FhirMappingService(val jobId: String,
       }
 
     //Find out eligible mappings on this source JObject based on preconditions
-    val eligibleMappings =
+    val eligibleMappings: Seq[FhirMappingExpression] =
       mappings
         .filter(mpp =>
           mpp

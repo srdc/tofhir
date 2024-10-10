@@ -153,6 +153,30 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
     }
   }
 
+  it should "correctly read from limited and limited and random records from a CSV file" in {
+    // Folder containing the test files for this test
+    val folderPath = "/single-file-test"
+
+    // Expected values for validation
+    val expectedFirstRow = Row("p1", "male", new Timestamp(dateFormat.parse("2000-05-10").getTime), null, null)
+
+    // Spark options to test if options are working
+    val sparkOptions = Map(
+      "ignoreTrailingWhiteSpace" -> "true",
+      "comment" -> "!"
+    )
+
+    val mappingJobSourceSettings = FileSystemSourceSettings(name = "FileDataSourceReaderTest1", sourceUri = "test-uri", dataFolderPath = testDataFolderPath.concat(folderPath))
+    val mappingSourceBinding = FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV, options = sparkOptions)
+    val limitedResult: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, schema = Option.empty).limit(4)
+    limitedResult.count() shouldBe 4
+    limitedResult.first() shouldBe expectedFirstRow
+
+    val randomResult: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, schema = Option.empty).sample(0.4).limit(3)
+    randomResult.count() == 3 shouldBe true
+    randomResult.collect().toSeq.map(_.getString(0)).mkString(",") == "p1,p2,p3" shouldBe false // Well, there is a possibility that this test may fail. Let's see if it fails ;)
+  }
+
   /**
    * Tests that the FileDataSourceReader correctly reads multiple files from CSV and TXT(csv) folders.
    *

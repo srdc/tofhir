@@ -19,15 +19,17 @@ import javax.ws.rs.InternalServerErrorException
 class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaSource, KafkaSourceSettings] {
 
   /**
-   * Read the source data for the given task
+   * Read the source data for the given task from Kafka
    *
-   * @param mappingSourceBinding  Configuration information for mapping source
-   * @param schema                Schema for the source
-   * @param limit                 Limit the number of rows to read
-   * @param jobId                 The identifier of mapping job which executes the mapping
+   * @param mappingSourceBinding     Configuration information for the mapping source
+   * @param mappingJobSourceSettings Common settings for the source system
+   * @param schema                   Schema for the source data
+   * @param timeRange                Time range for the data to read if given
+   * @param jobId                    The identifier of mapping job which executes the mapping
    * @return
    */
-  override def read(mappingSourceBinding: KafkaSource, mappingJobSourceSettings: KafkaSourceSettings, schema: Option[StructType] = Option.empty, timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
+  override def read(mappingSourceBinding: KafkaSource, mappingJobSourceSettings: KafkaSourceSettings, schema: Option[StructType] = Option.empty,
+                    timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
     import spark.implicits._
 
     if (schema.isEmpty) {
@@ -108,7 +110,7 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
                     // try to extract as string
                     case None => field._2.extractOpt[String] match {
                       // matches JString("0") or matches JString("1")
-                      case Some(value) if value.contentEquals("0") || value.contentEquals("1") => JBool(if(value.contentEquals("0")) false else true)
+                      case Some(value) if value.contentEquals("0") || value.contentEquals("1") => JBool(if (value.contentEquals("0")) false else true)
                       // matches JString(v)
                       case Some(value) if value.nonEmpty => JBool(value.toBoolean)
                       // matches JString()
@@ -125,7 +127,7 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
       }).toJson
     })
 
-    val df = spark
+    spark
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", mappingJobSourceSettings.bootstrapServers)
@@ -138,7 +140,5 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
       .withColumn("value", processDataUDF(col("value"))) // replace 'value' column with the processed data
       .select(from_json($"value", schema.get).as("record"))
       .select("record.*")
-    df
-
   }
 }

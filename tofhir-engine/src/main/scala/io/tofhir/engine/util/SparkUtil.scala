@@ -1,9 +1,8 @@
 package io.tofhir.engine.util
 
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
-import org.apache.spark.SparkContext
 import org.apache.spark.input.PortableDataStream
-import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{Dataset, SparkSession}
 import org.json4s.jackson.JsonMethods
 
 import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
@@ -93,23 +92,26 @@ object SparkUtil {
 
   /**
    * Read zip file using spark context.
-   * @param path Path to the zip file
-   * @param sparkContext The spark context
-   * @return
+   *
+   * @param path  Path to the zip file
+   * @param spark The SparkSession
+   * @return An RDD where each row represents a line from the files within the given zip file
    */
-  def readZip(path: String, sparkContext: SparkContext): RDD[String]  = {
-    sparkContext.binaryFiles(path)
+  def readZip(path: String, spark: SparkSession): Dataset[String] = {
+    val fileContentRDD = spark.sparkContext.binaryFiles(path)
       .flatMap { case (name: String, content: PortableDataStream) =>
-        val zis = new ZipInputStream(content.open);
+        val zis = new ZipInputStream(content.open) // We only deal with the content of the file, not with its name
         LazyList.continually(zis.getNextEntry)
           .takeWhile {
             case null => zis.close(); false
             case _ => true
           }
-          .flatMap { _ =>
+          .flatMap { _ => // In case there are multiple files in the ZIP, merge their lines into a single RDD
             val br = new BufferedReader(new InputStreamReader(zis))
-            LazyList.continually(br.readLine()).takeWhile(_ != null)
+            LazyList.continually(br.readLine()).takeWhile(_ != null) // Read the file contents line by line
           }
       }
+    import spark.implicits._
+    fileContentRDD.toDS() // Convert from RDD to Dataframe. Use the implicit conversions because we only have one column whose type is String
   }
 }

@@ -15,14 +15,16 @@ object SourceHandler {
   /**
    * Reading data from an input source
    *
-   * @param alias          Name of the source
-   * @param spark          Spark session
-   * @param mappingSource  Source definition of the mapping e.g. See FileSystemSource
+   * @param alias                    Name of the source
+   * @param spark                    Spark session
+   * @param mappingSource            Source definition of the mapping e.g. See FileSystemSource
    * @param mappingJobSourceSettings General source settings of mapping job e.g. See FileSystemSourceSettings
-   * @param schema         Schema of the input supplied by the mapping definition
-   * @param timeRange      Time range for the data to read if given
-   * @param limit          Limit the number of rows to read
-   * @param jobId          The identifier of mapping job which executes the mapping
+   * @param schema                   Schema of the input supplied by the mapping definition
+   * @param timeRange                Time range for the data to read if given
+   * @param limitRandom              (Optional) Limit the number of rows to read.
+   *                                 If the second parameter of the tuple is false -> the rows are selected from the beginning of the source,
+   *                                 if true -> the rows are selected randomly and then limited.
+   * @param jobId                    The identifier of mapping job which executes the mapping
    * @tparam T Type of the source definition class
    * @tparam S Type of the source settings class
    * @return
@@ -34,9 +36,8 @@ object SourceHandler {
                                                                             mappingJobSourceSettings: S,
                                                                             schema: Option[StructType],
                                                                             timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty,
-                                                                            limit: Option[Int] = Option.empty,
                                                                             jobId: Option[String] = Option.empty
-                                                                        ): DataFrame = {
+                                                                          ): DataFrame = {
     val reader = try {
       DataSourceReaderFactory
         .apply(spark, mappingSource, mappingJobSourceSettings)
@@ -47,7 +48,7 @@ object SourceHandler {
 
     val sourceData = try {
       reader
-        .read(mappingSource, mappingJobSourceSettings, schema, timeRange, limit, jobId = jobId)
+        .read(mappingSource, mappingJobSourceSettings, schema, timeRange, jobId = jobId)
     } catch {
       case e: Throwable => throw FhirMappingException(s"Source cannot be read for mapping source: $mappingSource source settings: $mappingJobSourceSettings.", e)
     }

@@ -22,17 +22,17 @@ class FhirServerDataSourceReader(spark: SparkSession) extends BaseDataSourceRead
   /**
    * Reads data from the specified FHIR server source.
    *
-   * @param mappingSourceBinding  Configuration information for the mapping source.
+   * @param mappingSourceBinding     Configuration information for the mapping source.
    * @param mappingJobSourceSettings Source settings of the mapping job for the FHIR server.
-   * @param schema         Optional schema for the source data.
-   * @param timeRange      Optional time range to filter the data.
-   * @param limit          Optional limit on the number of rows to read.
-   * @param jobId          Optional identifier of the mapping job executing the read operation.
+   * @param schema                   Optional schema for the source data.
+   * @param timeRange                Optional time range to filter the data.
+   * @param jobId                    Optional identifier of the mapping job executing the read operation.
    * @return A DataFrame containing the source data from the FHIR server.
    * @throws IllegalArgumentException If the path is not a directory for streaming jobs.
    * @throws NotImplementedError      If the specified source format is not implemented.
    */
-  override def read(mappingSourceBinding: FhirServerSource, mappingJobSourceSettings: FhirServerSourceSettings, schema: Option[StructType], timeRange: Option[(LocalDateTime, LocalDateTime)], limit: Option[Int] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
+  override def read(mappingSourceBinding: FhirServerSource, mappingJobSourceSettings: FhirServerSourceSettings, schema: Option[StructType],
+                    timeRange: Option[(LocalDateTime, LocalDateTime)] = Option.empty, jobId: Option[String] = Option.empty): DataFrame = {
     // extract Spark option for the authentication from the given source settings
     val authenticationOptions = extractAuthenticationOptions(mappingJobSourceSettings)
 
