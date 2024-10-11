@@ -197,13 +197,76 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
           val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
           erroneousRecordsFolder.toFile.exists() && {
             val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
-            val csvFile = jobFolder.listFiles().head.listFiles().head.listFiles().head
+            val csvFile = jobFolder.listFiles().head // execution folder
+              .listFiles().head // mapping task folder
+              .listFiles().head // source folder i.e. main source, secondary source etc.
+              .listFiles().head // csv file
             // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
             // the files are moved from "_temporary" to the parent output directory, and "_temporary" is deleted. This
             // intermediate step can be observed during testing, which is why we check if the file is a CSV.
             csvFile.exists() && csvFile.getName.endsWith(".csv") && {
               val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.getPath)
               csvFileContent.count() == 1
+            }
+          }
+        }
+        if (!success) fail("Failed to find expected number of erroneous records. Either the erroneous record file is not available or the number of records does not match")
+      }
+    }
+
+    "save erroneous records for job with multiple sources" in {
+      // Create a new mapping
+      createMappingAndVerify("test-mappings/patient-mapping-with-two-sources.json", 2)
+
+      // Update the job with the new mapping and new sink configuration
+      val patientMappingTask: FhirMappingTask = FhirMappingTask(
+        name = "patient-mapping-two-sources",
+        mappingRef = "http://patient-mapping-with-two-sources",
+        sourceBinding = Map("patient" -> FileSystemSource(path = "patient-simple.csv", contentType = SourceContentTypes.CSV),
+          "patientGender" -> FileSystemSource(path = "patient-gender-simple.csv", contentType = SourceContentTypes.CSV))
+      )
+      sinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = onFhirClient.getBaseUrl())
+      val job = batchJob.copy(id = UUID.randomUUID().toString, mappings = Seq(patientMappingTask), sinkSettings = sinkSettings, name = Some("twoSourceJob"))
+
+      // Create the job
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}", HttpEntity(ContentTypes.`application/json`, writePretty(job))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      // Run the job
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${job.id}/${JobEndpoint.SEGMENT_RUN}", HttpEntity(ContentTypes.`application/json`, "")) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+
+        // test if erroneous records are written to error folder
+        val success = waitForCondition(120) {
+          val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
+          val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${job.id}").toFile
+          jobFolder.exists() && {
+            val sourceFolders = jobFolder.listFiles().head // execution folder
+              .listFiles().head // mapping task folder
+              .listFiles() // source folder i.e. main source, secondary source etc.
+            sourceFolders.length == 2 && {
+              val mainSource = sourceFolders.head
+              val csvFile = mainSource.listFiles().head
+              mainSource.getName.contentEquals("mainSource") &&
+                // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
+                // the files are moved from "_temporary" to the parent output directory, and "_temporary" is deleted. This
+                // intermediate step can be observed during testing, which is why we check if the file is a CSV.
+                csvFile.exists() && csvFile.getName.endsWith(".csv") && {
+                val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.getPath)
+                csvFileContent.count() == 1
+              }
+            } && {
+              val secondarySource = sourceFolders.last
+              val csvFile = secondarySource.listFiles().head
+              secondarySource.getName.contentEquals("patientGender") &&
+                // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
+                // the files are moved from "_temporary" to the parent output directory, and "_temporary" is deleted. This
+                // intermediate step can be observed during testing, which is why we check if the file is a CSV.
+                csvFile.exists() && csvFile.getName.endsWith(".csv") && {
+                val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.getPath)
+                csvFileContent.count() == 1
+              }
             }
           }
         }
@@ -220,7 +283,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 2
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 3
         // check job folder is created
         FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${job2.id}${FileExtensions.JSON}").toFile should exist
       }
@@ -249,7 +312,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
 
     "execute a mapping within a job without passing the mapping in the mapping task" in {
       // create the mapping that will be tested
-      createMappingAndVerify("test-mappings/patient-mapping2.json", 2)
+      createMappingAndVerify("test-mappings/patient-mapping2.json", 3)
 
       initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping2", Map("source" -> FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV))) ~> check {
         status shouldEqual StatusCodes.OK
@@ -274,7 +337,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
      */
     "execute a mapping with a context within a job" in {
       createSchemaAndVerify("test-schemas/other-observation-schema.json", 2)
-      createMappingAndVerify("test-mappings/other-observation-mapping.json", 3)
+      createMappingAndVerify("test-mappings/other-observation-mapping.json", 4)
 
       // test a mapping
       initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/other-observation-mapping", Map("source" -> FileSystemSource(path = "other-observations.csv", contentType = SourceContentTypes.CSV))) ~> check {
@@ -300,7 +363,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         status shouldEqual StatusCodes.Created
         // validate that job metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
-        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 3
+        (projects.arr.find(p => (p \ "id").extract[String] == projectId).get \ "mappingJobs").asInstanceOf[JArray].arr.length shouldEqual 4
         // check job folder is created
         FileUtils.getPath(toFhirEngineConfig.jobRepositoryFolderPath, projectId, s"${streamingJob.id}${FileExtensions.JSON}").toFile should exist
       }
@@ -353,7 +416,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
      */
     "run a batch mapping job which converts FHIR Resources into a flat schema and write them to a CSV file" in {
       // create the mapping
-      createMappingAndVerify("test-mappings/patient-flat-mapping.json", 4)
+      createMappingAndVerify("test-mappings/patient-flat-mapping.json", 5)
       // create the job
       val jobId = UUID.randomUUID().toString
       val job: FhirMappingJob = FhirMappingJob(
