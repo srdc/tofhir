@@ -96,7 +96,7 @@
 
         <!--Dependency versions-->
         <scala-logging.version>3.9.5</scala-logging.version>
-        <onfhir.version>3.3-SNAPSHOT</onfhir.version>
+        <onfhir.version>3.4-SNAPSHOT</onfhir.version>
         <onfhir-template-engine.version>1.1-SNAPSHOT</onfhir-template-engine.version>
         <spark-on-fhir.version>1.0-SNAPSHOT</spark-on-fhir.version>
         <json4s.version>3.7.0-M11</json4s.version>
