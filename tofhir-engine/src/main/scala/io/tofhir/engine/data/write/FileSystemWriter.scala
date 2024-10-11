@@ -29,7 +29,7 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
         // +------------+--------------------+
         // | Patient |[ {"resourceType":...|
         // +------------+--------------------+
-        val groupedDFs = df.groupBy("resourceType").agg(collect_list("mappedResource").as("resources"))
+        val groupedDFs = df.groupBy("resourceType").agg(collect_list("mappedFhirResource.mappedResource").as("resources"))
         // Iterate through each group (by resourceType) and write the data to separate folders.
         groupedDFs.collect().foreach(rDf => {
           // Extract the resourceType for the current group.
@@ -109,16 +109,16 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
           }
         })
       case SinkContentTypes.NDJSON =>
-        getWriter(df.map(_.mappedResource.get), sinkSettings).text(sinkSettings.path)
+        getWriter(df.map(_.mappedFhirResource.get.mappedResource.get), sinkSettings).text(sinkSettings.path)
       case SinkContentTypes.PARQUET =>
         // Convert the DataFrame to a Dataset of JSON strings
-        val jsonDS = df.select("mappedResource").as[String]
+        val jsonDS = df.select("mappedFhirResource.mappedResource").as[String]
         // Create a DataFrame from the Dataset of JSON strings
         val jsonDF = spark.read.json(jsonDS)
         getWriter(jsonDF, sinkSettings).parquet(sinkSettings.path)
       case SinkContentTypes.DELTA_LAKE =>
         // Convert the DataFrame to a Dataset of JSON strings
-        val jsonDS = df.select("mappedResource").as[String]
+        val jsonDS = df.select("mappedFhirResource.mappedResource").as[String]
         // Create a DataFrame from the Dataset of JSON strings
         val jsonDF = spark.read.json(jsonDS)
         getWriter(jsonDF, sinkSettings)
@@ -126,7 +126,7 @@ class FileSystemWriter(sinkSettings: FileSystemSinkSettings) extends BaseFhirWri
           .save(sinkSettings.path)
       case SinkContentTypes.CSV =>
         // read the mapped resource json column and load it to a new data frame
-        val mappedResourceDF = spark.read.json(df.select("mappedResource").as[String])
+        val mappedResourceDF = spark.read.json(df.select("mappedFhirResource.mappedResource").as[String])
         // select the columns that are not array type or struct type
         // since the CSV is a flat data structure
         val nonArrayAndStructCols = mappedResourceDF.schema.fields.filterNot(field => {

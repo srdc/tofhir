@@ -195,8 +195,8 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         // test if erroneous records are written to error folder
         success = waitForCondition(30) {
           val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
-          erroneousRecordsFolder.toFile.exists() && {
-            val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
+          val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
+          jobFolder.exists() && {
             val csvFile = jobFolder.listFiles().head // execution folder
               .listFiles().head // mapping task folder
               .listFiles().head // source folder i.e. main source, secondary source etc.
@@ -298,7 +298,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
         Some(FileOperations.readJsonContentAsObject[FhirMapping](FileOperations.getFileIfExists(getClass.getResource("/test-mappings/patient-mapping.json").getPath)))) ~> check {
 
         status shouldEqual StatusCodes.OK
-        val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
+        val results: Seq[FhirMappingResultsForInput] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResultsForInput]]
         results.length shouldEqual 3
         results.head.mappingTaskName shouldEqual "patient-mapping"
         results.head.mappedFhirResources.head.mappedResource.get shouldEqual "{\"resourceType\":\"Patient\"," +
@@ -316,7 +316,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
 
       initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/pilot1/patient-mapping2", Map("source" -> FileSystemSource(path = "patients.csv", contentType = SourceContentTypes.CSV))) ~> check {
         status shouldEqual StatusCodes.OK
-        val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
+        val results: Seq[FhirMappingResultsForInput] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResultsForInput]]
         results.length shouldEqual 3
         results.head.mappingTaskName shouldEqual "patient-mapping2"
         results.head.mappedFhirResources.head.mappedResource.get shouldEqual "{\"resourceType\":\"Patient\"," +
@@ -342,7 +342,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
       // test a mapping
       initializeTestMappingQuery(job2.id, "https://aiccelerate.eu/fhir/mappings/other-observation-mapping", Map("source" -> FileSystemSource(path = "other-observations.csv", contentType = SourceContentTypes.CSV))) ~> check {
         status shouldEqual StatusCodes.OK
-        val results: Seq[FhirMappingResult] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResult]]
+        val results: Seq[FhirMappingResultsForInput] = JsonMethods.parse(responseAs[String]).extract[Seq[FhirMappingResultsForInput]]
         results.length shouldEqual 3
         results.head.mappingTaskName shouldEqual "other-observation-mapping"
 

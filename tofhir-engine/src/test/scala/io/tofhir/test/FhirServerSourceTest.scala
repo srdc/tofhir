@@ -182,7 +182,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       mappingJobSourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
       mappingResults.length shouldBe 2
-      val patientResource = mappingResults.head.mappedResource.get.parseJson
+      val patientResource = mappingResults.head.mappedFhirResource.get.mappedResource.get.parseJson
       patientResource shouldBe a[Resource]
       (patientResource \ "meta" \ "profile").extract[Seq[String]].head shouldBe "https://datatools4heart.eu/fhir/StructureDefinition/HFR-Patient"
       (patientResource \ "active").extract[Boolean] shouldBe true
@@ -196,7 +196,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       mappingJobSourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
       mappingResults.length shouldBe 2
-      val patientResource = mappingResults.last.mappedResource.get.parseJson
+      val patientResource = mappingResults.last.mappedFhirResource.get.mappedResource.get.parseJson
       (patientResource \ "identifier" \ "value").extract[Seq[String]].head shouldBe "8216"
       val extensionList = (patientResource \ "extension").extract[Seq[JValue]]
       val tempSum = extensionList.find(e => (e \ "url").extract[String] == "https://map-from-fhir-test/temp-sum")
@@ -217,7 +217,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       mappingJobSourceSettings = fhirServerSourceSettings
     ) map { mappingResults =>
       mappingResults.length shouldBe 5
-      val observationResources = mappingResults.map(r => r.mappedResource.get.parseJson)
+      val observationResources = mappingResults.map(r => r.mappedFhirResource.get.mappedResource.get.parseJson)
       val joinedPatientObservations = observationResources.filter(r => (r \ "subject" \ "reference").extract[String] == "Patient/example-patient-fhir")
       joinedPatientObservations.length shouldBe 2
       var extensionList = (joinedPatientObservations.head \ "extension").extract[Seq[JValue]]
