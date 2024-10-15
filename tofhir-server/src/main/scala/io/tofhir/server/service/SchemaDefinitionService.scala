@@ -4,7 +4,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
-import io.tofhir.common.model.SchemaDefinition
+import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
@@ -13,7 +13,7 @@ import io.tofhir.engine.model.exception.FhirMappingException
 import io.tofhir.engine.util.redcap.RedCapUtil
 import io.tofhir.engine.util.{CsvUtil, FhirClientUtil, FhirVersionUtil}
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
-import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
+import io.tofhir.server.model.{ImportSchemaSettings, InferTask, InferenceTypes}
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
@@ -126,9 +126,13 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
       // Schema converter object for mapping spark data types to fhir data types
       val schemaConverter = new SchemaConverter(majorFhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion))
       // Map SQL DataTypes to Fhir DataTypes
-      var fieldDefinitions = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
+      var fieldDefinitions: Seq[SimpleStructureDefinition] = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
       // Remove INPUT_VALIDITY_ERROR fieldDefinition that is added by SourceHandler
       fieldDefinitions = fieldDefinitions.filter(fieldDefinition => fieldDefinition.id != SourceHandler.INPUT_VALIDITY_ERROR)
+      // If append option is selected, infer the schema by preserving the user defined field definitions
+      if (inferTask.inferenceType == InferenceTypes.Append) {
+        fieldDefinitions = appendInferredFieldDefinitions(fieldDefinitions, inferTask.fieldDefinitions.getOrElse(Seq.empty))
+      }
       SchemaDefinition(url = defaultName, version = SchemaDefinition.VERSION_LATEST, `type` = defaultName, name = defaultName, description = Option.empty, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))
     }
     Future.apply(Some(unnamedSchema))
@@ -208,5 +212,45 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
   def createSchemaFromStructureDefinition(projectId: String, structureDefinitionResource: Resource): Future[SchemaDefinition] = {
     schemaRepository.saveSchemaByStructureDefinition(projectId, Seq(structureDefinitionResource))
       .map(definitions => definitions.head)
+  }
+
+  /**
+   * Merges inferred fields with existing fields by preserving
+   * all fields in `existingFieldDefinitions` with their data and ordering the resulting
+   * sequence according to inferred fields.
+   *
+   * The function iterates through each field in `inferredFieldDefinitions`:
+   * - If a field with the same ID exists in `existingFieldDefinitions`, it preserves the existing field.
+   * - Otherwise, it includes the inferred field from `inferredFieldDefinitions`.
+   * After processing `inferredFieldDefinitions`, any remaining fields from
+   * `existingFieldDefinitions` are appended to ensure all fields are preserved.
+   *
+   * @param inferredFieldDefinitions  The fields inferred from schema inference, providing the order.
+   * @param existingFieldDefinitions  The fields already defined by the user, preserving their data.
+   * @return
+   */
+  private def appendInferredFieldDefinitions(inferredFieldDefinitions: Seq[SimpleStructureDefinition],
+                                             existingFieldDefinitions: Seq[SimpleStructureDefinition]): Seq[SimpleStructureDefinition] = {
+
+    if (inferredFieldDefinitions.isEmpty) {
+      existingFieldDefinitions
+    } else if (existingFieldDefinitions.isEmpty) {
+      inferredFieldDefinitions
+    }
+    else {
+      // Create maps for quick lookup of fields by id
+      val existingFieldsMap: Map[String, SimpleStructureDefinition] = existingFieldDefinitions.map(field => field.id -> field).toMap
+      val inferredFieldsMap: Map[String, Unit] = inferredFieldDefinitions.map(field => field.id -> ()).toMap
+
+      // Loop through inferred fields, keeping track of merged fields
+      val mergedFields = inferredFieldDefinitions.map { inferredField =>
+        existingFieldsMap.getOrElse(inferredField.id, inferredField) // Add existing field if it exists, otherwise add inferred
+      }
+
+      // Add any existing fields that weren't in the inferred definitions
+      val remainingFields = existingFieldDefinitions.filterNot(field => inferredFieldsMap.contains(field.id))
+
+      mergedFields ++ remainingFields
+    }
   }
 }

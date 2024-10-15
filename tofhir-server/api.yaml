@@ -2015,6 +2015,20 @@ components:
           oneOf:
             - $ref: "#/components/schemas/FileSystemSource"
             - $ref: "#/components/schemas/SqlSource"
+        inferenceType:
+          type: string
+          description: "Defines how the inference operation will be done"
+          enum:
+            - append
+            - overwrite
+        fieldDefinitions:
+          type: array
+          description: |
+            Defines the application of inferred fields when updating schemas:
+            - `"append"`: Retain existing schema fields and add inferred fields.
+            - `"overwrite"`: Replace all existing schema fields with inferred fields.
+          items:
+            $ref: '#/components/schemas/SimpleStructureDefinition'
       required:
         - name
         - sourceSettings
