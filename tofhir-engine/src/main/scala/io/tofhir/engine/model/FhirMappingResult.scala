@@ -1,6 +1,7 @@
 package io.tofhir.engine.model
 
 import ch.qos.logback.more.appenders.marker.MapMarker
+import io.tofhir.engine.util.TimeUtil
 
 import java.sql.Timestamp
 
@@ -68,7 +69,7 @@ case class FhirMappingResult(
     // However, during the process of writing the log to Elasticsearch, the timestamp is rounded, resulting in a loss of precision.
     // For example, "2024-08-28_13:54:44.740" may be rounded to "2024-08-28_13:54:44.000" in Elasticsearch.
     // This rounding leads to the loss of crucial millisecond information, which is important for accurately sorting logs.
-    markerMap.put("@timestamp", System.currentTimeMillis.toString)
+    markerMap.put("@timestamp", TimeUtil.getCurrentISOTime)
     // create a new MapMarker using the marker map
     val marker: MapMarker = new MapMarker("marker", markerMap)
     // add mappedResource to the marker map if error code is INVALID_RESOURCE
