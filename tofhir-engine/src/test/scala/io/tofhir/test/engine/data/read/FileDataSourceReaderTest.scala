@@ -171,10 +171,6 @@ class FileDataSourceReaderTest extends AnyFlatSpec with BeforeAndAfterAll {
     val limitedResult: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, schema = Option.empty).limit(4)
     limitedResult.count() shouldBe 4
     limitedResult.first() shouldBe expectedFirstRow
-
-    val randomResult: DataFrame = fileDataSourceReader.read(mappingSourceBinding, mappingJobSourceSettings, schema = Option.empty).sample(0.4).limit(3)
-    randomResult.count() == 3 shouldBe true
-    randomResult.collect().toSeq.map(_.getString(0)).mkString(",") == "p1,p2,p3" shouldBe false // Well, there is a possibility that this test may fail. Let's see if it fails ;)
   }
 
   /**
