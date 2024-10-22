@@ -26,7 +26,21 @@ trait BaseFhirMappingResult {
   val timestamp: Timestamp
 
   /**
-   * If there is a problem in the process, the JSON serialization of the source data
+   * A JSON serialization of the source data. The main data source is represented with the "mainSource" key,
+   * while other data sources are serialized using their respective source aliases as keys.
+   *
+   * Example structure:
+   * {
+   *  "mainSource": {
+   *    ... // Serialized data from the main source
+   *  },
+   *  "encounters": {
+   *    ... // Data from encounters source
+   *  },
+   *  "observations": {
+   *    ... // Data from observations source
+   *  }
+   * }
    */
   val source: String
 
@@ -49,6 +63,13 @@ trait BaseFhirMappingResult {
 /**
  * Case class representing the result of a FHIR mapping process, extending the base mapping result.
  * This model is designed to store the outcome of the mapping, including the generated FHIR resource.
+ *
+ * Each instance of `FhirMappingResult` corresponds to a single FHIR resource, regardless
+ * of how many FHIR resources are created from each input row.
+ *
+ * If the mapping is 1-to-many, multiple instances of `FhirMappingResult` will be created from a single source row,
+ * each holding one of the generated FHIR resources.
+ *
  * It includes the common fields from [[BaseFhirMappingResult]], along with specific information about
  * the FHIR resource type and the serialized output of the mapped resource.
  *
@@ -111,9 +132,9 @@ case class FhirMappingResult(
 }
 
 /**
- * Stores the results of mapping i.e. generated FHIR resources for a source input.
- * It groups the mapped FHIR resources generated from the input data, allowing for easy access to
- * the output for a specific input row.
+ * Represents the result of the mapping process for a single source row, storing the generated FHIR resources.
+ * Each source row corresponds to one instance of `FhirMappingResultsForInput`. If the mapping process is
+ * 1-to-many, the `mappedFhirResources` field contains all the FHIR resources created from the single source row.
  *
  * In addition to the common fields from [[BaseFhirMappingResult]], it includes a collection of mapped
  * FHIR resources, which represent the outcome of the mapping process for each input source.
