@@ -13,7 +13,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{QUERY_PARAM_TYPE, QUERY_PARAM_URL}
-import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
+import io.tofhir.server.model.{ImportSchemaSettings, InferTask, InferenceTypes}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.json4s.JArray
 import org.json4s.jackson.JsonMethods
@@ -33,11 +33,70 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   // set 5 second timeout for test because infer schema test can take longer than 1 second
   implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(5.seconds)
 
-  // inferTask object for infer schema test
-  val inferTask: InferTask = InferTask(name = "test", mappingJobSourceSettings = Map(
-    "source" ->
-      SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
-  ), sourceBinding = SqlSource(query = Some("select * from death"), preprocessSql = Some("select person_id, death_date, death_datetime, cause_source_value from test")))
+  // Base mapping settings for SqlSource
+  val sqlSourceSettings: Map[String, SqlSourceSettings] = Map(
+    "source" -> SqlSourceSettings(
+      name = "test-db-source",
+      sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
+      databaseUrl = DATABASE_URL,
+      username = "",
+      password = ""
+    )
+  )
+
+  // Base SqlSource configuration
+  val sqlSource: SqlSource = SqlSource(
+    query = Some("select * from death"),
+    preprocessSql = Some("select person_id, death_date, death_datetime, cause_source_value from test")
+  )
+
+  // inferTask with "overwrite" inference type
+  val inferTaskOverwrite: InferTask = InferTask(
+    name = "test",
+    mappingJobSourceSettings = sqlSourceSettings,
+    sourceBinding = sqlSource,
+    inferenceType = InferenceTypes.OverWrite,
+    fieldDefinitions = Option.empty
+  )
+
+  // inferTask with "append" inference type
+  val inferTaskAppend: InferTask = InferTask(
+    name = "test",
+    mappingJobSourceSettings = sqlSourceSettings,
+    sourceBinding = sqlSource,
+    inferenceType = InferenceTypes.Append,
+    fieldDefinitions = Some(Seq(
+      SimpleStructureDefinition( // This field will exist without any changes
+        "person_id", "Test.person_id",
+        Some(List(DataTypeWithProfiles("string", Some(List("TEST"))))),
+        isPrimitive = true, isChoiceRoot = false, isArray = false, 0, Some(1), None, None, None, None, None, None, None, None, None,
+        definition = Some("example-definition"),
+        short = Some("example-short"),
+        comment = None, elements = None
+      ),
+      SimpleStructureDefinition( // This field will exist without any changes
+        "death_date", "Test.death_date",
+        Some(List(DataTypeWithProfiles("string", Some(List("TEST"))))),
+        isPrimitive = true, isChoiceRoot = false, isArray = false, 0, Some(1), None, None, None, None, None, None, None, None, None,
+        definition = Some("example-definition"),
+        short = Some("example-short"),
+        comment = None, elements = None
+      ),
+      SimpleStructureDefinition( // This field will exist after inferred fields
+        "last_visit_datetime", "Test.last_visit_datetime",
+        Some(List(DataTypeWithProfiles("dateTime", Some(List("http://hl7.org/fhir/StructureDefinition/dateTime"))))),
+        isPrimitive = true, isChoiceRoot = false, isArray = false, 0, Some(1), None, None, None, None, None, None, None, None, None,
+        definition = Some("example-definition"),
+        short = Some("example-short"),
+        comment = None, elements = None
+      ),
+      SimpleStructureDefinition( // This field will exist after inferred fields
+        "name", "Test.name",
+        Some(List(DataTypeWithProfiles("string", Some(List("http://hl7.org/fhir/StructureDefinition/string"))))),
+        isPrimitive = true, isChoiceRoot = false, isArray = false, 0, Some(1), None, None, None, None, None, None, None, None, None, None, None, None, None
+      )
+    ))
+  )
 
 
   // first schema to be created
@@ -237,13 +296,58 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
       }
     }
 
-    "infer the schema and retrieve column types" in {
+    "infer the schema with 'overwrite' option and retrieve column types" in {
       // infer the schema
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(inferTask))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(inferTaskOverwrite))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate data types of schema
         val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
         val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 4
+        fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual "integer"
+        fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual "date"
+        fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual "dateTime"
+        fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual "string"
+      }
+    }
+
+    "infer the schema with 'append' option and retrieve column types" in {
+      // infer the schema
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(inferTaskAppend))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate data types of schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 6
+        // Existing fields with the same id must be unchanged
+        fieldDefinitions.head.id shouldEqual "person_id"
+        fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual "string"
+        fieldDefinitions.head.short.get shouldEqual "example-short"
+        fieldDefinitions(1).id shouldEqual "death_date"
+        fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual "string"
+        fieldDefinitions(1).definition.get shouldEqual "example-definition"
+        // Extra fields that come from schema inference must be in their actual order in the inferred schema
+        fieldDefinitions(2).id shouldEqual "death_datetime"
+        fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual "dateTime"
+        fieldDefinitions(3).id shouldEqual "cause_source_value"
+        fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual "string"
+        // User fields that do not exist in inferred schema should be appended to the end
+        fieldDefinitions(4).id shouldEqual "last_visit_datetime"
+        fieldDefinitions(4).short.get shouldEqual "example-short"
+        fieldDefinitions(5).path shouldEqual "Test.name"
+      }
+    }
+
+    "infer the schema with 'append' option and without field definitions and retrieve column types" in {
+      // Create an InferTask with 'append' options and without field definitions
+      val inferTaskAppendWithoutFields = inferTaskAppend.copy(fieldDefinitions = Option.empty)
+      // infer the schema
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(inferTaskAppendWithoutFields))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        // validate data types of schema
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        val fieldDefinitions = schema.fieldDefinitions.get
+        // has to be exactly the same as overwrite
         fieldDefinitions.size shouldEqual 4
         fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual "integer"
         fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual "date"
@@ -299,7 +403,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for file data sources with wrong file extension" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskOverwrite.copy(mappingJobSourceSettings = inferTaskOverwrite.mappingJobSourceSettings.updated(
         "source", FileSystemSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -315,7 +419,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for data data sources with wrong file path" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskOverwrite.copy(mappingJobSourceSettings = inferTaskOverwrite.mappingJobSourceSettings.updated(
         "source", FileSystemSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -331,7 +435,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong preprocess SQL string" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskOverwrite.copy(mappingJobSourceSettings = inferTaskOverwrite.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
         sourceBinding = SqlSource(query = Some("Select * from death"), preprocessSql = Some("Wrong query string"))
@@ -344,7 +448,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong user credentials to access the DB" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskOverwrite.copy(mappingJobSourceSettings = inferTaskOverwrite.mappingJobSourceSettings.updated(
         "source", SqlSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -361,7 +465,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong database URL" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskOverwrite.copy(mappingJobSourceSettings = inferTaskOverwrite.mappingJobSourceSettings.updated(
         "source", SqlSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -378,7 +482,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for erroneous SQL query" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskOverwrite.copy(mappingJobSourceSettings = inferTaskOverwrite.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
         sourceBinding = SqlSource(query = Some("WRONG"))
@@ -391,7 +495,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong column name in the SQL query" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskOverwrite.copy(mappingJobSourceSettings = inferTaskOverwrite.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
         sourceBinding = SqlSource(query = Some("select WRONG from death"))
