@@ -197,7 +197,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
             .map(mr =>
               mr.copy(error = Some(FhirMappingError( //Set the error
                 code = FhirMappingErrorCodes.SERVICE_PROBLEM,
-                description = msg
+                description = msg + Option(fce.getMessage).filter(_.nonEmpty).map(" " + _).getOrElse("")
               )))
             ).foreach(failedResult => problemsAccumulator.add(failedResult))
           None
