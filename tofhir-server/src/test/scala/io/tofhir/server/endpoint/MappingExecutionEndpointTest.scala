@@ -197,15 +197,15 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
           val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
           val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${batchJob.id}").toFile
           jobFolder.exists() && {
-            val csvFile = jobFolder.listFiles().head // execution folder
-              .listFiles().head // mapping task folder
-              .listFiles().head // source folder i.e. main source, secondary source etc.
-              .listFiles().head // csv file
+            val csvFile = jobFolder.listFiles().headOption.flatMap( // execution folder
+              _.listFiles().headOption.flatMap( // mapping task folder
+              _.listFiles().headOption.flatMap( // source folder i.e. main source, secondary source etc.
+              _.listFiles().headOption))) // csv file
             // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
             // the files are moved from "_temporary" to the parent output directory, and "_temporary" is deleted. This
             // intermediate step can be observed during testing, which is why we check if the file is a CSV.
-            csvFile.exists() && csvFile.getName.endsWith(".csv") && {
-              val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.getPath)
+            csvFile.isDefined && csvFile.get.exists() && csvFile.get.getName.endsWith(".csv") && {
+              val csvFileContent = sparkSession.read.option("header", "true").csv(csvFile.get.getPath)
               csvFileContent.count() == 1
             }
           }
