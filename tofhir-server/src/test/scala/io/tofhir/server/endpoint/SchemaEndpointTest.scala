@@ -12,6 +12,7 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.server.BaseEndpointTest
+import io.tofhir.server.endpoint.SchemaDefinitionEndpoint.{QUERY_PARAM_TYPE, QUERY_PARAM_URL}
 import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
 import io.tofhir.server.util.{FileOperations, TestUtil}
 import org.json4s.JArray
@@ -595,6 +596,39 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
         response should include("Detail: The schema with URL 'https://aiccelerate.eu/fhir/StructureDefinition/AIC-Condition' references a non-existent schema: 'https://aiccelerate.eu/fhir/StructureDefinition/AIC-Patient'. Ensure all referenced schemas exist.")
+      }
+    }
+
+    /**
+     * Test case to verify retrieval of simplified element definitions for a given schema.
+     *
+     * This test performs the following steps:
+     * 1. Creates a schema with two elements and posts it to the Schema Definition endpoint.
+     * 2. Sends a GET request to the Schema Definition endpoint with the schema URL and SimpleStructureDefinition format
+     * and expects a sequence of SimpleStructureDefinition objects to be returned in the response.
+     */
+    "retrieve simplified element definitions of a schema" in {
+      // create a schema with two elements
+      val schemaUrl: String = "https://example.com/fhir/StructureDefinition/schema"
+      val schema: SchemaDefinition = SchemaDefinition(url = schemaUrl, version = "1.4.2", `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = Some(Seq(
+        SimpleStructureDefinition(id = "element-with-definition",
+          path = "Ty.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+          isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
+          boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
+          sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-definition"), definition = Some("element definition"), comment = None, elements = None),
+        SimpleStructureDefinition(id = "element-with-no-definition",
+          path = "Ty.element-with-no-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
+          isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
+          boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
+          sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-no-definition"), definition = None, comment = None, elements = None)
+      )))
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema))) ~> route ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+      // retrieve the simplified element definitions of this schema
+      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}?$QUERY_PARAM_TYPE=${SchemaFormats.SIMPLE_STRUCTURE_DEFINITION}&$QUERY_PARAM_URL=$schemaUrl") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        JsonMethods.parse(responseAs[String]).extract[Seq[SimpleStructureDefinition]].length shouldEqual 2
       }
     }
   }

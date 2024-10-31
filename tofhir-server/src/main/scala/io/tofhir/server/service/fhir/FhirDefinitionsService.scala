@@ -17,23 +17,18 @@ import io.tofhir.engine.util.{FileUtils, MajorFhirVersion}
 import io.tofhir.server.common.model.BadRequest
 import io.tofhir.server.fhir.{FhirDefinitionsConfig, FhirEndpointResourceReader}
 import io.tofhir.server.model.ProfileInfo
-import io.tofhir.server.repository.mapping.IMappingRepository
-import io.tofhir.server.repository.schema.ISchemaRepository
-import io.tofhir.server.service.SchemaDefinitionService
 import org.json4s.JsonAST.JObject
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.JsonMethods.compact
 
 import java.net.{MalformedURLException, URL}
 import scala.collection.mutable
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
+import scala.concurrent.Future
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig,schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) {
+class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig) {
 
   private val logger: Logger = Logger(this.getClass)
-  // service to manage schemas
-  private val schemaDefinitionService: SchemaDefinitionService = new SchemaDefinitionService(schemaRepository, mappingRepository)
 
   // timeout for the proxy request to the FHIR validator
   val timeout: FiniteDuration = 20.seconds
@@ -135,19 +130,7 @@ class FhirDefinitionsService(fhirDefinitionsConfig: FhirDefinitionsConfig,schema
     val urlWithoutVersion = canonicalParts.head
     val version = canonicalParts.drop(1).lastOption
     // retrieve the simplified structure definitions from the cache, or simplify it using SimpleStructureDefinitionService if not cached
-    var simpleStructureDefinitions: Seq[SimpleStructureDefinition] = simplifiedStructureDefinitionCache.getOrElseUpdate(url, simpleStructureDefinitionService.simplifyStructureDefinition(urlWithoutVersion, version))
-    // if not found in SimpleStructureDefinitionService, check the Schema Repository
-    // This is because the schema can be created into the SchemaRepository through toFHIR API, and it is being used as the target schema for mapping definitions (e.g., flat schemas for FHIR-2-tabular mappings)
-    if(simpleStructureDefinitions.isEmpty){
-      // fetch the schema from the schema repository
-      val schema = Await.result(schemaDefinitionService.getSchemaByUrl(url), Duration.Inf)
-      // if the schema is found, get the field definitions
-      if(schema.nonEmpty){
-        simpleStructureDefinitions = schema.get.fieldDefinitions.get
-      }
-    }
-    // return the simplified structure definitions
-    simpleStructureDefinitions
+    simplifiedStructureDefinitionCache.getOrElseUpdate(url, simpleStructureDefinitionService.simplifyStructureDefinition(urlWithoutVersion, version))
   }
 
   /**

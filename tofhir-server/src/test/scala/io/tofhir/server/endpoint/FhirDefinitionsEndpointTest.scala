@@ -3,14 +3,13 @@ package io.tofhir.server.endpoint
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import io.tofhir.OnFhirTestContainer
 import io.tofhir.common.model.Json4sSupport.formats
-import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
+import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.util.MajorFhirVersion
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q}
 import org.json4s.JsonAST.{JString, JValue}
 import org.json4s._
 import org.json4s.jackson.JsonMethods
-import org.json4s.jackson.Serialization.writePretty
 
 import scala.io.Source
 
@@ -165,39 +164,6 @@ class FhirDefinitionsEndpointTest extends BaseEndpointTest with OnFhirTestContai
       Get(s"/${webServerConfig.baseUri}/${FhirDefinitionsEndpoint.SEGMENT_FHIR_DEFINITIONS}?$QUERY_PARAM_Q=${DefinitionsQuery.ELEMENTS}&$QUERY_PARAM_PROFILE=http://hl7.org/fhir/StructureDefinition/Patient") ~> route ~> check {
         status shouldEqual StatusCodes.OK
         JsonMethods.parse(responseAs[String]).extract[Seq[SimpleStructureDefinition]].length shouldEqual 22
-      }
-    }
-
-    /**
-     * Test case to verify retrieval of simplified element definitions for a given schema.
-     *
-     * This test performs the following steps:
-     * 1. Creates a schema with two elements and posts it to the Schema Definition endpoint.
-     * 2. Sends a GET request to the FHIR Definitions endpoint with the schema URL and expects
-     * a sequence of SimpleStructureDefinition objects to be returned in the response.
-     */
-    "retrieve simplified element definitions of a schema" in {
-      // create a schema with two elements
-      val schemaUrl: String = "https://example.com/fhir/StructureDefinition/schema"
-      val schema: SchemaDefinition = SchemaDefinition(url = schemaUrl, version = "1.4.2", `type` = "Ty", name = "name", description = Some("description"), rootDefinition = None, fieldDefinitions = Some(Seq(
-        SimpleStructureDefinition(id = "element-with-definition",
-          path = "Ty.element-with-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
-          isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
-          boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
-          sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-definition"), definition = Some("element definition"), comment = None, elements = None),
-        SimpleStructureDefinition(id = "element-with-no-definition",
-          path = "Ty.element-with-no-definition", dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "canonical", profiles = Some(Seq("http://hl7.org/fhir/StructureDefinition/canonical"))))), isPrimitive = true,
-          isChoiceRoot = false, isArray = false, minCardinality = 0, maxCardinality = None,
-          boundToValueSet = None, isValueSetBindingRequired = None, referencableProfiles = None, constraintDefinitions = None, sliceDefinition = None,
-          sliceName = None, fixedValue = None, patternValue = None, referringTo = None, short = Some("element-with-no-definition"), definition = None, comment = None, elements = None)
-      )))
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema))) ~> route ~> check {
-        status shouldEqual StatusCodes.Created
-      }
-      // retrieve the simplified element definitions of this schema
-      Get(s"/${webServerConfig.baseUri}/${FhirDefinitionsEndpoint.SEGMENT_FHIR_DEFINITIONS}?$QUERY_PARAM_Q=${DefinitionsQuery.ELEMENTS}&$QUERY_PARAM_PROFILE=$schemaUrl") ~> route ~> check {
-        status shouldEqual StatusCodes.OK
-        JsonMethods.parse(responseAs[String]).extract[Seq[SimpleStructureDefinition]].length shouldEqual 2
       }
     }
   }
