@@ -221,14 +221,7 @@ object FhirMappingResultConverter {
       error = firstResult.error,
       executionId = firstResult.executionId,
       projectId = firstResult.projectId,
-      mappedFhirResources = results.map { result =>
-        // Create MappedFhirResource for each result in the group
-        MappedFhirResource(
-          mappingExpr = result.mappedFhirResource.get.mappingExpr,
-          mappedResource = result.mappedFhirResource.get.mappedResource,
-          fhirInteraction = result.mappedFhirResource.get.fhirInteraction
-        )
-      }
+      mappedFhirResources = results.flatMap(_.mappedFhirResource)
     )
   }
 }
