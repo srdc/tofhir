@@ -66,7 +66,7 @@ object RedCapUtil {
           definitions = definitions :+ SimpleStructureDefinition(id = variableName.get,
             path = s"$schemaId.${variableName.get}",
             dataTypes = Some(Seq(dataType)),
-            isPrimitive = false,
+            isPrimitive = true, // every field of a REDCap schema is primitive
             isChoiceRoot = false,
             isArray = cardinality._2.isEmpty,
             minCardinality = cardinality._1,

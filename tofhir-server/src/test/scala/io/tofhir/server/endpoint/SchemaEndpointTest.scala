@@ -295,6 +295,8 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         schema.url shouldEqual s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId"
         val fieldDefinitions = schema.fieldDefinitions.get
         fieldDefinitions.size shouldEqual 5
+        // every field of a REDCap schema should be primitive
+        fieldDefinitions.count(_.isPrimitive) shouldEqual 5
       }
     }
 
