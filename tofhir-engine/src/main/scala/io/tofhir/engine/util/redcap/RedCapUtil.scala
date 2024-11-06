@@ -148,6 +148,7 @@ object RedCapUtil {
             case RedCapTextValidationTypes.ZIP_CODE => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.STRING, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.STRING}")))
             case RedCapTextValidationTypes.POSTAL_CODE_GERMANY => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.STRING, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.STRING}")))
             case RedCapTextValidationTypes.TIME_MM_SS => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.TIME, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.TIME}")))
+            case RedCapTextValidationTypes.NUMBER_2DP => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.DECIMAL, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.DECIMAL}")))
             case "" => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.STRING, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.STRING}")))
             case _ => {
               throw new IllegalArgumentException(s"Invalid text validation type for texts: ${textValidationType.get}")
@@ -240,5 +241,6 @@ object RedCapTextValidationTypes {
   val POSTAL_CODE_GERMANY = "postalcode_germany" // (37212, 90210) 5-digit zipcode
   val TIME_MM_SS = "time_mm_ss" // (MM:SS)
   val SIGNATURE = "signature"
+  val NUMBER_2DP = "number_2dp" // number with exactly two decimal places (125.34)
 }
 
