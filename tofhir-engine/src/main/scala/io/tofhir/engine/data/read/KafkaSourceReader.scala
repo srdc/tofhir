@@ -133,7 +133,6 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
         .format("kafka")
         .option("kafka.bootstrap.servers", mappingJobSourceSettings.bootstrapServers)
         .option("subscribe", mappingSourceBinding.topicName)
-        .option("startingOffsets", mappingSourceBinding.startingOffsets)
         .option("inferSchema", value = true)
         .options(mappingSourceBinding.options)
         .load()

@@ -721,8 +721,9 @@ Mapping job and mapping examples shown below for the streaming type of sources l
     "source": {
       "jsonClass": "KafkaSource",
       "topicName": "patients",
-      "groupId": "tofhir",
-      "startingOffsets": "earliest"
+      "options": {
+        "startingOffsets": "earliest"
+      }
     }
   }
 }
