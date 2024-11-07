@@ -126,19 +126,35 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
         }).getOrElse(field)
       }).toJson
     })
-
-    spark
-      .readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", mappingJobSourceSettings.bootstrapServers)
-      .option("subscribe", mappingSourceBinding.topicName)
-      .option("startingOffsets", mappingSourceBinding.startingOffsets)
-      .option("inferSchema", value = true)
-      .options(mappingSourceBinding.options)
-      .load()
-      .select($"value".cast(StringType)) // change the type of message from binary to string
-      .withColumn("value", processDataUDF(col("value"))) // replace 'value' column with the processed data
-      .select(from_json($"value", schema.get).as("record"))
-      .select("record.*")
+    // Determine whether to use batch or streaming read mode based on the 'asStream' setting
+    if (mappingJobSourceSettings.asStream) {
+      spark
+        .readStream // Use streaming mode for continuous ingestion of new messages from Kafka
+        .format("kafka")
+        .option("kafka.bootstrap.servers", mappingJobSourceSettings.bootstrapServers)
+        .option("subscribe", mappingSourceBinding.topicName)
+        .option("startingOffsets", mappingSourceBinding.startingOffsets)
+        .option("inferSchema", value = true)
+        .options(mappingSourceBinding.options)
+        .load()
+        .select($"value".cast(StringType)) // change the type of message from binary to string
+        .withColumn("value", processDataUDF(col("value"))) // replace 'value' column with the processed data
+        .select(from_json($"value", schema.get).as("record"))
+        .select("record.*")
+    }
+    else {
+      spark
+        .read // Use read instead of readStream for a batch read
+        .format("kafka")
+        .option("kafka.bootstrap.servers", mappingJobSourceSettings.bootstrapServers)
+        .option("subscribe", mappingSourceBinding.topicName)
+        .option("inferSchema", value = true)
+        .options(mappingSourceBinding.options)
+        .load()
+        .select($"value".cast(StringType)) // change the type of message from binary to string
+        .withColumn("value", processDataUDF(col("value"))) // replace 'value' column with the processed data
+        .select(from_json($"value", schema.get).as("record"))
+        .select("record.*")
+    }
   }
 }

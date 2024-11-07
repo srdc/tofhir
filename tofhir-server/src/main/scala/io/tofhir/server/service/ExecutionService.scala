@@ -227,7 +227,14 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
       toFhirEngine.functionLibraries,
       toFhirEngine.sparkSession
     )
-    val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, mappingJob.sourceSettings, jobId = Some(jobId), isTestExecution = true)
+    // Define the updated jobSourceSettings where asStream is set to false if the setting is a KafkaSourceSettings
+    val jobSourceSettings: Map[String, MappingJobSourceSettings] = mappingJob.sourceSettings.map {
+      case (key, kafkaSettings: KafkaSourceSettings) =>
+        key -> kafkaSettings.copy(asStream = false) // Copy and update asStream to false for KafkaSourceSettings
+      case other => other // Keep other source settings unchanged
+    }
+
+    val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, jobSourceSettings, jobId = Some(jobId), isTestExecution = true)
     val selectedDataFrame = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
       .distinct() // Remove duplicate rows to ensure each FHIR Resource is represented only once per source.
                   // This prevents confusion for users in the UI, as displaying the same resource multiple times could lead to misunderstandings.

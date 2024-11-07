@@ -266,7 +266,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
 
           // We send the filename (stripped from its .json extension) as an id to the SchemaDefinition constructor because at this point we know that the file name is unique within the projectFolder
           // It is not possible to have two files with the same name within a folder.
-          val schema = simpleStructureDefinitionService.convertToSchemaDefinition(profileRestrictions.id.getOrElse(IOUtil.removeFileExtension(schemaFile.getName)), profileRestrictions)
+          val schema: SchemaDefinition = simpleStructureDefinitionService.convertToSchemaDefinition(profileRestrictions.id.getOrElse(IOUtil.removeFileExtension(schemaFile.getName)), profileRestrictions)
+          // validate the 'type' field of schema definition
+          validateSchemaDefinitionType(schema)
           if (FileOperations.checkFileNameMatchesEntityId(schema.id, schemaFile, "schema")) {
             projectSchemas.put(schema.id, schema)
           } // else case is logged within FileOperations.checkFileNameMatchesEntityId

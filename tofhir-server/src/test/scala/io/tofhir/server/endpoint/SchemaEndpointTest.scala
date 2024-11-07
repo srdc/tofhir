@@ -283,18 +283,32 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
       val formData = Multipart.FormData(fileData)
       // the root URL of the schemas
       val definitionRootUrl = "http://test-schema"
-      // the identifier of schema to be created. It is the form name given in the instrument.csv
-      val schemaId = "Test"
+      // the form field which keeps the unique identifier of REDCap records
+      val recordIdField = "record_id"
+      // the identifiers of schemas to be created. They are the form names given in the instrument.csv
+      val firstSchemaId = "Test"
+      val secondSchemaId = "Additional_information"
 
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_REDCAP}?rootUrl=$definitionRootUrl", formData.toEntity()) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_REDCAP}?rootUrl=$definitionRootUrl&recordIdField=$recordIdField", formData.toEntity()) ~> route ~> check {
         status shouldEqual StatusCodes.OK
-        // validate the schema
+        // validate the schemas
         val schemas: Seq[SchemaDefinition] = JsonMethods.parse(responseAs[String]).extract[Seq[SchemaDefinition]]
-        schemas.size shouldEqual 1
-        val schema = schemas.head
-        schema.url shouldEqual s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId"
-        val fieldDefinitions = schema.fieldDefinitions.get
+        schemas.size shouldEqual 2
+        // validate the first one
+        val firstSchema = schemas.head
+        firstSchema.url shouldEqual s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$firstSchemaId"
+        var fieldDefinitions = firstSchema.fieldDefinitions.get
         fieldDefinitions.size shouldEqual 5
+        // every field of a REDCap schema should be primitive
+        fieldDefinitions.count(_.isPrimitive) shouldEqual 5
+
+        // validate the second one
+        val secondSchema = schemas.last
+        secondSchema.url shouldEqual s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$secondSchemaId"
+        fieldDefinitions = secondSchema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 4
+        // 'record_id' field should be added automatically even if it does not exist in the form definition
+        fieldDefinitions.count(definition => definition.id.contentEquals(recordIdField)) shouldEqual 1
       }
     }
 

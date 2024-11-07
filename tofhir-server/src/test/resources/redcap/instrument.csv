@@ -5,3 +5,6 @@ gender,test,,dropdown,"2.Gender","male, Male | female, Female","Enter your gende
 age,test,,checkbox,"3.Age Category","baby, Baby | young, Young | adult, Adult | old, Old",,,,,,,,,,,,
 explanation,test,,descriptive,"The following question is not mandatory:",,,,,,,,,,,,,
 children,test,,radio,"How many children do you have ?","zero, 0 | one, 1 | two, 2 | more_than_two More than 2",,,,,,,,,,,,
+occupation,additional_information,,text,"Occupation","Enter your primary occupation",,,,,,,,,,,,
+marital_status,additional_information,,dropdown,"Marital Status","single, Single | married, Married | divorced, Divorced | widowed, Widowed",,,,,,,,,,,,
+hobbies,additional_information,,checkbox,"Hobbies","reading, Reading | sports, Sports | traveling, Traveling | music, Music | other, Other",,,,,,,,,,,,

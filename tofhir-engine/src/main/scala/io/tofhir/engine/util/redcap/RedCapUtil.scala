@@ -17,10 +17,11 @@ object RedCapUtil {
    *
    * @param content           The content of a REDCap data dictionary file
    * @param definitionRootUrl The definition root url for the newly created schemas
+   * @param recordIdField     The name of the field that represents the record ID.
    * @return the list of schemas extracted from REDCap data dictionary
    * */
-  def extractSchemas(content: Seq[Map[String, String]], definitionRootUrl: String): Seq[Resource] = {
-    val schemaDefinitions: Seq[SchemaDefinition] = extractSchemasAsSchemaDefinitions(content, definitionRootUrl)
+  def extractSchemas(content: Seq[Map[String, String]], definitionRootUrl: String, recordIdField: String = ""): Seq[Resource] = {
+    val schemaDefinitions: Seq[SchemaDefinition] = extractSchemasAsSchemaDefinitions(content, definitionRootUrl, recordIdField)
     // convert it to FHIR Resources
     schemaDefinitions.map(definition =>  SchemaUtil.convertToStructureDefinitionResource(definition, ToFhirConfig.engineConfig.schemaRepositoryFhirVersion))
   }
@@ -30,10 +31,11 @@ object RedCapUtil {
    *
    * @param content           The content of a REDCap data dictionary file
    * @param definitionRootUrl The definition root url for the newly created schemas
+   * @param recordIdField     The name of the field that represents the record ID in the output.
    * @return the list of schemas extracted from REDCap data dictionary
    * @throws BadRequestException when REDCap data dictionary file does not include {@link RedCapDataDictionaryColumns.VARIABLE_FIELD_NAME}
    * */
-  def extractSchemasAsSchemaDefinitions(content: Seq[Map[String, String]], definitionRootUrl: String): Seq[SchemaDefinition] = {
+  def extractSchemasAsSchemaDefinitions(content: Seq[Map[String, String]], definitionRootUrl: String, recordIdField: String): Seq[SchemaDefinition] = {
     // find forms
     val forms: Map[String, Seq[Map[String, String]]] = content.groupBy(row => row(RedCapDataDictionaryColumns.FORM_NAME))
     // create a schema for each form
@@ -42,6 +44,8 @@ object RedCapUtil {
       val schemaId = schemaName.capitalize
       // get schema definitions
       var definitions:Seq[SimpleStructureDefinition] = Seq.empty
+      // whether the record identifier field is included in the instrument or not
+      var includeRecordIdentifierField: Boolean = false
       form._2.foreach(row => {
         // read columns
         // try to retrieve the variable name from the regular field name column.
@@ -66,7 +70,7 @@ object RedCapUtil {
           definitions = definitions :+ SimpleStructureDefinition(id = variableName.get,
             path = s"$schemaId.${variableName.get}",
             dataTypes = Some(Seq(dataType)),
-            isPrimitive = false,
+            isPrimitive = true, // every field of a REDCap schema is primitive
             isChoiceRoot = false,
             isArray = cardinality._2.isEmpty,
             minCardinality = cardinality._1,
@@ -86,7 +90,37 @@ object RedCapUtil {
             elements = None
           )
         }
+        // check whether it is the record identifier field
+        if(!includeRecordIdentifierField && variableName.get.contentEquals(recordIdField)){
+          includeRecordIdentifierField = true
+        }
       })
+      // add record identifier field if it does not exist in the form
+      if(!includeRecordIdentifierField){
+        definitions = SimpleStructureDefinition(id = recordIdField,
+          path = s"$schemaId.${recordIdField}",
+          dataTypes = Some(Seq(getDataType(RedCapDataTypes.TEXT))),
+          isPrimitive = true, // every field of a REDCap schema is primitive
+          isChoiceRoot = false,
+          isArray = false, // there is only one record identifier
+          minCardinality = 0,
+          maxCardinality = Some(1),
+          boundToValueSet = None,
+          isValueSetBindingRequired = None,
+          referencableProfiles = None,
+          constraintDefinitions = None,
+          sliceDefinition = None,
+          sliceName = None,
+          fixedValue = None,
+          patternValue = None,
+          referringTo = None,
+          short = Some("Record Identifier"),
+          definition = Some("Unique identifier for individual record within a project"),
+          comment = None,
+          elements = None
+        ) +: definitions
+      }
+
       SchemaDefinition(id = schemaId,
         url = s"$definitionRootUrl/${FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION}/$schemaId",
         version = SchemaDefinition.VERSION_LATEST, // Set the schema version to latest for the REDCap schemas
@@ -126,7 +160,7 @@ object RedCapUtil {
    * @return corresponding FHIR data type
    * @throws IllegalArgumentException when invalid data type or text validation types are given
    * */
-  private def getDataType(fieldType: String, textValidationType: Option[String]): DataTypeWithProfiles = {
+  private def getDataType(fieldType: String, textValidationType: Option[String] = None): DataTypeWithProfiles = {
     fieldType match {
       case RedCapDataTypes.TEXT | RedCapDataTypes.NOTES =>
         if (textValidationType.nonEmpty) {
@@ -148,6 +182,7 @@ object RedCapUtil {
             case RedCapTextValidationTypes.ZIP_CODE => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.STRING, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.STRING}")))
             case RedCapTextValidationTypes.POSTAL_CODE_GERMANY => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.STRING, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.STRING}")))
             case RedCapTextValidationTypes.TIME_MM_SS => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.TIME, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.TIME}")))
+            case RedCapTextValidationTypes.NUMBER_2DP => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.DECIMAL, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.DECIMAL}")))
             case "" => DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.STRING, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.STRING}")))
             case _ => {
               throw new IllegalArgumentException(s"Invalid text validation type for texts: ${textValidationType.get}")
@@ -240,5 +275,6 @@ object RedCapTextValidationTypes {
   val POSTAL_CODE_GERMANY = "postalcode_germany" // (37212, 90210) 5-digit zipcode
   val TIME_MM_SS = "time_mm_ss" // (MM:SS)
   val SIGNATURE = "signature"
+  val NUMBER_2DP = "number_2dp" // number with exactly two decimal places (125.34)
 }
 

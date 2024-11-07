@@ -171,17 +171,18 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
   /**
    * Imports a REDCap Data Dictionary file to create new schemas for the forms defined in the given file.
    *
-   * @param projectId  project id for which the schemas will be created
-   * @param byteSource the REDCap Data Dictionary File
-   * @param rootUrl    the root URL of the schemas to be created
+   * @param projectId     project id for which the schemas will be created
+   * @param byteSource    the REDCap Data Dictionary File
+   * @param rootUrl       the root URL of the schemas to be created
+   * @param recordIdField The name of the field that represents the record ID.
    * @return
    */
-  def importREDCapDataDictionary(projectId: String, byteSource: Source[ByteString, Any], rootUrl: String): Future[Seq[SchemaDefinition]] = {
+  def importREDCapDataDictionary(projectId: String, byteSource: Source[ByteString, Any], rootUrl: String, recordIdField: String): Future[Seq[SchemaDefinition]] = {
     // read the file
     val content: Future[Seq[Map[String, String]]] = CsvUtil.readFromCSVSource(byteSource)
     content.flatMap(rows => {
       // extract schema definitions
-      val definitions: Seq[SchemaDefinition] = RedCapUtil.extractSchemasAsSchemaDefinitions(rows, rootUrl)
+      val definitions: Seq[SchemaDefinition] = RedCapUtil.extractSchemasAsSchemaDefinitions(rows, rootUrl, recordIdField)
       // save each schema
       Future.sequence(definitions.map(definition => schemaRepository.saveSchema(projectId, definition)))
     })
