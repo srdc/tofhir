@@ -182,9 +182,9 @@ class SchemaDefinitionEndpoint(schemaRepository: ISchemaRepository, mappingRepos
     post {
       fileUpload(ATTACHMENT) {
         case (_, byteSource) =>
-          parameters("rootUrl") { rootUrl =>
+          parameters("rootUrl", "recordIdField") { (rootUrl, recordIdField) =>
             complete {
-              service.importREDCapDataDictionary(projectId, byteSource, rootUrl)
+              service.importREDCapDataDictionary(projectId, byteSource, rootUrl, recordIdField)
             }
           }
 
