@@ -28,7 +28,13 @@ class FileSystemTreeStructureService {
   def getFolderTreeStructure(basePathString: String, includeFiles: Boolean): FilePathNode = {
     var fileCount = 0 // Track total number of files processed
 
-    def buildNode(path: Path, basePath: Path): FilePathNode = {
+    val path = FileUtils.getPath(basePathString)
+    val basePath = FileUtils.getPath(basePathString)
+    if(!path.toAbsolutePath.normalize().startsWith(FileUtils.getPath("").toAbsolutePath)) {
+      throw new IllegalArgumentException("The given path is outside the root context path.")
+    }
+
+    def buildNode(path: Path): FilePathNode = {
       if (fileCount >= FILE_LIMIT) {
         throw new IllegalStateException(s"File limit exceeded. The maximum number of files to process is $FILE_LIMIT.")
       }
@@ -41,7 +47,7 @@ class FileSystemTreeStructureService {
             .filterNot(shouldBeExcluded)  // Filter out hidden files, folders
             .map { p =>
               fileCount += 1
-              buildNode(p, basePath)
+              buildNode(p)
             }
             .toList
         } finally {
@@ -50,15 +56,9 @@ class FileSystemTreeStructureService {
       } else {
         List.empty[FilePathNode]
       }
-      FilePathNode(path.getFileName.toString, Files.isDirectory(path), children, basePath.relativize(path).toString.replaceAll("\\\\", "/"))
+      FilePathNode(path.getFileName.toString, Files.isDirectory(path), basePath.relativize(path).toString.replaceAll("\\\\", "/"), children)
     }
-
-    val path = FileUtils.getPath(basePathString)
-    val basePath = FileUtils.getPath(basePathString)
-    if(!path.toAbsolutePath.normalize().startsWith(FileUtils.getPath("").toAbsolutePath)) {
-      throw new IllegalArgumentException("The given path is outside the root context path.")
-    }
-    buildNode(path, basePath)
+    buildNode(path)
   }
 
 }
