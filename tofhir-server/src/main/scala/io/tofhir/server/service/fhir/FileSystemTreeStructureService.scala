@@ -21,12 +21,17 @@ class FileSystemTreeStructureService {
 
   /**
    * Get the folder tree structure of the given base path
-   * @param basePath The base path to start with
+   * @param basePathString The base path to start with
    * @param includeFiles if false, only folders will be included in the tree
    * @return
    */
-  def getFolderTreeStructure(basePath: String, includeFiles: Boolean): FilePathNode = {
+  def getFolderTreeStructure(basePathString: String, includeFiles: Boolean): FilePathNode = {
     var fileCount = 0 // Track total number of files processed
+
+    val basePath = FileUtils.getPath(basePathString)
+    if(!basePath.toAbsolutePath.normalize().startsWith(FileUtils.getPath("").toAbsolutePath)) {
+      throw new IllegalArgumentException("The given path is outside the root context path.")
+    }
 
     def buildNode(path: Path): FilePathNode = {
       if (fileCount >= FILE_LIMIT) {
@@ -50,14 +55,9 @@ class FileSystemTreeStructureService {
       } else {
         List.empty[FilePathNode]
       }
-      FilePathNode(path.getFileName.toString, Files.isDirectory(path), children)
+      FilePathNode(path.getFileName.toString, Files.isDirectory(path), basePath.relativize(path).toString.replaceAll("\\\\", "/"), children)
     }
-
-    val path = FileUtils.getPath(basePath)
-    if(!path.toAbsolutePath.normalize().startsWith(FileUtils.getPath("").toAbsolutePath)) {
-      throw new IllegalArgumentException("The given path is outside the root context path.")
-    }
-    buildNode(path)
+    buildNode(basePath)
   }
 
 }
