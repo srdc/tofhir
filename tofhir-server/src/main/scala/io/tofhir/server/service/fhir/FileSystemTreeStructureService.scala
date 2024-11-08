@@ -28,9 +28,8 @@ class FileSystemTreeStructureService {
   def getFolderTreeStructure(basePathString: String, includeFiles: Boolean): FilePathNode = {
     var fileCount = 0 // Track total number of files processed
 
-    val path = FileUtils.getPath(basePathString)
     val basePath = FileUtils.getPath(basePathString)
-    if(!path.toAbsolutePath.normalize().startsWith(FileUtils.getPath("").toAbsolutePath)) {
+    if(!basePath.toAbsolutePath.normalize().startsWith(FileUtils.getPath("").toAbsolutePath)) {
       throw new IllegalArgumentException("The given path is outside the root context path.")
     }
 
@@ -58,7 +57,7 @@ class FileSystemTreeStructureService {
       }
       FilePathNode(path.getFileName.toString, Files.isDirectory(path), basePath.relativize(path).toString.replaceAll("\\\\", "/"), children)
     }
-    buildNode(path)
+    buildNode(basePath)
   }
 
 }
