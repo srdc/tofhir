@@ -140,8 +140,8 @@ case class FhirInteraction(`type`:String, rid:Option[String] = None, condition:O
  * @param description     An optional description of the mapping expression. This can be used to provide additional
  *                        context or documentation for the mapping.
  */
-case class FhirMappingExpression(expression: FhirExpression,
+case class FhirMappingExpression(description: Option[String] = None,
                                  precondition: Option[FhirExpression] = None,
                                  fhirInteraction: Option[FhirInteraction] = None,
-                                 description: Option[String] = None
+                                 expression: FhirExpression
                                 )
