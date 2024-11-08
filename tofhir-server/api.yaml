@@ -2197,18 +2197,10 @@ components:
             topicName:
               type: string
               description: "Topic(s) to subscribe to, may be comma-separated string list (topic1,topic2)"
-            groupId:
-              type: string
-              description: "Kafka group id to use in Kafka consumer while reading from Kafka"
-            startingOffsets:
-              type: string
-              description: "The start point when a query is started"
             options:
               $ref: "#/components/schemas/SparkOptions"
           required:
             - topicName
-            - groupId
-            - startingOffsets
 
     FhirServerSource:
       description: "Defines FHIR server source configurations of a mapping in the mapping-job"
@@ -3542,11 +3534,10 @@ components:
               source:
                 sourceRef: "source3"
                 jsonClass: "KafkaSource"
-                options:
-                  maxFilesPerTrigger: "1"
                 topicName: "topic"
-                groupId: "group"
-                startingOffsets: "latest"
+                options:
+                  startingOffsets: "latest"
+                  maxFilesPerTrigger: "1"
           - name: "example-mapping-4"
             mappingRef: "https://aiccelerate.eu/fhir/mappings/pilot1/preoperative-risks-mapping"
             sourceBinding:

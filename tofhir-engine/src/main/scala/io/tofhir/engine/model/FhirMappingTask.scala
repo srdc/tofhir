@@ -72,11 +72,9 @@ case class SqlSource(tableName: Option[String] = None, query: Option[String] = N
  * Context/configuration for one of the source of the mapping that will read the source data from a kafka as stream
  *
  * @param topicName       The topic(s) to subscribe, may be comma seperated string list (topic1,topic2)
- * @param groupId         The Kafka group id to use in Kafka consumer while reading from Kafka
- * @param startingOffsets The start point when a query is started
- * @param options         Further options for Kafka source (Spark Kafka Guide -> https://spark.apache.org/docs/3.4.1/structured-streaming-kafka-integration.html)
+ * @param options         Further options for Kafka source (Spark Kafka Guide -> https://spark.apache.org/docs/3.5.1/structured-streaming-kafka-integration.html)
  */
-case class KafkaSource(topicName: String, groupId: String, startingOffsets: String, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding
+case class KafkaSource(topicName: String, options:Map[String, String] = Map.empty[String, String], override val preprocessSql: Option[String] = None, override val sourceRef: Option[String] = None) extends MappingSourceBinding
 
 /**
  * Represents a mapping source binding for FHIR server data.

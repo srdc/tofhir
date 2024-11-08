@@ -84,17 +84,17 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
   val patientMappingTask: FhirMappingTask = FhirMappingTask(
     name = "patient-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
-    sourceBinding = Map("source" -> KafkaSource(topicName = "patients", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
+    sourceBinding = Map("source" -> KafkaSource(topicName = "patients", sourceRef = Some("kafka-source"), options = Map("startingOffsets" -> "earliest")))
   )
   val otherObservationMappingTask: FhirMappingTask = FhirMappingTask(
     name = "other-observation-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-    sourceBinding = Map("source" -> KafkaSource(topicName = "observations", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
+    sourceBinding = Map("source" -> KafkaSource(topicName = "observations", sourceRef = Some("kafka-source"), options = Map("startingOffsets" -> "earliest")))
   )
   val familyMemberHistoryMappingTask: FhirMappingTask = FhirMappingTask(
     name = "family-member-history-mapping",
     mappingRef = "https://aiccelerate.eu/fhir/mappings/family-member-history-mapping",
-    sourceBinding = Map("source" -> KafkaSource(topicName = "familyMembers", groupId = "tofhir", startingOffsets = "earliest", sourceRef = Some("kafka-source")))
+    sourceBinding = Map("source" -> KafkaSource(topicName = "familyMembers", sourceRef = Some("kafka-source"), options = Map("startingOffsets" -> "earliest")))
   )
 
   val fhirMappingJob: FhirMappingJob = FhirMappingJob(
@@ -241,7 +241,7 @@ class KafkaSourceIntegrationTest extends AnyFlatSpec with ToFhirTestSpec with Be
     })
     consumer.unsubscribe()
     // modify familyMemberHistoryMappingTask to listen to familyMembersCorrupted topic
-    val mappingTask = familyMemberHistoryMappingTask.copy(sourceBinding = Map("source" -> KafkaSource(topicName = "familyMembersCorrupted", groupId = "tofhir", startingOffsets = "earliest")))
+    val mappingTask = familyMemberHistoryMappingTask.copy(sourceBinding = Map("source" -> KafkaSource(topicName = "familyMembersCorrupted", options = Map("startingOffsets" -> "earliest"))))
     val execution: FhirMappingJobExecution = FhirMappingJobExecution(job = fhirMappingJob, mappingTasks = Seq(mappingTask))
     val streamingQueryFutures: Map[String, Future[StreamingQuery]] = fhirMappingJobManager.startMappingJobStream(
       mappingJobExecution = execution,

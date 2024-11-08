@@ -24,8 +24,9 @@
         "source": {
           "jsonClass": "KafkaSource",
           "topicName": "patients",
-          "groupId": "tofhir",
-          "startingOffsets": "earliest"
+          "options": {
+            "startingOffsets": "earliest"
+          }
         }
       }
     }
