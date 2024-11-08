@@ -142,13 +142,15 @@ class KafkaSourceReader(spark: SparkSession) extends BaseDataSourceReader[KafkaS
         .select("record.*")
     }
     else {
+      // Filter out the 'startingOffsets' option as it always supposed to be "earliest" for batch kafka reads
+      val filteredOptions = mappingSourceBinding.options.filterNot(o => o._1 == "startingOffsets")
       spark
         .read // Use read instead of readStream for a batch read
         .format("kafka")
         .option("kafka.bootstrap.servers", mappingJobSourceSettings.bootstrapServers)
         .option("subscribe", mappingSourceBinding.topicName)
         .option("inferSchema", value = true)
-        .options(mappingSourceBinding.options)
+        .options(filteredOptions)
         .load()
         .select($"value".cast(StringType)) // change the type of message from binary to string
         .withColumn("value", processDataUDF(col("value"))) // replace 'value' column with the processed data
