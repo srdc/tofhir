@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
-import io.tofhir.common.model.Json4sSupport._
+import io.onfhir.definitions.common.model.Json4sSupport._
 import io.tofhir.server.model.TerminologySystem
 import io.tofhir.server.repository.job.JobFolderRepository
 import io.tofhir.server.repository.terminology.ITerminologySystemRepository

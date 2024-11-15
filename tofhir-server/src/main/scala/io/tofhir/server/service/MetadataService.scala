@@ -7,7 +7,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.config.RedCapServiceConfig
-import io.tofhir.server.fhir.FhirDefinitionsConfig
+import io.onfhir.definitions.resource.fhir.FhirDefinitionsConfig
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.endpoint.MetadataEndpoint.SEGMENT_METADATA

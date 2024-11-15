@@ -5,7 +5,7 @@ import io.onfhir.api.client.FhirClientException
 import io.onfhir.expression.FhirExpressionException
 import io.onfhir.path.FhirPathException
 import org.json4s.jackson.Serialization
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.Json4sSupport.formats
 import io.tofhir.common.util.ExceptionUtil
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler

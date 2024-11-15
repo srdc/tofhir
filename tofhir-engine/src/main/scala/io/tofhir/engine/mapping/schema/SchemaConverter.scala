@@ -5,7 +5,7 @@ import io.onfhir.api.validation.{ConstraintKeys, ElementRestrictions, ProfileRes
 import io.onfhir.api.{FHIR_DATA_TYPES, FHIR_ROOT_URL_FOR_DEFINITIONS, Resource}
 import io.onfhir.r4.parsers.R4Parser
 import io.onfhir.validation.{ArrayRestriction, CardinalityMinRestriction, TypeRestriction}
-import io.tofhir.common.model.{DataTypeWithProfiles, SimpleStructureDefinition}
+import io.onfhir.definitions.common.model.{DataTypeWithProfiles, SimpleStructureDefinition}
 import io.tofhir.engine.util.MajorFhirVersion
 import org.apache.spark.sql.types._
 

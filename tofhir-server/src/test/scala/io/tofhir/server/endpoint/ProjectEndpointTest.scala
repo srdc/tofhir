@@ -1,8 +1,8 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
-import io.tofhir.common.model.Json4sSupport.formats
-import io.tofhir.common.model.SchemaDefinition
+import io.onfhir.definitions.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.SchemaDefinition
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.{Project, ProjectEditableFields}

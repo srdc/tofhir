@@ -6,10 +6,12 @@ import io.onfhir.api.util.IOUtil
 import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, FHIR_ROOT_URL_FOR_DEFINITIONS, Resource}
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
+import io.onfhir.definitions.resource.service.SimpleStructureDefinitionService
 import io.onfhir.exception.InitializationException
 import io.onfhir.util.JsonFormatter._
-import io.tofhir.common.model.SchemaDefinition
-import io.tofhir.common.util.{HashUtil, SchemaUtil}
+import io.onfhir.definitions.common.model.SchemaDefinition
+import io.onfhir.definitions.common.util.HashUtil
+import io.tofhir.common.util.SchemaUtil
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.schema.SchemaConverter
@@ -18,7 +20,6 @@ import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.engine.util.{FhirVersionUtil, FileUtils}
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
 import io.tofhir.server.repository.project.ProjectFolderRepository
-import io.tofhir.server.service.fhir.SimpleStructureDefinitionService
 import io.tofhir.server.util.FileOperations
 import org.apache.spark.sql.types.StructType
 

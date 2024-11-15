@@ -4,7 +4,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
-import io.tofhir.common.model.SchemaDefinition
+import io.onfhir.definitions.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler

@@ -6,7 +6,7 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, Resource}
 import io.tofhir.OnFhirTestContainer
-import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
+import io.onfhir.definitions.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
