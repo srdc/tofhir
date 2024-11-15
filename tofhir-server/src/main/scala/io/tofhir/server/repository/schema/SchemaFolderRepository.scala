@@ -47,7 +47,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private val baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
   // Schema definition cache: project id -> schema id -> schema definition
-  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
+  private var schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
 
   /**
    * Returns the schema cached schema definitions by this repository
@@ -520,6 +520,14 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         allProfiles.foreach(profile => validateProfile(profile, schemaUrl))
       }
     }
+  }
+
+  /**
+   * Reload the schema definitions from the given folder
+   * @return
+   */
+  def reloadSchemaDefinitions(): Unit = {
+    this.schemaDefinitions = initMap(schemaRepositoryFolderPath)
   }
 }
 

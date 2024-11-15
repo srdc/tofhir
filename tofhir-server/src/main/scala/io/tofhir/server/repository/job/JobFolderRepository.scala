@@ -25,7 +25,7 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
 
   private val logger: Logger = Logger(this.getClass)
   // project id -> mapping job id -> mapping job
-  private val jobDefinitions: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = initMap(jobRepositoryFolderPath)
+  private var jobDefinitions: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = initMap(jobRepositoryFolderPath)
 
   /**
    * Returns the mappings managed by this repository
@@ -220,5 +220,13 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
       map.put(projectDirectory.getName, fhirJobMap)
     }
     map
+  }
+
+  /**
+   * Reload the job definitions from the given folder
+   * @return
+   */
+  def reloadJobDefinitions(): Unit = {
+    this.jobDefinitions = initMap(jobRepositoryFolderPath)
   }
 }

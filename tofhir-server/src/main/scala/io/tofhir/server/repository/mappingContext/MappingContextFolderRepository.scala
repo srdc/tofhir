@@ -23,7 +23,7 @@ import scala.concurrent.Future
  */
 class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingContextRepository {
   // project id -> mapping context id
-  private val mappingContextDefinitions: mutable.Map[String, Seq[String]] = initMap(mappingContextRepositoryFolderPath)
+  private var mappingContextDefinitions: mutable.Map[String, Seq[String]] = initMap(mappingContextRepositoryFolderPath)
 
   /**
    * Returns the mapping context cached in memory
@@ -246,4 +246,11 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
     map
   }
 
+  /**
+   * Reload the mapping context definitions from the given folder
+   * @return
+   */
+  def reloadMappingContextDefinitions(): Unit = {
+    this.mappingContextDefinitions = initMap(mappingContextRepositoryFolderPath)
+  }
 }

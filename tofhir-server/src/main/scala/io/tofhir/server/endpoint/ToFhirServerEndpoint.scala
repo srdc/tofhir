@@ -40,7 +40,8 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val codeSystemRepository: ICodeSystemRepository = new CodeSystemRepository(toFhirEngineConfig.terminologySystemFolderPath)
 
   // Initialize the projects by reading the resources available in the file system
-  new FolderDBInitializer(schemaRepository, mappingRepository, mappingJobRepository, projectRepository, mappingContextRepository).init()
+  val folderDBInitializer = new FolderDBInitializer(schemaRepository, mappingRepository, mappingJobRepository, projectRepository, mappingContextRepository)
+  folderDBInitializer.init()
 
   val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
@@ -49,6 +50,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   val fileSystemTreeStructureEndpoint = new FileSystemTreeStructureEndpoint()
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, conceptMapRepository, codeSystemRepository, mappingJobRepository)
   val metadataEndpoint = new MetadataEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, redCapServiceConfig)
+  val reloadEndpoint= new ReloadEndpoint(mappingRepository, schemaRepository, mappingJobRepository, mappingContextRepository, terminologySystemFolderRepository.asInstanceOf[TerminologySystemFolderRepository], folderDBInitializer)
   // Custom rejection handler to send proper messages to user
   val toFhirRejectionHandler: RejectionHandler = ToFhirRejectionHandler.getRejectionHandler()
 
@@ -69,7 +71,8 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
                       fhirDefinitionsEndpoint.route(),
                       fhirPathFunctionsEndpoint.route(),
                       fileSystemTreeStructureEndpoint.route(restCall),
-                      metadataEndpoint.route(restCall)
+                      metadataEndpoint.route(restCall),
+                      reloadEndpoint.route(restCall),
                     ) ++ redcapEndpoint.map(_.route(restCall))
 
                     concat(routes: _*)

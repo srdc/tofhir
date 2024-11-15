@@ -17,7 +17,7 @@ import scala.concurrent.Future
 class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) extends ITerminologySystemRepository {
 
   // terminology system id -> TerminologySystem
-  private val terminologySystemMap: mutable.Map[String, TerminologySystem] = initMap()
+  private var terminologySystemMap: mutable.Map[String, TerminologySystem] = initMap()
 
   /**
    * Retrieve the metadata of all TerminologySystems
@@ -252,6 +252,13 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
     FileOperations.writeJsonContent(localTerminologyFile, terminologySystems)
   }
 
+  /**
+   * Reload the terminology systems from the given folder
+   * @return
+   */
+  def reloadTerminologySystems(): Unit = {
+    this.terminologySystemMap = initMap()
+  }
 }
 
 object TerminologySystemFolderRepository {

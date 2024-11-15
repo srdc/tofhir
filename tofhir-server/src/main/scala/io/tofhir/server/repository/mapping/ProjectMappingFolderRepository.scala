@@ -31,7 +31,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
   private val logger: Logger = Logger(this.getClass)
 
   // project id -> mapping id -> mapping
-  private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
+  private var mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
 
   /**
    * Returns the mappings managed by this repository
@@ -256,5 +256,13 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    */
   override def invalidate(): Unit = {
     // nothing needs to be done as we keep the cache always up-to-date
+  }
+
+  /**
+   * Reload the mapping definitions from the given folder
+   * @return
+   */
+  def reloadMappingDefinitions(): Unit = {
+    this.mappingDefinitions = initMap(mappingRepositoryFolderPath)
   }
 }
