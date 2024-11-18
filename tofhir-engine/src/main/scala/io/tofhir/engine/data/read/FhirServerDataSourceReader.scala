@@ -1,5 +1,6 @@
 package io.tofhir.engine.data.read
 
+import io.onfhir.client.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FixedTokenAuthenticationSettings}
 import io.onfhir.spark.reader.FhirApiReader.OPTIONS
 import io.tofhir.engine.model._
 import org.apache.spark.sql.types.StructType
