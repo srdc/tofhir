@@ -31,7 +31,9 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
   private val logger: Logger = Logger(this.getClass)
 
   // project id -> mapping id -> mapping
-  private var mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = initMap(mappingRepositoryFolderPath)
+  private val mappingDefinitions: mutable.Map[String, mutable.Map[String, FhirMapping]] = mutable.Map.empty[String, mutable.Map[String, FhirMapping]]
+  // Initialize the map for the first time
+  initMap(mappingRepositoryFolderPath)
 
   /**
    * Returns the mappings managed by this repository
@@ -201,8 +203,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * @param mappingRepositoryFolderPath path to the mapping repository
    * @return
    */
-  private def initMap(mappingRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, FhirMapping]] = {
-    val map = mutable.Map.empty[String, mutable.Map[String, FhirMapping]]
+  private def initMap(mappingRepositoryFolderPath: String): Unit = {
     val mappingRepositoryFolder = FileUtils.getPath(mappingRepositoryFolderPath).toFile
     if (!mappingRepositoryFolder.exists()) {
       mappingRepositoryFolder.mkdirs()
@@ -232,10 +233,9 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
         // No processable schema files under projectDirectory
         logger.warn(s"There are no processable mapping files under ${projectDirectory.getAbsolutePath}. Skipping ${projectDirectory.getName}.")
       } else {
-        map.put(projectDirectory.getName, fhirMappingMap)
+        this.mappingDefinitions.put(projectDirectory.getName, fhirMappingMap)
       }
     }
-    map
   }
 
   /**
@@ -263,6 +263,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * @return
    */
   def reloadMappingDefinitions(): Unit = {
-    this.mappingDefinitions = initMap(mappingRepositoryFolderPath)
+    this.mappingDefinitions.clear()
+    initMap(mappingRepositoryFolderPath)
   }
 }

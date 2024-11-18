@@ -23,7 +23,9 @@ import scala.concurrent.Future
  */
 class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingContextRepository {
   // project id -> mapping context id
-  private var mappingContextDefinitions: mutable.Map[String, Seq[String]] = initMap(mappingContextRepositoryFolderPath)
+  private val mappingContextDefinitions: mutable.Map[String, Seq[String]] = mutable.Map.empty[String, Seq[String]]
+  // Initialize the map for the first time
+  initMap(mappingContextRepositoryFolderPath)
 
   /**
    * Returns the mapping context cached in memory
@@ -230,8 +232,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @param mappingContextRepositoryFolderPath path to the mapping context repository
    * @return
    */
-  private def initMap(mappingContextRepositoryFolderPath: String): mutable.Map[String, Seq[String]] = {
-    val map = mutable.Map.empty[String, Seq[String]]
+  private def initMap(mappingContextRepositoryFolderPath: String): Unit = {
     val folder = FileUtils.getPath(mappingContextRepositoryFolderPath).toFile
     if (!folder.exists()) {
       folder.mkdirs()
@@ -241,9 +242,8 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
     directories.foreach { projectDirectory =>
       val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = None, recursively = Some(true))
       val fileNameList = files.map(_.getName)
-      map.put(projectDirectory.getName, fileNameList)
+      this.mappingContextDefinitions.put(projectDirectory.getName, fileNameList)
     }
-    map
   }
 
   /**
@@ -251,6 +251,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @return
    */
   def reloadMappingContextDefinitions(): Unit = {
-    this.mappingContextDefinitions = initMap(mappingContextRepositoryFolderPath)
+    this.mappingContextDefinitions.clear()
+    initMap(mappingContextRepositoryFolderPath)
   }
 }
