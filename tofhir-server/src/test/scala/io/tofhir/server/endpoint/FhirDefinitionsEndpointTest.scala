@@ -1,12 +1,13 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import io.onfhir.definitions.resource.endpoint.FhirDefinitionsEndpoint
+import io.onfhir.definitions.resource.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q}
 import io.tofhir.OnFhirTestContainer
-import io.tofhir.common.model.Json4sSupport.formats
-import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
+import io.onfhir.definitions.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.{SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.util.MajorFhirVersion
 import io.tofhir.server.BaseEndpointTest
-import io.tofhir.server.endpoint.FhirDefinitionsEndpoint.{DefinitionsQuery, QUERY_PARAM_PROFILE, QUERY_PARAM_Q}
 import org.json4s.JsonAST.{JString, JValue}
 import org.json4s._
 import org.json4s.jackson.JsonMethods

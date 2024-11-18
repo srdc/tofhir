@@ -64,5 +64,10 @@
             <groupId>io.onfhir</groupId>
             <artifactId>onfhir-path_${scala.binary.version}</artifactId>
         </dependency>
+        <!-- onFHIR Definitions Common-->
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-definition-commons</artifactId>
+        </dependency>
     </dependencies>
 </project>

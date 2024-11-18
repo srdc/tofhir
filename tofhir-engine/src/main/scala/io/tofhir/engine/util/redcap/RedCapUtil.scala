@@ -1,7 +1,7 @@
 package io.tofhir.engine.util.redcap
 
 import io.onfhir.api.{FHIR_DATA_TYPES, FHIR_FOUNDATION_RESOURCES, FHIR_ROOT_URL_FOR_DEFINITIONS, Resource}
-import io.tofhir.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
+import io.onfhir.definitions.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.common.util.SchemaUtil
 import io.tofhir.engine.config.ToFhirConfig
 

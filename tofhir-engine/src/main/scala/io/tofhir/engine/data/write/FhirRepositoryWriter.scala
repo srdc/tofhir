@@ -7,7 +7,7 @@ import io.onfhir.api.client.{FHIRTransactionBatchBundle, FhirBatchTransactionReq
 import io.onfhir.api.model.OutcomeIssue
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.client.OnFhirNetworkClient
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.model._

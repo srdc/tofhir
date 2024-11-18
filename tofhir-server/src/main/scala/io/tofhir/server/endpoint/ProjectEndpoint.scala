@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.ProjectEndpoint.SEGMENT_PROJECTS
-import io.tofhir.common.model.Json4sSupport._
+import io.onfhir.definitions.common.model.Json4sSupport._
 import io.tofhir.server.model.Project
 import io.tofhir.server.repository.job.IJobRepository
 import io.tofhir.server.repository.mapping.IMappingRepository

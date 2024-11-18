@@ -1,7 +1,7 @@
 package io.tofhir.engine.cli.command
 
 import io.onfhir.api.Resource
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.util.redcap.RedCapUtil
 import io.tofhir.engine.util.{CsvUtil, FileUtils}

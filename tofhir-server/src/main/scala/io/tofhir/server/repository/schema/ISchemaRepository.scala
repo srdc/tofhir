@@ -1,7 +1,7 @@
 package io.tofhir.server.repository.schema
 
 import io.onfhir.api.Resource
-import io.tofhir.common.model.SchemaDefinition
+import io.onfhir.definitions.common.model.SchemaDefinition
 import io.tofhir.engine.mapping.schema.IFhirSchemaLoader
 
 import scala.concurrent.Future

@@ -5,7 +5,7 @@ import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.endpoint.MetadataEndpoint
 import io.tofhir.server.model.Metadata
 import org.json4s.jackson.JsonMethods
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.Json4sSupport.formats
 import io.tofhir.engine.config.ToFhirConfig
 
 import java.io.File

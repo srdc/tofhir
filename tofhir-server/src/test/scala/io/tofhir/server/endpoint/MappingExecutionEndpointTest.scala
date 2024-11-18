@@ -7,7 +7,7 @@ import akka.testkit.TestDuration
 import io.onfhir.api.Resource
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
 import io.tofhir.OnFhirTestContainer
-import io.tofhir.common.model.SchemaDefinition
+import io.onfhir.definitions.common.model.SchemaDefinition
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.write.FileSystemWriter.SinkContentTypes
 import io.tofhir.engine.model._

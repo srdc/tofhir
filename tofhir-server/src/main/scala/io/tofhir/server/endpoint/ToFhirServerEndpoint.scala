@@ -6,7 +6,8 @@ import akka.http.scaladsl.server.{RejectionHandler, Route}
 import io.tofhir.engine.config.ToFhirEngineConfig
 import io.tofhir.server.config.RedCapServiceConfig
 import io.tofhir.server.common.config.WebServerConfig
-import io.tofhir.server.fhir.FhirDefinitionsConfig
+import io.onfhir.definitions.resource.fhir.FhirDefinitionsConfig
+import io.onfhir.definitions.resource.endpoint.FhirDefinitionsEndpoint
 import io.tofhir.server.common.interceptor.{ICORSHandler, IErrorHandler}
 import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.repository.job.JobFolderRepository
@@ -19,6 +20,7 @@ import io.tofhir.server.repository.terminology.codesystem.{CodeSystemRepository,
 import io.tofhir.server.repository.terminology.conceptmap.{ConceptMapRepository, IConceptMapRepository}
 import io.tofhir.server.service.db.FolderDBInitializer
 import io.tofhir.server.util.ToFhirRejectionHandler
+import io.onfhir.definitions.fhirpath.endpoint.FhirPathFunctionsEndpoint
 
 import java.util.UUID
 
@@ -42,7 +44,7 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
 
   val projectEndpoint = new ProjectEndpoint(schemaRepository, mappingRepository, mappingJobRepository, mappingContextRepository, projectRepository)
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
-  val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint()
+  val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint(Seq("io.onfhir.path", "io.tofhir.engine.mapping"))
   val redcapEndpoint =  redCapServiceConfig.map(config => new RedCapEndpoint(config))
   val fileSystemTreeStructureEndpoint = new FileSystemTreeStructureEndpoint()
   val terminologyServiceManagerEndpoint = new TerminologyServiceManagerEndpoint(terminologySystemFolderRepository, conceptMapRepository, codeSystemRepository, mappingJobRepository)
@@ -64,8 +66,8 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
                     val routes = Seq(
                       terminologyServiceManagerEndpoint.route(restCall),
                       projectEndpoint.route(restCall),
-                      fhirDefinitionsEndpoint.route(restCall),
-                      fhirPathFunctionsEndpoint.route(restCall),
+                      fhirDefinitionsEndpoint.route(),
+                      fhirPathFunctionsEndpoint.route(),
                       fileSystemTreeStructureEndpoint.route(restCall),
                       metadataEndpoint.route(restCall)
                     ) ++ redcapEndpoint.map(_.route(restCall))

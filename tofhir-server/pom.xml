@@ -106,6 +106,16 @@
             <artifactId>logback-core</artifactId>
         </dependency>
 
+        <!-- onFHIR Definitions Microservices -->
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-fhirpath-functions</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-resource-definitions</artifactId>
+        </dependency>
+
         <!-- Application Configuration -->
         <dependency>
             <groupId>com.typesafe</groupId>

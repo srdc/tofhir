@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.MappingContextEndpoint.{ATTACHMENT, SEGMENT_CONTENT, SEGMENT_CONTEXTS, SEGMENT_FILE, SEGMENT_HEADER}
-import io.tofhir.common.model.Json4sSupport._
+import io.onfhir.definitions.common.model.Json4sSupport._
 import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.repository.mappingContext.IMappingContextRepository
 import io.tofhir.server.service.MappingContextService
