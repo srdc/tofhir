@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.Project
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.Json4sSupport.formats
 import io.tofhir.server.repository.project.ProjectFolderRepository
 import io.tofhir.server.util.FileOperations
 import org.json4s.{JArray, JObject, JString}
