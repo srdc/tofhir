@@ -33,13 +33,8 @@ class ReloadService(mappingRepository: ProjectMappingFolderRepository,
       mappingJobRepository.reloadJobDefinitions()
       mappingContextRepository.reloadMappingContextDefinitions()
       terminologySystemFolderRepository.reloadTerminologySystems()
-
       // Delete projects.json before reload projects
-      val file = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
-      if(file.exists()){
-        file.delete()
-      }
-
+      folderDBInitializer.removeProjectsJsonFile()
       folderDBInitializer.init()
     }
   }
