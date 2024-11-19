@@ -6,6 +6,8 @@ import io.tofhir.server.repository.mappingContext.MappingContextFolderRepository
 import io.tofhir.server.repository.schema.SchemaFolderRepository
 import io.tofhir.server.repository.terminology.TerminologySystemFolderRepository
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.util.FileUtils
+import io.tofhir.server.repository.project.ProjectFolderRepository
 import io.tofhir.server.service.db.FolderDBInitializer
 
 import scala.concurrent.Future
@@ -31,6 +33,13 @@ class ReloadService(mappingRepository: ProjectMappingFolderRepository,
       mappingJobRepository.reloadJobDefinitions()
       mappingContextRepository.reloadMappingContextDefinitions()
       terminologySystemFolderRepository.reloadTerminologySystems()
+
+      // Delete projects.json before reload projects
+      val file = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
+      if(file.exists()){
+        file.delete()
+      }
+
       folderDBInitializer.init()
     }
   }
