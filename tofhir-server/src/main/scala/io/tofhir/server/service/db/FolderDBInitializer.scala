@@ -178,4 +178,14 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     projects
   }
 
+  /**
+   * Removes the projects.json file.
+   */
+  def removeProjectsJsonFile(): Unit = {
+    val file = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
+    if (file.exists()) {
+      file.delete()
+    }
+  }
+
 }
