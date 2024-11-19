@@ -47,7 +47,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private val baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
   // Schema definition cache: project id -> schema id -> schema definition
-  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
+  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = mutable.Map.empty[String, mutable.Map[String, SchemaDefinition]]
+  // Initialize the map for the first time
+  initMap(schemaRepositoryFolderPath)
 
   /**
    * Returns the schema cached schema definitions by this repository
@@ -235,13 +237,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   }
 
   /**
-   * Parses the given schema folder and creates a SchemaDefinition map
+   * Parses the given schema folder and initialize a SchemaDefinition map
    *
    * @param schemaRepositoryFolderPath
    * @return
    */
-  private def initMap(schemaRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, SchemaDefinition]] = {
-    val schemaDefinitionMap = mutable.Map[String, mutable.Map[String, SchemaDefinition]]()
+  private def initMap(schemaRepositoryFolderPath: String): Unit = {
     val schemaFolder = FileUtils.getPath(schemaRepositoryFolderPath).toFile
     logger.info(s"Initializing the Schema Repository from path ${schemaFolder.getAbsolutePath}.")
     if (!schemaFolder.exists()) {
@@ -283,10 +284,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         // No processable schema files under projectFolder
         logger.warn(s"There are no processable schema files under ${projectFolder.getAbsolutePath}. Skipping ${projectFolder.getName}.")
       } else {
-        schemaDefinitionMap.put(projectFolder.getName, projectSchemas)
+        this.schemaDefinitions.put(projectFolder.getName, projectSchemas)
       }
     })
-    schemaDefinitionMap
   }
 
   /**
@@ -520,6 +520,15 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         allProfiles.foreach(profile => validateProfile(profile, schemaUrl))
       }
     }
+  }
+
+  /**
+   * Reload the schema definitions from the given folder
+   * @return
+   */
+  def reloadSchemaDefinitions(): Unit = {
+    this.schemaDefinitions.clear()
+    initMap(schemaRepositoryFolderPath)
   }
 }
 
