@@ -17,7 +17,8 @@ object DataFrameUtil {
         df.limit(resourceFilter.numberOfRows)
       case RowSelectionOrder.RANDOM =>
         // Using a sampling fraction to reduce the cost of ordering
-        val sampleFraction = resourceFilter.numberOfRows.toDouble / df.count()
+        // sampleFraction cannot be higher than 1.0
+        val sampleFraction = 1.0.min(resourceFilter.numberOfRows.toDouble / df.count())
         df.sample(sampleFraction).limit(resourceFilter.numberOfRows)
     }
   }
