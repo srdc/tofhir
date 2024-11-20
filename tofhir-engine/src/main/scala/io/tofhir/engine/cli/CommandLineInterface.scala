@@ -108,7 +108,7 @@ object CommandLineInterface {
               sinkSettings = mappingJob.sinkSettings,
               terminologyServiceSettings = mappingJob.terminologyServiceSettings,
               identityServiceSettings = mappingJob.getIdentityServiceSettings())
-            .map(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution, sq._1, sq._2, true))
+            .map(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution, sq._1, sq._2))
             .toSeq
         // Wait for all Futures (i.e. Streaming Queries) to complete
         Await.result(Future.sequence(streamingQueryInitializationTasks), Duration.Inf)

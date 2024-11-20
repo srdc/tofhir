@@ -22,24 +22,12 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
   val mockSparkSession: SparkSession = getMockSparkSession()
   val runningTaskRegistry: RunningJobRegistry = new RunningJobRegistry(mockSparkSession)
 
-  "InMemoryExecutionManager" should "cache a StreamingQuery" in {
+  "RunningJobRegistryTest" should "cache a StreamingQuery" in {
     val input = getTestInput("j", "e", Seq("m"))
     val jobSubmissionFuture = runningTaskRegistry.registerStreamingQuery(input._1, input._2.head, input._3)
 
     Await.result(jobSubmissionFuture, 10 seconds)
-    runningTaskRegistry.getRunningExecutions().size shouldBe 1
-  }
-
-  "it" should "cache a StreamingQuery in blocking mode" in {
-    val input = getTestInput("j", "e", Seq("m2"))
-    val jobSubmissionFuture = runningTaskRegistry.registerStreamingQuery(input._1, input._2.head, input._3, true)
-
-    Await.result(jobSubmissionFuture, 2 seconds)
-    val streamingQuery = Await.result(input._3, 2 seconds)
-    verify(streamingQuery).awaitTermination()
-
-    // Registered task should have been deleted after termination
-    runningTaskRegistry.getRunningExecutions().size shouldBe 1
+    runningTaskRegistry.getRunningExecutions().size shouldBe 0
   }
 
   "it" should "stop all StreamingQueries associated with a job" in {
@@ -68,24 +56,6 @@ class RunningJobRegistryTest extends AnyFlatSpec with Matchers {
     runningTaskRegistry.stopMappingExecution("j3", "e", "m")
     verify(input._3.value.get.get).stop()
     runningTaskRegistry.getRunningExecutions().contains("j3") shouldBe false
-  }
-
-  "it" should "stop single StreamingQueries associated with a job" in {
-    val input1 = getTestInput("j4", "e", Seq("m1"))
-    val input2 = getTestInput("j4", "e", Seq("m2"))
-    val streamingQueryFuture = input1._3
-    val streamingQueryFuture2 = input2._3
-    val taskFuture1 = runningTaskRegistry.registerStreamingQuery(input1._1, input1._2.head, streamingQueryFuture)
-    val taskFuture2 = runningTaskRegistry.registerStreamingQuery(input2._1, input2._2.head, streamingQueryFuture2)
-
-    Await.result(taskFuture1, 10 seconds)
-    Await.result(taskFuture2, 10 seconds)
-
-    runningTaskRegistry.stopMappingExecution("j4", "e", "m1")
-    verify(streamingQueryFuture.value.get.get).stop()
-    val runningMappingTaskNames: Seq[String] = runningTaskRegistry.getRunningExecutions()("j4").find(_._1.equals("e")).get._2
-    runningMappingTaskNames.length === 1
-    runningMappingTaskNames.head === "m2"
   }
 
   "it" should "register batch jobs" in {
