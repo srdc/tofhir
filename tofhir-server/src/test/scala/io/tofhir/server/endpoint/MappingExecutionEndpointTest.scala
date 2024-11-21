@@ -242,11 +242,11 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
           val erroneousRecordsFolder = Paths.get(toFhirEngineConfig.erroneousRecordsFolder, FhirMappingErrorCodes.MAPPING_ERROR)
           val jobFolder = Paths.get(erroneousRecordsFolder.toString, s"job-${job.id}").toFile
           jobFolder.exists() && {
-            val sourceFolders = jobFolder.listFiles().head // execution folder
-              .listFiles().head // mapping task folder
-              .listFiles() // source folder i.e. main source, secondary source etc.
-            sourceFolders.length == 2 && {
-              val mainSource = sourceFolders.head
+            val sourceFolders = jobFolder.listFiles().headOption.flatMap( // execution folder
+              _.listFiles().headOption.map( // mapping task folder
+              _.listFiles())) // source folder i.e. main source, secondary source etc.
+            sourceFolders.isDefined && sourceFolders.get.length == 2 && {
+              val mainSource = sourceFolders.get.head
               val csvFile = mainSource.listFiles().head
               mainSource.getName.contentEquals("mainSource") &&
                 // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
@@ -257,7 +257,7 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
                 csvFileContent.count() == 1
               }
             } && {
-              val secondarySource = sourceFolders.last
+              val secondarySource = sourceFolders.get.last
               val csvFile = secondarySource.listFiles().head
               secondarySource.getName.contentEquals("patientGender") &&
                 // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
