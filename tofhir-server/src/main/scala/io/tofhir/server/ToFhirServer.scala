@@ -4,7 +4,7 @@ import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.server.config.RedCapServiceConfig
 import io.tofhir.server.common.config.WebServerConfig
 import io.tofhir.server.endpoint.ToFhirServerEndpoint
-import io.tofhir.server.fhir.FhirDefinitionsConfig
+import io.onfhir.definitions.resource.fhir.FhirDefinitionsConfig
 
 import scala.util.Try
 

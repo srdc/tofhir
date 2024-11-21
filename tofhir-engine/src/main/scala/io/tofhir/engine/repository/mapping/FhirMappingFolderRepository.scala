@@ -2,7 +2,7 @@ package io.tofhir.engine.repository.mapping
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.api.util.IOUtil
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.Json4sSupport.formats
 import io.tofhir.engine.mapping.context.MappingContextLoader
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.model.exception.FhirMappingException

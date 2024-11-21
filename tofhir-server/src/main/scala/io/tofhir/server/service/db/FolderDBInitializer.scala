@@ -1,8 +1,8 @@
 package io.tofhir.server.service.db
 
 import com.typesafe.scalalogging.Logger
-import io.tofhir.common.model.Json4sSupport.formats
-import io.tofhir.common.model.SchemaDefinition
+import io.onfhir.definitions.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{FhirMapping, FhirMappingJob}
 import io.tofhir.engine.util.FileUtils
@@ -176,6 +176,16 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     })
 
     projects
+  }
+
+  /**
+   * Removes the projects.json file.
+   */
+  def removeProjectsJsonFile(): Unit = {
+    val file = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
+    if (file.exists()) {
+      file.delete()
+    }
   }
 
 }

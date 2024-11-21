@@ -82,5 +82,10 @@
             <groupId>com.typesafe.scala-logging</groupId>
             <artifactId>scala-logging_${scala.binary.version}</artifactId>
         </dependency>
+        <!-- OnFHIR Resource Definitions Microservice -->
+        <dependency>
+            <groupId>io.onfhir</groupId>
+            <artifactId>onfhir-resource-definitions</artifactId>
+        </dependency>
     </dependencies>
 </project>

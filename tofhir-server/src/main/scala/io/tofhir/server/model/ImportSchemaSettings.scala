@@ -1,6 +1,6 @@
 package io.tofhir.server.model
 
-import io.tofhir.engine.model.IFhirRepositorySecuritySettings
+import io.onfhir.client.model.IFhirRepositorySecuritySettings
 
 /**
  * Represents the settings required for importing a schema from a FHIR server.

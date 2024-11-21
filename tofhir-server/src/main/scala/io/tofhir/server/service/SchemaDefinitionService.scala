@@ -4,14 +4,15 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.api.Resource
-import io.tofhir.common.model.SchemaDefinition
+import io.onfhir.client.util.FhirClientUtil
+import io.onfhir.definitions.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.mapping.schema.SchemaConverter
 import io.tofhir.engine.model.exception.FhirMappingException
 import io.tofhir.engine.util.redcap.RedCapUtil
-import io.tofhir.engine.util.{CsvUtil, FhirClientUtil, FhirVersionUtil}
+import io.tofhir.engine.util.{CsvUtil, FhirVersionUtil}
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
 import io.tofhir.server.repository.mapping.IMappingRepository

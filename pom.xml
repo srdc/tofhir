@@ -118,6 +118,7 @@
         <akka-http.version>10.5.3</akka-http.version>
         <reflections.version>0.10.2</reflections.version>
         <opencsv.version>5.8</opencsv.version>
+        <onfhir-definitions-microservices.version>1.0-SNAPSHOT</onfhir-definitions-microservices.version>
     </properties>
 
     <build>
@@ -478,6 +479,23 @@
                 <groupId>io.onfhir</groupId>
                 <artifactId>tofhir-rxnorm_2.13</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- onFHIR Definitions Microservices -->
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-fhirpath-functions</artifactId>
+                <version>${onfhir-definitions-microservices.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-resource-definitions</artifactId>
+                <version>${onfhir-definitions-microservices.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.onfhir</groupId>
+                <artifactId>onfhir-definition-commons</artifactId>
+                <version>${onfhir-definitions-microservices.version}</version>
             </dependency>
 
             <!-- Testkit for Akka Http-->

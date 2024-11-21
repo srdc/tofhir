@@ -6,10 +6,12 @@ import io.onfhir.api.util.IOUtil
 import io.onfhir.api.validation.ProfileRestrictions
 import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, FHIR_ROOT_URL_FOR_DEFINITIONS, Resource}
 import io.onfhir.config.{BaseFhirConfig, FSConfigReader, IFhirConfigReader}
+import io.onfhir.definitions.resource.service.SimpleStructureDefinitionService
 import io.onfhir.exception.InitializationException
 import io.onfhir.util.JsonFormatter._
-import io.tofhir.common.model.SchemaDefinition
-import io.tofhir.common.util.{HashUtil, SchemaUtil}
+import io.onfhir.definitions.common.model.SchemaDefinition
+import io.onfhir.definitions.common.util.HashUtil
+import io.tofhir.common.util.SchemaUtil
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.schema.SchemaConverter
@@ -18,7 +20,6 @@ import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.engine.util.{FhirVersionUtil, FileUtils}
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
 import io.tofhir.server.repository.project.ProjectFolderRepository
-import io.tofhir.server.service.fhir.SimpleStructureDefinitionService
 import io.tofhir.server.util.FileOperations
 import org.apache.spark.sql.types.StructType
 
@@ -46,7 +47,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   private val baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
   // Schema definition cache: project id -> schema id -> schema definition
-  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = initMap(schemaRepositoryFolderPath)
+  private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = mutable.Map.empty[String, mutable.Map[String, SchemaDefinition]]
+  // Initialize the map for the first time
+  initMap(schemaRepositoryFolderPath)
 
   /**
    * Returns the schema cached schema definitions by this repository
@@ -234,13 +237,12 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
   }
 
   /**
-   * Parses the given schema folder and creates a SchemaDefinition map
+   * Parses the given schema folder and initialize a SchemaDefinition map
    *
    * @param schemaRepositoryFolderPath
    * @return
    */
-  private def initMap(schemaRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, SchemaDefinition]] = {
-    val schemaDefinitionMap = mutable.Map[String, mutable.Map[String, SchemaDefinition]]()
+  private def initMap(schemaRepositoryFolderPath: String): Unit = {
     val schemaFolder = FileUtils.getPath(schemaRepositoryFolderPath).toFile
     logger.info(s"Initializing the Schema Repository from path ${schemaFolder.getAbsolutePath}.")
     if (!schemaFolder.exists()) {
@@ -282,10 +284,9 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         // No processable schema files under projectFolder
         logger.warn(s"There are no processable schema files under ${projectFolder.getAbsolutePath}. Skipping ${projectFolder.getName}.")
       } else {
-        schemaDefinitionMap.put(projectFolder.getName, projectSchemas)
+        this.schemaDefinitions.put(projectFolder.getName, projectSchemas)
       }
     })
-    schemaDefinitionMap
   }
 
   /**
@@ -519,6 +520,15 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
         allProfiles.foreach(profile => validateProfile(profile, schemaUrl))
       }
     }
+  }
+
+  /**
+   * Reload the schema definitions from the given folder
+   * @return
+   */
+  def reloadSchemaDefinitions(): Unit = {
+    this.schemaDefinitions.clear()
+    initMap(schemaRepositoryFolderPath)
   }
 }
 

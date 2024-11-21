@@ -1,5 +1,6 @@
 package io.tofhir.engine.model
 
+import io.onfhir.client.model.IFhirRepositorySecuritySettings
 import org.json4s.JsonAST.{JString, JValue}
 
 

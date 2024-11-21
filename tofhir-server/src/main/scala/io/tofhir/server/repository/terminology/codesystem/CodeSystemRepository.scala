@@ -2,7 +2,7 @@ package io.tofhir.server.repository.terminology.codesystem
 
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
-import io.tofhir.common.model.Json4sSupport.formats
+import io.onfhir.definitions.common.model.Json4sSupport.formats
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}

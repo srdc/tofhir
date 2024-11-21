@@ -25,7 +25,9 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
 
   private val logger: Logger = Logger(this.getClass)
   // project id -> mapping job id -> mapping job
-  private val jobDefinitions: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = initMap(jobRepositoryFolderPath)
+  private val jobDefinitions: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = mutable.Map.empty[String, mutable.Map[String, FhirMappingJob]]
+  // Initialize the map for the first time
+  initMap(jobRepositoryFolderPath)
 
   /**
    * Returns the mappings managed by this repository
@@ -183,8 +185,7 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
    * @param jobRepositoryFolderPath folder path to the job repository
    * @return
    */
-  private def initMap(jobRepositoryFolderPath: String): mutable.Map[String, mutable.Map[String, FhirMappingJob]] = {
-    val map = mutable.Map.empty[String, mutable.Map[String, FhirMappingJob]]
+  private def initMap(jobRepositoryFolderPath: String): Unit = {
     val jobRepositoryFolder = FileUtils.getPath(jobRepositoryFolderPath).toFile
     logger.info(s"Initializing the Mapping Job Repository from path ${jobRepositoryFolder.getAbsolutePath}.")
     if (!jobRepositoryFolder.exists()) {
@@ -217,8 +218,16 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectFolderReposito
             System.exit(1)
         }
       }
-      map.put(projectDirectory.getName, fhirJobMap)
+      this.jobDefinitions.put(projectDirectory.getName, fhirJobMap)
     }
-    map
+  }
+
+  /**
+   * Reload the job definitions from the given folder
+   * @return
+   */
+  def reloadJobDefinitions(): Unit = {
+    this.jobDefinitions.clear()
+    initMap(jobRepositoryFolderPath)
   }
 }

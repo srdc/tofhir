@@ -1,7 +1,7 @@
 package io.tofhir.common.util
 
 import io.onfhir.api.Resource
-import io.tofhir.common.model.{SchemaDefinition, SimpleStructureDefinition}
+import io.onfhir.definitions.common.model.{SchemaDefinition, SimpleStructureDefinition}
 import org.json4s.JArray
 import org.json4s.JsonDSL._
 
