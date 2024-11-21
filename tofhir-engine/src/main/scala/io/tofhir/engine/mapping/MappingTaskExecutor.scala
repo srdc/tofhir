@@ -147,7 +147,7 @@ object MappingTaskExecutor {
                 jobId = fhirMappingService.jobId,
                 mappingTaskName = fhirMappingService.mappingTaskName,
                 timestamp = Timestamp.from(Instant.now()),
-                source = Serialization.write(jo),
+                source = Serialization.write(JObject("mainSource" -> jo) ~ otherObjectMap),
                 error = Some(FhirMappingError(
                   code = FhirMappingErrorCodes.INVALID_INPUT,
                   description = validationErrors.mkString("\n")
