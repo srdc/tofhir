@@ -139,11 +139,39 @@ class FhirMappingService(val jobId: String,
       .map(resources =>
         resources.map {
           case (expName, JNull, fhirIntr) => (expName, Nil, fhirIntr)
-          case (expName, a: JArray, fhirIntr) => (expName, a.arr.map(_.asInstanceOf[Resource]), fhirIntr)
+          case (expName, a: JArray, fhirIntr) =>
+            // If we use section template inside a section template (we use that to achieve loop in a loop),
+            // we want to flatten the returned Resources.
+            val flattenedResources = flattenJArrayRecursively(a)
+            (expName, flattenedResources, fhirIntr)
           case (expName, o: JObject, fhirIntr) => (expName, Seq(o), fhirIntr)
           case _ => throw new IllegalStateException("This is an unexpected situation. Among the FHIR resources returned by evaluatedExpression, there is something which is neither JArray nor JObject.")
         }
       )
+  }
+
+  /**
+   * Given a JArray, its inner elements can also be of type JArray. If that is the case,
+   * * this function recursively traverses all JArrays and prepares a flattened list of
+   * * JObjects (Resources).
+   *
+   * @param inputArray
+   * @return
+   */
+  private def flattenJArrayRecursively(inputArray: JArray): Seq[Resource] = {
+    def flatten(arr: List[JValue]): Seq[JObject] = arr match {
+      case Nil => Seq.empty
+      case (head: JArray) :: tail =>
+        // Recursively flatten JArray elements
+        flatten(head.arr) ++ flatten(tail)
+      case (head: JObject) :: tail =>
+        // Collect JObject elements
+        head +: flatten(tail)
+      case _ :: tail =>
+        // Ignore non-JObject or non-JArray elements
+        flatten(tail)
+    }
+    flatten(inputArray.arr)
   }
 
   /**
