@@ -1,6 +1,9 @@
 package io.tofhir.server.endpoint
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.testkit.TestDuration
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.BaseEndpointTest
 import io.tofhir.server.model.Project
@@ -11,8 +14,12 @@ import org.json4s.{JArray, JObject, JString}
 import org.json4s.jackson.{JsonMethods, Serialization}
 
 import java.io.FileWriter
+import scala.concurrent.duration.DurationInt
 
 class ReloadingEndpointTest extends BaseEndpointTest {
+
+  // default timeout is 1 seconds, which is not enough for this test
+  implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(new DurationInt(10).second.dilated(system))
 
   "The service" should {
 
