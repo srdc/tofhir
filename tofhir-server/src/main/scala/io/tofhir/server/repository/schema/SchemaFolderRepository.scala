@@ -44,7 +44,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
     fhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion),
     profilesPath = Some(FileUtils.getPath(schemaRepositoryFolderPath).toString))
   // BaseFhirConfig will act as a validator for the schema definitions by holding the ProfileDefinitions in memory
-  private val baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
+  private var baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
   private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
   // Schema definition cache: project id -> schema id -> schema definition
   private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = mutable.Map.empty[String, mutable.Map[String, SchemaDefinition]]
@@ -528,6 +528,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectFolderRe
    */
   def reloadSchemaDefinitions(): Unit = {
     this.schemaDefinitions.clear()
+    this.baseFhirConfig = initBaseFhirConfig(fhirConfigReader)
     initMap(schemaRepositoryFolderPath)
   }
 }
