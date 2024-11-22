@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingJobResult}
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.streaming.StreamingQuery
+import org.apache.spark.sql.streaming.{StreamingQuery, StreamingQueryException}
 
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -65,10 +65,9 @@ class RunningJobRegistry(spark: SparkSession) {
    * @param execution            Execution containing the mapping tasks
    * @param mappingTaskName      Specific name which the [[StreamingQuery]] is associated to
    * @param streamingQueryFuture Future for the [[StreamingQuery]]
-   * @param blocking             Whether the call will wait or not for the StreamingQuery, passed inside the execution
    * @return
    */
-  def registerStreamingQuery(execution: FhirMappingJobExecution, mappingTaskName: String, streamingQueryFuture: Future[StreamingQuery], blocking: Boolean = false): Future[Unit] = {
+  def registerStreamingQuery(execution: FhirMappingJobExecution, mappingTaskName: String, streamingQueryFuture: Future[StreamingQuery]): Future[Unit] = {
     Future {
       // If there is an error in the streaming query execution, call 'stopMappingExecution' function,
       // which is responsible for removing it from the registry. Without that, the registry might contain incorrect
@@ -92,16 +91,20 @@ class RunningJobRegistry(spark: SparkSession) {
       }
       logger.debug(s"Streaming query for execution: $executionId, mappingTaskName: $mappingTaskName has been registered")
 
-      // If blocking was set true, we are going to wait for StreamingQuery to terminate
-      if (blocking) {
+      try{
+        // wait for StreamingQuery to terminate
         updatedExecution.getStreamingQuery(mappingTaskName).awaitTermination()
+      }catch{
+        case exception: StreamingQueryException =>{
+          ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(exception), isChunkResult = false)
+        }
+      }finally{
         // Remove the mapping execution from the running tasks after the query is terminated
-        removeMappingExecutionFromRunningTasks(jobId, executionId, mappingTaskName)
-        () // Return unit
+        stopMappingExecution(jobId, executionId, mappingTaskName)
       }
 
       // Use the dedicated ExecutionContext for streaming jobs
-    }(if (blocking) streamingTaskExecutionContext else dispatcher)
+    }(streamingTaskExecutionContext)
   }
 
   // TODO: Improve cancellation of running batch mapping jobs.
