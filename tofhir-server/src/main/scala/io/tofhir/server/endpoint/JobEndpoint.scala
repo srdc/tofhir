@@ -1,13 +1,13 @@
 package io.tofhir.server.endpoint
 
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.stream.StreamTcpException
+import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST, SEGMENT_DESCHEDULE}
-import io.onfhir.definitions.common.model.Json4sSupport._
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_DESCHEDULE, SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST}
+import io.tofhir.common.model.Json4sSupport._
 import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest}
 import io.tofhir.server.service.{ExecutionService, JobService}
 import io.tofhir.engine.Execution.actorSystem.dispatcher
@@ -16,10 +16,10 @@ import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.repository.job.IJobRepository
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
-
+import io.tofhir.server.common.interceptor.ICORSHandler
 import scala.concurrent.Future
 
-class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
+class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging with ICORSHandler {
 
   val service: JobService = new JobService(jobRepository)
   val executionService: ExecutionService = new ExecutionService(jobRepository, mappingRepository, schemaRepository)
@@ -42,7 +42,25 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
           }
         } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations, jobs/<jobId>/test
           pathEndOrSingleSlash {
-            testMappingWithJob(projectId, jobId)
+            withRequestTimeoutResponse { _ =>
+              addCORSHeaders(
+                HttpResponse(
+                  status = StatusCodes.RequestTimeout,
+                  entity = HttpEntity.Strict(
+                    ContentTypes.`application/json`,
+                    ByteString(
+                      """Status Code: 408
+                        |Type: https://tofhir.io/errors/RequestTimeout
+                        |Title: Request Timeout
+                        |Detail: There are too many rows in the data source CSV.
+                        |""".stripMargin
+                    )
+                  )
+                )
+              )
+            } {
+              testMappingWithJob(projectId, jobId)
+            }
           }
         } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, jobs/<jobId>/executions
           pathEndOrSingleSlash {
