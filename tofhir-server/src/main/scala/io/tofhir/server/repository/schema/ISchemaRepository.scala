@@ -71,7 +71,7 @@ trait ISchemaRepository extends IFhirSchemaLoader with ICachedRepository with IP
    *
    * @param projectId The unique identifier of the project for which schemas should be deleted.
    */
-  def deleteProjectSchemas(projectId: String): Future[Unit]
+  def deleteAllSchemas(projectId: String): Future[Unit]
 
   /**
    * Retrieve the Structure Definition of the schema identified by its id.

@@ -17,7 +17,7 @@ import org.json4s.jackson.Serialization.writePretty
 import java.io.{File, FileWriter}
 import scala.concurrent.Future
 
-class ConceptMapRepository(terminologySystemFolderPath: String) extends IConceptMapRepository {
+class ConceptMapFolderRepository(terminologySystemFolderPath: String) extends IConceptMapRepository {
 
   /**
    * Retrieve the concept maps within a terminology

@@ -1,5 +1,6 @@
 package io.tofhir.server.repository.terminology
 
+import io.tofhir.common.model.ICachedRepository
 import io.tofhir.server.model.TerminologySystem
 
 import scala.concurrent.Future
@@ -8,7 +9,7 @@ import scala.concurrent.Future
  * Interface to save and load TerminologySystem so that the client applications can manage the TerminologySystem
  * through CRUD operations
  */
-trait ITerminologySystemRepository {
+trait ITerminologySystemRepository extends ICachedRepository{
 
   /**
    * Retrieve the metadata of all TerminologySystems

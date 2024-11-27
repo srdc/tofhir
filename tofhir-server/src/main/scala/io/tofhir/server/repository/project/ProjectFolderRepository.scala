@@ -27,15 +27,17 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   private val logger: Logger = Logger(this.getClass)
 
   // Project cache keeping the up-to-date list of projects
-  private var projects: mutable.Map[String, Project] = mutable.Map.empty
+  private val projects: mutable.Map[String, Project] = mutable.Map.empty
 
   /**
-   * Initializes the projects cache
+   * Initializes the projects cache with the given Map of projects and persist to the file (projects.json)
    *
    * @param projects
    */
-  def setProjects(projects: mutable.Map[String, Project]): Unit = {
-    this.projects = projects
+  def setProjects(vProjects: Map[String, Project]): Unit = {
+    this.projects.clear()
+    this.projects ++= vProjects
+    this.updateProjectsMetadata()
   }
 
   /**
@@ -326,7 +328,7 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
   /**
    * Updates the projects metadata with project included in the cache.
    */
-  def updateProjectsMetadata(): Unit = {
+  private def updateProjectsMetadata(): Unit = {
     val file = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
     // when projects metadata file does not exist, create it
     if (!file.exists()) {
