@@ -7,32 +7,20 @@ import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.endpoint.ReloadEndpoint.SEGMENT_RELOAD
+import io.tofhir.server.repository.{FolderDBInitializer, IRepositoryManager}
 import io.tofhir.server.repository.job.JobFolderRepository
 import io.tofhir.server.repository.mapping.ProjectMappingFolderRepository
 import io.tofhir.server.repository.mappingContext.MappingContextFolderRepository
 import io.tofhir.server.repository.schema.SchemaFolderRepository
 import io.tofhir.server.repository.terminology.TerminologySystemFolderRepository
 import io.tofhir.server.service.ReloadService
-import io.tofhir.server.service.db.FolderDBInitializer
 
 /**
  * Endpoint to reload resources from the file system.
  * */
-class ReloadEndpoint(mappingRepository: ProjectMappingFolderRepository,
-                     schemaRepository: SchemaFolderRepository,
-                     mappingJobRepository: JobFolderRepository,
-                     mappingContextRepository: MappingContextFolderRepository,
-                     terminologySystemFolderRepository: TerminologySystemFolderRepository,
-                     folderDBInitializer: FolderDBInitializer) extends LazyLogging {
+class ReloadEndpoint(repositoryManager: IRepositoryManager) extends LazyLogging {
 
-  val reloadService: ReloadService = new ReloadService(
-    mappingRepository,
-    schemaRepository,
-    mappingJobRepository,
-    mappingContextRepository,
-    terminologySystemFolderRepository,
-    folderDBInitializer
-  )
+  val reloadService: ReloadService = new ReloadService(repositoryManager)
 
   def route(request: ToFhirRestCall): Route = {
     pathPrefix(SEGMENT_RELOAD) {

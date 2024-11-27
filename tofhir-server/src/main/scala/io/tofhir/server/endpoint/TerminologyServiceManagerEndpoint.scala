@@ -4,21 +4,23 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
+import io.onfhir.definitions.common.model.Json4sSupport._
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.endpoint.TerminologyServiceManagerEndpoint._
-import io.onfhir.definitions.common.model.Json4sSupport._
 import io.tofhir.server.model.TerminologySystem
-import io.tofhir.server.repository.job.JobFolderRepository
+import io.tofhir.server.repository.job.IJobRepository
 import io.tofhir.server.repository.terminology.ITerminologySystemRepository
-import io.tofhir.server.service.terminology.TerminologySystemService
 import io.tofhir.server.repository.terminology.codesystem.ICodeSystemRepository
 import io.tofhir.server.repository.terminology.conceptmap.IConceptMapRepository
+import io.tofhir.server.service.terminology.TerminologySystemService
 
 import scala.concurrent.Future
 
-class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminologySystemRepository, conceptMapRepository: IConceptMapRepository,
-                                        codeSystemRepository: ICodeSystemRepository, mappingJobRepository: JobFolderRepository) extends LazyLogging {
+class TerminologyServiceManagerEndpoint(terminologySystemRepository: ITerminologySystemRepository,
+                                        conceptMapRepository: IConceptMapRepository,
+                                        codeSystemRepository: ICodeSystemRepository,
+                                        mappingJobRepository: IJobRepository) extends LazyLogging {
 
   private val terminologySystemService: TerminologySystemService = new TerminologySystemService(terminologySystemRepository, mappingJobRepository)
 

@@ -156,7 +156,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    *
    * @param projectId The unique identifier of the project for which mappings should be deleted.
    */
-  override def deleteProjectMappings(projectId: String): Future[Unit] = {
+  override def deleteAllMappings(projectId: String): Future[Unit] = {
     Future {
       // delete mapping definitions for the project
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(mappingRepositoryFolderPath, projectId).toFile)

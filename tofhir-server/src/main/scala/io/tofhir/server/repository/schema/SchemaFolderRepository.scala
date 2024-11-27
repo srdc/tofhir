@@ -198,7 +198,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectReposito
    *
    * @param projectId The unique identifier of the project for which schemas should be deleted.
    */
-  override def deleteProjectSchemas(projectId: String): Future[Unit] = {
+  override def deleteAllSchemas(projectId: String): Future[Unit] = {
     Future {
       // delete schema definitions for the project
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(schemaRepositoryFolderPath, projectId).toFile)

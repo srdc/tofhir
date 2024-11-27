@@ -42,7 +42,7 @@ trait IMappingContextRepository extends ICachedRepository with IProjectList[Stri
    *
    * @param projectId The unique identifier of the project for which mapping contexts should be deleted.
    */
-  def deleteProjectMappingContexts(projectId: String): Unit
+  def deleteAllMappingContexts(projectId: String): Unit
 
   /**
    * Update the mapping context header by its id

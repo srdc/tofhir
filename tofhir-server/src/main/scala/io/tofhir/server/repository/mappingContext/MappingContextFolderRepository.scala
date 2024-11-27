@@ -89,7 +89,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    *
    * @param projectId The unique identifier of the project for which mapping contexts should be deleted.
    */
-  override def deleteProjectMappingContexts(projectId: String): Unit = {
+  override def deleteAllMappingContexts(projectId: String): Unit = {
     Future {
       // delete mapping context definitions for the project
       org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(mappingContextRepositoryFolderPath, projectId).toFile)

@@ -75,9 +75,9 @@ class ProjectService(projectRepository: IProjectRepository,
       // else delete jobs, mappings, mapping contexts and schemas as well
       .flatMap { _ =>
         jobRepository.deleteAllJobs(projectId) map { _ =>
-          mappingRepository.deleteProjectMappings(projectId)
-          mappingContextRepository.deleteProjectMappingContexts(projectId)
-          schemaRepository.deleteProjectSchemas(projectId)
+          mappingRepository.deleteAllMappings(projectId)
+          mappingContextRepository.deleteAllMappingContexts(projectId)
+          schemaRepository.deleteAllSchemas(projectId)
         }
       }
   }

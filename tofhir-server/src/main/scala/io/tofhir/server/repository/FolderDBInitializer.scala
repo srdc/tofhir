@@ -1,4 +1,4 @@
-package io.tofhir.server.service.db
+package io.tofhir.server.repository
 
 import com.typesafe.scalalogging.Logger
 import io.onfhir.definitions.common.model.Json4sSupport.formats
@@ -23,10 +23,10 @@ import scala.language.postfixOps
 /**
  * Folder/Directory based database initializer implementation.
  * */
-class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
+class FolderDBInitializer(projectFolderRepository: ProjectFolderRepository,
+                          schemaFolderRepository: SchemaFolderRepository,
                           mappingFolderRepository: ProjectMappingFolderRepository,
                           mappingJobFolderRepository: JobFolderRepository,
-                          projectFolderRepository: ProjectFolderRepository,
                           mappingContextRepository: MappingContextFolderRepository) {
 
   private val logger: Logger = Logger(this.getClass)
@@ -40,12 +40,10 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
 
     val parsedProjects = if (file.exists()) {
       val projects: JArray = FileOperations.readFileIntoJson(file).asInstanceOf[JArray]
-      val projectMap: Map[String, Project] = projects.arr.map(p => {
-          val project: Project = initProjectFromMetadata(p.asInstanceOf[JObject])
-          project.id -> project
-        })
-        .toMap
-      collection.mutable.Map(projectMap.toSeq: _*)
+      projects.arr.map(p => {
+        val project: Project = initProjectFromMetadata(p.asInstanceOf[JObject])
+        project.id -> project
+      }).toMap
     } else {
       logger.debug(s"There does not exist a metadata file (${ProjectFolderRepository.PROJECTS_JSON}) for projects. Creating it...")
       file.createNewFile()
@@ -55,7 +53,6 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     }
     // Inject the parsed projects to the repository
     projectFolderRepository.setProjects(parsedProjects)
-    projectFolderRepository.updateProjectsMetadata() // update the metadata file after initialization
   }
 
   /**
@@ -127,7 +124,7 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
    *
    * @return
    */
-  private def initProjectsWithResources(): mutable.Map[String, Project] = {
+  private def initProjectsWithResources(): Map[String, Project] = {
     // Map keeping the projects. It uses the project name as a key.
     val projects: mutable.Map[String, Project] = mutable.Map.empty
 
@@ -171,7 +168,7 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
         projects.put(projectId, project.copy(mappingContexts = mappingContextIdList))
     }
 
-    projects
+    projects.toMap
   }
 
   /**

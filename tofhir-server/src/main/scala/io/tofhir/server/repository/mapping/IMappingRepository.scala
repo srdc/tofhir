@@ -61,7 +61,7 @@ trait IMappingRepository extends IFhirMappingRepository with IProjectList[FhirMa
    *
    * @param projectId The unique identifier of the project for which mappings should be deleted.
    */
-  def deleteProjectMappings(projectId: String): Future[Unit]
+  def deleteAllMappings(projectId: String): Future[Unit]
 
   /**
    * Retrieves the identifiers of mappings referencing the given schema in their definitions.
