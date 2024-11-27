@@ -1,9 +1,9 @@
-package io.tofhir.engine.repository.mapping
+package io.tofhir.common.model
 
 /**
- * A cached repository for the Mappings
+ * A cached repository.
  */
-trait IFhirMappingCachedRepository extends IFhirMappingRepository {
+trait ICachedRepository {
   /**
    * Invalidate the internal cache and refresh the cache with the FhirMappings directly from their source
    */

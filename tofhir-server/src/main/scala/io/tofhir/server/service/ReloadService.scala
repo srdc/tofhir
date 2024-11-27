@@ -1,13 +1,11 @@
 package io.tofhir.server.service
 
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.repository.job.JobFolderRepository
 import io.tofhir.server.repository.mapping.ProjectMappingFolderRepository
 import io.tofhir.server.repository.mappingContext.MappingContextFolderRepository
 import io.tofhir.server.repository.schema.SchemaFolderRepository
 import io.tofhir.server.repository.terminology.TerminologySystemFolderRepository
-import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.util.FileUtils
-import io.tofhir.server.repository.project.ProjectFolderRepository
 import io.tofhir.server.service.db.FolderDBInitializer
 
 import scala.concurrent.Future
@@ -24,16 +22,17 @@ class ReloadService(mappingRepository: ProjectMappingFolderRepository,
 
   /**
    * Reload all resources.
+   *
    * @return
    */
   def reloadResources(): Future[Unit] = {
-    Future{
-      mappingRepository.reloadMappingDefinitions()
-      schemaRepository.reloadSchemaDefinitions()
-      mappingJobRepository.reloadJobDefinitions()
-      mappingContextRepository.reloadMappingContextDefinitions()
-      terminologySystemFolderRepository.reloadTerminologySystems()
-      // Delete projects.json before reload projects
+    Future {
+      mappingRepository.invalidate()
+      schemaRepository.invalidate()
+      mappingJobRepository.invalidate()
+      mappingContextRepository.invalidate()
+      terminologySystemFolderRepository.invalidate()
+      // Delete projects.json before reloading the projects
       folderDBInitializer.removeProjectsJsonFile()
       folderDBInitializer.init()
     }

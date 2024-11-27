@@ -19,6 +19,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 import java.io.{File, FileOutputStream}
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable
+import scala.concurrent.Future
 
 class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
 
@@ -98,7 +99,7 @@ class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAft
 
   private def getMockMappingJobRepository: JobFolderRepository = {
     val mockMappingJobRepository: JobFolderRepository = mock[JobFolderRepository]
-    when(mockMappingJobRepository.getCachedMappingsJobs).thenReturn(mutable.Map("testProject" -> mutable.Map("testJob" -> testJob)))
+    when(mockMappingJobRepository.getJob("testProject", "testJob")).thenReturn(Future.apply(Some(testJob)))
   }
 
   private def getMockMappingRepository: ProjectMappingFolderRepository = {

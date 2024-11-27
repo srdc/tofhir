@@ -111,21 +111,20 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
       updatedProject
     }
   }
+
   /**
    * Delete the project from the repository.
    *
    * @param id id of the project
    * @return
    */
-  override def removeProject(id: String): Future[Unit] = {
+  override def deleteProject(id: String): Future[Unit] = {
     Future {
       // validate that the project exists
       if (!projects.contains(id))
         throw ResourceNotFound("Project does not exist.", s"Project $id not found")
-
       // remove the project from the cache
       projects.remove(id)
-
       // update projects metadata with the remaining ones
       updateProjectsMetadata()
     }
@@ -137,11 +136,15 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param projectId
    * @param schema
    */
-  def addSchema(projectId: String, schema: SchemaDefinition): Unit = {
-    val project: Project = projects(projectId)
-    projects.put(projectId, project.copy(schemas = project.schemas :+ schema))
 
-    updateProjectsMetadata()
+  override def addSchema(projectId: String, schema: SchemaDefinition): Future[Project] = {
+    Future {
+      val project: Project = projects(projectId)
+      val updatedProject = project.copy(schemas = project.schemas :+ schema)
+      projects.put(projectId, updatedProject)
+      updateProjectsMetadata()
+      updatedProject
+    }
   }
 
   /**
@@ -150,88 +153,100 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param projectId
    * @param schemaMetadata
    */
-  def updateSchema(projectId: String, schemaMetadata: SchemaDefinition): Unit = {
-    deleteSchema(projectId, Some(schemaMetadata.id))
-    addSchema(projectId, schemaMetadata)
+  override def updateSchema(projectId: String, schemaMetadata: SchemaDefinition): Future[Project] = {
+    deleteSchema(projectId, Some(schemaMetadata.id)) flatMap { _ =>
+      addSchema(projectId, schemaMetadata)
+    }
   }
 
   /**
-   * Deletes the schema definition of the project
+   * Deletes the schema definition (or all schema definitions) from the project.
    *
    * @param projectId
-   * @param schemaId The unique identifier of the schema to be deleted. If not provided, all schemas for the project will be deleted.
+   * @param schemaId The unique identifier of the schema to be deleted. If not provided, all schemas will be removed from the project definition.
    */
-  def deleteSchema(projectId: String, schemaId: Option[String] = None): Unit = {
-    val project: Option[Project] = projects.get(projectId)
-    project match {
-      case Some(project) =>
-        schemaId match {
-          case Some(id) =>
-            projects.put(projectId, project.copy(schemas = project.schemas.filterNot(s => s.id.equals(id))))
-          case None =>
-            projects.put(projectId, project.copy(schemas = Seq.empty))
-        }
-        updateProjectsMetadata()
-      case None => // Do nothing if project is deleted before the schema
+  override def deleteSchema(projectId: String, schemaId: Option[String] = None): Future[Unit] = {
+    Future {
+      val project: Option[Project] = projects.get(projectId)
+      project match {
+        case Some(project) =>
+          schemaId match {
+            case Some(id) =>
+              projects.put(projectId, project.copy(schemas = project.schemas.filterNot(s => s.id.equals(id))))
+            case None =>
+              projects.put(projectId, project.copy(schemas = Seq.empty))
+          }
+          updateProjectsMetadata()
+        case None => // Do nothing if project is deleted before the schema
+      }
     }
   }
 
   /**
-   * Adds the mapping definition to the project json file
+   * Add the mapping definition to the project
    *
-   * @param projectId Project id the mapping will be added to
-   * @param mapping Mapping to be added
+   * @param projectId Project id to which the mapping will be added to
+   * @param mapping   Mapping to be added
    */
-  def addMapping(projectId: String, mapping: FhirMapping): Unit = {
-    val project: Project = projects(projectId)
-    projects.put(projectId, project.copy(mappings = project.mappings :+ mapping))
-
-    updateProjectsMetadata()
+  override def addMapping(projectId: String, mapping: FhirMapping): Future[Project] = {
+    Future {
+      val project: Project = projects(projectId)
+      val updatedProject = project.copy(mappings = project.mappings :+ mapping)
+      projects.put(projectId, updatedProject)
+      updateProjectsMetadata()
+      updatedProject
+    }
   }
 
   /**
-   * Replaces the mapping definition in the project json file
+   * Replaces the mapping definition within the project
    *
-   * @param projectId Project id the mapping will be updated to
-   * @param mapping Mapping to be updated
+   * @param projectId Project id of which the mapping will be updated
+   * @param mapping   Mapping to be updated
    */
-  def updateMapping(projectId: String, mapping: FhirMapping): Unit = {
-    deleteMapping(projectId, Some(mapping.id))
-    addMapping(projectId, mapping)
+  override def updateMapping(projectId: String, mapping: FhirMapping): Future[Project] = {
+    deleteMapping(projectId, Some(mapping.id)) flatMap { _ =>
+      addMapping(projectId, mapping)
+    }
   }
 
   /**
-   * Deletes the mapping definition from the project json file
+   * Deletes the mapping definition from the
    *
-   * @param projectId Project id the mapping will be deleted from
+   * @param projectId Project id from which the mapping will be deleted
    * @param mappingId The unique identifier of the mapping to be deleted. If not provided, all mappings for the project will be deleted.
    */
-  def deleteMapping(projectId: String, mappingId: Option[String] = None): Unit = {
-    val project: Option[Project] = projects.get(projectId)
-    project match {
-      case Some(project) =>
-        mappingId match {
-          case Some(id) =>
-            projects.put(projectId, project.copy(mappings = project.mappings.filterNot(m => m.id.equals(id))))
-          case None =>
-            projects.put(projectId, project.copy(mappings = Seq.empty))
-        }
-        updateProjectsMetadata()
-      case None => // Do nothing if project is deleted before the mapping
+  override def deleteMapping(projectId: String, mappingId: Option[String] = None): Future[Unit] = {
+    Future {
+      val project: Option[Project] = projects.get(projectId)
+      project match {
+        case Some(project) =>
+          mappingId match {
+            case Some(id) =>
+              projects.put(projectId, project.copy(mappings = project.mappings.filterNot(m => m.id.equals(id))))
+            case None =>
+              projects.put(projectId, project.copy(mappings = Seq.empty))
+          }
+          updateProjectsMetadata()
+        case None => // Do nothing if project is deleted before the mapping
+      }
     }
   }
 
   /**
-   * Adds the job definition to the project json file
+   * Adds the job definition to the project
    *
    * @param projectId
    * @param job
    */
-  def addJob(projectId: String, job: FhirMappingJob): Unit = {
-    val project: Project = projects(projectId)
-    projects.put(projectId, project.copy(mappingJobs = project.mappingJobs :+ job))
-
-    updateProjectsMetadata()
+  override def addJob(projectId: String, job: FhirMappingJob): Future[Project] = {
+    Future {
+      val project: Project = projects(projectId)
+      val updatedProject = project.copy(mappingJobs = project.mappingJobs :+ job)
+      projects.put(projectId, updatedProject)
+      updateProjectsMetadata()
+      updatedProject
+    }
   }
 
   /**
@@ -240,9 +255,10 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param projectId
    * @param job
    */
-  def updateJob(projectId: String, job: FhirMappingJob): Unit = {
-    deleteJob(projectId, Some(job.id))
-    addJob(projectId, job)
+  override def updateJob(projectId: String, job: FhirMappingJob): Future[Project] = {
+    deleteJob(projectId, Some(job.id)) flatMap { _ =>
+      addJob(projectId, job)
+    }
   }
 
   /**
@@ -251,57 +267,66 @@ class ProjectFolderRepository(config: ToFhirEngineConfig) extends IProjectReposi
    * @param projectId
    * @param jobId The unique identifier of the job to be deleted. If not provided, all jobs for the project will be deleted.
    */
-  def deleteJob(projectId: String, jobId: Option[String] = None): Unit = {
-    val project: Option[Project] = projects.get(projectId)
-    project match {
-      case Some(project) =>
-        jobId match {
-          case Some(id) =>
-            projects.put(projectId, project.copy(mappingJobs = project.mappingJobs.filterNot(j => j.id.equals(id))))
-          case None =>
-            projects.put(projectId, project.copy(mappingJobs = Seq.empty))
-        }
-        updateProjectsMetadata()
-      case None => // Do nothing if project is deleted before the job
+  override def deleteJob(projectId: String, jobId: Option[String] = None): Future[Unit] = {
+    Future {
+      val project: Option[Project] = projects.get(projectId)
+      project match {
+        case Some(project) =>
+          jobId match {
+            case Some(id) =>
+              projects.put(projectId, project.copy(mappingJobs = project.mappingJobs.filterNot(j => j.id.equals(id))))
+            case None =>
+              projects.put(projectId, project.copy(mappingJobs = Seq.empty))
+          }
+          updateProjectsMetadata()
+        case None => // Do nothing if project is deleted before the job
+      }
     }
   }
 
   /**
    * Adds the mapping context id to the project json file
-   * @param projectId Project id the mapping context will be added to
+   *
+   * @param projectId      Project id the mapping context will be added to
    * @param mappingContext Mapping context id to be added
    */
-  def addMappingContext(projectId: String, mappingContext: String): Unit = {
-    val project: Project = projects(projectId)
-    projects.put(projectId, project.copy(mappingContexts = project.mappingContexts :+ mappingContext))
-
-    updateProjectsMetadata()
+  override def addMappingContext(projectId: String, mappingContext: String): Future[Project] = {
+    Future {
+      val project: Project = projects(projectId)
+      val updatedProject = project.copy(mappingContexts = project.mappingContexts :+ mappingContext)
+      projects.put(projectId, updatedProject)
+      updateProjectsMetadata()
+      updatedProject
+    }
   }
 
   /**
    * Deletes the mapping context in the project json file
-   * @param projectId Project id the mapping context will be deleted
+   *
+   * @param projectId        Project id the mapping context will be deleted
    * @param mappingContextId The unique identifier of the mapping context to be deleted. If not provided, all mapping contexts for the project will be deleted.
    */
-  def deleteMappingContext(projectId: String, mappingContextId: Option[String] = None): Unit = {
-    val project: Option[Project] = projects.get(projectId)
-    project match {
-      case Some(project) =>
-        mappingContextId match {
-          case Some(id) =>
-            projects.put(projectId, project.copy(mappingContexts = project.mappingContexts.filterNot(m => m.equals(id))))
-          case None =>
-            projects.put(projectId, project.copy(mappingContexts = Seq.empty))
-        }
-        updateProjectsMetadata()
-      case None => // Do nothing if project is deleted before the mapping context
+  override def deleteMappingContext(projectId: String, mappingContextId: Option[String] = None): Future[Unit] = {
+    Future {
+      val project: Option[Project] = projects.get(projectId)
+      project match {
+        case Some(project) =>
+          mappingContextId match {
+            case Some(id) =>
+              projects.put(projectId, project.copy(mappingContexts = project.mappingContexts.filterNot(m => m.equals(id))))
+            case None =>
+              projects.put(projectId, project.copy(mappingContexts = Seq.empty))
+          }
+          updateProjectsMetadata()
+        case None => // Do nothing if project is deleted before the mapping context
+      }
     }
   }
 
   /**
    * Updates the projects metadata with project included in the cache.
    */
-  def updateProjectsMetadata() = {
+  def updateProjectsMetadata(): Unit = {
     val file = FileUtils.getPath(ProjectFolderRepository.PROJECTS_JSON).toFile
     // when projects metadata file does not exist, create it
     if (!file.exists()) {

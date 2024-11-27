@@ -2,14 +2,16 @@ package io.tofhir.server.repository.mappingContext
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import io.tofhir.common.model.ICachedRepository
 import io.tofhir.server.model.csv.CsvHeader
+import io.tofhir.server.repository.project.IProjectList
 
 import scala.concurrent.Future
 
 /**
  * Interface for the mapping context repository
  */
-trait IMappingContextRepository {
+trait IMappingContextRepository extends ICachedRepository with IProjectList[String] {
 
   /**
    * Retrieve the metadata of all mapping context ids

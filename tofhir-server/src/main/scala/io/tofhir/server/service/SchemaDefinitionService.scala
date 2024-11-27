@@ -7,6 +7,7 @@ import io.onfhir.api.Resource
 import io.onfhir.client.util.FhirClientUtil
 import io.onfhir.definitions.common.model.SchemaDefinition
 import io.tofhir.engine.Execution.actorSystem
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.mapping.schema.SchemaConverter
@@ -19,7 +20,6 @@ import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingRepository: IMappingRepository) extends LazyLogging {

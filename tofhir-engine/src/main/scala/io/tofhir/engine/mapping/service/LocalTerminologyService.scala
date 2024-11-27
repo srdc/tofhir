@@ -12,7 +12,7 @@ import org.json4s.{JArray, JBool, JObject, JString}
 
 import java.io.File
 import java.util.concurrent.TimeUnit
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 

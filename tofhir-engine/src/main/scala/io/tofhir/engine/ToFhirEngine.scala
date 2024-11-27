@@ -4,16 +4,15 @@ import io.onfhir.path._
 import io.tofhir.engine.config.{ToFhirConfig, ToFhirEngineConfig}
 import io.tofhir.engine.execution.RunningJobRegistry
 import io.tofhir.engine.execution.processing.FileStreamInputArchiver
-import io.tofhir.engine.mapping._
 import io.tofhir.engine.mapping.context.{IMappingContextLoader, MappingContextLoader}
 import io.tofhir.engine.mapping.schema.{IFhirSchemaLoader, SchemaFolderLoader}
 import io.tofhir.engine.model.exception.EngineInitializationException
-import io.tofhir.engine.repository.mapping.{FhirMappingFolderRepository, IFhirMappingCachedRepository}
+import io.tofhir.engine.repository.mapping.{FhirMappingFolderRepository, IFhirMappingRepository}
 import io.tofhir.engine.util.FileUtils
 import org.apache.spark.sql.SparkSession
 
 /**
- * <p>tofhir Engine for executing mapping jobs and tasks.</p>
+ * <p>toFHIR Engine for executing mapping jobs and tasks.</p>
  * <p>During initialization, the engine prioritizes the mapping and schema repositories provided as a constructor parameter.
  * If they are not provided as constructor parameters, they are initialized as folder repository based on the folder paths set in the engine configurations.
  * </p>
@@ -22,7 +21,7 @@ import org.apache.spark.sql.SparkSession
  * @param schemaRepository         Already instantiated schema repository that maintains a dynamically-updated data structure based on the operations on the schemas
  * @param functionLibraryFactories External function libraries containing function to be used within FHIRPath expressions
  */
-class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = None, schemaRepository: Option[IFhirSchemaLoader] = None, functionLibraryFactories: Map[String, IFhirPathFunctionLibraryFactory] = Map.empty) {
+class ToFhirEngine(mappingRepository: Option[IFhirMappingRepository] = None, schemaRepository: Option[IFhirSchemaLoader] = None, functionLibraryFactories: Map[String, IFhirPathFunctionLibraryFactory] = Map.empty) {
   // Validate that both mapping and schema repositories are empty or non-empty
   if (mappingRepository.nonEmpty && schemaRepository.isEmpty || mappingRepository.isEmpty && schemaRepository.nonEmpty) {
     throw EngineInitializationException("Mapping and schema repositories should both empty or non-empty")
@@ -33,7 +32,7 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingCachedRepository] = Non
   val sparkSession: SparkSession = ToFhirConfig.sparkSession
 
   //Repository for mapping definitions
-  val mappingRepo: IFhirMappingCachedRepository = mappingRepository.getOrElse(new FhirMappingFolderRepository(FileUtils.getPath(engineConfig.mappingRepositoryFolderPath).toUri))
+  val mappingRepo: IFhirMappingRepository = mappingRepository.getOrElse(new FhirMappingFolderRepository(FileUtils.getPath(engineConfig.mappingRepositoryFolderPath).toUri))
 
   //Context loader
   val contextLoader: IMappingContextLoader = new MappingContextLoader

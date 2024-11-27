@@ -1,8 +1,9 @@
 package io.tofhir.engine.repository.mapping
 
+import io.tofhir.common.model.ICachedRepository
 import io.tofhir.engine.model.FhirMapping
 
-trait IFhirMappingRepository {
+trait IFhirMappingRepository extends ICachedRepository {
   /**
    * Return the Fhir mapping definition by given url
    *

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.dataformat.csv.{CsvMapper, CsvSchema}
 import io.tofhir.engine.Execution.actorSystem
 
 import java.io.{File, FileInputStream, InputStreamReader}
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.javaapi.CollectionConverters

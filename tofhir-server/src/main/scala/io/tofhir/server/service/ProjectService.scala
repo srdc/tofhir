@@ -65,20 +65,21 @@ class ProjectService(projectRepository: IProjectRepository,
   /**
    * Removes a project and associated resources.
    *
-   * @param id The unique identifier of the project to be removed.
+   * @param projectId The unique identifier of the project to be removed.
    */
-  def removeProject(id: String): Future[Unit] = {
+  def removeProject(projectId: String): Future[Unit] = {
     // first delete the project from repository
-    projectRepository.removeProject(id)
+    projectRepository.deleteProject(projectId)
       // if project deletion is failed throw the error
       .recover { case e: Throwable => throw e }
       // else delete jobs, mappings, mapping contexts and schemas as well
-      .map(_ => {
-        jobRepository.deleteProjectJobs(id)
-        mappingRepository.deleteProjectMappings(id)
-        mappingContextRepository.deleteProjectMappingContexts(id)
-        schemaRepository.deleteProjectSchemas(id)
-      })
+      .flatMap { _ =>
+        jobRepository.deleteAllJobs(projectId) map { _ =>
+          mappingRepository.deleteProjectMappings(projectId)
+          mappingContextRepository.deleteProjectMappingContexts(projectId)
+          schemaRepository.deleteProjectSchemas(projectId)
+        }
+      }
   }
 
   /**

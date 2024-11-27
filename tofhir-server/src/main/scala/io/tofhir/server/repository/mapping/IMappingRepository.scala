@@ -1,14 +1,15 @@
 package io.tofhir.server.repository.mapping
 
 import io.tofhir.engine.model.FhirMapping
-import io.tofhir.engine.repository.mapping.IFhirMappingCachedRepository
+import io.tofhir.engine.repository.mapping.IFhirMappingRepository
+import io.tofhir.server.repository.project.IProjectList
 
 import scala.concurrent.Future
 
 /**
  * Interface to save and load mappings so that the client applications can manage the mappings through CRUD operations
  */
-trait IMappingRepository extends IFhirMappingCachedRepository {
+trait IMappingRepository extends IFhirMappingRepository with IProjectList[FhirMapping] {
 
   /**
    * Retrieve all mappings for the given project
@@ -60,7 +61,7 @@ trait IMappingRepository extends IFhirMappingCachedRepository {
    *
    * @param projectId The unique identifier of the project for which mappings should be deleted.
    */
-  def deleteProjectMappings(projectId: String): Unit
+  def deleteProjectMappings(projectId: String): Future[Unit]
 
   /**
    * Retrieves the identifiers of mappings referencing the given schema in their definitions.

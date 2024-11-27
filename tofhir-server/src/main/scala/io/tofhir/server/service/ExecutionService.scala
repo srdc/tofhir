@@ -5,7 +5,7 @@ import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.common.util.CustomMappingFunctionsFactory
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.mapping.context.MappingContextLoader
-import io.tofhir.engine.mapping.job.FhirMappingJobManager
+import io.tofhir.engine.mapping.job.{FhirMappingJobManager, MappingJobScheduler}
 import io.tofhir.engine.model._
 import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
@@ -18,7 +18,6 @@ import io.tofhir.server.repository.job.IJobRepository
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
-import io.tofhir.engine.mapping.job.MappingJobScheduler
 import org.apache.commons.io
 import org.apache.spark.sql.KeyValueGroupedDataset
 import org.json4s.JsonAST.{JBool, JObject, JValue}
@@ -59,135 +58,132 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @return
    */
   def runJob(projectId: String, jobId: String, executionId: Option[String], executeJobTask: Option[ExecuteJobTask]): Future[Unit] = {
-    if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
-      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
-    }
-
-    val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
-
-    // get the list of mapping task to be executed
-    val mappingTasks = executeJobTask.flatMap(_.mappingTaskNames) match {
-      case Some(names) => names.flatMap(name => mappingJob.mappings.find(p => p.name.contentEquals(name)))
-      case None => mappingJob.mappings
-    }
-
-    if (mappingTasks.isEmpty) {
-      throw BadRequest("No mapping task to execute!", "No mapping task to execute!")
-    }
-
-    // all the mappings in mappingTasks should not running, if any of them is running, give already running response
-    val JobExecutionMap = toFhirEngine.runningJobRegistry.getRunningExecutions()
-    val jobExecution = JobExecutionMap.get(jobId)
-    if (jobExecution.isDefined) {
-      val runningMappingTaskNames = jobExecution.get.flatMap(_._2)
-      val runningMappingTaskNamesSet = runningMappingTaskNames.toSet
-      val mappingTaskNamesSet = mappingTasks.map(_.name).toSet
-      val intersection = runningMappingTaskNamesSet.intersect(mappingTaskNamesSet)
-      if (intersection.nonEmpty) {
-        // create jvalue json response with already running mappingTask names as list string in values and execution ids in keys
-        // find execution ids for the intersection mappingTask names
-        val executionIds = jobExecution.get
-          .filter(p => p._2.exists(name => intersection.contains(name)))
-          .map(x => {
-            (x._1, x._2.filter(name => intersection.contains(name)))
-          })
-        // convert execution ids to json response
-        val jValueResponse = JArray(executionIds.map(x => {
-          JObject(
-            "executionId" -> JString(x._1),
-            "mappingTaskNames" -> JArray(x._2.map(JString(_)).toList)
-          )
-        }).toList)
-        // use it in the response message
-        throw BadRequest("Mapping tasks are already running!", JsonMethods.compact(JsonMethods.render(jValueResponse)))
-      }
-    }
-
-    // create an instance of MappingJobScheduler
-    val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler.instance(ToFhirConfig.engineConfig.toFhirDbFolderPath)
-
-    // create execution
-    val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), job = mappingJob,
-      projectId = projectId, mappingTasks = mappingTasks)
-    val fhirMappingJobManager = new FhirMappingJobManager(
-      toFhirEngine.mappingRepo,
-      toFhirEngine.contextLoader,
-      toFhirEngine.schemaLoader,
-      toFhirEngine.functionLibraries,
-      toFhirEngine.sparkSession,
-      Some(mappingJobScheduler)
-    )
-
-    // Streaming jobs
-    val submittedJob = Future {
-      if (mappingJob.sourceSettings.exists(_._2.asStream)) {
-        // Delete checkpoint directory if set accordingly
-        if (executeJobTask.exists(_.clearCheckpoints)) {
-          mappingTasks.foreach(mappingTask => {
-            // Reset the archiving offset so that the archiving starts from scratch
-            toFhirEngine.fileStreamInputArchiver.resetOffset(mappingJobExecution, mappingTask.name)
-
-            val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(mappingTask.name))
-            io.FileUtils.deleteDirectory(checkpointDirectory)
-            logger.debug(s"Deleted checkpoint directory for jobId: ${mappingJobExecution.jobId}, executionId: ${mappingJobExecution.id}, mappingTaskName: ${mappingTask.name}, path: ${checkpointDirectory.getAbsolutePath}")
-          })
+    jobRepository.getJob(projectId, jobId) map {
+      case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
+      case Some(mappingJob) =>
+        // get the list of mapping task to be executed
+        val mappingTasks = executeJobTask.flatMap(_.mappingTaskNames) match {
+          case Some(names) => names.flatMap(name => mappingJob.mappings.find(p => p.name.contentEquals(name)))
+          case None => mappingJob.mappings
         }
 
-        fhirMappingJobManager
-          .startMappingJobStream(
-            mappingJobExecution,
-            sourceSettings = mappingJob.sourceSettings,
-            sinkSettings = mappingJob.sinkSettings,
-            terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-            identityServiceSettings = mappingJob.getIdentityServiceSettings()
-          )
-          .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution, sq._1, sq._2))
-      }
+        if (mappingTasks.isEmpty) {
+          throw BadRequest("No mapping task to execute!", "No mapping task to execute!")
+        }
 
-      // Batch jobs
-      else {
-        // run the mapping job with scheduler
-        if (mappingJob.schedulingSettings.nonEmpty) {
-          // check whether the job execution is already scheduled
-          if (executionId.nonEmpty && toFhirEngine.runningJobRegistry.isScheduled(mappingJob.id, executionId.get)) {
-            throw BadRequest("The mapping job execution is already scheduled!", s"The mapping job execution is already scheduled!")
+        // all the mappings in mappingTasks should not running, if any of them is running, give already running response
+        val JobExecutionMap = toFhirEngine.runningJobRegistry.getRunningExecutions()
+        val jobExecution = JobExecutionMap.get(jobId)
+        if (jobExecution.isDefined) {
+          val runningMappingTaskNames = jobExecution.get.flatMap(_._2)
+          val runningMappingTaskNamesSet = runningMappingTaskNames.toSet
+          val mappingTaskNamesSet = mappingTasks.map(_.name).toSet
+          val intersection = runningMappingTaskNamesSet.intersect(mappingTaskNamesSet)
+          if (intersection.nonEmpty) {
+            // create jvalue json response with already running mappingTask names as list string in values and execution ids in keys
+            // find execution ids for the intersection mappingTask names
+            val executionIds = jobExecution.get
+              .filter(p => p._2.exists(name => intersection.contains(name)))
+              .map(x => {
+                (x._1, x._2.filter(name => intersection.contains(name)))
+              })
+            // convert execution ids to json response
+            val jValueResponse = JArray(executionIds.map(x => {
+              JObject(
+                "executionId" -> JString(x._1),
+                "mappingTaskNames" -> JArray(x._2.map(JString(_)).toList)
+              )
+            }).toList)
+            // use it in the response message
+            throw BadRequest("Mapping tasks are already running!", JsonMethods.compact(JsonMethods.render(jValueResponse)))
           }
-          // schedule the mapping job
-          fhirMappingJobManager
-            .scheduleMappingJob(
-              mappingJobExecution = mappingJobExecution,
-              sourceSettings = mappingJob.sourceSettings,
-              sinkSettings = mappingJob.sinkSettings,
-              schedulingSettings = mappingJob.schedulingSettings.get,
-              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-              identityServiceSettings = mappingJob.getIdentityServiceSettings()
-            )
-          // start scheduler
-          mappingJobScheduler.scheduler.start()
-          // register the job to the registry
-          toFhirEngine.runningJobRegistry.registerSchedulingJob(mappingJobExecution, mappingJobScheduler.scheduler)
         }
 
-        // run the batch job without scheduling
-        else {
-          val executionFuture: Future[Unit] = fhirMappingJobManager
-            .executeMappingJob(
-              mappingJobExecution = mappingJobExecution,
-              sourceSettings = mappingJob.sourceSettings,
-              sinkSettings = mappingJob.sinkSettings,
-              terminologyServiceSettings = mappingJob.terminologyServiceSettings,
-              identityServiceSettings = mappingJob.getIdentityServiceSettings()
-            )
-          // Register the job to the registry
-          toFhirEngine.runningJobRegistry.registerBatchJob(
-            mappingJobExecution,
-            Some(executionFuture),
-            s"Spark job for job: ${mappingJobExecution.jobId} mappingTaskNames: ${mappingTasks.map(_.name).mkString(" ")}"
-          )
-        }
-      }
+        // create an instance of MappingJobScheduler
+        val mappingJobScheduler: MappingJobScheduler = MappingJobScheduler.instance(ToFhirConfig.engineConfig.toFhirDbFolderPath)
+
+        // create execution
+        val mappingJobExecution = FhirMappingJobExecution(executionId.getOrElse(UUID.randomUUID().toString), job = mappingJob,
+          projectId = projectId, mappingTasks = mappingTasks)
+        val fhirMappingJobManager = new FhirMappingJobManager(
+          toFhirEngine.mappingRepo,
+          toFhirEngine.contextLoader,
+          toFhirEngine.schemaLoader,
+          toFhirEngine.functionLibraries,
+          toFhirEngine.sparkSession,
+          Some(mappingJobScheduler)
+        )
+
+        // Streaming jobs
+        val submittedJob =
+          if (mappingJob.sourceSettings.exists(_._2.asStream)) {
+            // Delete checkpoint directory if set accordingly
+            if (executeJobTask.exists(_.clearCheckpoints)) {
+              mappingTasks.foreach(mappingTask => {
+                // Reset the archiving offset so that the archiving starts from scratch
+                toFhirEngine.fileStreamInputArchiver.resetOffset(mappingJobExecution, mappingTask.name)
+
+                val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(mappingTask.name))
+                io.FileUtils.deleteDirectory(checkpointDirectory)
+                logger.debug(s"Deleted checkpoint directory for jobId: ${mappingJobExecution.jobId}, executionId: ${mappingJobExecution.id}, mappingTaskName: ${mappingTask.name}, path: ${checkpointDirectory.getAbsolutePath}")
+              })
+            }
+
+            fhirMappingJobManager
+              .startMappingJobStream(
+                mappingJobExecution,
+                sourceSettings = mappingJob.sourceSettings,
+                sinkSettings = mappingJob.sinkSettings,
+                terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+                identityServiceSettings = mappingJob.getIdentityServiceSettings()
+              )
+              .foreach(sq => toFhirEngine.runningJobRegistry.registerStreamingQuery(mappingJobExecution, sq._1, sq._2))
+          }
+
+          // Batch jobs
+          else {
+            // run the mapping job with scheduler
+            if (mappingJob.schedulingSettings.nonEmpty) {
+              // check whether the job execution is already scheduled
+              if (executionId.nonEmpty && toFhirEngine.runningJobRegistry.isScheduled(mappingJob.id, executionId.get)) {
+                throw BadRequest("The mapping job execution is already scheduled!", s"The mapping job execution is already scheduled!")
+              }
+              // schedule the mapping job
+              fhirMappingJobManager
+                .scheduleMappingJob(
+                  mappingJobExecution = mappingJobExecution,
+                  sourceSettings = mappingJob.sourceSettings,
+                  sinkSettings = mappingJob.sinkSettings,
+                  schedulingSettings = mappingJob.schedulingSettings.get,
+                  terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+                  identityServiceSettings = mappingJob.getIdentityServiceSettings()
+                )
+              // start scheduler
+              mappingJobScheduler.scheduler.start()
+              // register the job to the registry
+              toFhirEngine.runningJobRegistry.registerSchedulingJob(mappingJobExecution, mappingJobScheduler.scheduler)
+            }
+
+            // run the batch job without scheduling
+            else {
+              val executionFuture: Future[Unit] = fhirMappingJobManager
+                .executeMappingJob(
+                  mappingJobExecution = mappingJobExecution,
+                  sourceSettings = mappingJob.sourceSettings,
+                  sinkSettings = mappingJob.sinkSettings,
+                  terminologyServiceSettings = mappingJob.terminologyServiceSettings,
+                  identityServiceSettings = mappingJob.getIdentityServiceSettings()
+                )
+              // Register the job to the registry
+              toFhirEngine.runningJobRegistry.registerBatchJob(
+                mappingJobExecution,
+                Some(executionFuture),
+                s"Spark job for job: ${mappingJobExecution.jobId} mappingTaskNames: ${mappingTasks.map(_.name).mkString(" ")}"
+              )
+            }
+          }
+        submittedJob
     }
-    submittedJob
   }
 
   /**
@@ -200,54 +196,54 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
    * @return
    */
   def testMappingWithJob(projectId: String, jobId: String, testResourceCreationRequest: TestResourceCreationRequest): Future[Seq[FhirMappingResultsForInput]] = {
-    if (!jobRepository.getCachedMappingsJobs.contains(projectId) || !jobRepository.getCachedMappingsJobs(projectId).contains(jobId)) {
-      throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository.")
+    jobRepository.getJob(projectId, jobId) flatMap {
+      case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
+      case Some(mappingJob) =>
+
+        logger.debug(s"Testing the mapping ${testResourceCreationRequest.fhirMappingTask.mappingRef} inside the job $jobId by selecting ${testResourceCreationRequest.resourceFilter.numberOfRows} ${testResourceCreationRequest.resourceFilter.order} records.")
+
+        // If an unmanaged mapping is provided within the mapping task, normalize the context urls
+        val mappingTask: FhirMappingTask =
+          testResourceCreationRequest.fhirMappingTask.mapping match {
+            case None => testResourceCreationRequest.fhirMappingTask
+            case _ =>
+              // get the path of mapping file which will be used to normalize mapping context urls
+              val pathToMappingFile: File = FileUtils.getPath(ToFhirConfig.engineConfig.mappingRepositoryFolderPath, projectId, s"${testResourceCreationRequest.fhirMappingTask.mapping.get.id}${FileExtensions.JSON}").toFile
+              // normalize the mapping context urls
+              val mappingWithNormalizedContextUrls: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq((testResourceCreationRequest.fhirMappingTask.mapping.get, pathToMappingFile))).head
+              // Copy the mapping with the normalized urls
+              testResourceCreationRequest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls))
+          }
+
+        val fhirMappingJobManager = new FhirMappingJobManager(
+          toFhirEngine.mappingRepo,
+          toFhirEngine.contextLoader,
+          toFhirEngine.schemaLoader,
+          toFhirEngine.functionLibraries,
+          toFhirEngine.sparkSession
+        )
+        // Define the updated jobSourceSettings where asStream is set to false if the setting is a KafkaSourceSettings
+        val jobSourceSettings: Map[String, MappingJobSourceSettings] = mappingJob.sourceSettings.map {
+          case (key, kafkaSettings: KafkaSourceSettings) =>
+            key -> kafkaSettings.copy(asStream = false) // Copy and update asStream to false for KafkaSourceSettings
+          case other => other // Keep other source settings unchanged
+        }
+
+        val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, jobSourceSettings, jobId = Some(jobId), isTestExecution = true)
+        val selectedDataFrame = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
+          .distinct() // Remove duplicate rows to ensure each FHIR Resource is represented only once per source.
+        // This prevents confusion for users in the UI, as displaying the same resource multiple times could lead to misunderstandings.
+        fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selectedDataFrame, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId))
+          .map { resultingDataFrame =>
+            // Import implicits for the Spark session
+            import toFhirEngine.sparkSession.implicits._
+            // Group by the 'source' column
+            val grouped: KeyValueGroupedDataset[String, FhirMappingResult] = resultingDataFrame
+              .groupByKey((result: FhirMappingResult) => result.source)
+            // Map each group to FhirMappingResultForInput
+            grouped.mapGroups(FhirMappingResultConverter.convertToFhirMappingResultsForInput).collect().toSeq
+          }
     }
-    val mappingJob: FhirMappingJob = jobRepository.getCachedMappingsJobs(projectId)(jobId)
-
-    logger.debug(s"Testing the mapping ${testResourceCreationRequest.fhirMappingTask.mappingRef} inside the job $jobId by selecting ${testResourceCreationRequest.resourceFilter.numberOfRows} ${testResourceCreationRequest.resourceFilter.order} records.")
-
-    // If an unmanaged mapping is provided within the mapping task, normalize the context urls
-    val mappingTask: FhirMappingTask =
-      testResourceCreationRequest.fhirMappingTask.mapping match {
-        case None => testResourceCreationRequest.fhirMappingTask
-        case _ =>
-          // get the path of mapping file which will be used to normalize mapping context urls
-          val pathToMappingFile: File = FileUtils.getPath(ToFhirConfig.engineConfig.mappingRepositoryFolderPath, projectId, s"${testResourceCreationRequest.fhirMappingTask.mapping.get.id}${FileExtensions.JSON}").toFile
-          // normalize the mapping context urls
-          val mappingWithNormalizedContextUrls: FhirMapping = MappingContextLoader.normalizeContextURLs(Seq((testResourceCreationRequest.fhirMappingTask.mapping.get, pathToMappingFile))).head
-          // Copy the mapping with the normalized urls
-          testResourceCreationRequest.fhirMappingTask.copy(mapping = Some(mappingWithNormalizedContextUrls))
-      }
-
-    val fhirMappingJobManager = new FhirMappingJobManager(
-      toFhirEngine.mappingRepo,
-      toFhirEngine.contextLoader,
-      toFhirEngine.schemaLoader,
-      toFhirEngine.functionLibraries,
-      toFhirEngine.sparkSession
-    )
-    // Define the updated jobSourceSettings where asStream is set to false if the setting is a KafkaSourceSettings
-    val jobSourceSettings: Map[String, MappingJobSourceSettings] = mappingJob.sourceSettings.map {
-      case (key, kafkaSettings: KafkaSourceSettings) =>
-        key -> kafkaSettings.copy(asStream = false) // Copy and update asStream to false for KafkaSourceSettings
-      case other => other // Keep other source settings unchanged
-    }
-
-    val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, jobSourceSettings, jobId = Some(jobId), isTestExecution = true)
-    val selectedDataFrame = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
-      .distinct() // Remove duplicate rows to ensure each FHIR Resource is represented only once per source.
-                  // This prevents confusion for users in the UI, as displaying the same resource multiple times could lead to misunderstandings.
-    fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selectedDataFrame, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId))
-      .map { resultingDataFrame =>
-        // Import implicits for the Spark session
-        import toFhirEngine.sparkSession.implicits._
-        // Group by the 'source' column
-        val grouped: KeyValueGroupedDataset[String, FhirMappingResult] = resultingDataFrame
-          .groupByKey((result: FhirMappingResult) => result.source)
-        // Map each group to FhirMappingResultForInput
-        grouped.mapGroups(FhirMappingResultConverter.convertToFhirMappingResultsForInput).collect().toSeq
-      }
   }
 
   /**

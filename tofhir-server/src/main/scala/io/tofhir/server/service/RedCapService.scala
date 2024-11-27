@@ -11,7 +11,7 @@ import io.tofhir.server.model.redcap.RedCapProjectConfig
 import org.json4s.DefaultFormats
 import org.json4s.jackson.{JsonMethods, Serialization}
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 

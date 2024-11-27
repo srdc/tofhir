@@ -7,8 +7,8 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.model.FhirMapping
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
-import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
-import io.tofhir.server.repository.project.ProjectFolderRepository
+import io.tofhir.server.common.model.{AlreadyExists, ResourceNotFound}
+import io.tofhir.server.repository.project.IProjectRepository
 import io.tofhir.server.util.FileOperations
 import org.json4s.jackson.JsonMethods
 import org.json4s.jackson.Serialization.writePretty
@@ -24,9 +24,9 @@ import scala.io.Source
  * It also extends the engine's folder-based mapping repository implementation to be able to use the same business logic to load mappings from folders.
  *
  * @param mappingRepositoryFolderPath root folder path to the mapping repository
- * @param projectFolderRepository     project repository to update corresponding projects based on updates on the mappings
+ * @param projectRepository           project repository to update corresponding projects based on updates on the mappings
  */
-class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingRepository {
+class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projectRepository: IProjectRepository) extends IMappingRepository {
 
   private val logger: Logger = Logger(this.getClass)
 
@@ -36,26 +36,16 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
   initMap(mappingRepositoryFolderPath)
 
   /**
-   * Returns the mappings managed by this repository
+   * Retrieve all mappings of a given project
    *
-   * @return
-   */
-  def getCachedMappings(): mutable.Map[String, mutable.Map[String, FhirMapping]] = {
-    mappingDefinitions
-  }
-
-  /**
-   * Retrieve the metadata of all MappingFile (only url, type and name fields are populated)
-   *
+   * @param projectId project id the jobs belong to
    * @return
    */
   override def getAllMappings(projectId: String): Future[Seq[FhirMapping]] = {
     Future {
-      if (mappingDefinitions.contains(projectId)) {
-        mappingDefinitions(projectId).values.toSeq
-      } else {
-        Seq.empty
-      }
+      mappingDefinitions.get(projectId)
+        .map(_.values.toSeq) // If such a project exists, return the mappings as a sequence
+        .getOrElse(Seq.empty[FhirMapping]) // Else, return an empty list
     }
   }
 
@@ -68,25 +58,28 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    */
   override def saveMapping(projectId: String, mapping: FhirMapping): Future[FhirMapping] = {
     // validate that mapping id is unique
-    if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).contains(mapping.id)) {
+    mappingDefinitions.get(projectId).flatMap(_.get(mapping.id)).foreach { _ =>
       throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with id ${mapping.id} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // validate that mapping url is unique
-    if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).exists(mD => mD._2.url.contentEquals(mapping.url))) {
-      throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with url ${mapping.url} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+    mappingDefinitions.get(projectId).foreach { mappings =>
+      if (mappings.values.exists(_.url.contentEquals(mapping.url))) {
+        throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with url ${mapping.url} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+      }
     }
 
     // Write to the repository as a new file
-    getFileForMapping(projectId, mapping.id).map(newFile => {
+    getFileForMapping(projectId, mapping.id).flatMap(newFile => {
       val fw = new FileWriter(newFile)
       fw.write(writePretty(mapping))
       fw.close()
 
       // Add to the project metadata json file
-      projectFolderRepository.addMapping(projectId, mapping)
-      // Add to the in-memory map
-      mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
-      mapping
+      projectRepository.addMapping(projectId, mapping) map { _ =>
+        // Add to the in-memory map
+        mappingDefinitions.getOrElseUpdate(projectId, mutable.Map.empty).put(mapping.id, mapping)
+        mapping
+      }
     })
   }
 
@@ -113,23 +106,27 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * @throws AlreadyExists if a mapping with the same URL already exists
    */
   override def updateMapping(projectId: String, mappingId: String, mapping: FhirMapping): Future[FhirMapping] = {
-    if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(mappingId)) {
+    if (!mappingDefinitions.get(projectId).exists(_.contains(mappingId))) {
       throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $mappingId does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // validate that mapping url is unique
-    if (mappingDefinitions.contains(projectId) && mappingDefinitions(projectId).exists(mD => !mD._1.contentEquals(mappingId) && mD._2.url.contentEquals(mapping.url))) {
-      throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with url ${mapping.url} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+    mappingDefinitions.get(projectId).foreach { mappings =>
+      if (mappings.exists { case (id, definition) => !id.contentEquals(mappingId) && definition.url.contentEquals(mapping.url) }) {
+        throw AlreadyExists("Fhir mapping already exists.", s"A mapping definition with url ${mapping.url} already exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
+      }
     }
+
     // update the mapping in the repository
-    getFileForMapping(projectId, mapping.id).map(file => {
+    getFileForMapping(projectId, mapping.id).flatMap(file => {
       val fw = new FileWriter(file)
       fw.write(writePretty(mapping))
       fw.close()
       // update the mapping in the in-memory map
       mappingDefinitions(projectId).put(mappingId, mapping)
       // update the projects metadata json file
-      projectFolderRepository.updateMapping(projectId, mapping)
-      mapping
+      projectRepository.updateMapping(projectId, mapping) map { _ =>
+        mapping
+      }
     })
   }
 
@@ -141,16 +138,16 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * @return
    */
   override def deleteMapping(projectId: String, mappingId: String): Future[Unit] = {
-    if (!mappingDefinitions.contains(projectId) || !mappingDefinitions(projectId).contains(mappingId)) {
+    if (!mappingDefinitions.get(projectId).exists(_.contains(mappingId))) {
       throw ResourceNotFound("Mapping does not exists.", s"A mapping with id $mappingId does not exists in the mapping repository at ${FileUtils.getPath(mappingRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
     // delete the mapping from the repository
-    getFileForMapping(projectId, mappingDefinitions(projectId)(mappingId).id).map(file => {
+    getFileForMapping(projectId, mappingDefinitions(projectId)(mappingId).id).flatMap(file => {
       file.delete()
       mappingDefinitions(projectId).remove(mappingId)
       // delete the mapping from projects json file
-      projectFolderRepository.deleteMapping(projectId, Some(mappingId))
+      projectRepository.deleteMapping(projectId, Some(mappingId))
     })
   }
 
@@ -159,13 +156,16 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    *
    * @param projectId The unique identifier of the project for which mappings should be deleted.
    */
-  override def deleteProjectMappings(projectId: String): Unit = {
-    // delete mapping definitions for the project
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(mappingRepositoryFolderPath, projectId).toFile)
-    // remove project from the cache
-    mappingDefinitions.remove(projectId)
-    // delete project mappings
-    projectFolderRepository.deleteMapping(projectId)
+  override def deleteProjectMappings(projectId: String): Future[Unit] = {
+    Future {
+      // delete mapping definitions for the project
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(mappingRepositoryFolderPath, projectId).toFile)
+      // remove project from the cache
+      mappingDefinitions.remove(projectId)
+    } flatMap { _ =>
+      // delete project mappings
+      projectRepository.deleteMapping(projectId)
+    }
   }
 
   /**
@@ -191,7 +191,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * @return
    */
   private def getFileForMapping(projectId: String, fhirMappingId: String): Future[File] = {
-    projectFolderRepository.getProject(projectId) map { project =>
+    projectRepository.getProject(projectId) map { project =>
       if (project.isEmpty) throw new IllegalStateException(s"This should not be possible. ProjectId: $projectId does not exist in the project folder repository.")
       FileOperations.getFileForEntityWithinProject(mappingRepositoryFolderPath, project.get.id, fhirMappingId)
     }
@@ -229,7 +229,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
             System.exit(1)
         }
       }
-      if(fhirMappingMap.isEmpty) {
+      if (fhirMappingMap.isEmpty) {
         // No processable schema files under projectDirectory
         logger.warn(s"There are no processable mapping files under ${projectDirectory.getAbsolutePath}. Skipping ${projectDirectory.getName}.")
       } else {
@@ -255,15 +255,19 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
    * Invalidate the internal cache and refresh the cache with the FhirMappings directly from their source
    */
   override def invalidate(): Unit = {
-    // nothing needs to be done as we keep the cache always up-to-date
-  }
-
-  /**
-   * Reload the mapping definitions from the given folder
-   * @return
-   */
-  def reloadMappingDefinitions(): Unit = {
     this.mappingDefinitions.clear()
     initMap(mappingRepositoryFolderPath)
   }
+
+  /**
+   * Retrieve the projects and FhirMappings within.
+   *
+   * @return Map of projectId -> Seq[FhirMapping]
+   */
+  override def getProjectPairs: Map[String, Seq[FhirMapping]] = {
+    mappingDefinitions.map { case (projectId, mappingPairs) =>
+      projectId -> mappingPairs.values.toSeq
+    }.toMap
+  }
+
 }

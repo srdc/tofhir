@@ -3,8 +3,7 @@ package io.tofhir.engine.cli.command
 import io.tofhir.engine.mapping.job.FhirMappingJobManager
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingJobExecution}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Try
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 
 class Run extends Command {
   override def execute(args: Seq[String], context: CommandExecutionContext): CommandExecutionContext = {

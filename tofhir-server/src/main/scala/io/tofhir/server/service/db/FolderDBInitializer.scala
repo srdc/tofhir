@@ -132,48 +132,44 @@ class FolderDBInitializer(schemaFolderRepository: SchemaFolderRepository,
     val projects: mutable.Map[String, Project] = mutable.Map.empty
 
     // Parse schemas
-    val schemas: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = schemaFolderRepository.getCachedSchemas()
-    schemas.foreach(projectIdAndSchemas => {
-      val projectId: String = projectIdAndSchemas._1
-      val schemaUrl: String = projectIdAndSchemas._2.head._2.url
-      // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.get(projectId) match {
-        case Some(existingProject) => existingProject.copy(schemaUrlPrefix = Some(dropLastPart(schemaUrl)))
-        case None => Project(id = projectId, name = projectId, schemaUrlPrefix = Some(dropLastPart(schemaUrl)))
-      }
-      projects.put(projectId, project.copy(schemas = projectIdAndSchemas._2.values.toSeq))
-    })
+    schemaFolderRepository.getProjectPairs.foreach {
+      case (projectId, schemaDefinitionList) =>
+        val schemaUrl = schemaDefinitionList.head.url
+        // If there is no project create a new one. Use id as name as well
+        val project: Project = projects.get(projectId) match {
+          case Some(existingProject) => existingProject.copy(schemaUrlPrefix = Some(dropLastPart(schemaUrl)))
+          case None => Project(id = projectId, name = projectId, schemaUrlPrefix = Some(dropLastPart(schemaUrl)))
+        }
+        projects.put(projectId, project.copy(schemas = schemaDefinitionList))
+    }
 
     // Parse mappings
-    val mappings: mutable.Map[String, mutable.Map[String, FhirMapping]] = mappingFolderRepository.getCachedMappings()
-    mappings.foreach(projectIdAndMappings => {
-      val projectId: String = projectIdAndMappings._1
-      val mappingUrl: String = projectIdAndMappings._2.head._2.url
-      // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.get(projectId) match {
-        case Some(existingProject) => existingProject.copy(mappingUrlPrefix = Some(dropLastPart(mappingUrl)))
-        case None => Project(id = projectId, name = projectId, mappingUrlPrefix = Some(dropLastPart(mappingUrl)))
-      }
-      projects.put(projectId, project.copy(mappings = projectIdAndMappings._2.values.toSeq))
-    })
+    mappingFolderRepository.getProjectPairs.foreach {
+      case (projectId, mappingList) =>
+        val mappingUrl: String = mappingList.head.url
+        // If there is no project create a new one. Use id as name as well
+        val project: Project = projects.get(projectId) match {
+          case Some(existingProject) => existingProject.copy(mappingUrlPrefix = Some(dropLastPart(mappingUrl)))
+          case None => Project(id = projectId, name = projectId, mappingUrlPrefix = Some(dropLastPart(mappingUrl)))
+        }
+        projects.put(projectId, project.copy(mappings = mappingList))
+    }
 
     // Parse mapping jobs
-    val jobs: mutable.Map[String, mutable.Map[String, FhirMappingJob]] = mappingJobFolderRepository.getCachedMappingsJobs
-    jobs.foreach(projectIdAndMappingsJobs => {
-      val projectId: String = projectIdAndMappingsJobs._1
-      // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId))
-      projects.put(projectId, project.copy(mappingJobs = projectIdAndMappingsJobs._2.values.toSeq))
-    })
+    mappingJobFolderRepository.getProjectPairs.foreach {
+      case (projectId, jobList) =>
+        // If there is no project create a new one. Use id as name as well
+        val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId))
+        projects.put(projectId, project.copy(mappingJobs = jobList))
+    }
 
     // Parse mapping contexts
-    val mappingContexts: mutable.Map[String, Seq[String]] = mappingContextRepository.getCachedMappingContexts()
-    mappingContexts.foreach(mappingContexts => {
-      val projectId: String = mappingContexts._1
-      // If there is no project create a new one. Use id as name as well
-      val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId))
-      projects.put(projectId, project.copy(mappingContexts = mappingContexts._2))
-    })
+    mappingContextRepository.getProjectPairs.foreach {
+      case (projectId, mappingContextIdList) =>
+        // If there is no project create a new one. Use id as name as well
+        val project: Project = projects.getOrElse(projectId, Project(id = projectId, name = projectId))
+        projects.put(projectId, project.copy(mappingContexts = mappingContextIdList))
+    }
 
     projects
   }

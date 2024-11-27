@@ -6,7 +6,7 @@ import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 import io.tofhir.server.repository.job.IJobRepository
 import io.tofhir.server.repository.mapping.IMappingRepository
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import scala.concurrent.Future
 
 class MappingService(mappingRepository: IMappingRepository, jobRepository: IJobRepository) extends LazyLogging {
