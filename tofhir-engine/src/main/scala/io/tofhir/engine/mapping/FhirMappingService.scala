@@ -11,7 +11,7 @@ import io.tofhir.engine.model._
 import io.tofhir.engine.model.exception.FhirMappingException
 import org.json4s.JsonAST.{JArray, JNull, JObject, JValue}
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import scala.concurrent.Future
 
 /**

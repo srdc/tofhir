@@ -6,7 +6,7 @@ import io.tofhir.engine.util.{CsvUtil, FileUtils}
 
 import java.io.File
 import java.nio.file.Paths
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import scala.concurrent.Future
 
 /**

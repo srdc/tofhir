@@ -20,7 +20,7 @@ import scala.io.Source
  *
  * @param folderUri Path to the folder
  */
-class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingCachedRepository {
+class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository {
   private val logger: Logger = Logger(this.getClass)
 
   private var fhirMappings: Map[String, FhirMapping] = loadMappings(folderUri)
@@ -39,20 +39,20 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingCachedRepo
       case e: Throwable => throw FhirMappingException(s"Given folder for the mapping repository is not valid.", e)
     }
     files.map { f =>
-      val source = Source.fromFile(f, StandardCharsets.UTF_8.name()) // read the JSON file
-      val fileContent = try source.mkString finally source.close()
-      val fhirMapping = try {
-        JsonMethods.parse(fileContent).removeField { // Remove any fields starting with @ from the JSON.
-          case JField(fieldName, _) if fieldName.startsWith("@") => true
-          case _ => false
-        }.extractOpt[FhirMapping]
-      } catch {
-        case e: Exception =>
-          logger.error(s"Cannot parse the mapping file ${f.getAbsolutePath}.")
-          Option.empty[FhirMapping]
-      }
-      fhirMapping -> f
-    }.filter(_._1.nonEmpty) // Remove the elements from the list if they are not valid FhirMapping JSONs
+        val source = Source.fromFile(f, StandardCharsets.UTF_8.name()) // read the JSON file
+        val fileContent = try source.mkString finally source.close()
+        val fhirMapping = try {
+          JsonMethods.parse(fileContent).removeField { // Remove any fields starting with @ from the JSON.
+            case JField(fieldName, _) if fieldName.startsWith("@") => true
+            case _ => false
+          }.extractOpt[FhirMapping]
+        } catch {
+          case e: Exception =>
+            logger.error(s"Cannot parse the mapping file ${f.getAbsolutePath}.")
+            Option.empty[FhirMapping]
+        }
+        fhirMapping -> f
+      }.filter(_._1.nonEmpty) // Remove the elements from the list if they are not valid FhirMapping JSONs
       .map { case (fm, file) => fm.get -> file } // Get rid of the Option
   }
 

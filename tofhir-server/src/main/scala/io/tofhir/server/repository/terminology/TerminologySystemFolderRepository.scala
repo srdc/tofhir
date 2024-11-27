@@ -1,5 +1,6 @@
 package io.tofhir.server.repository.terminology
 
+import io.tofhir.common.model.ICachedRepository
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
@@ -14,7 +15,7 @@ import scala.concurrent.Future
 /**
  * Folder/Directory based terminology system repository implementation.
  */
-class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) extends ITerminologySystemRepository {
+class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) extends ITerminologySystemRepository with ICachedRepository {
 
   // terminology system id -> TerminologySystem
   private val terminologySystemMap: mutable.Map[String, TerminologySystem] = mutable.Map.empty[String, TerminologySystem]
@@ -72,7 +73,7 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
   /**
    * Update a TerminologySystem
    *
-   * @param id          id of the TerminologySystem
+   * @param id                id of the TerminologySystem
    * @param terminologySystem TerminologySystem to update
    * @return updated TerminologySystem
    */
@@ -92,7 +93,7 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
         }.toSeq
         this.updateTerminologySystemsDBFile(updatedLocalTerminologies)
         // update concept maps/code systems files
-        this.updateConceptMapAndCodeSystemFiles(foundTerminology, terminologySystem) map(_ => {
+        this.updateConceptMapAndCodeSystemFiles(foundTerminology, terminologySystem) map (_ => {
           // update the terminology service in the map
           this.terminologySystemMap.put(id, terminologySystem)
           terminologySystem
@@ -254,9 +255,10 @@ class TerminologySystemFolderRepository(terminologySystemsFolderPath: String) ex
 
   /**
    * Reload the terminology systems from the given folder
+   *
    * @return
    */
-  def reloadTerminologySystems(): Unit = {
+  def invalidate(): Unit = {
     this.terminologySystemMap.clear()
     initMap()
   }

@@ -2,7 +2,9 @@ package io.tofhir.server.repository.schema
 
 import io.onfhir.api.Resource
 import io.onfhir.definitions.common.model.SchemaDefinition
+import io.tofhir.common.model.ICachedRepository
 import io.tofhir.engine.mapping.schema.IFhirSchemaLoader
+import io.tofhir.server.repository.project.IProjectList
 
 import scala.concurrent.Future
 
@@ -10,7 +12,7 @@ import scala.concurrent.Future
  * Interface to save and load SchemaDefinitions
  * so that the client applications can manage the schemas through CRUD operations
  */
-trait ISchemaRepository extends IFhirSchemaLoader {
+trait ISchemaRepository extends IFhirSchemaLoader with ICachedRepository with IProjectList[SchemaDefinition] {
 
   /**
    * Retrieve the metadata of all SchemaDefinitions (only id, url, type and name fields are populated)
@@ -69,7 +71,7 @@ trait ISchemaRepository extends IFhirSchemaLoader {
    *
    * @param projectId The unique identifier of the project for which schemas should be deleted.
    */
-  def deleteProjectSchemas(projectId: String): Unit
+  def deleteProjectSchemas(projectId: String): Future[Unit]
 
   /**
    * Retrieve the Structure Definition of the schema identified by its id.

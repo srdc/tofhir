@@ -6,7 +6,7 @@ import io.tofhir.server.model.TerminologySystem
 import io.tofhir.server.repository.job.IJobRepository
 import io.tofhir.server.repository.terminology.ITerminologySystemRepository
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import io.tofhir.engine.Execution.actorSystem.dispatcher
 import scala.concurrent.Future
 
 class TerminologySystemService(terminologySystemRepository: ITerminologySystemRepository, mappingJobRepository: IJobRepository) extends LazyLogging {
@@ -48,10 +48,9 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
    * @return Updated TerminologySystem
    */
   def updateTerminologySystem(id: String, terminologySystem: TerminologySystem): Future[TerminologySystem] = {
-    // Update TerminologySystem first, then update Jobs Terminology fields
+    // Update TerminologySystem first, then update Jobs Terminology service setting fields
     terminologySystemRepository.updateTerminologySystem(id, terminologySystem).flatMap { terminologySystem =>
-      // update Jobs Terminology fields if it is successful
-      updateJobTerminology(id, Some(terminologySystem)).map(_ => terminologySystem)
+      updateJobTerminologyServiceSettings(id, Some(terminologySystem)).map(_ => terminologySystem)
     }
   }
 
@@ -65,60 +64,43 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
     // Delete terminology system first, then update Jobs Terminology fields
     terminologySystemRepository.deleteTerminologySystem(id).flatMap { terminologySystem =>
       // update Jobs Terminology fields if it is successful
-      updateJobTerminology(id).map(_ => terminologySystem)
+      updateJobTerminologyServiceSettings(id).map(_ => terminologySystem)
     }
   }
 
   /**
-   * Check whether job's id and terminologySystem id is equal
-   * @param job job object to be checked
-   * @param terminologySystemId id of terminogySystem
-   * @return Boolean indicating whether job's id and terminologySystem's id are equal
-   */
-  private def checkEqualityOfIds(job: FhirMappingJob, terminologySystemId: String): Boolean = {
-    // Get terminology service of the job
-    val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
-      job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
-
-    terminologyServiceSettings.folderPath.split('/').lastOption.get.equals(terminologySystemId)
-  }
-
-  /**
-   * Update Job's terminology fields with the updated terminology system.
+   * Find the mappings jobs which refer to the given terminologySystemId and update their terminology service settings
+   * with the provided terminologySystem. If the provided terminologySystem is None, remove Job's terminology service settings.
    *
-   * @param id                id of terminologySystem
-   * @param terminologySystem updated terminology system
+   * @param terminologySystemId id of TerminologySystem
+   * @param terminologySystem   TerminologySystem
    * @return
    */
-  private def updateJobTerminology(id: String, terminologySystem: Option[TerminologySystem] = Option.empty): Future[Unit] = {
-    // Get project ids from job cache
-    val projectIds: Seq[String] = mappingJobRepository.getCachedMappingsJobs.keys.toSeq
-
-    Future.sequence(projectIds.map(projectId => {
-      // Get jobs of given project
-      mappingJobRepository.getAllJobs(projectId).flatMap { jobs =>
-        Future.sequence(jobs.filter(job => {
-          job.terminologyServiceSettings.isDefined && job.terminologyServiceSettings.get.isInstanceOf[LocalFhirTerminologyServiceSettings] && checkEqualityOfIds(job, id)
-        }).map(jobToBeUpdated => {
-          // Create updated job object
+  private def updateJobTerminologyServiceSettings(terminologySystemId: String, terminologySystem: Option[TerminologySystem] = Option.empty): Future[Unit] = {
+    Future.sequence(mappingJobRepository.getProjectPairs.flatMap { // Get all mapping jobs grouped under their projects.
+      case (projectId, mappingJobs) =>
+        mappingJobs.filter { job => // Find the mapping jobs which refer to the given terminologySystemId
+          job.terminologyServiceSettings match {
+            case Some(settings: LocalFhirTerminologyServiceSettings) =>
+              settings.folderPath.split('/').lastOption.contains(terminologySystemId)
+            case _ => false
+          }
+        } map { jobToBeUpdated =>
+          // Create updated mapping job object
           val updatedJob = terminologySystem match {
             // Update terminology service case
-            case Some(ts) => {
+            case Some(ts) =>
               val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
                 jobToBeUpdated.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
-
               val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings =
                 terminologyServiceSettings.copy(conceptMapFiles = ts.conceptMaps, codeSystemFiles = ts.codeSystems)
-
               jobToBeUpdated.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
-            }
             // Delete terminology service case
             case None => jobToBeUpdated.copy(terminologyServiceSettings = None)
           }
           // Update job in the repository
           mappingJobRepository.updateJob(projectId, jobToBeUpdated.id, updatedJob)
-        }))
-      }
-    })).map {_ => ()}
+        }
+    }.toSeq).map { _ => () }
   }
 }

@@ -1,21 +1,18 @@
 package io.tofhir.engine.cli
 
+import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.ToFhirEngine
 import io.tofhir.engine.cli.command.{CommandExecutionContext, CommandFactory, Load}
 import io.tofhir.engine.mapping.job.{FhirMappingJobManager, MappingJobScheduler}
 import io.tofhir.engine.model.FhirMappingJobExecution
 import io.tofhir.engine.util.FhirMappingJobFormatter
-import io.tofhir.engine.{ToFhirEngine, cli}
-import it.sauronsoftware.cron4j.Scheduler
 import org.json4s.MappingException
 
 import java.io.FileNotFoundException
-import java.net.URI
-import java.nio.file.Paths
 import java.util.Scanner
 import scala.annotation.tailrec
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.util.Try
 
 object CommandLineInterface {

@@ -8,7 +8,7 @@ import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{AlreadyExists, ResourceNotFound}
 import io.tofhir.server.model._
 import io.tofhir.server.model.csv.CsvHeader
-import io.tofhir.server.repository.project.ProjectFolderRepository
+import io.tofhir.server.repository.project.IProjectRepository
 import io.tofhir.server.util.CsvUtil
 
 import java.io.File
@@ -21,20 +21,11 @@ import scala.concurrent.Future
  *
  * @param mappingContextRepositoryFolderPath root folder path to the mapping context repository
  */
-class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String, projectFolderRepository: ProjectFolderRepository) extends IMappingContextRepository {
+class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String, projectRepository: IProjectRepository) extends IMappingContextRepository {
   // project id -> mapping context id
   private val mappingContextDefinitions: mutable.Map[String, Seq[String]] = mutable.Map.empty[String, Seq[String]]
   // Initialize the map for the first time
   initMap(mappingContextRepositoryFolderPath)
-
-  /**
-   * Returns the mapping context cached in memory
-   *
-   * @return
-   */
-  def getCachedMappingContexts(): mutable.Map[String, Seq[String]] = {
-    mappingContextDefinitions
-  }
 
   /**
    * Retrieve the metadata of all mapping context ids
@@ -43,11 +34,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    */
   override def getAllMappingContext(projectId: String): Future[Seq[String]] = {
     Future {
-      if (mappingContextDefinitions.contains(projectId)) {
-        mappingContextDefinitions(projectId)
-      } else {
-        Seq.empty
-      }
+      mappingContextDefinitions.getOrElse(projectId, Seq.empty[String])
     }
   }
 
@@ -55,22 +42,23 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * Save the mapping context to the repository.
    * We only store id of a mapping context in the project metadata json file.
    *
-   * @param projectId project id the mapping context belongs to
-   * @param id        mapping context id to save
+   * @param projectId        project id the mapping context belongs to
+   * @param mappingContextId mapping context id to save
    * @return
    */
-  override def createMappingContext(projectId: String, id: String): Future[String] = {
-    if (mappingContextExists(projectId, id)) {
-      throw AlreadyExists("Fhir mapping already exists.", s"A mapping context definition with id ${id} already exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+  override def createMappingContext(projectId: String, mappingContextId: String): Future[String] = {
+    if (mappingContextExists(projectId, mappingContextId)) {
+      throw AlreadyExists("Fhir mapping already exists.", s"A mapping context definition with id $mappingContextId already exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Write to the repository as a new file
-    getFileForMappingContext(projectId, id).map(newFile => {
+    getFileForMappingContext(projectId, mappingContextId).flatMap(newFile => {
       newFile.createNewFile()
       // Add to the project metadata json file
-      projectFolderRepository.addMappingContext(projectId, id)
-      // Add to the in-memory map
-      mappingContextDefinitions(projectId) = mappingContextDefinitions.getOrElseUpdate(projectId, Seq.empty) :+ id
-      id
+      projectRepository.addMappingContext(projectId, mappingContextId) map { _ =>
+        // Add to the in-memory map
+        mappingContextDefinitions(projectId) = mappingContextDefinitions.getOrElseUpdate(projectId, Seq.empty) :+ mappingContextId
+        mappingContextId
+      }
     })
   }
 
@@ -78,21 +66,21 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   /**
    * Delete the mapping context from the repository
    *
-   * @param projectId project id the mapping context belongs to
-   * @param id        mapping context id
+   * @param projectId        project id the mapping context belongs to
+   * @param mappingContextId mapping context id
    * @return
    */
-  override def deleteMappingContext(projectId: String, id: String): Future[Unit] = {
-    if (!mappingContextExists(projectId, id)) {
-      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+  override def deleteMappingContext(projectId: String, mappingContextId: String): Future[Unit] = {
+    if (!mappingContextExists(projectId, mappingContextId)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $mappingContextId does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
 
     // delete the mapping context from the repository
-    getFileForMappingContext(projectId, id).map(file => {
+    getFileForMappingContext(projectId, mappingContextId).flatMap(file => {
       file.delete()
-      mappingContextDefinitions(projectId) = mappingContextDefinitions(projectId).filterNot(_ == id)
+      mappingContextDefinitions(projectId) = mappingContextDefinitions(projectId).filterNot(_ == mappingContextId)
       // update the projects metadata json file
-      projectFolderRepository.deleteMappingContext(projectId, Some(id))
+      projectRepository.deleteMappingContext(projectId, Some(mappingContextId))
     })
   }
 
@@ -102,27 +90,31 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @param projectId The unique identifier of the project for which mapping contexts should be deleted.
    */
   override def deleteProjectMappingContexts(projectId: String): Unit = {
-    // delete mapping context definitions for the project
-    org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(mappingContextRepositoryFolderPath, projectId).toFile)
-    // remove project from the cache
-    mappingContextDefinitions.remove(projectId)
-    // delete project mapping contexts
-    projectFolderRepository.deleteMappingContext(projectId)
+    Future {
+      // delete mapping context definitions for the project
+      org.apache.commons.io.FileUtils.deleteDirectory(FileUtils.getPath(mappingContextRepositoryFolderPath, projectId).toFile)
+      // remove project from the cache
+      mappingContextDefinitions.remove(projectId)
+    } flatMap { _ =>
+      // delete project mapping contexts
+      projectRepository.deleteMappingContext(projectId)
+    }
   }
 
   /**
    * Update the mapping context header by its id
-   * @param projectId project id the mapping context belongs to
-   * @param id mapping context id
-   * @param headers mapping context headers
+   *
+   * @param projectId        project id the mapping context belongs to
+   * @param mappingContextId mapping context id
+   * @param headers          mapping context headers
    * @return
    */
-  def updateMappingContextHeader(projectId: String, id: String, headers: Seq[CsvHeader]): Future[Unit] = {
-    if (!mappingContextExists(projectId, id)) {
-      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+  def updateMappingContextHeader(projectId: String, mappingContextId: String, headers: Seq[CsvHeader]): Future[Unit] = {
+    if (!mappingContextExists(projectId, mappingContextId)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $mappingContextId does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Write headers to the first row in the related file in the repository
-    getFileForMappingContext(projectId, id).map(file => {
+    getFileForMappingContext(projectId, mappingContextId).map(file => {
       CsvUtil.writeCsvHeaders(file, headers)
     })
   }
@@ -130,17 +122,17 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   /**
    * Save the mapping context content to the repository
    *
-   * @param projectId project id the mapping context belongs to
-   * @param id        mapping context id
-   * @param content   mapping context content to save
+   * @param projectId        project id the mapping context belongs to
+   * @param mappingContextId mapping context id
+   * @param content          mapping context content to save
    * @return
    */
-  override def saveMappingContextContent(projectId: String, id: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
-    if (!mappingContextExists(projectId, id)) {
-      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+  override def saveMappingContextContent(projectId: String, mappingContextId: String, content: Source[ByteString, Any], pageNumber: Int, pageSize: Int): Future[Long] = {
+    if (!mappingContextExists(projectId, mappingContextId)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $mappingContextId does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Write content to the related file in the repository
-    getFileForMappingContext(projectId, id).flatMap(file => {
+    getFileForMappingContext(projectId, mappingContextId).flatMap(file => {
       CsvUtil.writeCsvAndReturnRowNumber(file, content, pageNumber, pageSize)
     })
   }
@@ -148,16 +140,16 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   /**
    * Get the mapping context content by its id
    *
-   * @param projectId project id the mapping context belongs to
-   * @param id        mapping context id
+   * @param projectId        project id the mapping context belongs to
+   * @param mappingContextId mapping context id
    * @return
    */
-  override def getMappingContextContent(projectId: String, id: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
-    if (!mappingContextExists(projectId, id)) {
-      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+  override def getMappingContextContent(projectId: String, mappingContextId: String, pageNumber: Int, pageSize: Int): Future[(Source[ByteString, Any], Long)] = {
+    if (!mappingContextExists(projectId, mappingContextId)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $mappingContextId does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Read content from the related file in the repository
-    getFileForMappingContext(projectId, id).flatMap(file => {
+    getFileForMappingContext(projectId, mappingContextId).flatMap(file => {
       CsvUtil.getPaginatedCsvContent(file, pageNumber, pageSize)
     })
   }
@@ -165,17 +157,17 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   /**
    * Upload the mapping context content to the repository
    *
-   * @param projectId project id the mapping context belongs to
-   * @param id        mapping context id
-   * @param content   mapping context content to save
+   * @param projectId        project id the mapping context belongs to
+   * @param mappingContextId mapping context id
+   * @param content          mapping context content to save
    * @return
    */
-  override def uploadMappingContext(projectId: String, id: String, content: Source[ByteString, Any]): Future[Unit] = {
-    if (!mappingContextExists(projectId, id)) {
-      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+  override def uploadMappingContext(projectId: String, mappingContextId: String, content: Source[ByteString, Any]): Future[Unit] = {
+    if (!mappingContextExists(projectId, mappingContextId)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $mappingContextId does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Write content to the related file in the repository
-    getFileForMappingContext(projectId, id).map(file => {
+    getFileForMappingContext(projectId, mappingContextId).map(file => {
       CsvUtil.saveFileContent(file, content)
     })
   }
@@ -183,16 +175,16 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   /**
    * Download the mapping context content by its id
    *
-   * @param projectId project id the mapping context belongs to
-   * @param id        mapping context id
+   * @param projectId        project id the mapping context belongs to
+   * @param mappingContextId mapping context id
    * @return
    */
-  override def downloadMappingContext(projectId: String, id: String): Future[Source[ByteString, Any]] = {
-    if (!mappingContextExists(projectId, id)) {
-      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $id does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
+  override def downloadMappingContext(projectId: String, mappingContextId: String): Future[Source[ByteString, Any]] = {
+    if (!mappingContextExists(projectId, mappingContextId)) {
+      throw ResourceNotFound("Mapping context does not exists.", s"A mapping context with id $mappingContextId does not exists in the mapping context repository at ${FileUtils.getPath(mappingContextRepositoryFolderPath).toAbsolutePath.toString}")
     }
     // Read content from the related file in the repository
-    getFileForMappingContext(projectId, id).map(file => {
+    getFileForMappingContext(projectId, mappingContextId).map(file => {
       FileIO.fromPath(file.toPath)
     })
   }
@@ -200,12 +192,12 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   /**
    * Checks if the mapping context exists in the repository
    *
-   * @param projectId project id the mapping context belongs to
-   * @param id mapping context id
+   * @param projectId        project id the mapping context belongs to
+   * @param mappingContextId mapping context id
    * @return
    */
-  private def mappingContextExists(projectId: String, id: String): Boolean = {
-    mappingContextDefinitions.contains(projectId) && mappingContextDefinitions(projectId).contains(id)
+  private def mappingContextExists(projectId: String, mappingContextId: String): Boolean = {
+    mappingContextDefinitions.get(projectId).exists(_.contains(mappingContextId))
   }
 
   /**
@@ -215,7 +207,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
    * @return
    */
   private def getFileForMappingContext(projectId: String, fhirMappingContextId: String): Future[File] = {
-    val projectFuture: Future[Option[Project]] = projectFolderRepository.getProject(projectId)
+    val projectFuture: Future[Option[Project]] = projectRepository.getProject(projectId)
     projectFuture.map(project => {
       val file: File = FileUtils.getPath(mappingContextRepositoryFolderPath, project.get.id, fhirMappingContextId).toFile
       // If the project folder does not exist, create it
@@ -229,6 +221,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
   /**
    * Initializes the mapping context map from the repository
    * Map of (project id -> mapping context list)
+   *
    * @param mappingContextRepositoryFolderPath path to the mapping context repository
    * @return
    */
@@ -248,10 +241,20 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
 
   /**
    * Reload the mapping context definitions from the given folder
+   *
    * @return
    */
-  def reloadMappingContextDefinitions(): Unit = {
+  override def invalidate(): Unit = {
     this.mappingContextDefinitions.clear()
     initMap(mappingContextRepositoryFolderPath)
+  }
+
+  /**
+   * Retrieve the projects and MappingContextIds within.
+   *
+   * @return Map of projectId -> Seq[String]
+   */
+  override def getProjectPairs: Map[String, Seq[String]] = {
+    mappingContextDefinitions.toMap
   }
 }

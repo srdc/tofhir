@@ -1,6 +1,7 @@
 package io.tofhir.engine.util
 
 import io.onfhir.client.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FixedTokenAuthenticationSettings}
+import io.tofhir.common.env.EnvironmentVariableResolver
 import io.tofhir.engine.model.{FhirMappingJob, FhirMappingTask, FhirRepositorySinkSettings, FhirServerSource, FhirServerSourceSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SQLSchedulingSettings, SchedulingSettings, SqlSource, SqlSourceSettings}
 import org.json4s.{Formats, MappingException, ShortTypeHints}
 import org.json4s.jackson.Serialization
@@ -59,7 +60,7 @@ object FhirMappingJobFormatter {
    */
   def readMappingJobFromFile(filePath: String): FhirMappingJob = {
     val source = Source.fromFile(filePath, StandardCharsets.UTF_8.name())
-    val fileContent = try replaceEnvironmentVariables(source.mkString) finally source.close()
+    val fileContent = try EnvironmentVariableResolver.replaceEnvironmentVariables(source.mkString) finally source.close()
     val mappingJob = org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
     // check there are no duplicate name on mappingTasks of the job
     val duplicateMappingTasks = FhirMappingJobFormatter.findDuplicateMappingTaskNames(mappingJob.mappings)
@@ -67,22 +68,6 @@ object FhirMappingJobFormatter {
       throw new MappingException(s"Duplicate 'name' fields detected in the MappingTasks of the MappingJob: ${duplicateMappingTasks.mkString(", ")}. Please ensure that each MappingTask has a unique name.")
     }
     mappingJob
-  }
-
-  private def replaceEnvironmentVariables(fileContent: String): String = {
-    var returningContent = fileContent;
-    //    val regex = """\$\{(.*?)\}""".r
-    EnvironmentVariable.values.foreach { e =>
-      val regex = "\\$\\{" + e.toString + "\\}"
-      if (sys.env.contains(e.toString)) returningContent = returningContent.replaceAll(regex, sys.env(e.toString))
-    }
-    returningContent
-  }
-
-  object EnvironmentVariable extends Enumeration {
-    type EnvironmentVariable = Value
-    final val FHIR_REPO_URL = Value("FHIR_REPO_URL");
-    final val DATA_FOLDER_PATH= Value("DATA_FOLDER_PATH");
   }
 
   /**

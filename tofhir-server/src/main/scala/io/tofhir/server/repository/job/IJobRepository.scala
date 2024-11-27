@@ -1,26 +1,29 @@
 package io.tofhir.server.repository.job
 
+import io.tofhir.common.model.ICachedRepository
 import io.tofhir.engine.model.FhirMappingJob
+import io.tofhir.server.repository.project.IProjectList
 
-import scala.collection.mutable
 import scala.concurrent.Future
 
-trait IJobRepository {
+trait IJobRepository extends ICachedRepository with IProjectList[FhirMappingJob] {
 
   /**
-   * Returns a map of mapping jobs managed by this repository
-   *
-   * @return
-   */
-  def getCachedMappingsJobs: mutable.Map[String, mutable.Map[String, FhirMappingJob]]
-
-  /**
-   * Retrieve all jobs
+   * Retrieve all jobs of a project
    *
    * @param projectId project id the jobs belong to
    * @return
    */
   def getAllJobs(projectId: String): Future[Seq[FhirMappingJob]]
+
+  /**
+   * Retrieves the jobs referencing the given mapping in their definitions.
+   *
+   * @param projectId  identifier of project whose jobs will be checked
+   * @param mappingUrl the url of mapping
+   * @return the jobs referencing the given mapping in their definitions
+   */
+  def getJobsReferencingMapping(projectId: String, mappingUrl: String): Future[Seq[FhirMappingJob]]
 
   /**
    * Save the job to the repository.
@@ -64,14 +67,6 @@ trait IJobRepository {
    *
    * @param projectId The unique identifier of the project for which jobs should be deleted.
    */
-  def deleteProjectJobs(projectId: String): Unit
+  def deleteAllJobs(projectId: String): Future[Unit]
 
-  /**
-   * Retrieves the jobs referencing the given mapping in their definitions.
-   *
-   * @param projectId  identifier of project whose jobs will be checked
-   * @param mappingUrl the url of mapping
-   * @return the jobs referencing the given mapping in their definitions
-   */
-  def getJobsReferencingMapping(projectId: String, mappingUrl: String): Future[Seq[FhirMappingJob]]
 }
