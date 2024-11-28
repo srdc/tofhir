@@ -1,7 +1,7 @@
 package io.tofhir.server.repository.job
 
-import io.tofhir.common.model.ICachedRepository
 import io.tofhir.engine.model.FhirMappingJob
+import io.tofhir.engine.repository.ICachedRepository
 import io.tofhir.server.repository.project.IProjectList
 
 import scala.concurrent.Future

@@ -1,7 +1,7 @@
 package io.tofhir.server.repository.terminology
 
-import io.tofhir.common.model.ICachedRepository
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.repository.ICachedRepository
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.server.common.model.{AlreadyExists, BadRequest, ResourceNotFound}
 import io.tofhir.server.model.TerminologySystem

@@ -1,4 +1,4 @@
-package io.tofhir.common.model
+package io.tofhir.engine.repository
 
 /**
  * A cached repository.

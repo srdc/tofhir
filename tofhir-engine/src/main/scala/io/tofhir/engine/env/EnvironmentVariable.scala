@@ -1,4 +1,4 @@
-package io.tofhir.common.env
+package io.tofhir.engine.env
 
 object EnvironmentVariable extends Enumeration {
   type EnvironmentVariable = Value

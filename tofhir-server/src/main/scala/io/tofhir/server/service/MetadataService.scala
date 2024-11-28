@@ -10,6 +10,7 @@ import io.tofhir.server.config.RedCapServiceConfig
 import io.onfhir.definitions.resource.fhir.FhirDefinitionsConfig
 import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
+import io.tofhir.engine.env.EnvironmentVariableResolver
 import io.tofhir.server.endpoint.MetadataEndpoint.SEGMENT_METADATA
 import io.tofhir.server.model.{Archiving, Metadata, RepositoryNames}
 
@@ -56,7 +57,8 @@ class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
         erroneousRecordsFolder = toFhirEngineConfig.erroneousRecordsFolder,
         archiveFolder = toFhirEngineConfig.archiveFolder,
         streamArchivingFrequency = toFhirEngineConfig.streamArchivingFrequency
-      )
+      ),
+      environmentVariables = EnvironmentVariableResolver.getEnvironmentVariables
     )
   }
 

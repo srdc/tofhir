@@ -11,6 +11,7 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.engine.{Execution, ToFhirEngine}
+import io.tofhir.engine.env.EnvironmentVariableResolver
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 import io.tofhir.server.model.{ExecuteJobTask, TestResourceCreationRequest}
@@ -60,7 +61,9 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   def runJob(projectId: String, jobId: String, executionId: Option[String], executeJobTask: Option[ExecuteJobTask]): Future[Unit] = {
     jobRepository.getJob(projectId, jobId) map {
       case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
-      case Some(mappingJob) =>
+      case Some(mj) =>
+        val mappingJob = EnvironmentVariableResolver.resolveFhirMappingJob(mj)
+
         // get the list of mapping task to be executed
         val mappingTasks = executeJobTask.flatMap(_.mappingTaskNames) match {
           case Some(names) => names.flatMap(name => mappingJob.mappings.find(p => p.name.contentEquals(name)))
@@ -198,7 +201,8 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
   def testMappingWithJob(projectId: String, jobId: String, testResourceCreationRequest: TestResourceCreationRequest): Future[Seq[FhirMappingResultsForInput]] = {
     jobRepository.getJob(projectId, jobId) flatMap {
       case None => throw ResourceNotFound("Mapping job does not exists.", s"A mapping job with id $jobId does not exists in the mapping job repository")
-      case Some(mappingJob) =>
+      case Some(mj) =>
+        val mappingJob = EnvironmentVariableResolver.resolveFhirMappingJob(mj)
 
         logger.debug(s"Testing the mapping ${testResourceCreationRequest.fhirMappingTask.mappingRef} inside the job $jobId by selecting ${testResourceCreationRequest.resourceFilter.numberOfRows} ${testResourceCreationRequest.resourceFilter.order} records.")
 

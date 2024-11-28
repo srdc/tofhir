@@ -1,10 +1,10 @@
 package io.tofhir.engine.util
 
 import io.onfhir.client.model.{BasicAuthenticationSettings, BearerTokenAuthorizationSettings, FixedTokenAuthenticationSettings}
-import io.tofhir.common.env.EnvironmentVariableResolver
-import io.tofhir.engine.model.{FhirMappingJob, FhirMappingTask, FhirRepositorySinkSettings, FhirServerSource, FhirServerSourceSettings, FileSystemSinkSettings, FileSystemSource, FileSystemSourceSettings, KafkaSource, KafkaSourceSettings, LocalFhirTerminologyServiceSettings, SQLSchedulingSettings, SchedulingSettings, SqlSource, SqlSourceSettings}
-import org.json4s.{Formats, MappingException, ShortTypeHints}
+import io.tofhir.engine.env.EnvironmentVariableResolver
+import io.tofhir.engine.model._
 import org.json4s.jackson.Serialization
+import org.json4s.{Formats, MappingException, ShortTypeHints}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
@@ -60,7 +60,7 @@ object FhirMappingJobFormatter {
    */
   def readMappingJobFromFile(filePath: String): FhirMappingJob = {
     val source = Source.fromFile(filePath, StandardCharsets.UTF_8.name())
-    val fileContent = try EnvironmentVariableResolver.replaceEnvironmentVariables(source.mkString) finally source.close()
+    val fileContent = try EnvironmentVariableResolver.resolveFileContent(source.mkString) finally source.close()
     val mappingJob = org.json4s.jackson.JsonMethods.parse(fileContent).extract[FhirMappingJob]
     // check there are no duplicate name on mappingTasks of the job
     val duplicateMappingTasks = FhirMappingJobFormatter.findDuplicateMappingTaskNames(mappingJob.mappings)
