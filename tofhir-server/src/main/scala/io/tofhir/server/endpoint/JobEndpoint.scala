@@ -3,7 +3,6 @@ package io.tofhir.server.endpoint
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
 import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_DESCHEDULE, SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST}
@@ -18,6 +17,7 @@ import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.common.interceptor.ICORSHandler
 import scala.concurrent.Future
+import io.tofhir.server.common.model.RequestTimeout
 
 class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging with ICORSHandler {
 
@@ -42,25 +42,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
           }
         } ~ pathPrefix(SEGMENT_TEST) { // test a mapping with mapping job configurations, jobs/<jobId>/test
           pathEndOrSingleSlash {
-            withRequestTimeoutResponse { _ =>
-              addCORSHeaders(
-                HttpResponse(
-                  status = StatusCodes.RequestTimeout,
-                  entity = HttpEntity.Strict(
-                    ContentTypes.`application/json`,
-                    ByteString(
-                      """Status Code: 408
-                        |Type: https://tofhir.io/errors/RequestTimeout
-                        |Title: Request Timeout
-                        |Detail: There are too many rows in the data source CSV.
-                        |""".stripMargin
-                    )
-                  )
-                )
-              )
-            } {
-              testMappingWithJob(projectId, jobId)
-            }
+            testMappingWithJob(projectId, jobId)
           }
         } ~ pathPrefix(SEGMENT_EXECUTIONS) { // Operations on all executions, jobs/<jobId>/executions
           pathEndOrSingleSlash {
@@ -194,11 +176,15 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
    * */
   private def testMappingWithJob(projectId: String, jobId: String): Route = {
     post {
-      entity(as[TestResourceCreationRequest]) { requestBody =>
-        validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
-          "Invalid row selection order. Available options are: start, end, random") {
-          complete {
-            executionService.testMappingWithJob(projectId, jobId, requestBody)
+      withRequestTimeoutResponse { _ =>
+        handleTimeout()
+      } {
+        entity(as[TestResourceCreationRequest]) { requestBody =>
+          validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
+            "Invalid row selection order. Available options are: start, end, random") {
+            complete {
+              executionService.testMappingWithJob(projectId, jobId, requestBody)
+            }
           }
         }
       }
@@ -291,6 +277,24 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
         executionService.stopMappingExecution(jobId, executionId, mappingTaskName).map(_ => StatusCodes.OK)
       }
     }
+  }
+
+  /**
+   * Handles the timeout response for a request that exceeds the configured server timeout.
+   *
+   * @return HttpResponse containing the timeout error details and appropriate CORS headers.
+   */
+  private def handleTimeout(): HttpResponse = {
+    val error = RequestTimeout(
+      title = "Request Timeout",
+      detail = "The server could not complete the test because of the large data. Try increasing the timeout config and test again."
+    )
+    addCORSHeaders(
+      HttpResponse(
+        status = StatusCodes.RequestTimeout,
+        entity = HttpEntity(ContentTypes.`application/json`, error.toString)
+      )
+    )
   }
 }
 
