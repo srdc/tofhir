@@ -334,7 +334,7 @@ class FhirMappingJobManager(
             case (fj, (df, i)) => fj.flatMap(_ =>
               executeTask(mappingJobExecution.jobId, mappingTask.name, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
                 .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.name), dataset, fhirWriter))
-                .map(_ => logger.debug(s"Chunk ${i + 1} is completed for mapping ${mappingTask.name} within MappingJob: ${mappingJobExecution.jobId}..."))
+                .map(_ => logger.debug(s"Chunk ${i + 1} / $numOfChunks is completed for mapping ${mappingTask.name} within MappingJob: ${mappingJobExecution.jobId}..."))
             )
           }
     }
