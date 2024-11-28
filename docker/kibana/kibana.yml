@@ -8,3 +8,5 @@ elasticsearch.hosts: [ "http://elasticsearch:9200" ]
 monitoring.ui.container.elasticsearch.enabled: true
 # Disable insecure cluster warning
 security.showInsecureClusterWarning: false
+# Request maximum payload size. Default = 1048576 byte (~1MB)
+server.maxPayload: "104857600"
