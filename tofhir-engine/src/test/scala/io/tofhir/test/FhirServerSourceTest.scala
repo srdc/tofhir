@@ -170,7 +170,7 @@ class FhirServerSourceTest extends AsyncFlatSpec with BeforeAndAfterAll with ToF
       secondRow.getAs[String]("encounterEnd") shouldEqual "2024-08-02T09:00:00Z"
       secondRow.getAs[String]("observationLoincCode") shouldEqual "85354-9"
       secondRow.getAs[String]("observationDate") shouldEqual "2024-08-01T10:15:00Z"
-      secondRow.getAs[String]("observationResult") shouldEqual "140.0 mmHg"
+      secondRow.getAs[String]("observationResult") shouldEqual "140 mmHg"
       secondRow.getAs[String]("conditionSnomedCode") shouldEqual "38341003"
       secondRow.getAs[String]("conditionDate") shouldEqual "2024-08-01"
     }

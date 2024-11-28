@@ -1,7 +1,7 @@
 package io.tofhir.engine.repository.mapping
 
-import io.tofhir.common.model.ICachedRepository
 import io.tofhir.engine.model.FhirMapping
+import io.tofhir.engine.repository.ICachedRepository
 
 trait IFhirMappingRepository extends ICachedRepository {
   /**

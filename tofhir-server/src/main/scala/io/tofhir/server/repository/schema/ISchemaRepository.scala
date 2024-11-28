@@ -2,8 +2,8 @@ package io.tofhir.server.repository.schema
 
 import io.onfhir.api.Resource
 import io.onfhir.definitions.common.model.SchemaDefinition
-import io.tofhir.common.model.ICachedRepository
 import io.tofhir.engine.mapping.schema.IFhirSchemaLoader
+import io.tofhir.engine.repository.ICachedRepository
 import io.tofhir.server.repository.project.IProjectList
 
 import scala.concurrent.Future

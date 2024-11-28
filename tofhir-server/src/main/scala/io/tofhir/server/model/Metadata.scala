@@ -1,7 +1,7 @@
 package io.tofhir.server.model
 
 /**
- * Model that represents the metadata of the server.
+ * Model that represents the metadata of the toFHIR server.
  *
  * @param name                   The name of the server.
  * @param description            A description of the server.
@@ -21,7 +21,8 @@ case class Metadata(name: String,
                     definitionsRootUrls: Option[Seq[String]],
                     schemasFhirVersion: String,
                     repositoryNames: RepositoryNames,
-                    archiving: Archiving
+                    archiving: Archiving,
+                    environmentVariables: Map[String, String]
                    )
 
 /**

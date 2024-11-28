@@ -2,7 +2,7 @@ package io.tofhir.server.repository.mappingContext
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import io.tofhir.common.model.ICachedRepository
+import io.tofhir.engine.repository.ICachedRepository
 import io.tofhir.server.model.csv.CsvHeader
 import io.tofhir.server.repository.project.IProjectList
 

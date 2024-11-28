@@ -1,6 +1,6 @@
 package io.tofhir.server.repository.terminology
 
-import io.tofhir.common.model.ICachedRepository
+import io.tofhir.engine.repository.ICachedRepository
 import io.tofhir.server.model.TerminologySystem
 
 import scala.concurrent.Future
