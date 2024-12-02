@@ -1,9 +1,9 @@
 package io.tofhir.server.util
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import io.tofhir.server.common.model.{BadRequest, MethodForbidden, ResourceNotFound, UnsupportedMediaType}
+import io.tofhir.server.common.model.{BadRequest, MethodForbidden, RequestTimeout, ResourceNotFound, UnsupportedMediaType}
 
 object ToFhirRejectionHandler {
 
@@ -30,6 +30,8 @@ object ToFhirRejectionHandler {
       .handle {
         case MalformedRequestContentRejection(message, cause) =>
           complete(StatusCodes.BadRequest -> BadRequest("Malformed request content", message).toString)
+        case ValidationRejection(message, _) =>
+          complete(StatusCodes.BadRequest -> BadRequest("Request is not valid", message).toString)
       }
 
       /**
@@ -62,6 +64,21 @@ object ToFhirRejectionHandler {
 
   def getRejectionHandler(): RejectionHandler = {
     rejectionHandler
+  }
+
+  /**
+   * Handles the timeout exception. This is a custom response to the timeout exception.
+   */
+  def timeoutResponseHandler(): HttpResponse = {
+    val error = RequestTimeout(
+      title = "Request Timeout",
+      detail = "The server could not complete the request in time. Try increasing the timeout config and try again."
+    )
+    HttpResponse(
+      status = StatusCodes.RequestTimeout,
+      entity = HttpEntity(ContentTypes.`application/json`, error.toString)
+    )
+
   }
 
 }

@@ -63,25 +63,27 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   lazy val toFHIRRoute: Route =
     pathPrefix(webServerConfig.baseUri) {
       corsHandler {
-        extractMethod { httpMethod: HttpMethod =>
-          extractUri { requestUri: Uri =>
-            extractRequestEntity { requestEntity =>
-              optionalHeaderValueByName("X-Correlation-Id") { correlationId =>
-                val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
-                handleRejections(toFhirRejectionHandler) {
-                  handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
-                    // RedCap Endpoint is optional, so it will be handled separately
-                    val routes = Seq(
-                      terminologyServiceManagerEndpoint.route(restCall),
-                      projectEndpoint.route(restCall),
-                      fhirDefinitionsEndpoint.route(),
-                      fhirPathFunctionsEndpoint.route(),
-                      fileSystemTreeStructureEndpoint.route(restCall),
-                      metadataEndpoint.route(restCall),
-                      reloadEndpoint.route(restCall),
-                    ) ++ redcapEndpoint.map(_.route(restCall))
+        withRequestTimeoutResponse(_ => ToFhirRejectionHandler.timeoutResponseHandler()) {
+          extractMethod { httpMethod: HttpMethod =>
+            extractUri { requestUri: Uri =>
+              extractRequestEntity { requestEntity =>
+                optionalHeaderValueByName("X-Correlation-Id") { correlationId =>
+                  val restCall = new ToFhirRestCall(method = httpMethod, uri = requestUri, requestId = correlationId.getOrElse(UUID.randomUUID().toString), requestEntity = requestEntity)
+                  handleRejections(toFhirRejectionHandler) {
+                    handleExceptions(exceptionHandler(restCall)) { // Handle exceptions
+                      // RedCap Endpoint is optional, so it will be handled separately
+                      val routes = Seq(
+                        terminologyServiceManagerEndpoint.route(restCall),
+                        projectEndpoint.route(restCall),
+                        fhirDefinitionsEndpoint.route(),
+                        fhirPathFunctionsEndpoint.route(),
+                        fileSystemTreeStructureEndpoint.route(restCall),
+                        metadataEndpoint.route(restCall),
+                        reloadEndpoint.route(restCall),
+                      ) ++ redcapEndpoint.map(_.route(restCall))
 
-                    concat(routes: _*)
+                      concat(routes: _*)
+                    }
                   }
                 }
               }
