@@ -1,12 +1,11 @@
 package io.tofhir.server.endpoint
 
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.stream.StreamTcpException
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.model.FhirMappingJob
-import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST, SEGMENT_DESCHEDULE}
+import io.tofhir.server.endpoint.JobEndpoint.{SEGMENT_DESCHEDULE, SEGMENT_EXECUTIONS, SEGMENT_JOB, SEGMENT_MAPPINGS, SEGMENT_RUN, SEGMENT_STATUS, SEGMENT_STOP, SEGMENT_TEST}
 import io.onfhir.definitions.common.model.Json4sSupport._
 import io.tofhir.server.model.{ExecuteJobTask, RowSelectionOrder, TestResourceCreationRequest}
 import io.tofhir.server.service.{ExecutionService, JobService}
@@ -16,10 +15,11 @@ import io.tofhir.server.common.model.{ResourceNotFound, ToFhirRestCall}
 import io.tofhir.server.repository.job.IJobRepository
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
-
+import io.tofhir.server.common.interceptor.ICORSHandler
 import scala.concurrent.Future
+import io.tofhir.server.common.model.RequestTimeout
 
-class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging {
+class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging with ICORSHandler {
 
   val service: JobService = new JobService(jobRepository)
   val executionService: ExecutionService = new ExecutionService(jobRepository, mappingRepository, schemaRepository)
@@ -176,11 +176,15 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
    * */
   private def testMappingWithJob(projectId: String, jobId: String): Route = {
     post {
-      entity(as[TestResourceCreationRequest]) { requestBody =>
-        validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
-          "Invalid row selection order. Available options are: start, end, random") {
-          complete {
-            executionService.testMappingWithJob(projectId, jobId, requestBody)
+      withRequestTimeoutResponse { _ =>
+        handleTimeout()
+      } {
+        entity(as[TestResourceCreationRequest]) { requestBody =>
+          validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
+            "Invalid row selection order. Available options are: start, end, random") {
+            complete {
+              executionService.testMappingWithJob(projectId, jobId, requestBody)
+            }
           }
         }
       }
@@ -273,6 +277,24 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
         executionService.stopMappingExecution(jobId, executionId, mappingTaskName).map(_ => StatusCodes.OK)
       }
     }
+  }
+
+  /**
+   * Handles the timeout response for a request that exceeds the configured server timeout.
+   *
+   * @return HttpResponse containing the timeout error details and appropriate CORS headers.
+   */
+  private def handleTimeout(): HttpResponse = {
+    val error = RequestTimeout(
+      title = "Request Timeout",
+      detail = "The server could not complete the test because of the large data. Try increasing the timeout config and test again."
+    )
+    addCORSHeaders(
+      HttpResponse(
+        status = StatusCodes.RequestTimeout,
+        entity = HttpEntity(ContentTypes.`application/json`, error.toString)
+      )
+    )
   }
 }
 
