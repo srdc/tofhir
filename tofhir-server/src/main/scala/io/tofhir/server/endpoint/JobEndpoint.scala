@@ -181,7 +181,7 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
       } {
         entity(as[TestResourceCreationRequest]) { requestBody =>
           validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
-            "Invalid row selection order. Available options are: start, end, random") {
+            s"Invalid row selection order. Available options are: ${RowSelectionOrder.START}, ${RowSelectionOrder.RANDOM}") {
             complete {
               executionService.testMappingWithJob(projectId, jobId, requestBody)
             }
