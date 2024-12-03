@@ -1,13 +1,13 @@
 package io.tofhir.server.endpoint
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{path, _}
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.server.common.model.ToFhirRestCall
 import io.tofhir.server.config.RedCapServiceConfig
-import io.tofhir.server.endpoint.RedCapEndpoint.{SEGMENT_NOTIFICATION, SEGMENT_REDCAP}
+import io.tofhir.server.endpoint.RedCapEndpoint.{PARAMETER_RELOAD, SEGMENT_NOTIFICATION, SEGMENT_REDCAP}
 import io.onfhir.definitions.common.model.Json4sSupport._
 import io.tofhir.server.model.redcap.RedCapProjectConfig
 import io.tofhir.server.service.RedCapService
@@ -32,6 +32,8 @@ class RedCapEndpoint(redCapServiceConfig: RedCapServiceConfig) extends LazyLoggi
     pathPrefix(SEGMENT_REDCAP) {
       pathEndOrSingleSlash { // Operations on Redcap projects
         getProjects ~ saveProjects
+      } ~ path(Segment) { projectId =>
+        deleteRedCapData(projectId)
       } ~ pathPrefix(SEGMENT_NOTIFICATION) {
         pathEndOrSingleSlash { // Operations on Redcap notification url
           getNotificationUrl
@@ -82,6 +84,21 @@ class RedCapEndpoint(redCapServiceConfig: RedCapServiceConfig) extends LazyLoggi
       }
     }
   }
+
+  /**
+   * Route to delete REDCap data from Kafka topics.
+   *
+   * @param projectId The identifier of the project whose data will be deleted.
+   * */
+  private def deleteRedCapData(projectId: String): Route = {
+    delete {
+      parameter(PARAMETER_RELOAD) { reload =>
+        complete {
+          service.deleteRedCapData(projectId = projectId, reload = reload.contentEquals("true"))
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -90,4 +107,5 @@ class RedCapEndpoint(redCapServiceConfig: RedCapServiceConfig) extends LazyLoggi
 object RedCapEndpoint {
   val SEGMENT_REDCAP = "redcap"
   val SEGMENT_NOTIFICATION = "notification"
+  val PARAMETER_RELOAD = "reload"
 }

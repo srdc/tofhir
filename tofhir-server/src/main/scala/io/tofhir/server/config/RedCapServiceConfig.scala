@@ -21,6 +21,15 @@ class RedCapServiceConfig(redCapServiceConfig: Config) {
   private lazy val projectsPath: String = Try(redCapServiceConfig.getString("paths.projects")).getOrElse("projects")
 
   /**
+   * The path to the project's data endpoint
+   * */
+  lazy val projectDataPath: String = Try(redCapServiceConfig.getString("paths.projectData")).getOrElse("data")
+  /**
+   * Parameter to reload REDCap data upon recreation of Kafka topics.
+   * */
+  lazy val projectDataReloadParameter: String = Try(redCapServiceConfig.getString("parameters.reload")).getOrElse("reload")
+
+  /**
    * The base endpoint URL for the tofhir-redcap service.
    */
   lazy val endpoint: String = Try(redCapServiceConfig.getString("endpoint")).getOrElse("http://localhost:8095/tofhir-redcap")

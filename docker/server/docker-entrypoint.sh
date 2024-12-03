@@ -94,6 +94,12 @@ fi
 if [ ! -z "$TOFHIR_REDCAP_PROJECTS_PATH" ]; then
   JAVA_CMD+="-Dtofhir-redcap.paths.projects=$TOFHIR_REDCAP_PROJECTS_PATH "
 fi
+if [ ! -z "$TOFHIR_REDCAP_PROJECT_DATA_PATH" ]; then
+  JAVA_CMD+="-Dtofhir-redcap.paths.projectData=$TOFHIR_REDCAP_PROJECT_DATA_PATH "
+fi
+if [ ! -z "$TOFHIR_REDCAP_RELOAD_PARAMETER" ]; then
+  JAVA_CMD+="-Dtofhir-redcap.parameters.reload=$TOFHIR_REDCAP_RELOAD_PARAMETER "
+fi
 
 # Delay the execution for this amount of seconds
 if [ ! -z "$DELAY_EXECUTION" ]; then
