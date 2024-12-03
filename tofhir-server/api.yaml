@@ -1597,7 +1597,29 @@ paths:
           $ref: '#/components/responses/415UnsupportedMediaType'
         '500':
           $ref: '#/components/responses/500InternalServerError'
-
+  /redcap/{projectId}:
+    delete:
+      summary: Delete REDCap data of the project
+      description: |
+        Deletes the REDCap data of the project from the Kafka topics
+      operationId: deleteRedCapData
+      tags:
+        - REDCap
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - in: query
+          name: "reload"
+          schema:
+            type: boolean
+          description: "Whether to reload REDCap records into to Kafka topics or not"
+      responses:
+        '200':
+          description: Project's data deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Project's data deleted successfully."
   /redcap/notification:
     get:
       summary: Retrieve REDCap Notification URL

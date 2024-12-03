@@ -84,4 +84,23 @@ class RedCapService(redCapServiceConfig: RedCapServiceConfig) extends LazyLoggin
       .flatMap { resp => resp.entity.toStrict(timeout) }
       .map(strictEntity => JsonMethods.parse(strictEntity.data.utf8String).extract[Seq[RedCapProjectConfig]])
   }
+
+  /**
+   * Deletes the REDCap data of the project from Kafka topics via tofhir-redcap service.
+   *
+   * @param projectId The identifier of project
+   * @param reload    Whether to reload REDCap data upon the deletion of Kafka topics
+   * */
+  def deleteRedCapData(projectId: String, reload: Boolean): Future[Unit] = {
+    val proxiedRequest = HttpRequest(
+      method = HttpMethods.DELETE,
+      uri = s"${redCapServiceConfig.projectsEndpoint}/${redCapServiceConfig.projectDataPath}/$projectId?${redCapServiceConfig.projectDataReloadParameter}=$reload",
+      headers = RawHeader("Content-Type", "application/json") :: Nil
+    )
+
+    // Add timeout
+    Http().singleRequest(proxiedRequest)
+      .flatMap { resp => resp.entity.toStrict(timeout) }
+      .map(_ => ())
+  }
 }
