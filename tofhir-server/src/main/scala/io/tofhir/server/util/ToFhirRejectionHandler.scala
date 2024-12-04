@@ -3,9 +3,10 @@ package io.tofhir.server.util
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import io.tofhir.server.common.interceptor.ICORSHandler
 import io.tofhir.server.common.model.{BadRequest, MethodForbidden, RequestTimeout, ResourceNotFound, UnsupportedMediaType}
 
-object ToFhirRejectionHandler {
+object ToFhirRejectionHandler extends ICORSHandler {
 
   /**
    * Custom rejection handler to send proper error message to front-end on rejections.
@@ -74,11 +75,11 @@ object ToFhirRejectionHandler {
       title = "Request Timeout",
       detail = "The server could not complete the request in time. Try increasing the timeout config and try again."
     )
-    HttpResponse(
-      status = StatusCodes.RequestTimeout,
-      entity = HttpEntity(ContentTypes.`application/json`, error.toString)
+    addCORSHeaders(
+      HttpResponse(
+        status = StatusCodes.RequestTimeout,
+        entity = HttpEntity(ContentTypes.`application/json`, error.toString)
+      )
     )
-
   }
-
 }
