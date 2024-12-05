@@ -12,6 +12,7 @@ import java.util.concurrent.Executors
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import io.tofhir.engine.Execution.actorSystem
+import io.tofhir.engine.data.write.SinkHandler
 import io.tofhir.engine.execution.log.ExecutionLogger
 import io.tofhir.engine.execution.processing.FileStreamInputArchiver
 /**
@@ -223,6 +224,8 @@ class RunningJobRegistry(spark: SparkSession) {
             queryMap.foreach(queryEntry => {
               queryEntry._2.stop()
               logger.debug(s"Stopped streaming query for mapping: ${queryEntry._1}")
+              // Log each mapping task as stopped
+              ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.STOPPED, Some(queryEntry._1))
             })
         }
     }
