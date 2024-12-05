@@ -1,6 +1,6 @@
 package io.tofhir.server.endpoint
 
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
@@ -17,7 +17,6 @@ import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.common.interceptor.ICORSHandler
 import scala.concurrent.Future
-import io.tofhir.server.common.model.RequestTimeout
 
 class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepository, schemaRepository: ISchemaRepository) extends LazyLogging with ICORSHandler {
 
@@ -176,15 +175,11 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
    * */
   private def testMappingWithJob(projectId: String, jobId: String): Route = {
     post {
-      withRequestTimeoutResponse { _ =>
-        handleTimeout()
-      } {
-        entity(as[TestResourceCreationRequest]) { requestBody =>
-          validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
-            "Invalid row selection order. Available options are: start, end, random") {
-            complete {
-              executionService.testMappingWithJob(projectId, jobId, requestBody)
-            }
+      entity(as[TestResourceCreationRequest]) { requestBody =>
+        validate(RowSelectionOrder.isValid(requestBody.resourceFilter.order),
+          s"Invalid row selection order. Available options are: ${RowSelectionOrder.START}, ${RowSelectionOrder.RANDOM}") {
+          complete {
+            executionService.testMappingWithJob(projectId, jobId, requestBody)
           }
         }
       }
@@ -277,24 +272,6 @@ class JobEndpoint(jobRepository: IJobRepository, mappingRepository: IMappingRepo
         executionService.stopMappingExecution(jobId, executionId, mappingTaskName).map(_ => StatusCodes.OK)
       }
     }
-  }
-
-  /**
-   * Handles the timeout response for a request that exceeds the configured server timeout.
-   *
-   * @return HttpResponse containing the timeout error details and appropriate CORS headers.
-   */
-  private def handleTimeout(): HttpResponse = {
-    val error = RequestTimeout(
-      title = "Request Timeout",
-      detail = "The server could not complete the test because of the large data. Try increasing the timeout config and test again."
-    )
-    addCORSHeaders(
-      HttpResponse(
-        status = StatusCodes.RequestTimeout,
-        entity = HttpEntity(ContentTypes.`application/json`, error.toString)
-      )
-    )
   }
 }
 
