@@ -109,4 +109,7 @@ fi
 # Finally, tell which jar to run
 JAVA_CMD+="tofhir-server-standalone.jar"
 
-eval $JAVA_CMD "$@"
+# Use 'exec' to replace the shell process with the Java process.
+# This ensures that the Java application becomes the main process in the container,
+# allowing signals such as SIGTERM to be properly handled.
+exec $JAVA_CMD "$@"
