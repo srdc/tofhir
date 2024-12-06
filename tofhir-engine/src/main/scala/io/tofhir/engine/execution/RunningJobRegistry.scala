@@ -3,7 +3,7 @@ package io.tofhir.engine.execution
 import it.sauronsoftware.cron4j.{Scheduler, SchedulerListener, TaskExecutor}
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.Execution.actorSystem.dispatcher
-import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingJobResult}
+import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingJobResult, KafkaSource}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.streaming.{StreamingQuery, StreamingQueryException}
 
@@ -97,7 +97,10 @@ class RunningJobRegistry(spark: SparkSession) {
         updatedExecution.getStreamingQuery(mappingTaskName).awaitTermination()
       }catch{
         case exception: StreamingQueryException =>{
-          ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(exception), isChunkResult = false)
+          val topicName = execution.mappingTasks.head.sourceBinding.head._2.asInstanceOf[KafkaSource].topicName
+          val replacedErrorMessage = exception.message.replace("This server does not host this topic-partition.", s"This server does not host this topic-partition. Topic name: ${topicName}")
+          val errorWithTopicName = new Throwable(replacedErrorMessage);
+          ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(errorWithTopicName), isChunkResult = false)
         }
       }finally{
         // Remove the mapping execution from the running tasks after the query is terminated
