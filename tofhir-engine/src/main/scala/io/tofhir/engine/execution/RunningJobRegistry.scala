@@ -97,8 +97,8 @@ class RunningJobRegistry(spark: SparkSession) {
         updatedExecution.getStreamingQuery(mappingTaskName).awaitTermination()
       }catch{
         case exception: StreamingQueryException =>{
-          val topicName = execution.mappingTasks.head.sourceBinding.head._2.asInstanceOf[KafkaSource].topicName
-          val replacedErrorMessage = exception.message.replace("This server does not host this topic-partition.", s"This server does not host this topic-partition. Topic name: ${topicName}")
+          val topicNames = execution.mappingTasks.find(mappingTask => mappingTask.name.contentEquals(mappingTaskName)).get.sourceBinding.map(source => source._2.asInstanceOf[KafkaSource].topicName).mkString(", ")
+          val replacedErrorMessage = exception.message.replace("This server does not host this topic-partition.", s"This server does not host this topic-partition. Some topics are unavailable: ${topicNames}")
           val errorWithTopicName = new Throwable(replacedErrorMessage);
           ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(errorWithTopicName), isChunkResult = false)
         }
