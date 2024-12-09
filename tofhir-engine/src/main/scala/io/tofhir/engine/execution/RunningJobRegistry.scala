@@ -15,6 +15,7 @@ import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.data.write.SinkHandler
 import io.tofhir.engine.execution.log.ExecutionLogger
 import io.tofhir.engine.execution.processing.FileStreamInputArchiver
+import org.apache.kafka.common.errors.UnknownTopicOrPartitionException
 /**
  * Execution manager that keeps track of running and scheduled mapping tasks in-memory.
  * This registry is designed to maintain the execution status of both Streaming and Batch mapping jobs.
@@ -97,10 +98,15 @@ class RunningJobRegistry(spark: SparkSession) {
         updatedExecution.getStreamingQuery(mappingTaskName).awaitTermination()
       }catch{
         case exception: StreamingQueryException =>{
-          val topicNames = execution.mappingTasks.find(mappingTask => mappingTask.name.contentEquals(mappingTaskName)).get.sourceBinding.map(source => source._2.asInstanceOf[KafkaSource].topicName).mkString(", ")
-          val replacedErrorMessage = exception.message.replace("This server does not host this topic-partition.", s"This server does not host this topic-partition. Some topics are unavailable: ${topicNames}")
-          val errorWithTopicName = new Throwable(replacedErrorMessage);
-          ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(errorWithTopicName), isChunkResult = false)
+          exception.getCause.getCause match{
+            case _: UnknownTopicOrPartitionException =>
+              val topicNames = execution.mappingTasks.find(mappingTask => mappingTask.name.contentEquals(mappingTaskName)).get.sourceBinding.map(source => source._2.asInstanceOf[KafkaSource].topicName).mkString(", ")
+              val replacedErrorMessage = exception.message.replace("This server does not host this topic-partition.", s"This server does not host this topic-partition. Some topics are unavailable: ${topicNames}")
+              val errorWithTopicName = new Throwable(replacedErrorMessage);
+              ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(errorWithTopicName), isChunkResult = false)
+            case _ =>
+              ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(exception), isChunkResult = false)
+          }
         }
       }finally{
         // Remove the mapping execution from the running tasks after the query is terminated
