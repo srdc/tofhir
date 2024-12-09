@@ -226,19 +226,25 @@ object MappingTaskExecutor {
       } catch {
         // Exception in expression evaluation
         case FhirMappingException(mappingExpr, t: FhirExpressionException) =>
-          // if we make use of Identity Service functions such as idxs:resolveIdentifier in the mapping expression,
-          // we get a FhirClientException when it cannot connect to Identity Service. In this case, we need to include
-          // response body and status in the error description
           var errorDescription = t.msg + t.t.map(_.getMessage).map(" " + _).getOrElse("")
-          if(t.t.nonEmpty && t.t.get.isInstanceOf[FhirPathException] && t.t.get.asInstanceOf[FhirPathException].getCause.isInstanceOf[FhirClientException]){
-            val innerException = t.t.get.asInstanceOf[FhirPathException].getCause.asInstanceOf[FhirClientException]
-            if(innerException.serverResponse.nonEmpty){
-              val serverResponse = innerException.serverResponse.get
-              errorDescription = errorDescription + s" Status Code: ${serverResponse.httpStatus}${serverResponse.responseBody.map(s" Response Body: " + _).getOrElse("")}"
-              // add outcome issues to the error description
-              if(serverResponse.outcomeIssues.nonEmpty) {
-                errorDescription = errorDescription + s" Outcome Issues: ${serverResponse.outcomeIssues}"
+          if(t.t.nonEmpty && t.t.get.isInstanceOf[FhirPathException]){
+            val cause = t.t.get.asInstanceOf[FhirPathException].getCause
+            // if we make use of Identity Service functions such as idxs:resolveIdentifier in the mapping expression,
+            // we get a FhirClientException when it cannot connect to Identity Service. In this case, we need to include
+            // response body and status in the error description
+            if(cause.isInstanceOf[FhirClientException]){
+              val innerException = t.t.get.asInstanceOf[FhirPathException].getCause.asInstanceOf[FhirClientException]
+              if(innerException.serverResponse.nonEmpty){
+                val serverResponse = innerException.serverResponse.get
+                errorDescription = errorDescription + s" Status Code: ${serverResponse.httpStatus}${serverResponse.responseBody.map(s" Response Body: " + _).getOrElse("")}"
+                // add outcome issues to the error description
+                if(serverResponse.outcomeIssues.nonEmpty) {
+                  errorDescription = errorDescription + s" Outcome Issues: ${serverResponse.outcomeIssues}"
+                }
               }
+            }
+            else {
+              errorDescription = errorDescription + s" ${cause.getMessage}"
             }
           }
           Seq(FhirMappingResult(
