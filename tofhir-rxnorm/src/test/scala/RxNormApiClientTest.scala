@@ -35,7 +35,7 @@ class RxNormApiClientTest extends AnyFlatSpec with Matchers {
   }
 
   it should "get the ATC code for given RxNorm concept id" in {
-    client.getAtcCode("276237") shouldBe Some("J05AF09")
+    client.getAtcCode("276237") shouldBe Seq("J05AF09")
   }
 
 }

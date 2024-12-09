@@ -135,12 +135,12 @@ case class RxNormApiClient(rxNormApiRootUrl:String, timeoutInSec:Int) {
   }
 
   /**
-   * Get corresponding ATC code for a RxNorm ingredient concept
+   * Get corresponding ATC codes for a RxNorm ingredient concept
    * See https://lhncbc.nlm.nih.gov/RxNav/APIs/api-RxNorm.getRxProperty.html
    * @param rxcui Concept id
    * @return
    */
-  def getAtcCode(rxcui:String):Option[String] = {
+  def getAtcCode(rxcui:String):Seq[String] = {
     val uri:String = s"$rxNormApiRootUrl/REST/rxcui/$rxcui/property.json?propName=ATC"
     val request =
       HttpRequest
@@ -152,8 +152,8 @@ case class RxNormApiClient(rxNormApiRootUrl:String, timeoutInSec:Int) {
       .flatMap(response =>
         FHIRUtil
           .extractValueOptionByPath[Seq[String]](response, "propConceptGroup.propConcept.propValue")
-          .flatMap(_.headOption)
-      )
+          .map(_.filter(r => r != "" && r != "/")))
+      .getOrElse(Nil)
   }
 
   /**
