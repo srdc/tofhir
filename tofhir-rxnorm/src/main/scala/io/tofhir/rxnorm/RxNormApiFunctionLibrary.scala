@@ -166,16 +166,13 @@ class RxNormApiFunctionLibrary(rxNormApiClient:RxNormApiClient, context: FhirPat
     inputType = Seq("string")
   )
   def getATC(rxcuiExpr:ExpressionContext): Seq[FhirPathResult] = {
-    val rxcui: Option[String] =
+    val rxcui: String =
       evaluator.visit(rxcuiExpr) match {
-        case Seq(FhirPathString(s)) => Some(s)
-        case Nil => None
+        case Seq(FhirPathString(s)) => s
         case _ => throw new FhirPathException("Invalid parameter rxcui! It should evaluate to a single string")
       }
-    rxcui
-      .flatMap(rxNormApiClient.getAtcCode)
+    rxNormApiClient.getAtcCode(rxcui)
       .map(FhirPathString)
-      .toSeq
   }
 }
 
