@@ -227,27 +227,18 @@ object MappingTaskExecutor {
         // Exception in expression evaluation
         case FhirMappingException(mappingExpr, t: FhirExpressionException) =>
           var errorDescription = t.msg + t.t.map(_.getMessage).map(" " + _).getOrElse("")
-          if(t.t.nonEmpty && t.t.get.isInstanceOf[FhirPathException]){
-            val cause = t.t.get.asInstanceOf[FhirPathException].getCause
-            if(cause != null){
-              // if we make use of Identity Service functions such as idxs:resolveIdentifier in the mapping expression,
-              // we get a FhirClientException when it cannot connect to Identity Service. In this case, we need to include
-              // response body and status in the error description
-              if(cause.isInstanceOf[FhirClientException]){
-                val innerException = t.t.get.asInstanceOf[FhirPathException].getCause.asInstanceOf[FhirClientException]
-                if(innerException.serverResponse.nonEmpty){
-                  val serverResponse = innerException.serverResponse.get
-                  errorDescription = errorDescription + s" Status Code: ${serverResponse.httpStatus}${serverResponse.responseBody.map(s" Response Body: " + _).getOrElse("")}"
-                  // add outcome issues to the error description
-                  if(serverResponse.outcomeIssues.nonEmpty) {
-                    errorDescription = errorDescription + s" Outcome Issues: ${serverResponse.outcomeIssues}"
+          t.t.collect {
+            case pathException: FhirPathException =>
+              Option(pathException.getCause).collect {
+                case clientException: FhirClientException =>
+                  clientException.serverResponse.foreach { serverResponse =>
+                    errorDescription += s" Status Code: ${serverResponse.httpStatus}" +
+                      serverResponse.responseBody.map(" Response Body: " + _).getOrElse("") +
+                      serverResponse.outcomeIssues.map(" Outcome Issues: " + _)
                   }
-                }
+                case otherCause =>
+                  errorDescription += s" ${otherCause.getMessage}"
               }
-              else {
-                errorDescription = errorDescription + s" ${cause.getMessage}"
-              }
-            }
           }
           Seq(FhirMappingResult(
             jobId = fhirMappingService.jobId,
