@@ -18,7 +18,6 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 import java.io.{File, FileOutputStream}
 import java.nio.file.{Files, Paths}
-import scala.collection.mutable
 import scala.concurrent.Future
 
 class ExecutionServiceTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll {

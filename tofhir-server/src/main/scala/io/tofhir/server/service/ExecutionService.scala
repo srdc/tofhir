@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.onfhir.path.IFhirPathFunctionLibraryFactory
 import io.tofhir.common.util.CustomMappingFunctionsFactory
 import io.tofhir.engine.config.ToFhirConfig
+import io.tofhir.engine.env.EnvironmentVariableResolver
 import io.tofhir.engine.mapping.context.MappingContextLoader
 import io.tofhir.engine.mapping.job.{FhirMappingJobManager, MappingJobScheduler}
 import io.tofhir.engine.model._
@@ -11,7 +12,6 @@ import io.tofhir.engine.util.FhirMappingJobFormatter.formats
 import io.tofhir.engine.util.FileUtils
 import io.tofhir.engine.util.FileUtils.FileExtensions
 import io.tofhir.engine.{Execution, ToFhirEngine}
-import io.tofhir.engine.env.EnvironmentVariableResolver
 import io.tofhir.rxnorm.RxNormApiFunctionLibraryFactory
 import io.tofhir.server.common.model.{BadRequest, ResourceNotFound}
 import io.tofhir.server.model.{ExecuteJobTask, TestResourceCreationRequest}
@@ -21,9 +21,8 @@ import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import org.apache.commons.io
 import org.apache.spark.sql.KeyValueGroupedDataset
-import org.json4s.JsonAST.{JBool, JObject, JValue}
 import org.json4s.jackson.JsonMethods
-import org.json4s.{JArray, JString}
+import org.json4s.{JArray, JBool, JObject, JString, JValue}
 
 import java.io.File
 import java.util.UUID
