@@ -38,7 +38,7 @@ object ToFhirConfig {
       "spark.sql.caseSensitive" -> "true", // Enable case sensitivity to treat schema column names as case-sensitive to avoid potential conflicts
       "spark.sql.files.ignoreCorruptFiles" -> "false", //Do not ignore corrupted files (e.g. CSV missing a field from the given schema) as we want to log them
       "spark.sql.streaming.checkpointLocation" -> sparkCheckpointDirectory, //Checkpoint directory for streaming
-      "mapreduce.fileoutputcommitter.marksuccessfuljobs" -> "false", //Do not create _SUCCESS file while writing to csv
+      "spark.hadoop.mapreduce.fileoutputcommitter.marksuccessfuljobs" -> "false", //Do not create _SUCCESS file while writing to csv
       "spark.sql.extensions" -> "io.delta.sql.DeltaSparkSessionExtension", // Enable Delta Lake features by adding the DeltaSparkSessionExtension to the Spark session.
       "spark.sql.catalog.spark_catalog" -> "org.apache.spark.sql.delta.catalog.DeltaCatalog" // Use DeltaCatalog as the default catalog for managing Delta tables in Spark.
     )
@@ -58,7 +58,7 @@ object ToFhirConfig {
           .entrySet()
           .asScala
           .filter(e => e.getKey != "app.name" && e.getKey != "master")
-          .map(e => e.getKey -> e.getValue.unwrapped().toString)
+          .map(e => s"spark.${e.getKey}" -> e.getValue.unwrapped().toString)
           .toMap
 
     sparkConfEntries
