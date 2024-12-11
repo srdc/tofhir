@@ -10,3 +10,5 @@ monitoring.ui.container.elasticsearch.enabled: true
 security.showInsecureClusterWarning: false
 # Request maximum payload size. Default = 1048576 byte (~1MB)
 server.maxPayload: "104857600"
+# Enables support for legacy visualizations in Kibana's table visualization type.
+vis_type_table.legacyVisEnabled: true
