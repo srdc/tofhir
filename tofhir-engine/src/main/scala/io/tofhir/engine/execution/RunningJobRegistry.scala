@@ -15,6 +15,7 @@ import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.data.write.SinkHandler
 import io.tofhir.engine.execution.log.ExecutionLogger
 import io.tofhir.engine.execution.processing.FileStreamInputArchiver
+import io.tofhir.engine.model.exception.FhirMappingException
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException
 /**
  * Execution manager that keeps track of running and scheduled mapping tasks in-memory.
@@ -97,17 +98,21 @@ class RunningJobRegistry(spark: SparkSession) {
         // wait for StreamingQuery to terminate
         updatedExecution.getStreamingQuery(mappingTaskName).awaitTermination()
       }catch{
-        case exception: StreamingQueryException =>{
-          exception.getCause.getCause match{
-            case _: UnknownTopicOrPartitionException =>
-              val topicNames = execution.mappingTasks.find(mappingTask => mappingTask.name.contentEquals(mappingTaskName)).get.sourceBinding.map(source => source._2.asInstanceOf[KafkaSource].topicName).mkString(", ")
-              val replacedErrorMessage = exception.message.replace("This server does not host this topic-partition.", s"This server does not host this topic-partition. Some topics are unavailable: ${topicNames}")
-              val errorWithTopicName = new Throwable(replacedErrorMessage);
-              ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(errorWithTopicName), isChunkResult = false)
-            case _ =>
+        case exception: StreamingQueryException =>
+          Option(exception.getCause) match {
+            case None =>
               ExecutionLogger.logExecutionStatus(execution, FhirMappingJobResult.FAILURE, Some(mappingTaskName), Some(exception), isChunkResult = false)
+            case Some(cause) =>
+              Option(cause.getCause) match {
+                // special handling of UnknownTopicOrPartitionException to include the missing topic names
+                case Some(_: UnknownTopicOrPartitionException) =>
+                  val topicNames = execution.mappingTasks.find(mappingTask => mappingTask.name.contentEquals(mappingTaskName)).get.sourceBinding.map(source => source._2.asInstanceOf[KafkaSource].topicName).mkString(", ")
+                  val unknownTopicError = FhirMappingException(s"The following Kafka topic(s) specified in the mapping task do not exist: $topicNames")
+                  ExecutionLogger.logExecutionStatus(execution,FhirMappingJobResult.FAILURE,Some(mappingTaskName),Some(unknownTopicError),isChunkResult = false)
+                case _ =>
+                  ExecutionLogger.logExecutionStatus(execution,FhirMappingJobResult.FAILURE,Some(mappingTaskName),Some(exception),isChunkResult = false)
+              }
           }
-        }
       }finally{
         // Remove the mapping execution from the running tasks after the query is terminated
         stopMappingExecution(jobId, executionId, mappingTaskName)

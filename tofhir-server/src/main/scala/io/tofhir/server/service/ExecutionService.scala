@@ -20,13 +20,14 @@ import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import org.apache.commons.io
+import org.apache.kafka.common.errors.UnknownTopicOrPartitionException
 import org.apache.spark.sql.KeyValueGroupedDataset
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JBool, JObject, JString, JValue}
 
 import java.io.File
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, ExecutionException, Future}
 
 /**
  * Service to handle all execution related operations
@@ -245,6 +246,21 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
               .groupByKey((result: FhirMappingResult) => result.source)
             // Map each group to FhirMappingResultForInput
             grouped.mapGroups(FhirMappingResultConverter.convertToFhirMappingResultsForInput).collect().toSeq
+          }.recover{
+            case ee: ExecutionException =>
+              Option(ee.getCause) match {
+                // special handling of UnknownTopicOrPartitionException to include the missing topic names
+                case Some(_: UnknownTopicOrPartitionException) =>
+                  val topicNames: Seq[String] = testResourceCreationRequest.fhirMappingTask.sourceBinding.map(source => source._2.asInstanceOf[KafkaSource].topicName).toSeq
+                  throw BadRequest(
+                    "Invalid Kafka Topics",
+                    s"The following Kafka topic(s) specified in the mapping task do not exist: ${topicNames.mkString(", ")}."
+                  )
+                case _ =>
+                  throw ee
+              }
+            case e: Exception =>
+              throw e
           }
     }
   }
