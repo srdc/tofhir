@@ -326,7 +326,7 @@ class FhirMappingJobManager(
       //Otherwise divide the data into chunks
       case Some(chunkSize) =>
         val numOfChunks: Int = Math.ceil(sizeOfDf * 1.0 / chunkSize * 1.0).toInt
-        logger.debug(s"Executing the mapping ${mappingTask.name} within job ${mappingJobExecution.jobId} in $numOfChunks chunks ...")
+        ExecutionLogger.logChunkSizeForBatchMappingTask(mappingJobExecution = mappingJobExecution, mappingTaskName = mappingTask.name, numOfChunks = numOfChunks)
         val splitDf = df.randomSplit((1 to numOfChunks).map(_ => 1.0).toArray[Double])
         splitDf
           .zipWithIndex

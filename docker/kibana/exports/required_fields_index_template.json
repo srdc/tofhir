@@ -61,6 +61,14 @@
       "chunkResult": {
         "type": "boolean"
       },
+      "chunkProgress": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
       "errorExpr": {
         "type": "text",
         "fields": {
