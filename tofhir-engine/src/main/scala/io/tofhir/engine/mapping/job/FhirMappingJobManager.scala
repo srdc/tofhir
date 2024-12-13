@@ -256,7 +256,7 @@ class FhirMappingJobManager(
     readSourceAndExecuteTask(mappingJobExecution.jobId, mappingJobExecution.mappingTasks.head, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
       .map {
         dataset =>
-          SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingJobExecution.mappingTasks.head.name), dataset, fhirWriter)
+          SinkHandler.writeMappingResult(spark, mappingJobExecution, mappingJobExecution.mappingTasks.head.name, dataset, fhirWriter)
       }
   }
 
@@ -318,11 +318,11 @@ class FhirMappingJobManager(
       case None =>
         logger.debug(s"Executing the mapping ${mappingTask.name} within job ${mappingJobExecution.jobId} ...")
         executeTask(mappingJobExecution.jobId, mappingTask.name, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), Some(mappingJobExecution.projectId))
-          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.name), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
+          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, mappingTask.name, dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
       case Some(chunkSize) if sizeOfDf < chunkSize =>
         logger.debug(s"Executing the mapping ${mappingTask.name} within job ${mappingJobExecution.jobId} ...")
         executeTask(mappingJobExecution.jobId, mappingTask.name, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), Some(mappingJobExecution.projectId))
-          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.name), dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
+          .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, mappingTask.name, dataset, fhirWriter)) // Write the created FHIR Resources to the FhirWriter
       //Otherwise divide the data into chunks
       case Some(chunkSize) =>
         val numOfChunks: Int = Math.ceil(sizeOfDf * 1.0 / chunkSize * 1.0).toInt
@@ -333,7 +333,7 @@ class FhirMappingJobManager(
           .foldLeft(Future.apply(())) {
             case (fj, (df, i)) => fj.flatMap(_ =>
               executeTask(mappingJobExecution.jobId, mappingTask.name, fhirMapping, df, mds, terminologyServiceSettings, identityServiceSettings, Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
-                .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, Some(mappingTask.name), dataset, fhirWriter))
+                .map(dataset => SinkHandler.writeMappingResult(spark, mappingJobExecution, mappingTask.name, dataset, fhirWriter))
                 .map(_ => logger.debug(s"Chunk ${i + 1} / $numOfChunks is completed for mapping ${mappingTask.name} within MappingJob: ${mappingJobExecution.jobId}..."))
             )
           }

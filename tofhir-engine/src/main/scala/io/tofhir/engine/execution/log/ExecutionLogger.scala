@@ -60,19 +60,19 @@ object ExecutionLogger {
    * A batch mapping job is divided into several chunks based on the given max chunk size configuration.
    *
    * @param mappingJobExecution The mapping job execution instance
-   * @param mappingTaskName     The optional name of the mapping
+   * @param mappingTaskName     The name of the mapping
    * @param numOfInvalids       The number of invalid records
    * @param numOfNotMapped      The number of records not mapped
    * @param numOfFhirResources  The number of FHIR resources created
    * @param numOfFailedWrites   The number of failed writes
    */
-  def logExecutionResultForChunk(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: Option[String],
+  def logExecutionResultForChunk(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: String,
                                  numOfInvalids: Long = 0,
                                  numOfNotMapped: Long = 0,
                                  numOfFhirResources: Long = 0,
                                  numOfFailedWrites: Long = 0): Unit = {
     //Log the job result
-    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingTaskName, numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites)
+    val jobResult = FhirMappingJobResult(mappingJobExecution, Some(mappingTaskName), numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites)
     logger.info(jobResult.toMapMarker, jobResult.toString)
 
     // modify the result of mapping job execution kept in the map
@@ -91,19 +91,19 @@ object ExecutionLogger {
    * A streaming job waits for data and executes the mapping task when the data arrives.
    *
    * @param mappingJobExecution The mapping job execution instance
-   * @param mappingTaskName     The optional name of the mapping
+   * @param mappingTaskName     The name of the mapping
    * @param numOfInvalids       The number of invalid records
    * @param numOfNotMapped      The number of records not mapped
    * @param numOfFhirResources  The number of FHIR resources created
    * @param numOfFailedWrites   The number of failed writes
    */
-  def logExecutionResultForStreamingMappingTask(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: Option[String],
+  def logExecutionResultForStreamingMappingTask(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: String,
                                                 numOfInvalids: Long = 0,
                                                 numOfNotMapped: Long = 0,
                                                 numOfFhirResources: Long = 0,
                                                 numOfFailedWrites: Long = 0): Unit = {
     //Log the job result
-    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingTaskName, numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites, chunkResult = false)
+    val jobResult = FhirMappingJobResult(mappingJobExecution, Some(mappingTaskName), numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites, chunkResult = false)
     logger.info(jobResult.toMapMarker, jobResult.toString)
   }
 
