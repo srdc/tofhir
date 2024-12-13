@@ -68,7 +68,7 @@ class FhirMappingJobManager(
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         // log the start of the FHIR mapping task execution
-        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED, Some(task.name))
+        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED, Some(task.name), isChunkResult = false)
         readSourceExecuteAndWriteInChunks(mappingJobExecution.copy(mappingTasks = Seq(task)), sourceSettings,
           fhirWriter, terminologyServiceSettings, identityServiceSettings, timeRange)
       }.recover {
@@ -119,7 +119,7 @@ class FhirMappingJobManager(
       .map(t => {
         logger.debug(s"Streaming mapping job ${mappingJobExecution.jobId}, mapping name ${t.name} is started and waiting for the data...")
         // log the start of the FHIR mapping task execution
-        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED, Some(t.name))
+        ExecutionLogger.logExecutionStatus(mappingJobExecution, FhirMappingJobResult.STARTED, Some(t.name), isChunkResult = false)
         // Construct a tuple of (mapping name, Future[StreamingQuery])
         t.name ->
           readSourceAndExecuteTask(mappingJobExecution.jobId, t, sourceSettings, terminologyServiceSettings, identityServiceSettings, executionId = Some(mappingJobExecution.id), projectId = Some(mappingJobExecution.projectId))
