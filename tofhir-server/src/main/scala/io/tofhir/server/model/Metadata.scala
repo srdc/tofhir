@@ -3,15 +3,16 @@ package io.tofhir.server.model
 /**
  * Model that represents the metadata of the toFHIR server.
  *
- * @param name                   The name of the server.
- * @param description            A description of the server.
- * @param version                The current version of the server.
- * @param fhirDefinitionsVersion The major FHIR version of definitions (profiles, valuesets, codesystems) supported by the server.
- * @param toFhirRedcapVersion    The optional toFHIR-Redcap server version.
- * @param definitionsRootUrls    Optional list of root URLs for definitions.
- * @param schemasFhirVersion     The FHIR version used for schemas.
- * @param repositoryNames        The configured repository names.
- * @param archiving              The archiving configuration.
+ * @param name                    The name of the server.
+ * @param description             A description of the server.
+ * @param version                 The current version of the server.
+ * @param fhirDefinitionsVersion  The major FHIR version of definitions (profiles, valuesets, codesystems) supported by the server.
+ * @param toFhirRedcapVersion     The optional toFHIR-Redcap server version.
+ * @param definitionsRootUrls     Optional list of root URLs for definitions.
+ * @param schemasFhirVersion      The FHIR version used for schemas.
+ * @param repositoryNames         The configured repository names.
+ * @param archiving               The archiving configuration.
+ * @param executionConfigurations The list of configurations used during the execution of mappings.
  */
 case class Metadata(name: String,
                     description: String,
@@ -22,7 +23,8 @@ case class Metadata(name: String,
                     schemasFhirVersion: String,
                     repositoryNames: RepositoryNames,
                     archiving: Archiving,
-                    environmentVariables: Map[String, String]
+                    environmentVariables: Map[String, String],
+                    executionConfigurations: Seq[MappingExecutionConfiguration]
                    )
 
 /**
@@ -50,3 +52,14 @@ case class RepositoryNames(mappings: String,
 case class Archiving(erroneousRecordsFolder: String,
                      archiveFolder: String,
                      streamArchivingFrequency: Int)
+
+/**
+ * Represents a configuration used during the execution of mappings.
+ *
+ * @param name        The name of the configuration.
+ * @param description A brief description of the configuration, explaining its purpose or usage.
+ * @param value       The value assigned to the configuration, specifying its current setting.
+ */
+case class MappingExecutionConfiguration(name: String,
+                                         description: String,
+                                         value: String)
