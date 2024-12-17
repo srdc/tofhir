@@ -99,7 +99,7 @@ class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
   private def getMappingExecutionConfigurations: Seq[MappingExecutionConfiguration] = {
     Seq(
       MappingExecutionConfiguration(name = "Mapping Timeout", description = "Timeout for each mapping execution on an individual input record", value = toFhirEngineConfig.mappingTimeout.toString),
-      MappingExecutionConfiguration(name = "Maximum Chunk Size", description = "Max chunk size to execute for batch executions, if number of records exceed this, the source data will be divided into chunks", value = toFhirEngineConfig.maxChunkSizeForMappingJobs.toString),
+      MappingExecutionConfiguration(name = "Maximum Chunk Size", description = "Max chunk size to execute for batch executions, if number of records exceed this, the source data will be divided into chunks", value = toFhirEngineConfig.maxChunkSizeForMappingJobs.getOrElse("Not Set").toString),
       MappingExecutionConfiguration(name = "Batch Group Size", description = "The number of FHIR resources in the group while executing (create/update) a FHIR batch operation.", value = toFhirEngineConfig.fhirWriterBatchGroupSize.toString)
     )
   }
