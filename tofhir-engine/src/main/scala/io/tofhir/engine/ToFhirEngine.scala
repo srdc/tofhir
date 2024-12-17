@@ -19,9 +19,8 @@ import org.apache.spark.sql.SparkSession
  *
  * @param mappingRepository        Already instantiated mapping repository that maintains a dynamically-updated data structure based on the operations on the mappings
  * @param schemaRepository         Already instantiated schema repository that maintains a dynamically-updated data structure based on the operations on the schemas
- * @param functionLibraryFactories External function libraries containing function to be used within FHIRPath expressions
  */
-class ToFhirEngine(mappingRepository: Option[IFhirMappingRepository] = None, schemaRepository: Option[IFhirSchemaLoader] = None, functionLibraryFactories: Map[String, IFhirPathFunctionLibraryFactory] = Map.empty) {
+class ToFhirEngine(mappingRepository: Option[IFhirMappingRepository] = None, schemaRepository: Option[IFhirSchemaLoader] = None) {
   // Validate that both mapping and schema repositories are empty or non-empty
   if (mappingRepository.nonEmpty && schemaRepository.isEmpty || mappingRepository.isEmpty && schemaRepository.nonEmpty) {
     throw EngineInitializationException("Mapping and schema repositories should both empty or non-empty")
@@ -56,12 +55,15 @@ class ToFhirEngine(mappingRepository: Option[IFhirMappingRepository] = None, sch
    * @return
    */
   private def initializeFunctionLibraries(): Map[String, IFhirPathFunctionLibraryFactory] = {
+    val externalFunctionLibraryFactories: Map[String, IFhirPathFunctionLibraryFactory] = engineConfig.functionLibrariesConfig
+      .map(_.functionLibrariesFactories)
+      .getOrElse(Map.empty)
     Map(
       FhirPathUtilFunctionsFactory.defaultPrefix -> FhirPathUtilFunctionsFactory,
       FhirPathNavFunctionsFactory.defaultPrefix -> FhirPathNavFunctionsFactory,
       FhirPathAggFunctionsFactory.defaultPrefix -> FhirPathAggFunctionsFactory,
       FhirPathIdentityServiceFunctionsFactory.defaultPrefix -> FhirPathIdentityServiceFunctionsFactory,
       FhirPathTerminologyServiceFunctionsFactory.defaultPrefix -> FhirPathTerminologyServiceFunctionsFactory
-    ) ++ functionLibraryFactories
+    ) ++ externalFunctionLibraryFactories
   }
 }

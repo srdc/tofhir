@@ -50,7 +50,14 @@ class ToFhirServerEndpoint(toFhirEngineConfig: ToFhirEngineConfig, webServerConf
   )
 
   val fhirDefinitionsEndpoint = new FhirDefinitionsEndpoint(fhirDefinitionsConfig)
-  val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint(Seq("io.onfhir.path", "io.tofhir.engine.mapping"))
+
+  val functionLibraryPackages: Seq[String] =
+    Seq("io.onfhir.path", "io.tofhir.engine.mapping") ++
+      toFhirEngineConfig.functionLibrariesConfig // add external function libraries
+        .map(_.libraryPackageNames)
+        .getOrElse(Seq.empty)
+  val fhirPathFunctionsEndpoint = new FhirPathFunctionsEndpoint(functionLibraryPackages)
+
   val redcapEndpoint =  redCapServiceConfig.map(config => new RedCapEndpoint(config))
   val fileSystemTreeStructureEndpoint = new FileSystemTreeStructureEndpoint()
   val metadataEndpoint = new MetadataEndpoint(toFhirEngineConfig, webServerConfig, fhirDefinitionsConfig, redCapServiceConfig)
