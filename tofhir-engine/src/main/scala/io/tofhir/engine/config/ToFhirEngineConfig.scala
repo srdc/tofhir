@@ -60,4 +60,6 @@ class ToFhirEngineConfig(toFhirEngineConfig: Config) {
 
   /** Period (in milliseconds) to run archiving task for file streaming jobs */
   lazy val streamArchivingFrequency: Int = Try(toFhirEngineConfig.getInt("archiving.stream-archiving-frequency")).toOption.getOrElse(5000)
+  /** Configuration of external function libraries */
+  lazy val functionLibrariesConfig: Option[FunctionLibrariesConfig] = Try(new FunctionLibrariesConfig(toFhirEngineConfig.getConfig("functionLibraries"))).toOption
 }
