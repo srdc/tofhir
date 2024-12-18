@@ -392,6 +392,25 @@
                 <version>${logstash-logback-encoder.version}</version>
             </dependency>
 
+            <!--
+                The `log4j-over-slf4j` library serves as a bridge to route logging calls from Log4j's API to SLF4J.
+                This allows applications originally written with Log4j to seamlessly integrate with SLF4J-compatible logging backends, such as Logback.
+
+                Here is the logging flow enabled by this library:
+                Application → Log4j API → log4j-over-slf4j → SLF4J → Logging Backend (e.g., Logback)
+
+                Why is this dependency needed?
+                - Normally, this dependency is not required.
+                - However, when working with a Spark Cluster, this library becomes essential because Spark uses Log4j as its default logging framework,
+                  while our application uses Logback.
+                - By including `log4j-over-slf4j`, we ensure that Spark's Log4j logging is redirected to SLF4J, and ultimately handled by Logback.
+            -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>log4j-over-slf4j</artifactId>
+                <version>1.7.32</version>
+            </dependency>
+
             <!-- Application Configuration -->
             <dependency>
                 <groupId>com.typesafe</groupId>
