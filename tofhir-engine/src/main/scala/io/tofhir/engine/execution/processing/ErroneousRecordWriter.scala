@@ -26,21 +26,21 @@ object ErroneousRecordWriter {
    */
   def saveErroneousRecords(spark: SparkSession,
                            mappingJobExecution: FhirMappingJobExecution,
-                           mappingTaskName: Option[String],
+                           mappingTaskName: String,
                            notWrittenResources: util.List[FhirMappingResult],
                            mappingErrors: Dataset[FhirMappingResult],
                            invalidInputs: Dataset[FhirMappingResult]): Unit = {
     if (mappingJobExecution.saveErroneousRecords) {
       if (!invalidInputs.isEmpty) {
-        this.writeErroneousDataset(mappingJobExecution, invalidInputs, mappingTaskName.get, FhirMappingErrorCodes.INVALID_INPUT)
+        this.writeErroneousDataset(mappingJobExecution, invalidInputs, mappingTaskName, FhirMappingErrorCodes.INVALID_INPUT)
       }
       if (!mappingErrors.isEmpty) {
-        this.writeErroneousDataset(mappingJobExecution, mappingErrors, mappingTaskName.get, FhirMappingErrorCodes.MAPPING_ERROR)
+        this.writeErroneousDataset(mappingJobExecution, mappingErrors, mappingTaskName, FhirMappingErrorCodes.MAPPING_ERROR)
       }
       if (!notWrittenResources.isEmpty) {
         import spark.implicits._
         val notWrittenResourcesDs = spark.createDataset[FhirMappingResult](notWrittenResources)
-        this.writeErroneousDataset(mappingJobExecution, notWrittenResourcesDs, mappingTaskName.get, FhirMappingErrorCodes.INVALID_RESOURCE)
+        this.writeErroneousDataset(mappingJobExecution, notWrittenResourcesDs, mappingTaskName, FhirMappingErrorCodes.INVALID_RESOURCE)
       }
     }
   }

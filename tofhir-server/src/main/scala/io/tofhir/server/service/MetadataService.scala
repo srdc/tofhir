@@ -12,7 +12,7 @@ import io.tofhir.engine.Execution.actorSystem
 import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.env.EnvironmentVariableResolver
 import io.tofhir.server.endpoint.MetadataEndpoint.SEGMENT_METADATA
-import io.tofhir.server.model.{Archiving, Metadata, RepositoryNames}
+import io.tofhir.server.model.{Archiving, MappingExecutionConfiguration, Metadata, RepositoryNames}
 
 import java.util.Properties
 import scala.concurrent.{Await, Future}
@@ -38,6 +38,8 @@ class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
     val properties: Properties  = new Properties()
     properties.load(getClass.getClassLoader.getResourceAsStream("version.properties"))
     val toFhirRedCapVersion = getToFhirRedCapVersion
+    // fetch the mapping executions' configurations
+    val configurations: Seq[MappingExecutionConfiguration] = getMappingExecutionConfigurations
     Metadata(
       name = "toFHIR",
       description = "toFHIR is a tool for mapping data from various sources to FHIR resources.",
@@ -58,7 +60,8 @@ class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
         archiveFolder = toFhirEngineConfig.archiveFolder,
         streamArchivingFrequency = toFhirEngineConfig.streamArchivingFrequency
       ),
-      environmentVariables = EnvironmentVariableResolver.getEnvironmentVariables
+      environmentVariables = EnvironmentVariableResolver.getEnvironmentVariables,
+      executionConfigurations = configurations
     )
   }
 
@@ -86,5 +89,18 @@ class MetadataService(toFhirEngineConfig: ToFhirEngineConfig,
         case Failure(_) => None
       }
     }
+  }
+
+  /**
+   * Retrieves a sequence of predefined configurations used during the execution of mapping jobs.
+   *
+   * @return A sequence of `Configuration` objects, each representing a specific setting.
+   */
+  private def getMappingExecutionConfigurations: Seq[MappingExecutionConfiguration] = {
+    Seq(
+      MappingExecutionConfiguration(name = "Mapping Timeout", description = "Timeout for each mapping execution on an individual input record", value = toFhirEngineConfig.mappingTimeout.toString),
+      MappingExecutionConfiguration(name = "Maximum Chunk Size", description = "Max chunk size to execute for batch executions, if number of records exceed this, the source data will be divided into chunks", value = toFhirEngineConfig.maxChunkSizeForMappingJobs.getOrElse("Not Set").toString),
+      MappingExecutionConfiguration(name = "Batch Group Size", description = "The number of FHIR resources in the group while executing (create/update) a FHIR batch operation.", value = toFhirEngineConfig.fhirWriterBatchGroupSize.toString)
+    )
   }
 }

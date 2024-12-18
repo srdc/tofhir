@@ -1,82 +1,98 @@
 {
   "index_patterns": [
-	"fluentd*"
+    "fluentd*"
   ],
   "mappings": {
-	"properties": {
-	  "executionId": {
-		"type": "text",
-		"fields": {
-		  "keyword": {
-			"type": "keyword"
-		  }
-		}
-	  },
-	  "mappingTaskName": {
-		"type": "text",
-		"fields": {
-		  "keyword": {
-			"type": "keyword"
-		  }
-		}
-	  },
-	  "result": {
-		"type": "text",
-		"fields": {
-		  "keyword": {
-			"type": "keyword"
-		  }
-		}
-	  },
-	  "errorCode": {
-		"type": "text",
-		"fields": {
-		  "keyword": {
-			"type": "keyword"
-		  }
-		}
-	  },
-	  "errorDesc": {
-		"type": "text",
-		"fields": {
-		  "keyword": {
-			"type": "keyword"
-		  }
-		}
-	  },
-	  "isStreamingJob": {
-		"type": "boolean"
-	  },
-	  "isScheduledJob": {
-		"type": "boolean"
-	  },
-	  "chunkResult": {
-		"type": "boolean"
-	  },
-	  "errorExpr": {
-		"type": "text",
-		"fields": {
-		  "keyword": {
-			"type": "keyword"
-		  }
-		}
-	  },
-	  "source": {
-		"type": "text",
-		"fields": {
-		  "keyword": {
-			"type": "keyword"
-		  }
-		}
-	  },
-	  "throwable": {
-		"type": "text",
-		"fields": {
-		  "keyword": {
-			"type": "keyword"
-		  }
-		}
-	  }
-	}
+    "properties": {
+      "executionId": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "mappingTaskName": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "mappedResource": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "result": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "errorCode": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "errorDesc": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "isStreamingJob": {
+        "type": "boolean"
+      },
+      "isScheduledJob": {
+        "type": "boolean"
+      },
+      "chunkResult": {
+        "type": "boolean"
+      },
+      "chunkProgress": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "errorExpr": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "source": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "throwable": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
   }
 }

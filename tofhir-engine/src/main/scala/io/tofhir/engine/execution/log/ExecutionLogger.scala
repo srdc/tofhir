@@ -1,7 +1,9 @@
 package io.tofhir.engine.execution.log
 
+import ch.qos.logback.more.appenders.marker.MapMarker
 import com.typesafe.scalalogging.Logger
 import io.tofhir.engine.model.{FhirMappingJobExecution, FhirMappingJobResult}
+import io.tofhir.engine.util.TimeUtil
 
 /**
  * The ExecutionLogger is responsible for logging the execution status and results of mapping jobs.
@@ -60,28 +62,31 @@ object ExecutionLogger {
    * A batch mapping job is divided into several chunks based on the given max chunk size configuration.
    *
    * @param mappingJobExecution The mapping job execution instance
-   * @param mappingTaskName     The optional name of the mapping
+   * @param mappingTaskName     The name of the mapping
    * @param numOfInvalids       The number of invalid records
    * @param numOfNotMapped      The number of records not mapped
    * @param numOfFhirResources  The number of FHIR resources created
    * @param numOfFailedWrites   The number of failed writes
    */
-  def logExecutionResultForChunk(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: Option[String],
+  def logExecutionResultForChunk(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: String,
                                  numOfInvalids: Long = 0,
                                  numOfNotMapped: Long = 0,
                                  numOfFhirResources: Long = 0,
                                  numOfFailedWrites: Long = 0): Unit = {
+    // get the cached result of mapping job execution
+    val cachedResult = batchJobMappingTaskExecutionResults(mappingJobExecution.id)
     //Log the job result
-    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingTaskName, numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites)
+    val jobResult = FhirMappingJobResult(mappingJobExecution, Some(mappingTaskName), numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites,
+      totalNumOfChunks = cachedResult.totalNumOfChunks, completedNumOfChunks = cachedResult.completedNumOfChunks + 1)
     logger.info(jobResult.toMapMarker, jobResult.toString)
 
     // modify the result of mapping job execution kept in the map
-    val cachedResult = batchJobMappingTaskExecutionResults(mappingJobExecution.id)
     val updatedResult = cachedResult.copy(
       numOfNotMapped = cachedResult.numOfNotMapped + numOfNotMapped,
       numOfFailedWrites = cachedResult.numOfFailedWrites + numOfFailedWrites,
       numOfFhirResources = cachedResult.numOfFhirResources + numOfFhirResources,
-      numOfInvalids = cachedResult.numOfInvalids + numOfInvalids
+      numOfInvalids = cachedResult.numOfInvalids + numOfInvalids,
+      completedNumOfChunks =  cachedResult.completedNumOfChunks + 1
     )
     batchJobMappingTaskExecutionResults.put(mappingJobExecution.id, updatedResult)
   }
@@ -91,19 +96,19 @@ object ExecutionLogger {
    * A streaming job waits for data and executes the mapping task when the data arrives.
    *
    * @param mappingJobExecution The mapping job execution instance
-   * @param mappingTaskName     The optional name of the mapping
+   * @param mappingTaskName     The name of the mapping
    * @param numOfInvalids       The number of invalid records
    * @param numOfNotMapped      The number of records not mapped
    * @param numOfFhirResources  The number of FHIR resources created
    * @param numOfFailedWrites   The number of failed writes
    */
-  def logExecutionResultForStreamingMappingTask(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: Option[String],
+  def logExecutionResultForStreamingMappingTask(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: String,
                                                 numOfInvalids: Long = 0,
                                                 numOfNotMapped: Long = 0,
                                                 numOfFhirResources: Long = 0,
                                                 numOfFailedWrites: Long = 0): Unit = {
     //Log the job result
-    val jobResult = FhirMappingJobResult(mappingJobExecution, mappingTaskName, numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites, chunkResult = false)
+    val jobResult = FhirMappingJobResult(mappingJobExecution, Some(mappingTaskName), numOfInvalids, numOfNotMapped, numOfFhirResources, numOfFailedWrites, chunkResult = false)
     logger.info(jobResult.toMapMarker, jobResult.toString)
   }
 
@@ -118,5 +123,40 @@ object ExecutionLogger {
     logger.info(jobResult.toMapMarker, jobResult.toString)
     // remove execution from the map
     batchJobMappingTaskExecutionResults.remove(executionId)
+  }
+
+  /**
+   * Logs the chunk size for a batch mapping task execution and updates the execution result in the cache.
+   *
+   * @param mappingJobExecution The execution details of the FHIR mapping job for which chunk size is being logged.
+   * @param mappingTaskName     The name of the mapping task being executed.
+   * @param numOfChunks         The total number of chunks the batch mapping task will be executed in.
+   */
+  def logChunkSizeForBatchMappingTask(mappingJobExecution: FhirMappingJobExecution, mappingTaskName: String, numOfChunks: Int): Unit = {
+    // modify the result of mapping job execution kept in the map
+    val cachedResult = batchJobMappingTaskExecutionResults(mappingJobExecution.id)
+    val updatedResult = cachedResult.copy(
+      totalNumOfChunks = numOfChunks
+    )
+    batchJobMappingTaskExecutionResults.put(mappingJobExecution.id, updatedResult)
+
+    // create a new HashMap to store the marker attributes
+    val markerMap: java.util.Map[String, Any] = new java.util.HashMap[String, Any]()
+    // add attributes to the marker map
+    markerMap.put("jobId", mappingJobExecution.jobId)
+    markerMap.put("projectId", mappingJobExecution.projectId)
+    markerMap.put("executionId", mappingJobExecution.id)
+    markerMap.put("mappingTaskName", mappingTaskName)
+    // log the chunk progress for batch jobs
+    if(!mappingJobExecution.isStreamingJob){
+      markerMap.put("chunkProgress",s"0 / $numOfChunks")
+    }
+    // The current timestamp is automatically added to the log entry when it is sent to Elasticsearch or written to a file.
+    // As a result, there is no need to manually add a "@timestamp" field.
+    // However, during the process of writing the log to Elasticsearch, the timestamp is rounded, resulting in a loss of precision.
+    // For example, "2024-08-28_13:54:44.740" may be rounded to "2024-08-28_13:54:44.000" in Elasticsearch.
+    // This rounding leads to the loss of crucial millisecond information, which is important for accurately sorting logs.
+    markerMap.put("@timestamp", TimeUtil.getCurrentISOTime)
+    logger.info(new MapMarker("marker", markerMap), s"Executing the mapping ${mappingTaskName} within job ${mappingJobExecution.jobId} in $numOfChunks chunks ...")
   }
 }

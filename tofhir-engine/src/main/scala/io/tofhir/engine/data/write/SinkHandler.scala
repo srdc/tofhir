@@ -22,7 +22,7 @@ object SinkHandler {
    * @param df The DataFrame containing FHIR mapping results.
    * @param resourceWriter The writer instance to write the FHIR resources.
    */
-  def writeMappingResult(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, mappingTaskName: Option[String], df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter): Unit = {
+  def writeMappingResult(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, mappingTaskName: String, df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter): Unit = {
     //Cache the dataframe
     df.cache()
     //Filter out the errors
@@ -30,7 +30,7 @@ object SinkHandler {
     val mappingErrors = df.filter(_.error.exists(_.code != FhirMappingErrorCodes.INVALID_INPUT))
     val mappedResults = df.filter(_.mappedFhirResource.flatMap(_.mappedResource).isDefined)
     //Create an accumulator to accumulate the results that cannot be written
-    val accumName = s"${mappingJobExecution.jobId}:${mappingTaskName.map(u => s"$u:").getOrElse("")}fhirWritingProblems"
+    val accumName = s"${mappingJobExecution.jobId}:${mappingTaskName.map(u => s"$u:")}fhirWritingProblems"
     val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] = spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
     fhirWriteProblemsAccum.reset()
     //Write the FHIR resources
@@ -53,7 +53,7 @@ object SinkHandler {
    */
   def writeStream(spark: SparkSession, mappingJobExecution: FhirMappingJobExecution, df: Dataset[FhirMappingResult], resourceWriter: BaseFhirWriter, mappingTaskName: String): StreamingQuery = {
     val datasetWrite = (dataset: Dataset[FhirMappingResult], _: Long) => try {
-      writeMappingResult(spark, mappingJobExecution, Some(mappingTaskName), dataset, resourceWriter)
+      writeMappingResult(spark, mappingJobExecution, mappingTaskName, dataset, resourceWriter)
     } catch {
       case e: Throwable =>
         logger.error(s"Streaming chunk resulted in error for project: ${mappingJobExecution.projectId}, job: ${mappingJobExecution.jobId}, execution: ${mappingJobExecution.id}, mappingTask: $mappingTaskName", e.getMessage)
@@ -79,7 +79,7 @@ object SinkHandler {
    * @param invalidInputs The source data errors
    * */
   private def logMappingJobResult(mappingJobExecution:FhirMappingJobExecution,
-                                  mappingTaskName:Option[String],
+                                  mappingTaskName:String,
                                   fhirResources: Dataset[FhirMappingResult],
                                   notWrittenResources:util.List[FhirMappingResult],
                                   mappingErrors:Dataset[FhirMappingResult],
