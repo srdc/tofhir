@@ -34,7 +34,6 @@ object ToFhirConfig {
   private val sparkConfDefaults: Map[String, String] =
     Map(
       "spark.driver.allowMultipleContexts" -> "false",
-      "spark.ui.enabled" -> "false",
       "spark.sql.caseSensitive" -> "true", // Enable case sensitivity to treat schema column names as case-sensitive to avoid potential conflicts
       "spark.sql.files.ignoreCorruptFiles" -> "false", //Do not ignore corrupted files (e.g. CSV missing a field from the given schema) as we want to log them
       "spark.sql.streaming.checkpointLocation" -> sparkCheckpointDirectory, //Checkpoint directory for streaming

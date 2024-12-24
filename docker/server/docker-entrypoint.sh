@@ -29,6 +29,9 @@ fi
 if [ ! -z "$SPARK_MASTER" ]; then
   JAVA_CMD+="-Dspark.master=$SPARK_MASTER "
 fi
+if [ ! -z "$SPARK_UIENABLED" ]; then
+  JAVA_CMD+="-Dspark.ui.enabled=$SPARK_UIENABLED "
+fi
 
 # Configure toFHIR mapping-related paths
 if [ ! -z "$CONTEXT_PATH" ]; then
