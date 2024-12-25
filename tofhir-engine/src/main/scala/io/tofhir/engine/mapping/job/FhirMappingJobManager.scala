@@ -310,6 +310,11 @@ class FhirMappingJobManager(
     val mappingTask = mappingJobExecution.mappingTasks.head
     logger.debug(s"Reading source data for mapping ${mappingTask.name} within mapping job ${mappingJobExecution.jobId} ...")
     val (fhirMapping, mds, df) = readJoinSourceData(mappingTask, sourceSettings, timeRange, jobId = Some(mappingJobExecution.jobId))
+    // Cache the DataFrame to avoid re-reading the source data multiple times during processing.
+    // This is particularly useful when using chunking (e.g., via ToFhirConfig.engineConfig.maxChunkSizeForMappingJobs),
+    // as each chunk triggers a new read of the source data. Caching ensures that the data is read only once
+    // and reused across all chunks, improving performance.
+    df.cache()
     val sizeOfDf: Long = df.count()
     logger.debug(s"$sizeOfDf records read for mapping ${mappingTask.name} within mapping job ${mappingJobExecution.jobId} ...")
 
@@ -338,6 +343,8 @@ class FhirMappingJobManager(
             )
           }
     }
+    // Remove the DataFrame from cache after processing to free up memory resources.
+    df.unpersist()
     result.map(r => {
       // log the result of mapping task execution
       ExecutionLogger.logExecutionResultForBatchMappingTask(mappingJobExecution.id)
