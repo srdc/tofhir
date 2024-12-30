@@ -343,9 +343,9 @@ class FhirMappingJobManager(
             )
           }
     }
-    // Remove the DataFrame from cache after processing to free up memory resources.
-    df.unpersist()
     result.map(r => {
+      // Remove the DataFrame from cache after processing to free up memory resources.
+      df.unpersist()
       // log the result of mapping task execution
       ExecutionLogger.logExecutionResultForBatchMappingTask(mappingJobExecution.id)
       r
