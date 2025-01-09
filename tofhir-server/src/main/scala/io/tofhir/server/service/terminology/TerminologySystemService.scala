@@ -49,9 +49,7 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
    */
   def updateTerminologySystem(id: String, terminologySystem: TerminologySystem): Future[TerminologySystem] = {
     // Update TerminologySystem first, then update Jobs Terminology service setting fields
-    terminologySystemRepository.updateTerminologySystem(id, terminologySystem).flatMap { terminologySystem =>
-      updateJobTerminologyServiceSettings(id, Some(terminologySystem)).map(_ => terminologySystem)
-    }
+    terminologySystemRepository.updateTerminologySystem(id, terminologySystem)
   }
 
   /**
