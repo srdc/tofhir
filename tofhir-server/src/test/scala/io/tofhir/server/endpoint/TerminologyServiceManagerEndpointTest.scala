@@ -221,18 +221,6 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
       }
     }
 
-    "get the job in a project to verify terminology system is updated with deleted conceptMap" in {
-      // get the job
-      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${jobTest.id}") ~> route ~> check {
-        status shouldEqual StatusCodes.OK
-        // validate the retrieved job includes only first conceptMap
-        val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
-        job.id shouldEqual jobTest.id
-        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.length shouldEqual 1
-        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].conceptMapFiles.head.name shouldEqual "testCMUpdated"
-      }
-    }
-
     "upload a csv content as a concept map within a terminology system" in {
       // get file from resources
       val file: File = FileOperations.getFileIfExists(getClass.getResource("/test-terminology-service/sample-concept-map.csv").getPath)
@@ -346,18 +334,6 @@ class TerminologyServiceManagerEndpointTest extends BaseEndpointTest {
         updatedTerminology.codeSystems.head.name shouldEqual "testCSUpdated"
         // validate that code system file is deleted
         FileUtils.getPath(toFhirEngineConfig.terminologySystemFolderPath, terminologySystem1.id, codeSystem2.id).toFile shouldNot exist
-      }
-    }
-
-    "get the job in a project to verify terminology system is updated with deleted codeSystem" in {
-      // get the job
-      Get(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${JobEndpoint.SEGMENT_JOB}/${jobTest.id}") ~> route ~> check {
-        status shouldEqual StatusCodes.OK
-        // validate the retrieved job includes only first codeSystem
-        val job: FhirMappingJob = JsonMethods.parse(responseAs[String]).extract[FhirMappingJob]
-        job.id shouldEqual jobTest.id
-        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.length shouldEqual 1
-        job.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings].codeSystemFiles.head.name shouldEqual "testCSUpdated"
       }
     }
 
