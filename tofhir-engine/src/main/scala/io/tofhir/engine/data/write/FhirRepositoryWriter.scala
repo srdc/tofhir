@@ -46,16 +46,13 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         partition
           .grouped(ToFhirConfig.engineConfig.fhirWriterBatchGroupSize)
           .foreach(rowGroup => {
-            //Create a UUID for each entry
-            val resourcesToCreate = rowGroup.map(r => s"urn:uuid:${UUID.randomUUID()}" -> r)
-            val resourceMap = resourcesToCreate.toMap
             // Construct a FHIR batch operation from each entry
-            val batchRequest = prepareBatchRequest(resourcesToCreate, onFhirClient)
+            val batchRequest = prepareBatchRequest(rowGroup, onFhirClient)
             logger.debug("Batch Update request will be sent to the FHIR repository for {} resources.", rowGroup.size)
 
-            executeFhirBatch(batchRequest, resourcesToCreate, problemsAccumulator)
+            executeFhirBatch(batchRequest, rowGroup, problemsAccumulator)
               .foreach(responseBundle =>
-                checkResults(resourceMap, responseBundle, batchRequest, problemsAccumulator, onFhirClient)
+                checkResults(rowGroup, responseBundle, batchRequest, problemsAccumulator, onFhirClient)
               )
           })
       }
@@ -97,13 +94,15 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @param onFhirClient   OnFhirClient
    * @return
    */
-  private def prepareBatchRequest(mappingResults: Seq[(String, FhirMappingResult)], onFhirClient: OnFhirNetworkClient): FhirBatchTransactionRequestBuilder = {
+  private def prepareBatchRequest(mappingResults: Seq[FhirMappingResult], onFhirClient: OnFhirNetworkClient): FhirBatchTransactionRequestBuilder = {
     import io.onfhir.util.JsonFormatter._
     // Construct a FHIR batch operation from each entry
     var batchRequest: FhirBatchTransactionRequestBuilder = onFhirClient.batch()
     mappingResults
       .foreach {
-        case (uuid, mappingResult) =>
+        mappingResult =>
+          // create an uuid for the batch request
+          val uuid = s"urn:uuid:${UUID.randomUUID()}"
           mappingResult
             .mappedFhirResource.get
             .fhirInteraction
@@ -160,7 +159,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
    * @return
    */
   private def executeFhirBatch(batchRequest: FhirBatchTransactionRequestBuilder,
-                               mappingResults: Seq[(String, FhirMappingResult)],
+                               mappingResults: Seq[FhirMappingResult],
                                problemsAccumulator: CollectionAccumulator[FhirMappingResult]
                               )(implicit ec: ExecutionContext): Option[FHIRTransactionBatchBundle] = {
     try {
@@ -179,7 +178,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
           mappingResults
             .zipWithIndex.map {
             case (element, index) =>
-              element._2.copy(
+              element.copy(
                 error = Some(
                   FhirMappingError(
                     code = FhirMappingErrorCodes.INVALID_RESOURCE,
@@ -193,7 +192,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
         } else {
           val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} returned an unidentified error while writing the resources!"
           mappingResults
-            .map(_._2)
             .map(mr =>
               mr.copy(error = Some(FhirMappingError( //Set the error
                 code = FhirMappingErrorCodes.SERVICE_PROBLEM,
@@ -205,7 +203,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
       case tout: TimeoutException =>
         val msg = s"FHIR repository at url ${sinkSettings.fhirRepoUrl} timeout for batch interaction while writing the resources!"
         mappingResults
-          .map(_._2)
           .map(mr =>
             mr.copy(error = Some(FhirMappingError( //Set the error
               code = FhirMappingErrorCodes.FHIR_API_TIMEOUT,
@@ -216,7 +213,6 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
       case e: Throwable =>
         val msg = "UNEXPECTED!!! There is an unidentified error while writing resources to the FHIR Repository."
         mappingResults
-          .map(_._2)
           .map(mr =>
             mr.copy(error = Some(FhirMappingError( //Set the error
               code = FhirMappingErrorCodes.SERVICE_PROBLEM,
@@ -262,14 +258,14 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
   /**
    * Check the results of persistence interactions and perform error handling
    *
-   * @param mappingResultMap    Mapped results
+   * @param mappingResults      Mapped results
    * @param responseBundle      FHIR batch response bundle
    * @param batchRequest        FHIR batch request
    * @param problemsAccumulator Spark accumulator for errors
    * @param onFhirClient        Client for FHIR API
    * @param retry               The number of retry for persistence
    */
-  private def checkResults(mappingResultMap: Map[String, FhirMappingResult],
+  private def checkResults(mappingResults: Seq[FhirMappingResult],
                            responseBundle: FHIRTransactionBatchBundle,
                            batchRequest: FhirBatchTransactionRequestBuilder,
                            problemsAccumulator: CollectionAccumulator[FhirMappingResult],
@@ -277,77 +273,102 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
                            retry: Int = 1
                           )(implicit ec: ExecutionContext): Unit = {
     //Find real errors
-    val nonTransientErrors = getNonTransientErrorUUIDs(mappingResultMap, responseBundle)
     val transientErrors = responseBundle.getUUIDsOfTransientErrors()
-    if (nonTransientErrors.nonEmpty || retry == 4) {
+    if (hasNonTransientErrors(mappingResults, responseBundle) || retry == 4) {
       val msg =
         s"!!!There is an error while writing resources to the FHIR Repository.\n" +
           s"\tRepository URL: ${sinkSettings.fhirRepoUrl}\n" +
           s"\tBundle requests: ${batchRequest.request.childRequests.map(_.requestUri).mkString(",")}\n" +
           s"\tBundle response: ${Serialization.write(responseBundle.bundle)}"
 
+      // Previously, we assigned a UUID to each batch request and matched the corresponding mapping result
+      // using the UUID returned in the FHIR response for that batch request. While this approach worked
+      // with onFHIR, it is incompatible with the HAPI FHIR Server, as the server does not return the UUID
+      // in the batch response. Consequently, this code is no longer in use.
+
+      //      responseBundle
+      //        .responses
+      //        .filter(_._2.isError)
+      //        .map(response =>
+      //          mappingResultMap(response._1.get) //Find the mapping result
+      //            .copy(error = Some(FhirMappingError( //Set the error
+      //              code = FhirMappingErrorCodes.INVALID_RESOURCE,
+      //              description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
+      //              expression = Some(Serialization.write(response._2.outcomeIssues))
+      //            )))
+      //        ).foreach(failedResult => problemsAccumulator.add(failedResult))
+
       responseBundle
         .responses
-        .filter(_._2.isError)
-        .map(response =>
-          mappingResultMap(response._1.get) //Find the mapping result
-            .copy(error = Some(FhirMappingError( //Set the error
+        .zipWithIndex // Add indexes to each response
+        .filter(_._1._2.isError) // Filter based on the error condition
+        .map { case ((response, index)) =>
+          mappingResults(index) // Use the index to find the mapping result
+            .copy(error = Some(FhirMappingError( // Set the error
               code = FhirMappingErrorCodes.INVALID_RESOURCE,
               description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
               expression = Some(Serialization.write(response._2.outcomeIssues))
             )))
-        ).foreach(failedResult => problemsAccumulator.add(failedResult))
+        }
+        .foreach(failedResult => problemsAccumulator.add(failedResult))
       logger.error(msg)
     } else if (transientErrors.nonEmpty) {
       //Otherwise (having 409 Conflicts), retry the failed ones
-      retryRequestsWithTransientError(mappingResultMap, responseBundle, problemsAccumulator, onFhirClient, retry)
+      retryRequestsWithTransientError(mappingResults, responseBundle, problemsAccumulator, onFhirClient, retry)
     } else {
-      logger.debug("{} FHIR resources were written to the FHIR repository successfully.", mappingResultMap.size)
+      logger.debug("{} FHIR resources were written to the FHIR repository successfully.", mappingResults.size)
     }
   }
 
   /**
-   * Find the UUIDs of requests with non transient error response
+   * Checks if there are any non-transient errors in the FHIR response bundle.
    *
-   * @param mappingResultMap Mapped results
-   * @param responseBundle   FHIR batch response bundle
-   * @return
+   * A non-transient error is an error that is not expected to resolve on retry.
+   *
+   * @param mappingResults   A sequence of FhirMappingResult objects.
+   * @param responseBundle   A FHIRTransactionBatchBundle containing the responses of a batch operation.
+   * @return                 `true` if there are any non-transient errors, `false` otherwise.
    */
-  private def getNonTransientErrorUUIDs(mappingResultMap: Map[String, FhirMappingResult], responseBundle: FHIRTransactionBatchBundle): Seq[String] = {
+  private def hasNonTransientErrors(mappingResults: Seq[FhirMappingResult], responseBundle: FHIRTransactionBatchBundle): Boolean = {
     responseBundle
       .responses
-      .filter(r =>
+      .zipWithIndex
+      .exists { case (r,i) =>
         r._2.isNonTransientError && //If this is a non-transient error, except the Conditional patch not found case, which we skip the update
           !(
             r._2.httpStatus.intValue() == HttpStatus.SC_NOT_FOUND &&
-              mappingResultMap(r._1.get).mappedFhirResource.get.fhirInteraction.exists(fint => fint.`type` == FHIR_INTERACTIONS.PATCH && fint.condition.nonEmpty)
+              mappingResults(i).mappedFhirResource.get.fhirInteraction.exists(fint => fint.`type` == FHIR_INTERACTIONS.PATCH && fint.condition.nonEmpty)
             )
-      )
-      .map(_._1.get)
+      }
   }
 
   /**
    * Retry the FHIR requests with transient errors
    *
-   * @param mappingResultMap    Mapped results
+   * @param mappingResults      Mapped results
    * @param responseBundle      FHIR batch response bundle
    * @param problemsAccumulator Spark accumulator for errors
    * @param onFhirClient        Client for FHIR API
    * @param retry               The number of retry for persistence
    * @param ec
    */
-  private def retryRequestsWithTransientError(mappingResultMap: Map[String, FhirMappingResult],
+  private def retryRequestsWithTransientError(mappingResults: Seq[FhirMappingResult],
                                               responseBundle: FHIRTransactionBatchBundle,
                                               problemsAccumulator: CollectionAccumulator[FhirMappingResult],
                                               onFhirClient: OnFhirNetworkClient,
                                               retry: Int = 1
                                              )(implicit ec: ExecutionContext): Unit = {
-    val entryIdsForProblematicRequests = responseBundle.getUUIDsOfTransientErrors().toSet
-    val mappingResultsNotPersisted = mappingResultMap.filter(r => entryIdsForProblematicRequests.contains(r._1))
+    // find the indices of responses with the transient errors
+    val transientIndices: Seq[Int] = responseBundle.responses
+      .zipWithIndex.collect {
+        case ((_, response), index) if response.isTransientError => index
+    }
+    // find the corresponding mapping results
+    val mappingResultsNotPersisted: Seq[FhirMappingResult] = transientIndices.map(mappingResults)
     logger.warn(s"Some mapped FHIR content (${mappingResultsNotPersisted.size} entries) is not persisted due to conflicts (409 conflict), retrying (retry #$retry) for them...")
     Thread.sleep(50)
-    val batchRequest = prepareBatchRequest(mappingResultsNotPersisted.toSeq, onFhirClient)
-    executeFhirBatch(batchRequest, mappingResultsNotPersisted.toSeq, problemsAccumulator)
+    val batchRequest = prepareBatchRequest(mappingResultsNotPersisted, onFhirClient)
+    executeFhirBatch(batchRequest, mappingResultsNotPersisted, problemsAccumulator)
       .foreach(retryResponseBundle =>
         checkResults(mappingResultsNotPersisted, retryResponseBundle, batchRequest, problemsAccumulator, onFhirClient, retry + 1)
       )
