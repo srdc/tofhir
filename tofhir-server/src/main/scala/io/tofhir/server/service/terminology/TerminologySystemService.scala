@@ -92,8 +92,15 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
             case Some(ts) =>
               val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
                 jobToBeUpdated.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
-              val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings =
-                terminologyServiceSettings.copy(conceptMapFiles = ts.conceptMaps, codeSystemFiles = ts.codeSystems)
+              // Update concept maps
+              val updatedConceptMaps = terminologyServiceSettings.conceptMapFiles.flatMap(cm =>
+                ts.conceptMaps.find(_.id == cm.id)
+              )
+              // Update code systems
+              val updatedCodeSystems = terminologyServiceSettings.codeSystemFiles.flatMap(cs =>
+                ts.codeSystems.find(_.id == cs.id)
+              )
+              val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings = terminologyServiceSettings.copy(conceptMapFiles = updatedConceptMaps, codeSystemFiles = updatedCodeSystems)
               jobToBeUpdated.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
             // Delete terminology service case
             case None => jobToBeUpdated.copy(terminologyServiceSettings = None)
