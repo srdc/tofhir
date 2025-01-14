@@ -92,18 +92,15 @@ class TerminologySystemService(terminologySystemRepository: ITerminologySystemRe
             case Some(ts) =>
               val terminologyServiceSettings: LocalFhirTerminologyServiceSettings =
                 jobToBeUpdated.terminologyServiceSettings.get.asInstanceOf[LocalFhirTerminologyServiceSettings]
-              val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings = {
-                // If new concept maps or code systems are added to terminology service, do not update job's terminology service.
-                // Otherwise update job's terminology service.
-                if(ts.conceptMaps.length <= terminologyServiceSettings.conceptMapFiles.length && ts.codeSystems.length <= terminologyServiceSettings.codeSystemFiles.length)
-                  terminologyServiceSettings.copy(conceptMapFiles = ts.conceptMaps, codeSystemFiles = ts.codeSystems)
-                else if(ts.conceptMaps.length <= terminologyServiceSettings.conceptMapFiles.length)
-                  terminologyServiceSettings.copy(conceptMapFiles = ts.conceptMaps)
-                else if (ts.codeSystems.length <= terminologyServiceSettings.codeSystemFiles.length)
-                  terminologyServiceSettings.copy(codeSystemFiles = ts.codeSystems)
-                else
-                  terminologyServiceSettings
-              }
+              // Update concept maps
+              val updatedConceptMaps = terminologyServiceSettings.conceptMapFiles.flatMap(cm =>
+                ts.conceptMaps.find(_.id == cm.id)
+              )
+              // Update code systems
+              val updatedCodeSystems = terminologyServiceSettings.codeSystemFiles.flatMap(cs =>
+                ts.codeSystems.find(_.id == cs.id)
+              )
+              val updatedTerminologyServiceSettings: LocalFhirTerminologyServiceSettings = terminologyServiceSettings.copy(conceptMapFiles = updatedConceptMaps, codeSystemFiles = updatedCodeSystems)
               jobToBeUpdated.copy(terminologyServiceSettings = Some(updatedTerminologyServiceSettings))
             // Delete terminology service case
             case None => jobToBeUpdated.copy(terminologyServiceSettings = None)
