@@ -107,9 +107,10 @@ class SchemaConverter(majorFhirVersion: String) {
    * Convert Spark data types to fhir data types and create a Schema.
    * @param structField Spark column metadata
    * @param defaultName Default name for path field
+   * @param isRequired Indicate whether it is a required field
    * @return SimpleStructureDefinition object that defines a Schema
    */
-  def fieldsToSchema(structField: StructField, defaultName: String): SimpleStructureDefinition = {
+  def fieldsToSchema(structField: StructField, defaultName: String, isRequired: Boolean): SimpleStructureDefinition = {
     SimpleStructureDefinition(
       id = structField.name,
       path = defaultName + "." + structField.name,
@@ -131,7 +132,7 @@ class SchemaConverter(majorFhirVersion: String) {
       isPrimitive = true,
       isChoiceRoot = false,
       isArray = false,
-      minCardinality = 0,
+      minCardinality = if(isRequired) 1 else 0,
       maxCardinality = Some(1),
       boundToValueSet = None,
       isValueSetBindingRequired = None,

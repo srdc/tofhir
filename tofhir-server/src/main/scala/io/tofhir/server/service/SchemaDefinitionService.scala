@@ -19,6 +19,7 @@ import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
+import org.apache.spark.sql.functions.col
 
 import scala.concurrent.Future
 
@@ -114,7 +115,6 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
     val dataFrame = try {
       SourceHandler
         .readSource(inferTask.name, ToFhirConfig.sparkSession, inferTask.sourceBinding, inferTask.mappingJobSourceSettings.head._2, schema = None)
-        .limit(1) // It is enough to take the first row to infer the schema.
     } catch {
       case e: FhirMappingException =>
         // Remove the new lines and capitalize the error detail to show it in front-end properly.
@@ -126,8 +126,12 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
     val unnamedSchema = {
       // Schema converter object for mapping spark data types to fhir data types
       val schemaConverter = new SchemaConverter(majorFhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion))
+      // List to store required columns
+      val requiredColumns = dataFrame.columns.filter { colName =>
+        dataFrame.filter(col(colName).isNull || col(colName) === "").count() == 0
+      }.toSeq
       // Map SQL DataTypes to Fhir DataTypes
-      var fieldDefinitions = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
+      var fieldDefinitions = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName, requiredColumns.contains(structField.name)))
       // Remove INPUT_VALIDITY_ERROR fieldDefinition that is added by SourceHandler
       fieldDefinitions = fieldDefinitions.filter(fieldDefinition => fieldDefinition.id != SourceHandler.INPUT_VALIDITY_ERROR)
       SchemaDefinition(url = defaultName, version = SchemaDefinition.VERSION_LATEST, `type` = defaultName, name = defaultName, description = Option.empty, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))

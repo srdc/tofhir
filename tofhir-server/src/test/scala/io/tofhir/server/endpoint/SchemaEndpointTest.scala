@@ -246,9 +246,13 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         val fieldDefinitions = schema.fieldDefinitions.get
         fieldDefinitions.size shouldEqual 4
         fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual "integer"
+        fieldDefinitions.head.minCardinality shouldEqual 1
         fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual "date"
+        fieldDefinitions(1).minCardinality  shouldEqual 1
         fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual "dateTime"
+        fieldDefinitions(2).minCardinality  shouldEqual 1
         fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual "string"
+        fieldDefinitions(3).minCardinality  shouldEqual 0
       }
     }
 
