@@ -1234,18 +1234,3 @@ Or both. This will delete the source files after processing/mapping and save the
 While `archiveMode` works on a file-based basis, `saveErroneousRecords` works for each record/row in the source data.
 
 Please also note that, the `archiveMode` config is only applicable for the file system source type.
-
-## Mapping Job Results with EFK Stack
-This project utilizes the EFK Stack (Elasticsearch, Fluentd, and Kibana) to visualize the results of mapping job executions. 
-Once the EFK Stack is started using the provided [docker-compose.yml](docker/docker-compose.yml), Kibana can be accessed at http://localhost:5601.
-
-### Kibana Dashboards
-After running mapping jobs, you can view their logs via Kibana dashboards.
-#### Executions Dashboard
-This dashboard provides an overview of each execution's result.
-![Executions Dashboard](readme-assets%2Fkibana-executions-dashboard.png)
-To analyze a specific execution, hover over the execution ID and click on the plus icon next to it. Then, select the `Go to Dashboard` option as shown below:
-![Go to Dashboard](readme-assets%2Fkibana-go-to-dashboard.png)
-#### Execution Details Dashboard
-This dashboard displays the results of individual mapping tasks and any corresponding errors.
-![Execution Details Dashboard](readme-assets%2Fkibana-execution-details.png)
