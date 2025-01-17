@@ -1,7 +1,7 @@
 package io.tofhir.common.util
 
 import io.onfhir.api.FHIR_DATA_TYPES
-import io.onfhir.path.annotation.FhirPathFunction
+import io.onfhir.path.annotation.{FhirPathFunction, FhirPathFunctionDocumentation, FhirPathFunctionParameter, FhirPathFunctionReturn}
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
 import io.onfhir.path.{AbstractFhirPathFunctionLibrary, FhirPathEnvironment, FhirPathException, FhirPathExpressionEvaluator, FhirPathResult, FhirPathString, IFhirPathFunctionLibraryFactory}
 
@@ -24,8 +24,32 @@ class CustomMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPath
    * @param dataExpr String data such that byte representation of each 2 consecutive characters represents a number.
    * @return Space separated numbers concatenated in a string
    */
-  @FhirPathFunction(documentation = "\uD83D\uDCDC Decodes the given data and converts it to an array of space separated numbers. Returns the space separated numbers concatenated in a string.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`dataExpr`**  \nString data such that byte representation of each 2 consecutive characters represents a number.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```\n'123 456 123'\n``` \n\uD83D\uDCA1 **E.g.** cst:createTimeSeriesData(%data)",
-    insertText = "cst:createTimeSeriesData(<dataExpr>)", detail = "cst", label = "cst:createTimeSeriesData", kind = "Method", returnType = Seq(FHIR_DATA_TYPES.STRING), inputType = Seq(FHIR_DATA_TYPES.STRING))
+  @FhirPathFunction(
+    documentation = FhirPathFunctionDocumentation(
+      detail = "Decodes the given data and converts it to an array of space separated numbers. Returns the space separated numbers concatenated in a string.",
+      usageWarnings = None,
+      parameters = Some(Seq(
+        FhirPathFunctionParameter(
+          name = "dataExpr",
+          detail = "String data such that byte representation of each 2 consecutive characters represents a number.",
+          examples = None
+        )
+      )),
+      returnValue = FhirPathFunctionReturn(
+        detail = None,
+        examples = Seq("'123 456 123'")
+      ),
+      examples = Seq(
+        "cst:createTimeSeriesData(%data)"
+      )
+    ),
+    insertText = "cst:createTimeSeriesData(<dataExpr>)",
+    detail = "cst",
+    label = "cst:createTimeSeriesData",
+    kind = "Method",
+    returnType = Seq(FHIR_DATA_TYPES.STRING),
+    inputType = Seq(FHIR_DATA_TYPES.STRING)
+  )
   def createTimeSeriesData(dataExpr: ExpressionContext): Seq[FhirPathResult] = {
     val dataResult = new FhirPathExpressionEvaluator(context, current).visit(dataExpr)
     if (dataResult.length > 1 || !dataResult.head.isInstanceOf[FhirPathString]) {
