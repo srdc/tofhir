@@ -9,6 +9,8 @@ source_code,source_system,source_display,unit,profile
 445619006,http://snomed.info/sct,NEWS score,{score},https://aiccelerate.eu/fhir/StructureDefinition/AIC-NEWSScore
 445597002,http://snomed.info/sct,PEWS score,{score},https://aiccelerate.eu/fhir/StructureDefinition/AIC-PEWSScore
 9269-2,http://loinc.org,Galscow Coma Scale (GCS),{score},https://aiccelerate.eu/fhir/StructureDefinition/AIC-GlascowComaScaleObservation
+1234-5,http://loinc.org,Hemogoblin,g/dL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
+1234-5,http://loinc.org,Hemogoblin X,g/cL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
 313002,http://www.nlm.nih.gov/research/umls/rxnorm,NaCl0.9% (cumulative) given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration
 35629,http://www.nlm.nih.gov/research/umls/rxnorm,Ringer  (cumulative) given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration
 33834,http://www.nlm.nih.gov/research/umls/rxnorm,Plasmalyte  (cumulative) given,mL,https://aiccelerate.eu/fhir/StructureDefinition/AIC-MedicationAdministration

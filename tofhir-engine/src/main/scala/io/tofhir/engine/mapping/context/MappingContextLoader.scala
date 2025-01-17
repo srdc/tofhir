@@ -62,16 +62,46 @@ class MappingContextLoader extends IMappingContextLoader {
 
   /**
    * Read concept mappings from the given CSV file.
+   * Example dataset to understand what this function does:
+   * Input CSV content (concept mappings), assumed to be at some file path specified:
+   * -----------------------------
+   * source_code,target_code,display_value
+   * 001,A1,Foo
+   * 001,A2,Bar
+   * 002,B1,Baz
+   * -----------------------------
+   *
+   * Explanation of this structure:
+   * - "source_code" is the key (the first column header), which will group the rows.
+   * - "target_code" and "display_value" are part of the data for each key grouping.
+   *
+   * Expected output of processing:
+   * Map(
+   *   "001" -> Seq(
+   *     Map("source_code" -> "001", "target_code" -> "A1", "display_value" -> "Foo"),
+   *     Map("source_code" -> "001", "target_code" -> "A2", "display_value" -> "Bar")
+   *   ),
+   *   "002" -> Seq(
+   *     Map("source_code" -> "002", "target_code" -> "B1", "display_value" -> "Baz")
+   *   )
+   * )
    *
    * @param filePath
    * @return
    */
-  private def readConceptMapContextFromCSV(filePath: String): Future[Map[String, Map[String, String]]] = {
+  private def readConceptMapContextFromCSV(filePath: String): Future[Map[String, Seq[Map[String, String]]]] = {
     readFromCSV(filePath) map {
       case (columns, records) =>
         //val (firstColumnName, _) = records.head.head // Get the first element in the records list and then get the first (k,v) pair to get the name of the first column.
-        records.foldLeft(Map[String, Map[String, String]]()) { (conceptMap, columnMap) =>
-          conceptMap + (columnMap(columns.head)-> columnMap)
+        val columnHeadKey = columns.head
+        records.foldLeft(Map[String, Seq[Map[String, String]]]()) { (conceptMap, columnMap) =>
+          val key = columnMap(columnHeadKey)
+          // If a source code has not been encountered before, add it as the first element.
+          // Otherwise, append the new target values to the existing sequence.
+          conceptMap.updatedWith(key) {
+            case Some(existingValues) => Some(existingValues :+ columnMap)
+            case None => Some(Seq(columnMap))
+          }
         }
     }
   }

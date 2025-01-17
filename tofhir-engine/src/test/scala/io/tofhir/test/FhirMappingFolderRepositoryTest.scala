@@ -45,12 +45,21 @@ class FhirMappingFolderRepositoryTest extends AsyncFlatSpec with ToFhirTestSpec 
     val mappingContextLoader = new MappingContextLoader
     mappingContextLoader.retrieveContext(contextDefinition) map { context =>
       val conceptMapContext = context.asInstanceOf[ConceptMapContext]
-      conceptMapContext.concepts.size shouldBe 13
+      conceptMapContext.concepts.size shouldBe 14
 
       // source_code,source_system,source_display,unit,profile
       // 9187-6,http://loinc.org,Urine Output,cm3,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
-      conceptMapContext.concepts("9187-6")("source_system") shouldBe "http://loinc.org"
-      conceptMapContext.concepts("9187-6")("unit") shouldBe "cm3"
+      conceptMapContext.concepts("9187-6").head("source_system") shouldBe "http://loinc.org"
+      conceptMapContext.concepts("9187-6").head("unit") shouldBe "cm3"
+
+      conceptMapContext.concepts("1234-5").length shouldBe 2
+      conceptMapContext.concepts("1234-5").head("source_system") shouldBe "http://loinc.org"
+      conceptMapContext.concepts("1234-5").head("source_display") shouldBe "Hemogoblin"
+      conceptMapContext.concepts("1234-5").head("unit") shouldBe "g/dL"
+
+      conceptMapContext.concepts("1234-5")(1)("source_system") shouldBe "http://loinc.org"
+      conceptMapContext.concepts("1234-5")(1)("source_display") shouldBe "Hemogoblin X"
+      conceptMapContext.concepts("1234-5")(1)("unit") shouldBe "g/cL"
     }
   }
 
@@ -60,12 +69,12 @@ class FhirMappingFolderRepositoryTest extends AsyncFlatSpec with ToFhirTestSpec 
     val mappingContextLoader = new MappingContextLoader
     mappingContextLoader.retrieveContext(contextDefinition) map { context =>
       val conceptMapContext = context.asInstanceOf[ConceptMapContext]
-      conceptMapContext.concepts.size shouldBe 13
+      conceptMapContext.concepts.size shouldBe 14
 
       // source_code,source_system,source_display,unit,profile
       // 9187-6,http://loinc.org,Urine Output,cm3,https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation
-      conceptMapContext.concepts("9187-6")("source_system") shouldBe "http://loinc.org"
-      conceptMapContext.concepts("9187-6")("unit") shouldBe "cm3"
+      conceptMapContext.concepts("9187-6").head("source_system") shouldBe "http://loinc.org"
+      conceptMapContext.concepts("9187-6").head("unit") shouldBe "cm3"
     }
   }
 
