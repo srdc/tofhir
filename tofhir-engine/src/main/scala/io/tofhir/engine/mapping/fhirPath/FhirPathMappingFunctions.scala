@@ -132,18 +132,13 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
     val evaluator = new FhirPathExpressionEvaluator(context, current)
     // Should return the code of the concept whose mapping is requested
     evaluator.visit(keyExpr) match {
-      case Nil =>
-        Nil
+      case Nil => Seq.empty
       case Seq(FhirPathString(conceptCode)) =>
         conceptMapContext
           .concepts
           .get(conceptCode)
-          .map {
-            case mws:Map[String, String] if mws.size == 1 => FhirPathString(mws.values.head)
-            case mws =>
-              FhirPathComplex(JObject(mws.toList.map(i => i._1 -> JString(i._2))))
-          }
-          .toSeq
+          .map(mws => mws.map(res => FhirPathComplex(JObject(res.toList.map(i => i._1 -> JString(i._2))))))
+          .getOrElse(Seq.empty)
       case _ =>
         throw new FhirPathException(s"Invalid function call 'getConcept', given expression for keyExpr:${keyExpr.getText} for the concept code should return a string value!")
     }
@@ -191,21 +186,18 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
       throw new FhirPathException(s"Invalid function call 'getConcept', given expression for keyExpr:${keyExpr.getText} for the concept code should return a string value!")
     }
     //If conceptCode returns empty, also return empty, if there is no such key or target column is null also return empty
-    val result =
+    val result: Seq[FhirPathResult] =
       conceptCodeResult
-      .headOption
-      .map(_.asInstanceOf[FhirPathString].s) match {
-        case None => Nil
-        case Some(conceptCode) =>
-          conceptMapContext
-            .concepts
-            .get(conceptCode)
-            .flatMap(codeEntry =>
-              codeEntry.get(targetField).filter(_ != "")
-            )
-            .map(mappedValue =>  FhirPathString(mappedValue))
-            .toSeq
-    }
+        .headOption
+        .map(_.asInstanceOf[FhirPathString].s)
+        .flatMap { conceptCode =>
+          conceptMapContext.concepts.get(conceptCode).map { conceptMapEntries =>
+            conceptMapEntries
+              .flatMap(_.get(targetField))
+              .filter(_.nonEmpty)
+              .map(mappedValue => FhirPathString(mappedValue))
+          }
+      }.getOrElse(Seq.empty)
     result
   }
 

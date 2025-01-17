@@ -14,11 +14,15 @@ trait FhirMappingContext {
  *                 From a CSV who has a header like "source_code,source_system,source_display,unit,profile", and where
  *                 source_code is 9110-8, the concepts Map can be as in the following:
  *
- *                 Map[9110-8 -> Map[(source_system -> http://loinc.org,Bleeding (cumulative)),
- *                 (unit -> mL),
- *                 (profile -> https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation)]]
+ *                 Map[9110-8 -> Seq [
+ *                                    Map[(source_system -> http://loinc.org,Bleeding (cumulative)),
+ *                                        (unit -> mL),
+ *                                        (profile -> https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation)]
+ *                 ]]
+ *
+ *
  */
-case class ConceptMapContext(concepts: Map[String, Map[String, String]]) extends FhirMappingContext {
+case class ConceptMapContext(concepts: Map[String, Seq[Map[String, String]]]) extends FhirMappingContext {
   override def toContextObject: JObject = JObject()
 }
 
