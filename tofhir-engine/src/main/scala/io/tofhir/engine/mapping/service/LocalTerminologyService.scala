@@ -25,7 +25,7 @@ class LocalTerminologyService(settings:LocalFhirTerminologyServiceSettings) exte
   //All csv files given in the configured folder
   val relatedFiles:Map[String, File] =
     IOUtil
-      .getFilesFromFolder(new File(FileUtils.getPath(settings.folderPath).toUri), withExtension = Some(FileUtils.FileExtensions.CSV.toString), recursively = Some(true))
+      .getFilesFromFolder(new File(FileUtils.getPath(settings.folderPath).toUri), recursively = true, ignoreHidden = true, withExtension = Some(FileUtils.FileExtensions.CSV.toString))
       .map(f => f.getName -> f)
       .toMap
 

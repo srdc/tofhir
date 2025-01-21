@@ -34,7 +34,7 @@ class FhirMappingFolderRepository(folderUri: URI) extends IFhirMappingRepository
     val folder = new File(folderUri)
     var files = Seq.empty[File]
     try {
-      files = IOUtil.getFilesFromFolder(folder, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
+      files = IOUtil.getFilesFromFolder(folder, recursively = true, ignoreHidden = true, withExtension = Some(FileExtensions.JSON.toString))
     } catch {
       case e: Throwable => throw FhirMappingException(s"Given folder for the mapping repository is not valid.", e)
     }

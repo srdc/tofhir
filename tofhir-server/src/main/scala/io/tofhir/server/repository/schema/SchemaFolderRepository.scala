@@ -246,7 +246,7 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectReposito
       var schemaFiles = Seq.empty[File]
       try {
         // We may need to give a warning if there are non-json files or other directories inside the project folders.
-        schemaFiles = IOUtil.getFilesFromFolder(projectFolder, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(false))
+        schemaFiles = IOUtil.getFilesFromFolder(projectFolder, recursively = true, ignoreHidden = true, withExtension = Some(FileExtensions.JSON.toString))
       } catch {
         case e: Throwable => throw FhirMappingException(s"Given folder for the schema repository is not valid at path ${projectFolder.getAbsolutePath}", e)
       }

@@ -213,7 +213,7 @@ class ProjectMappingFolderRepository(mappingRepositoryFolderPath: String, projec
     projectDirectories.foreach { projectDirectory =>
       // mapping-id -> FhirMapping
       val fhirMappingMap: mutable.Map[String, FhirMapping] = mutable.Map.empty
-      val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
+      val files = IOUtil.getFilesFromFolder(projectDirectory, recursively = true, ignoreHidden = true, withExtension = Some(FileExtensions.JSON.toString))
       files.foreach { file =>
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()

@@ -192,7 +192,7 @@ class JobFolderRepository(jobRepositoryFolderPath: String, projectRepository: IP
     projectDirectories.foreach { projectDirectory =>
       // job-id -> FhirMappingJob
       val fhirJobMap: mutable.Map[String, FhirMappingJob] = mutable.Map.empty
-      val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
+      val files = IOUtil.getFilesFromFolder(projectDirectory, recursively = true, ignoreHidden = true, withExtension = Some(FileExtensions.JSON.toString))
       files.map { file =>
         val source = Source.fromFile(file, StandardCharsets.UTF_8.name()) // read the JSON file
         val fileContent = try source.mkString finally source.close()
