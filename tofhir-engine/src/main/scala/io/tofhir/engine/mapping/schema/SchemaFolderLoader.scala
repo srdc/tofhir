@@ -59,7 +59,7 @@ class SchemaFolderLoader(folderUri: URI, majorFhirVersion: String = MajorFhirVer
   private def getListOfSchemas: Seq[File] = {
     val folder = new File(folderUri)
     try {
-      IOUtil.getFilesFromFolder(folder, withExtension = Some(FileExtensions.JSON.toString), recursively = Some(true))
+      IOUtil.getFilesFromFolder(folder, recursively = true, ignoreHidden = true, withExtension = Some(FileExtensions.JSON.toString))
     } catch {
       case e: Throwable => throw FhirMappingException(s"Given folder for the schema repository is not valid.", e)
     }

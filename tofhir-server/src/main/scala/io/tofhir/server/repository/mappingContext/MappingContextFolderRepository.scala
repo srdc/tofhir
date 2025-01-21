@@ -233,7 +233,7 @@ class MappingContextFolderRepository(mappingContextRepositoryFolderPath: String,
     var directories = Seq.empty[File]
     directories = folder.listFiles.filter(_.isDirectory).toSeq
     directories.foreach { projectDirectory =>
-      val files = IOUtil.getFilesFromFolder(projectDirectory, withExtension = None, recursively = Some(true))
+      val files = IOUtil.getFilesFromFolder(projectDirectory, recursively = true, ignoreHidden = true, withExtension = None)
       val fileNameList = files.map(_.getName)
       this.mappingContextDefinitions.put(projectDirectory.getName, fileNameList)
     }
