@@ -39,13 +39,8 @@ import scala.language.postfixOps
 class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectRepository: IProjectRepository) extends AbstractSchemaRepository {
 
   private val logger: Logger = Logger(this.getClass)
-
-  private val fhirConfigReader: IFhirConfigReader = new FSConfigReader(
-    fhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion),
-    profilesPath = Some(FileUtils.getPath(schemaRepositoryFolderPath).toString))
-  // BaseFhirConfig will act as a validator for the schema definitions by holding the ProfileDefinitions in memory
-  private var baseFhirConfig: BaseFhirConfig = initBaseFhirConfig(fhirConfigReader)
-  private val simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
+  private var baseFhirConfig: BaseFhirConfig = initBaseFhirConfig()
+  private var simpleStructureDefinitionService = new SimpleStructureDefinitionService(baseFhirConfig)
 
   // Schema definition cache: project id -> schema id -> schema definition
   private val schemaDefinitions: mutable.Map[String, mutable.Map[String, SchemaDefinition]] = mutable.Map.empty[String, mutable.Map[String, SchemaDefinition]]
@@ -312,10 +307,14 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectReposito
   /**
    * Try to initialize the BaseFhirConfig. Otherwise print the error message and halt.
    *
-   * @param fhirConfigReader config reader for BaseFhirConfig
    * @return
    */
-  private def initBaseFhirConfig(fhirConfigReader: IFhirConfigReader): BaseFhirConfig = {
+  private def initBaseFhirConfig(): BaseFhirConfig = {
+    // BaseFhirConfig will act as a validator for the schema definitions by holding the ProfileDefinitions in memory
+    val fhirConfigReader: IFhirConfigReader = new FSConfigReader(
+      fhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion),
+      profilesPath = Some(FileUtils.getPath(schemaRepositoryFolderPath).toString))
+
     val folder = FileUtils.getPath(schemaRepositoryFolderPath).toFile
     if (!folder.exists()) {
       folder.mkdirs()
@@ -530,7 +529,8 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectReposito
    */
   override def invalidate(): Unit = {
     this.schemaDefinitions.clear()
-    this.baseFhirConfig = initBaseFhirConfig(fhirConfigReader)
+    this.baseFhirConfig = initBaseFhirConfig()
+    this.simpleStructureDefinitionService = new SimpleStructureDefinitionService(this.baseFhirConfig)
     initMap(schemaRepositoryFolderPath)
   }
 
