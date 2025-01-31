@@ -76,8 +76,14 @@ case class FhirMappingJobResult(mappingJobExecution: FhirMappingJobExecution,
     markerMap.put("projectId", mappingJobExecution.projectId)
     markerMap.put("executionId", mappingJobExecution.id)
     markerMap.put("mappingTaskName", mappingTaskName.orNull)
-    markerMap.put("result", result)
     markerMap.put("chunkResult", chunkResult)
+    // Store the overall execution result if chunkResult is null or absent.
+    // Otherwise, mark the result as "STARTED" to indicate an ongoing process.
+    if(!chunkResult){
+      markerMap.put("result", result)
+    } else {
+      markerMap.put("result", FhirMappingJobResult.STARTED)
+    }
     markerMap.put("numOfInvalids", numOfInvalids)
     markerMap.put("numOfNotMapped", numOfNotMapped)
     markerMap.put("numOfFhirResources", numOfFhirResources)

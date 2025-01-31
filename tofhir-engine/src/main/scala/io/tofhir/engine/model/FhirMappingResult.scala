@@ -116,6 +116,9 @@ case class FhirMappingResult(
     markerMap.put("errorDesc", error.get.description)
     markerMap.put("errorExpr", error.get.expression.getOrElse(""))
     markerMap.put("eventId", eventId)
+    // Set the result to "STARTED" to ensure proper display in the Kibana dashboard,
+    // preventing the display of a "-" in the relevant column when the result is not yet available.
+    markerMap.put("result", FhirMappingJobResult.STARTED)
     // The current timestamp is automatically added to the log entry when it is sent to Elasticsearch or written to a file.
     // As a result, there is no need to manually add a "@timestamp" field.
     // However, during the process of writing the log to Elasticsearch, the timestamp is rounded, resulting in a loss of precision.
