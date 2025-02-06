@@ -246,9 +246,11 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
               _.listFiles().headOption.map( // mapping task folder
               _.listFiles())) // source folder i.e. main source, secondary source etc.
             sourceFolders.isDefined && sourceFolders.get.length == 2 && {
-              val mainSource = sourceFolders.get.head
+              val mainSource = sourceFolders.get match {
+                case folders if folders.head.getName.contentEquals("mainSource") => folders.head
+                case folders => folders.last
+              }
               val csvFile = mainSource.listFiles().head
-              mainSource.getName.contentEquals("mainSource") &&
                 // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
                 // the files are moved from "_temporary" to the parent output directory, and "_temporary" is deleted. This
                 // intermediate step can be observed during testing, which is why we check if the file is a CSV.
@@ -257,9 +259,11 @@ class MappingExecutionEndpointTest extends BaseEndpointTest with OnFhirTestConta
                 csvFileContent.count() == 1
               }
             } && {
-              val secondarySource = sourceFolders.get.last
+              val secondarySource = sourceFolders.get match {
+                case folders if folders.last.getName.contentEquals("patientGender") => folders.last
+                case folders => folders.head
+              }
               val csvFile = secondarySource.listFiles().head
-              secondarySource.getName.contentEquals("patientGender") &&
                 // Spark initially writes data to files in the "_temporary" directory. After all tasks complete successfully,
                 // the files are moved from "_temporary" to the parent output directory, and "_temporary" is deleted. This
                 // intermediate step can be observed during testing, which is why we check if the file is a CSV.
