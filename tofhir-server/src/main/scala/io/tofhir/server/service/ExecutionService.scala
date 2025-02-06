@@ -18,7 +18,8 @@ import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import org.apache.commons.io
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException
-import org.apache.spark.sql.KeyValueGroupedDataset
+import org.apache.spark.SparkException
+import org.apache.spark.sql.{AnalysisException, KeyValueGroupedDataset}
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JBool, JObject, JString, JValue}
 
@@ -226,7 +227,24 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
           case other => other // Keep other source settings unchanged
         }
 
-        val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, jobSourceSettings, jobId = Some(jobId), isTestExecution = true)
+        val (fhirMapping, mappingJobSourceSettings, dataFrame) =
+          try {
+            fhirMappingJobManager.readJoinSourceData(mappingTask, jobSourceSettings, jobId = Some(jobId), isTestExecution = true)
+          } catch {
+            // Check if the root cause of the exception is an AnalysisException due to a missing file path.
+            // If the error class is PATH_NOT_FOUND, extract and clean up the message by removing the prefix,
+            // then throw a user-friendly BadRequest error with the relevant details.
+            // Otherwise, rethrow the original exception.
+            case e: Exception =>
+              val PATH_NOT_FOUND = "PATH_NOT_FOUND"
+              Option(e.getCause) match {
+                case Some(ae: AnalysisException) if ae.getErrorClass.contentEquals(PATH_NOT_FOUND) =>
+                  val cleanMessage = ae.getMessage.stripPrefix(s"[$PATH_NOT_FOUND] ").trim
+                  throw BadRequest("File Not Found", cleanMessage)
+                case _ =>
+                  throw e
+              }
+          }
         val selectedDataFrame = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
           .distinct() // Remove duplicate rows to ensure each FHIR Resource is represented only once per source.
         // This prevents confusion for users in the UI, as displaying the same resource multiple times could lead to misunderstandings.
@@ -252,6 +270,11 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
                 case _ =>
                   throw ee
               }
+            case se: SparkException =>
+              throw BadRequest(
+                "Invalid Source File",
+                se.getCause.getMessage.replace("\n", " "), Some(se)
+              )
             case e: Exception =>
               throw e
           }
