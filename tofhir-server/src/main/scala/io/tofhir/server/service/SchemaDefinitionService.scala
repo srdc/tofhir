@@ -11,6 +11,7 @@ import io.tofhir.engine.Execution.actorSystem.dispatcher
 import io.tofhir.engine.config.ToFhirConfig
 import io.tofhir.engine.data.read.SourceHandler
 import io.tofhir.engine.mapping.schema.SchemaConverter
+import io.tofhir.engine.model.{SqlSource, SqlSourceSettings}
 import io.tofhir.engine.model.exception.FhirMappingException
 import io.tofhir.engine.util.redcap.RedCapUtil
 import io.tofhir.engine.util.{CsvUtil, FhirVersionUtil}
@@ -110,24 +111,43 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
    * @return SchemaDefinition object containing the field type information
    */
   def inferSchema(inferTask: InferTask): Future[Option[SchemaDefinition]] = {
-    // Execute SQL and get the dataFrame
-    val dataFrame = try {
-      SourceHandler
-        .readSource(inferTask.name, ToFhirConfig.sparkSession, inferTask.sourceBinding, inferTask.mappingJobSourceSettings.head._2, schema = None)
-        .limit(1) // It is enough to take the first row to infer the schema.
-    } catch {
-      case e: FhirMappingException =>
-        // Remove the new lines and capitalize the error detail to show it in front-end properly.
-        throw BadRequest(e.getMessage, e.getCause.toString.capitalize.replace("\n", " "))
+
+    // Initialize a SchemaConverter for our FHIR version
+    val schemaConverter = new SchemaConverter(majorFhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion))
+
+    // Extract the first mapping job source setting
+    val sourceSettings = inferTask.mappingJobSourceSettings
+      .head // We are sure that we only have a single sourceSetting since this is an infer task
+      ._2 // Get the MappingJobSourceSettings object
+
+    val effectiveSchema  = sourceSettings match {
+      case sqlSourceSettings: SqlSourceSettings =>
+        val sqlSource = inferTask.sourceBinding match {
+          case ss: SqlSource => ss
+          case _ => throw new IllegalStateException("Source binding must be SqlSource if the sourceSettings is SqlSourceSettings.")
+        }
+        val tableSparkSchema = schemaConverter.getTableSchema(sqlSourceSettings.databaseUrl, sqlSourceSettings.username, sqlSourceSettings.password, sqlSource.tableName.getOrElse(sqlSource.query.get), sqlSource.query.isDefined)
+        tableSparkSchema
+      case _ =>
+        // Execute SQL and get the dataFrame
+        val dataFrame = try {
+          SourceHandler
+            .readSource(inferTask.name, ToFhirConfig.sparkSession, inferTask.sourceBinding, inferTask.mappingJobSourceSettings.head._2, schema = None)
+            .limit(1) // It is enough to take the first row to infer the schema.
+        } catch {
+          case e: FhirMappingException =>
+            // Remove the new lines and capitalize the error detail to show it in front-end properly.
+            throw BadRequest(e.getMessage, e.getCause.toString.capitalize.replace("\n", " "))
+        }
+        dataFrame.schema // Get the schema inferred by Spark
     }
+
     // Default name for undefined information
     val defaultName: String = "Unnamed"
     // Create unnamed Schema definition by infer the schema from DataFrame
     val unnamedSchema = {
-      // Schema converter object for mapping spark data types to fhir data types
-      val schemaConverter = new SchemaConverter(majorFhirVersion = FhirVersionUtil.getMajorFhirVersion(ToFhirConfig.engineConfig.schemaRepositoryFhirVersion))
       // Map SQL DataTypes to Fhir DataTypes
-      var fieldDefinitions = dataFrame.schema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
+      var fieldDefinitions = effectiveSchema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
       // Remove INPUT_VALIDITY_ERROR fieldDefinition that is added by SourceHandler
       fieldDefinitions = fieldDefinitions.filter(fieldDefinition => fieldDefinition.id != SourceHandler.INPUT_VALIDITY_ERROR)
       SchemaDefinition(url = defaultName, version = SchemaDefinition.VERSION_LATEST, `type` = defaultName, name = defaultName, description = Option.empty, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))

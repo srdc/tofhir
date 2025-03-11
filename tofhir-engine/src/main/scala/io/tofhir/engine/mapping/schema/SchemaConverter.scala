@@ -9,6 +9,9 @@ import io.onfhir.definitions.common.model.{DataTypeWithProfiles, SimpleStructure
 import io.tofhir.engine.util.MajorFhirVersion
 import org.apache.spark.sql.types._
 
+import java.sql.{Connection, DriverManager, ResultSetMetaData, Types}
+import scala.util.Using
+
 /**
  * Utility class to convert schema representations in [[Resource]] format into Spark's [[StructType]]
  *
@@ -105,6 +108,7 @@ class SchemaConverter(majorFhirVersion: String) {
 
   /**
    * Convert Spark data types to fhir data types and create a Schema.
+   *
    * @param structField Spark column metadata
    * @param defaultName Default name for path field
    * @return SimpleStructureDefinition object that defines a Schema
@@ -131,7 +135,7 @@ class SchemaConverter(majorFhirVersion: String) {
       isPrimitive = true,
       isChoiceRoot = false,
       isArray = false,
-      minCardinality = 0,
+      minCardinality = if(structField.nullable) 0 else 1,
       maxCardinality = Some(1),
       boundToValueSet = None,
       isValueSetBindingRequired = None,
@@ -147,6 +151,82 @@ class SchemaConverter(majorFhirVersion: String) {
       comment = None,
       elements = None
     )
+  }
+
+  /**
+   * Get the Spark schema from database metadata
+   *
+   * @param jdbcUrl
+   * @param tableName
+   * @param user
+   * @param password
+   * @return
+   */
+  def getTableSchema(jdbcUrl: String, user: String, password: String, sqlOrTable: String, isQuery: Boolean): StructType = {
+
+    // Helper: splits a fully qualified table name into (schema, table)
+    // If there's no dot, returns (null, tableName)
+    def splitQualifiedTableName(tableName: String): (String, String) = {
+      val parts = tableName.split("\\.", 2)
+      if (parts.length == 2) (parts(0), parts(1)) else (null, tableName)
+    }
+
+    Using.Manager { use =>
+      val connection = use(DriverManager.getConnection(jdbcUrl, user, password))
+      if (isQuery) {
+        // For SQL queries, execute the query with a limit of zero rows
+        val statement = use(connection.createStatement())
+        val sqlWithLimit = s"($sqlOrTable) LIMIT 0"
+        val rs = use(statement.executeQuery(sqlWithLimit))
+        val meta = rs.getMetaData
+        val fields = (1 to meta.getColumnCount).map { i =>
+          val columnName = meta.getColumnLabel(i)
+          val sqlType = meta.getColumnType(i)
+          val isNullable = meta.isNullable(i) != ResultSetMetaData.columnNoNulls
+          StructField(columnName, mapSqlTypeToSpark(sqlType), nullable = isNullable)
+        }
+        StructType(fields)
+      } else {
+        // For a table name, use JDBC metadata. If the table name is qualified,
+        // split it into schema (or catalog) and table.
+        val (dbSchema, dbTableName) = splitQualifiedTableName(sqlOrTable)
+        // For a table name, use JDBC metadata to get the column definitions
+        val metaData = connection.getMetaData
+        val rs = use(metaData.getColumns(null, dbSchema, dbTableName, null))
+        val fields = Iterator.continually(rs)
+          .takeWhile(_.next())
+          .map { rs =>
+            val columnName = rs.getString("COLUMN_NAME")
+            val sqlType = rs.getInt("DATA_TYPE")
+            val isNullable = rs.getString("IS_NULLABLE") == "YES"
+            StructField(columnName, mapSqlTypeToSpark(sqlType), nullable = isNullable)
+          }
+          .toSeq
+        StructType(fields)
+      }
+    }.getOrElse(throw new RuntimeException("Failed to obtain schema from JDBC source"))
+  }
+
+  /**
+   * Map SQL data types to Spark data types for schema conversion
+   *
+   * @param sqlType
+   * @return
+   */
+  def mapSqlTypeToSpark(sqlType: Int): DataType = sqlType match {
+    case Types.VARCHAR | Types.LONGVARCHAR | Types.CHAR | Types.NCHAR | Types.NVARCHAR => StringType
+    case Types.INTEGER | Types.TINYINT | Types.SMALLINT => IntegerType
+    case Types.BIGINT => LongType
+    case Types.FLOAT | Types.REAL => FloatType
+    case Types.DOUBLE | Types.NUMERIC | Types.DECIMAL => DoubleType
+    case Types.BOOLEAN | Types.BIT => BooleanType
+    case Types.DATE => DateType
+    case Types.TIMESTAMP | Types.TIMESTAMP_WITH_TIMEZONE => TimestampType
+    case Types.TIME | Types.TIME_WITH_TIMEZONE => TimestampType
+    case Types.BINARY | Types.VARBINARY | Types.LONGVARBINARY => BinaryType
+    case Types.ARRAY => ArrayType(StringType) // Default assumption
+    case Types.JAVA_OBJECT | Types.STRUCT | Types.OTHER => StringType // Fallback for unknown types
+    case _ => StringType // Default for unsupported types
   }
 
 }
