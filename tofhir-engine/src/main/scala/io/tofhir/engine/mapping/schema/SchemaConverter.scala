@@ -9,7 +9,7 @@ import io.onfhir.definitions.common.model.{DataTypeWithProfiles, SimpleStructure
 import io.tofhir.engine.util.MajorFhirVersion
 import org.apache.spark.sql.types._
 
-import java.sql.{Connection, DriverManager, ResultSetMetaData, Types}
+import java.sql.{Connection, DriverManager, ResultSetMetaData, SQLException, Types}
 import scala.util.Using
 
 /**
@@ -135,7 +135,7 @@ class SchemaConverter(majorFhirVersion: String) {
       isPrimitive = true,
       isChoiceRoot = false,
       isArray = false,
-      minCardinality = if(structField.nullable) 0 else 1,
+      minCardinality = if (structField.nullable) 0 else 1,
       maxCardinality = Some(1),
       boundToValueSet = None,
       isValueSetBindingRequired = None,
@@ -171,40 +171,56 @@ class SchemaConverter(majorFhirVersion: String) {
       if (parts.length == 2) (parts(0), parts(1)) else (null, tableName)
     }
 
-    Using.Manager { use =>
-      val connection = use(DriverManager.getConnection(jdbcUrl, user, password))
-      if (isQuery) {
-        // For SQL queries, execute the query with a limit of zero rows
-        val statement = use(connection.createStatement())
-        val sqlWithLimit = s"($sqlOrTable) LIMIT 0"
-        val rs = use(statement.executeQuery(sqlWithLimit))
-        val meta = rs.getMetaData
-        val fields = (1 to meta.getColumnCount).map { i =>
-          val columnName = meta.getColumnLabel(i)
-          val sqlType = meta.getColumnType(i)
-          val isNullable = meta.isNullable(i) != ResultSetMetaData.columnNoNulls
-          StructField(columnName, mapSqlTypeToSpark(sqlType), nullable = isNullable)
+    try {
+      Using.Manager { use =>
+        val connection = try {
+          use(DriverManager.getConnection(jdbcUrl, user, password))
+        } catch {
+          case e: SQLException =>
+            throw new RuntimeException(s"Failed to establish JDBC connection: ${e.getMessage}", e)
+          case e: Throwable =>
+            throw new RuntimeException(s"Unexpected error while establishing JDBC connection: ${e.getMessage}", e)
         }
-        StructType(fields)
-      } else {
-        // For a table name, use JDBC metadata. If the table name is qualified,
-        // split it into schema (or catalog) and table.
-        val (dbSchema, dbTableName) = splitQualifiedTableName(sqlOrTable)
-        // For a table name, use JDBC metadata to get the column definitions
-        val metaData = connection.getMetaData
-        val rs = use(metaData.getColumns(null, dbSchema, dbTableName, null))
-        val fields = Iterator.continually(rs)
-          .takeWhile(_.next())
-          .map { rs =>
-            val columnName = rs.getString("COLUMN_NAME")
-            val sqlType = rs.getInt("DATA_TYPE")
-            val isNullable = rs.getString("IS_NULLABLE") == "YES"
-            StructField(columnName, mapSqlTypeToSpark(sqlType), nullable = isNullable)
+        if (isQuery) {
+          // For SQL queries, execute the query with a limit of zero rows
+          val statement = use(connection.createStatement())
+          val sqlWithLimit = s"($sqlOrTable) LIMIT 0"
+          try {
+            val rs = use(statement.executeQuery(sqlWithLimit))
+            val meta = rs.getMetaData
+            val fields = (1 to meta.getColumnCount).map { i =>
+              val columnName = meta.getColumnLabel(i)
+              val sqlType = meta.getColumnType(i)
+              val isNullable = meta.isNullable(i) != ResultSetMetaData.columnNoNulls
+              StructField(columnName, mapSqlTypeToSpark(sqlType), nullable = isNullable)
+            }
+            StructType(fields)
+          } catch {
+            case e: SQLException =>
+              throw new RuntimeException(s"Failed to execute SQL query for schema inference: ${e.getMessage}", e)
+            case e: Throwable =>
+              throw new RuntimeException(s"Unexpected error during schema inference: ${e.getMessage}", e)
           }
-          .toSeq
-        StructType(fields)
-      }
-    }.getOrElse(throw new RuntimeException("Failed to obtain schema from JDBC source"))
+        } else {
+          // For a table name, use JDBC metadata. If the table name is qualified,
+          // split it into schema (or catalog) and table.
+          val (dbSchema, dbTableName) = splitQualifiedTableName(sqlOrTable)
+          // For a table name, use JDBC metadata to get the column definitions
+          val metaData = connection.getMetaData
+          val rs = use(metaData.getColumns(null, dbSchema, dbTableName, null))
+          val fields = Iterator.continually(rs)
+            .takeWhile(_.next())
+            .map { rs =>
+              val columnName = rs.getString("COLUMN_NAME")
+              val sqlType = rs.getInt("DATA_TYPE")
+              val isNullable = rs.getString("IS_NULLABLE") == "YES"
+              StructField(columnName, mapSqlTypeToSpark(sqlType), nullable = isNullable)
+            }
+            .toSeq
+          StructType(fields)
+        }
+      }.get
+    }
   }
 
   /**
