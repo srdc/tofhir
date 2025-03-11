@@ -182,7 +182,7 @@ class FhirRepositoryWriter(sinkSettings: FhirRepositorySinkSettings) extends Bas
                 error = Some(
                   FhirMappingError(
                     code = FhirMappingErrorCodes.INVALID_RESOURCE,
-                    description = "Resource is not a valid FHIR resource or conforming to the indicated profiles!",
+                    description = "Resource is not a valid FHIR resource or does not conform to the indicated profiles. Additionally, this resource might be skipped due to duplicate entries in the batch/transaction!",
                     expression = Some(Serialization.write(validationErrorsOfMappings.getOrElse(index, None)))
                   )
                 )
