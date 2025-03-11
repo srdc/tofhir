@@ -20,6 +20,7 @@ import io.tofhir.server.model.{ImportSchemaSettings, InferTask}
 import io.tofhir.server.repository.mapping.IMappingRepository
 import io.tofhir.server.repository.schema.ISchemaRepository
 import org.apache.hadoop.shaded.org.apache.http.HttpStatus
+import org.apache.spark.sql.types.StructType
 
 import scala.concurrent.Future
 
@@ -120,26 +121,43 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
       .head // We are sure that we only have a single sourceSetting since this is an infer task
       ._2 // Get the MappingJobSourceSettings object
 
-    val effectiveSchema  = sourceSettings match {
+    // Inner function to call from multiple lines below so that the schema is inferred after read by spark.
+    def inferSchemaFromSparkRead(): StructType = {
+      // Execute SQL and get the dataFrame
+      val dataFrame = try {
+        SourceHandler
+          .readSource(inferTask.name, ToFhirConfig.sparkSession, inferTask.sourceBinding, sourceSettings, schema = None)
+          .limit(1) // It is enough to take the first row to infer the schema.
+      } catch {
+        case e: FhirMappingException =>
+          // Remove the new lines and capitalize the error detail to show it in front-end properly.
+          throw BadRequest(e.getMessage, e.getCause.toString.capitalize.replace("\n", " "))
+      }
+      dataFrame.schema // Get the schema inferred by Spark
+    }
+
+    val effectiveSchema = sourceSettings match {
       case sqlSourceSettings: SqlSourceSettings =>
-        val sqlSource = inferTask.sourceBinding match {
-          case ss: SqlSource => ss
+        inferTask.sourceBinding match {
+          case sqlSource: SqlSource if sqlSource.preprocessSql.isEmpty => // If there is a preprocessSq
+            try {
+              schemaConverter
+                .getTableSchema(
+                  sqlSourceSettings.databaseUrl,
+                  sqlSourceSettings.username,
+                  sqlSourceSettings.password,
+                  sqlSource.tableName.getOrElse(sqlSource.query.get),
+                  sqlSource.query.isDefined)
+            } catch {
+              case e: Throwable =>
+                throw BadRequest(e.getMessage, e.getCause.toString, Some(e))
+            }
+          case sqlSource: SqlSource if sqlSource.preprocessSql.isDefined =>
+            inferSchemaFromSparkRead()
           case _ => throw new IllegalStateException("Source binding must be SqlSource if the sourceSettings is SqlSourceSettings.")
         }
-        val tableSparkSchema = schemaConverter.getTableSchema(sqlSourceSettings.databaseUrl, sqlSourceSettings.username, sqlSourceSettings.password, sqlSource.tableName.getOrElse(sqlSource.query.get), sqlSource.query.isDefined)
-        tableSparkSchema
       case _ =>
-        // Execute SQL and get the dataFrame
-        val dataFrame = try {
-          SourceHandler
-            .readSource(inferTask.name, ToFhirConfig.sparkSession, inferTask.sourceBinding, inferTask.mappingJobSourceSettings.head._2, schema = None)
-            .limit(1) // It is enough to take the first row to infer the schema.
-        } catch {
-          case e: FhirMappingException =>
-            // Remove the new lines and capitalize the error detail to show it in front-end properly.
-            throw BadRequest(e.getMessage, e.getCause.toString.capitalize.replace("\n", " "))
-        }
-        dataFrame.schema // Get the schema inferred by Spark
+        inferSchemaFromSparkRead()
     }
 
     // Default name for undefined information

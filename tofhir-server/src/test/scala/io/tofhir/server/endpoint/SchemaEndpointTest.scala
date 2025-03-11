@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, MediaTypes, Multipart, StatusCodes}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.onfhir.api.client.FhirBatchTransactionRequestBuilder
-import io.onfhir.api.{FHIR_FOUNDATION_RESOURCES, Resource}
+import io.onfhir.api.{FHIR_DATA_TYPES, FHIR_FOUNDATION_RESOURCES, Resource}
 import io.tofhir.OnFhirTestContainer
 import io.onfhir.definitions.common.model.{DataTypeWithProfiles, SchemaDefinition, SimpleStructureDefinition}
 import io.tofhir.engine.model._
@@ -34,7 +34,27 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
   implicit def default(implicit system: ActorSystem): RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   // inferTask object for infer schema test
-  val inferTask: InferTask = InferTask(name = "test", mappingJobSourceSettings = Map(
+  val inferTaskWithTableName: InferTask = InferTask(name = "test", mappingJobSourceSettings = Map(
+    "source" ->
+      SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
+  ), sourceBinding = SqlSource(tableName = Some("death")))
+
+  val q =
+    """SELECT
+      |    p.person_id,
+      |    p.name,
+      |    p.surname,
+      |    p.date_of_birth,
+      |    d.death_date,
+      |    d.death_datetime
+      |FROM person p, death d WHERE p.person_id = d.person_id""".stripMargin
+
+  val inferTaskWithSqlQuery: InferTask = InferTask(name = "test", mappingJobSourceSettings = Map(
+    "source" ->
+      SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
+  ), sourceBinding = SqlSource(query = Some(q)))
+
+  val inferTaskWithPreprocessSql: InferTask = InferTask(name = "test", mappingJobSourceSettings = Map(
     "source" ->
       SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")
   ), sourceBinding = SqlSource(query = Some("select * from death"), preprocessSql = Some("select person_id, death_date, death_datetime, cause_source_value from test")))
@@ -91,7 +111,9 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
 
     "create a schema within project" in {
       // create the first schema
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema1))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema1))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that schema metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -100,7 +122,9 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         FileUtils.getPath(toFhirEngineConfig.schemaRepositoryFolderPath, projectId, s"${schema1.id}${FileExtensions.JSON}").toFile should exist
       }
       // create the second schema
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema2))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema2))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         // validate that schema metadata file is updated
         val projects: JArray = TestUtil.getProjectJsonFile(toFhirEngineConfig)
@@ -146,7 +170,9 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
 
     "update a schema in a project" in {
       // update a schema
-      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${schema1.id}", HttpEntity(ContentTypes.`application/json`, writePretty(schema1.copy(url = "https://example.com/fhir/StructureDefinition/schema3", name = schema3.name)))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${schema1.id}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema1.copy(url = "https://example.com/fhir/StructureDefinition/schema3", name = schema3.name)))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate that the returned schema includes the update
         val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
@@ -161,7 +187,9 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
           .extract[String] shouldEqual "https://example.com/fhir/StructureDefinition/schema3"
       }
       // update a schema with invalid id
-      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/123123", HttpEntity(ContentTypes.`application/json`, writePretty(schema2))) ~> route ~> check {
+      Put(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/123123",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema2))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -220,7 +248,9 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
 
     "create a schema having some elements with/without short" in {
       // create the fourth schema
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema4))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema4))) ~> route ~> check {
         status shouldEqual StatusCodes.Created
       }
       // retrieve the fourth schema
@@ -237,9 +267,46 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
       }
     }
 
-    "infer the schema and retrieve column types" in {
+    "infer the schema on a given table name and retrieve column types" in {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(inferTaskWithTableName))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 7
+        fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.INTEGER
+        fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.DATE
+        fieldDefinitions(1).minCardinality shouldEqual 1
+        fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.DATETIME
+        fieldDefinitions(2).minCardinality shouldEqual 0
+        fieldDefinitions(5).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.STRING
+      }
+    }
+
+    "infer the schema on a given SQL query and retrieve column types" in {
       // infer the schema
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(inferTask))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(inferTaskWithSqlQuery))) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
+        val fieldDefinitions = schema.fieldDefinitions.get
+        fieldDefinitions.size shouldEqual 6
+        fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.INTEGER
+        fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.STRING
+        fieldDefinitions(1).minCardinality shouldEqual 0
+        fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.DATE
+        fieldDefinitions(3).minCardinality shouldEqual 1
+        fieldDefinitions(5).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.DATETIME
+      }
+    }
+
+    "infer the schema on a given SQL query with a preprocess SQL and retrieve column types" in {
+      // infer the schema
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(inferTaskWithPreprocessSql))) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         // validate data types of schema
         val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
@@ -253,7 +320,9 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create schemas having the same URL but different versions" in {
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5.copy(version = "some-version-other-than-latest")))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema5.copy(version = "some-version-other-than-latest")))) ~> route ~> check {
         // Expect a successful write
         status shouldEqual StatusCodes.Created
         // validate that schema metadata file is updated
@@ -264,14 +333,20 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "cannot create a schema having the same id, url or name as another schema" in {
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema5))) ~> route ~> check {
         // Expect a conflict status because schema5 has the same url and version as the schema2
         status shouldEqual StatusCodes.Conflict
       }
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5.copy(id = schema2.id)))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema5.copy(id = schema2.id)))) ~> route ~> check {
         status shouldEqual StatusCodes.Conflict
       }
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}", HttpEntity(ContentTypes.`application/json`, writePretty(schema5.copy(name = schema2.name)))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(schema5.copy(name = schema2.name)))) ~> route ~> check {
         status shouldEqual StatusCodes.Conflict
       }
     }
@@ -313,7 +388,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for file data sources with wrong file extension" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskWithSqlQuery.copy(mappingJobSourceSettings = inferTaskWithSqlQuery.mappingJobSourceSettings.updated(
         "source", FileSystemSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -321,7 +396,9 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         )),
         sourceBinding = FileSystemSource("WRONG.wrong", contentType = SourceContentTypes.CSV)
       )
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/BadRequest")
@@ -329,7 +406,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for data data sources with wrong file path" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskWithSqlQuery.copy(mappingJobSourceSettings = inferTaskWithSqlQuery.mappingJobSourceSettings.updated(
         "source", FileSystemSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -337,7 +414,9 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         )),
         sourceBinding = FileSystemSource("lab-results.csv", contentType = SourceContentTypes.CSV)
       )
-      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}", HttpEntity(ContentTypes.`application/json`, writePretty(erroneousInferTask))) ~> route ~> check {
+      Post(s"/${webServerConfig.baseUri}/${ProjectEndpoint.SEGMENT_PROJECTS}/$projectId/${SchemaDefinitionEndpoint.SEGMENT_SCHEMAS}/${SchemaDefinitionEndpoint.SEGMENT_INFER}",
+        HttpEntity(ContentTypes.`application/json`,
+          writePretty(erroneousInferTask))) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[String]
         response should include("Type: https://tofhir.io/errors/BadRequest")
@@ -345,7 +424,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong preprocess SQL string" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskWithSqlQuery.copy(mappingJobSourceSettings = inferTaskWithSqlQuery.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
         sourceBinding = SqlSource(query = Some("Select * from death"), preprocessSql = Some("Wrong query string"))
@@ -358,7 +437,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong user credentials to access the DB" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskWithSqlQuery.copy(mappingJobSourceSettings = inferTaskWithSqlQuery.mappingJobSourceSettings.updated(
         "source", SqlSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -375,7 +454,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong database URL" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskWithSqlQuery.copy(mappingJobSourceSettings = inferTaskWithSqlQuery.mappingJobSourceSettings.updated(
         "source", SqlSourceSettings(
           name = "test-db-source",
           sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data",
@@ -392,7 +471,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for erroneous SQL query" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskWithSqlQuery.copy(mappingJobSourceSettings = inferTaskWithSqlQuery.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
         sourceBinding = SqlSource(query = Some("WRONG"))
@@ -405,7 +484,7 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
     }
 
     "create an HTTP response with bad request for wrong column name in the SQL query" in {
-      val erroneousInferTask = inferTask.copy(mappingJobSourceSettings = inferTask.mappingJobSourceSettings.updated(
+      val erroneousInferTask = inferTaskWithSqlQuery.copy(mappingJobSourceSettings = inferTaskWithSqlQuery.mappingJobSourceSettings.updated(
         "source",
         SqlSourceSettings(name = "test-db-source", sourceUri = "https://aiccelerate.eu/data-integration-suite/test-data", databaseUrl = DATABASE_URL, username = "", password = "")),
         sourceBinding = SqlSource(query = Some("select WRONG from death"))

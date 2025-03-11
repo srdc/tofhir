@@ -1,60 +1,122 @@
-CREATE TABLE death (
-                              person_id integer NOT NULL,
-                              death_date date NOT NULL,
-                              death_datetime timestamp without time zone,
-                              death_type_concept_id integer,
-                              cause_concept_id integer,
-                              cause_source_value character varying(50),
-                              cause_source_concept_id integer
+CREATE TABLE person
+(
+    person_id     integer NOT NULL PRIMARY KEY,
+    name          character varying(50),
+    surname       character varying(50),
+    date_of_birth date    NOT NULL
 );
 
-INSERT INTO death VALUES (8216, '2020-03-01', '2020-06-01 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (3569, '2022-04-06', '2020-10-26 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (8490, '2020-02-25', '2020-03-24 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (9855, '2020-07-20', '2019-07-21 12:41:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (4004, '2020-08-15', '2019-08-12 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (7897, '2021-06-02', '2021-09-30 08:58:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (8653, '2022-05-08', '2022-05-06 22:59:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (341, '2022-04-11', '2021-04-16 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (480, '2020-11-27', '2022-07-16 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (7032, '2022-02-06', '2021-12-12 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (2042, '2021-04-16', '2022-01-22 23:03:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (2139, '2019-11-06', '2019-08-17 00:37:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (5951, '2021-09-07', '2021-07-30 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (196, '2020-12-13', '2022-04-27 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (4269, '2021-06-22', '2020-04-11 21:19:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (409, '2021-01-13', '2022-07-22 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (2738, '2020-07-05', '2020-02-15 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (1812, '2020-05-27', '2019-11-07 14:05:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (78, '2022-01-11', '2021-07-22 08:30:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (1017, '2021-03-25', '2020-11-01 11:01:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (2807, '2021-11-10', '2020-03-18 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (1683, '2020-10-31', '2021-06-05 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (7574, '2022-08-15', '2021-03-16 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (2801, '2021-09-26', '2019-10-12 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (7931, '2019-09-07', '2019-07-22 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (2478, '2020-08-10', '2020-05-31 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (5867, '2019-11-27', '2020-12-06 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (4477, '2019-08-27', '2021-10-18 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (4074, '2021-08-31', '2019-05-03 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (3633, '2020-09-12', '2022-03-07 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (8012, '2019-11-01', '2020-07-11 23:40:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (7517, '2021-09-02', '2019-12-25 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (8380, '2021-01-16', '2020-01-19 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (6352, '2020-12-11', '2022-02-17 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (9232, '2022-03-26', '2020-02-14 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (469, '2021-07-06', '2020-04-17 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (1266, '2021-05-14', '2020-04-12 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (9527, '2022-04-27', '2020-09-30 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (7443, '2021-02-06', '2022-08-17 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (1462, '2020-07-04', '2020-05-31 17:05:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (5548, '2020-12-31', '2021-12-03 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (9978, '2020-03-24', '2021-07-31 00:20:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (3674, '2022-03-28', '2020-04-27 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (9365, '2021-05-19', '2021-06-29 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (1499, '2021-01-14', '2021-03-02 00:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (9848, '2020-01-06', '2019-10-02 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (3288, '2022-06-12', '2021-06-12 05:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (9959, '2021-03-16', '2022-06-02 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (7604, '2021-03-11', '2020-04-25 23:00:00', NULL, NULL, NULL, NULL);
-INSERT INTO death VALUES (3874, '2019-06-10', '2021-10-12 23:00:00', NULL, NULL, NULL, NULL);
+CREATE TABLE death
+(
+    person_id               integer NOT NULL PRIMARY KEY,
+    death_date              date    NOT NULL,
+    death_datetime          timestamp without time zone,
+    death_type_concept_id   integer,
+    cause_concept_id        integer,
+    cause_source_value      character varying(50),
+    cause_source_concept_id integer
+);
+
+INSERT INTO person (person_id, name, surname, date_of_birth)
+VALUES (8216, 'John', 'Doe', '1950-06-15'),
+       (3569, 'Jane', 'Smith', '1962-09-23'),
+       (8490, 'Robert', 'Johnson', '1945-04-11'),
+       (9855, 'Emily', 'Davis', '1978-03-05'),
+       (4004, 'Michael', 'Williams', '1965-12-22'),
+       (7897, 'Sarah', 'Brown', '1973-05-14'),
+       (8653, 'David', 'Jones', '1957-10-30'),
+       (341, 'Laura', 'Garcia', '1981-02-07'),
+       (480, 'James', 'Martinez', '1949-08-19'),
+       (7032, 'Patricia', 'Rodriguez', '1969-11-25'),
+       (2042, 'Charles', 'Hernandez', '1955-06-03'),
+       (2139, 'Jessica', 'Lopez', '1977-09-13'),
+       (5951, 'William', 'Gonzalez', '1963-07-29'),
+       (196, 'Nancy', 'Wilson', '1985-03-21'),
+       (4269, 'Daniel', 'Anderson', '1947-05-16'),
+       (409, 'Elizabeth', 'Thomas', '1960-01-08'),
+       (2738, 'Christopher', 'Taylor', '1958-09-29'),
+       (1812, 'Matthew', 'Moore', '1972-12-15'),
+       (78, 'Olivia', 'Jackson', '1967-04-02'),
+       (1017, 'Benjamin', 'White', '1956-11-09'),
+       (2807, 'Sophia', 'Harris', '1983-07-31'),
+       (1683, 'Alexander', 'Clark', '1943-10-18'),
+       (7574, 'Ava', 'Lewis', '1964-03-22'),
+       (2801, 'Ethan', 'Walker', '1952-05-05'),
+       (7931, 'Isabella', 'Hall', '1948-07-07'),
+       (2478, 'Mason', 'Allen', '1971-08-30'),
+       (5867, 'Mia', 'Young', '1962-02-28'),
+       (4477, 'Harper', 'King', '1975-01-19'),
+       (4074, 'Elijah', 'Wright', '1959-06-08'),
+       (3633, 'Abigail', 'Scott', '1946-03-17'),
+       (8012, 'Henry', 'Green', '1970-10-10'),
+       (7517, 'Lucas', 'Adams', '1953-12-05'),
+       (8380, 'Charlotte', 'Baker', '1980-09-03'),
+       (6352, 'Daniel', 'Nelson', '1961-07-27'),
+       (9232, 'Scarlett', 'Carter', '1979-05-15'),
+       (469, 'Ella', 'Mitchell', '1950-06-23'),
+       (1266, 'Jack', 'Perez', '1968-08-21'),
+       (9527, 'Zoe', 'Roberts', '1957-01-14'),
+       (7443, 'Gabriel', 'Phillips', '1982-09-29'),
+       (1462, 'Nathan', 'Evans', '1949-12-09'),
+       (5548, 'Lily', 'Campbell', '1976-02-11'),
+       (9978, 'Samuel', 'Parker', '1954-05-26'),
+       (3674, 'Chloe', 'Edwards', '1963-10-17'),
+       (9365, 'Sebastian', 'Collins', '1984-07-30'),
+       (1499, 'Eleanor', 'Stewart', '1955-04-04'),
+       (9848, 'Owen', 'Sanchez', '1974-11-18'),
+       (3288, 'Grace', 'Morris', '1959-03-07'),
+       (9959, 'Ryan', 'Rogers', '1965-06-14'),
+       (7604, 'Violet', 'Reed', '1977-01-09'),
+       (3874, 'Caleb', 'Cook', '1951-08-12');
+
+INSERT INTO death (person_id, death_date, death_datetime)
+VALUES (8216, '2020-03-01', '2020-06-01 23:00:00'),
+       (3569, '2022-04-06', '2020-10-26 00:00:00'),
+       (8490, '2020-02-25', '2020-03-24 00:00:00'),
+       (9855, '2020-07-20', '2019-07-21 12:41:00'),
+       (4004, '2020-08-15', '2019-08-12 23:00:00'),
+       (7897, '2021-06-02', '2021-09-30 08:58:00'),
+       (8653, '2022-05-08', '2022-05-06 22:59:00'),
+       (341, '2022-04-11', '2021-04-16 23:00:00'),
+       (480, '2020-11-27', '2022-07-16 23:00:00'),
+       (7032, '2022-02-06', '2021-12-12 00:00:00'),
+       (2042, '2021-04-16', '2022-01-22 23:03:00'),
+       (2139, '2019-11-06', '2019-08-17 00:37:00'),
+       (5951, '2021-09-07', '2021-07-30 23:00:00'),
+       (196, '2020-12-13', '2022-04-27 23:00:00'),
+       (4269, '2021-06-22', '2020-04-11 21:19:00'),
+       (409, '2021-01-13', '2022-07-22 23:00:00'),
+       (2738, '2020-07-05', '2020-02-15 00:00:00'),
+       (1812, '2020-05-27', '2019-11-07 14:05:00'),
+       (78, '2022-01-11', '2021-07-22 08:30:00'),
+       (1017, '2021-03-25', '2020-11-01 11:01:00'),
+       (2807, '2021-11-10', '2020-03-18 00:00:00'),
+       (1683, '2020-10-31', '2021-06-05 23:00:00'),
+       (7574, '2022-08-15', '2021-03-16 00:00:00'),
+       (2801, '2021-09-26', '2019-10-12 23:00:00'),
+       (7931, '2019-09-07', '2019-07-22 23:00:00'),
+       (2478, '2020-08-10', '2020-05-31 23:00:00'),
+       (5867, '2019-11-27', '2020-12-06 00:00:00'),
+       (4477, '2019-08-27', '2021-10-18 23:00:00'),
+       (4074, '2021-08-31', '2019-05-03 23:00:00'),
+       (3633, '2020-09-12', '2022-03-07 00:00:00'),
+       (8012, '2019-11-01', '2020-07-11 23:40:00'),
+       (7517, '2021-09-02', '2019-12-25 00:00:00'),
+       (8380, '2021-01-16', '2020-01-19 00:00:00'),
+       (6352, '2020-12-11', '2022-02-17 00:00:00'),
+       (9232, '2022-03-26', '2020-02-14 00:00:00'),
+       (469, '2021-07-06', '2020-04-17 23:00:00'),
+       (1266, '2021-05-14', '2020-04-12 23:00:00'),
+       (9527, '2022-04-27', '2020-09-30 23:00:00'),
+       (7443, '2021-02-06', '2022-08-17 23:00:00'),
+       (1462, '2020-07-04', '2020-05-31 17:05:00'),
+       (5548, '2020-12-31', '2021-12-03 00:00:00'),
+       (9978, '2020-03-24', '2021-07-31 00:20:00'),
+       (3674, '2022-03-28', '2020-04-27 23:00:00'),
+       (9365, '2021-05-19', '2021-06-29 23:00:00'),
+       (1499, '2021-01-14', '2021-03-02 00:00:00'),
+       (9848, '2020-01-06', '2019-10-02 23:00:00'),
+       (3288, '2022-06-12', '2021-06-12 05:00:00'),
+       (9959, '2021-03-16', '2022-06-02 23:00:00'),
+       (7604, '2021-03-11', '2020-04-25 23:00:00'),
+       (3874, '2019-06-10', '2021-10-12 23:00:00');
