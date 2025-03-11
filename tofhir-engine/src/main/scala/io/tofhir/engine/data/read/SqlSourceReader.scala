@@ -37,7 +37,7 @@ class SqlSourceReader(spark: SparkSession) extends BaseDataSourceReader[SqlSourc
     }
 
     if (schema.isDefined) {
-      logger.debug("There is a schema definitions for the SqlSource, but I cannot enforce it while reading from the database. Hence, ignoring...")
+      logger.debug("There is a schema definition for the SqlSource, but I cannot enforce it while reading from the database. Hence, ignoring...")
     }
 
     // As in spark jdbc read docs, instead of a full table you could also use a sub-query in parentheses.
