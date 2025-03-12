@@ -184,7 +184,7 @@ class SchemaConverter(majorFhirVersion: String) {
         if (isQuery) {
           // For SQL queries, execute the query with a limit of zero rows
           val statement = use(connection.createStatement())
-          val sqlWithLimit = s"($sqlOrTable) LIMIT 0"
+          val sqlWithLimit = sqlOrTable.replaceAll("(?i)\\s+LIMIT\\s+\\d+", "") + " LIMIT 0"
           try {
             val rs = use(statement.executeQuery(sqlWithLimit))
             val meta = rs.getMetaData
