@@ -312,10 +312,10 @@ class SchemaEndpointTest extends BaseEndpointTest with OnFhirTestContainer {
         val schema: SchemaDefinition = JsonMethods.parse(responseAs[String]).extract[SchemaDefinition]
         val fieldDefinitions = schema.fieldDefinitions.get
         fieldDefinitions.size shouldEqual 4
-        fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual "integer"
-        fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual "date"
-        fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual "dateTime"
-        fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual "string"
+        fieldDefinitions.head.dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.INTEGER
+        fieldDefinitions(1).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.DATE
+        fieldDefinitions(2).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.DATETIME
+        fieldDefinitions(3).dataTypes.get.head.dataType shouldEqual FHIR_DATA_TYPES.STRING
       }
     }
 
