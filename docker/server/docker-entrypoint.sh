@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Set default Java options
-DEFAULT_JAVA_OPTIONS="-Xms256m -Xmx3g"
+DEFAULT_JAVA_OPTIONS="-Xms256m -Xmx4g"
 
 # Use environment variable if provided, otherwise use default value
 JAVA_OPTIONS="${JAVA_OPTIONS:-$DEFAULT_JAVA_OPTIONS}"
@@ -54,6 +54,9 @@ if [ ! -z "$DB_PATH" ]; then
 fi
 
 # Configure the FHIR endpoint to which this toFHIR can connect to retrieve resource definitions etc.
+if [ ! -z "$FHIR_DEFINITIONS_FHIRVERSION" ]; then
+  JAVA_CMD+="-Dfhir.fhir-version=$FHIR_DEFINITIONS_FHIRVERSION "
+fi
 if [ ! -z "$FHIR_DEFINITIONS_ENDPOINT" ]; then
   JAVA_CMD+="-Dfhir.definitions-fhir-endpoint=$FHIR_DEFINITIONS_ENDPOINT "
 fi
