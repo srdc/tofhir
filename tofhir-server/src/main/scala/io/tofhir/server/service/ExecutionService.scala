@@ -19,6 +19,7 @@ import io.tofhir.server.util.DataFrameUtil
 import org.apache.commons.io
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException
 import org.apache.spark.sql.KeyValueGroupedDataset
+import org.apache.spark.sql.functions.{col, count}
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JBool, JObject, JString, JValue}
 
@@ -229,6 +230,27 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
         val (fhirMapping, mappingJobSourceSettings, dataFrame) = fhirMappingJobManager.readJoinSourceData(mappingTask, jobSourceSettings, jobId = Some(jobId), isTestExecution = true)
         val selectedDataFrame = DataFrameUtil.applyResourceFilter(dataFrame, testResourceCreationRequest.resourceFilter)
           .distinct() // Remove duplicate rows to ensure each FHIR Resource is represented only once per source.
+
+
+
+        val startTime = System.nanoTime() // Start time
+
+        val hasDuplicateIds = dataFrame
+          .select("CODICE_SANITARIO")
+          .groupBy("CODICE_SANITARIO")
+          .agg(count("*").alias("count"))
+          .filter(col("count") > 1)
+          .limit(1) // Stop processing as soon as a duplicate is found
+          .count() > 0 // Convert to Boolean
+
+        val endTime = System.nanoTime() // End time
+        val elapsedTimeMs = (endTime - startTime) / 1e9 // Convert nanoseconds to milliseconds
+        println()
+        println(s"Duplicate IDs exist: $hasDuplicateIds")
+        println(s"Time taken: $elapsedTimeMs s")
+
+
+
         // This prevents confusion for users in the UI, as displaying the same resource multiple times could lead to misunderstandings.
         fhirMappingJobManager.executeTask(mappingJob.id, mappingTask.name, fhirMapping, selectedDataFrame, mappingJobSourceSettings, mappingJob.terminologyServiceSettings, mappingJob.getIdentityServiceSettings(), projectId = Some(projectId))
           .map { resultingDataFrame =>
