@@ -18,6 +18,7 @@ import io.tofhir.server.repository.schema.ISchemaRepository
 import io.tofhir.server.util.DataFrameUtil
 import org.apache.commons.io
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException
+import org.apache.spark.SparkException
 import org.apache.spark.sql.KeyValueGroupedDataset
 import org.json4s.jackson.JsonMethods
 import org.json4s.{JArray, JBool, JObject, JString, JValue}
@@ -252,6 +253,11 @@ class ExecutionService(jobRepository: IJobRepository, mappingRepository: IMappin
                 case _ =>
                   throw ee
               }
+            case se: SparkException =>
+              throw BadRequest(
+                "Invalid Source File",
+                se.getCause.getMessage.replace("\n", " "), Some(se)
+              )
             case e: Exception =>
               throw e
           }
