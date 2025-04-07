@@ -90,7 +90,7 @@
 
         <!-- This is a special placeholder to manage the version from a single property throughout the parent and child modules. No other property name can be used. -->
         <!-- https://maven.apache.org/maven-ci-friendly.html -->
-        <revision>1.1-SNAPSHOT</revision>
+        <revision>1.1</revision>
         <scala.version>2.13.16</scala.version>
         <scala.binary.version>2.13</scala.binary.version>
 
