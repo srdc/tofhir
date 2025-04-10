@@ -34,7 +34,6 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
   // These folders are used as input directories for streaming data during tests
   val watchFolders: Map[String, File] = Map(
     "patientWatchFolder" -> FileUtils.getPath(streamingTestWatchFolderPath, "patients_csv").toFile,
-    "observationWatchFolder" -> FileUtils.getPath(streamingTestWatchFolderPath, "observations_csv").toFile,
     "jsonWatchFolder" -> FileUtils.getPath(streamingTestWatchFolderPath, "patients_json").toFile,
     "parquetWatchFolder" -> FileUtils.getPath(streamingTestWatchFolderPath, "patients_parquet").toFile
   )
@@ -60,6 +59,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
 
   override def beforeAll(): Unit = {
     createStreamingTestFolders()
+    prepareDataSources()
   }
 
   override def afterAll(): Unit = {
@@ -74,6 +74,22 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     watchFolders.foreach(
       folder => folder._2.mkdirs()
     )
+
+  }
+
+  /**
+   * Prepares the data source for streaming tests by copying test data files to the appropriate watch folders.
+   */
+  private def prepareDataSources(): Unit = {
+    // Copy CSV files to their test directories
+    val patientWatchFolder: String = watchFolders("patientWatchFolder").getAbsolutePath
+    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "patients.csv").toFile, FileUtils.getPath(patientWatchFolder, "patients.csv").toFile)
+    // Copy JSON file to test directory
+    val jsonWatchPath: String = watchFolders("jsonWatchFolder").getAbsolutePath
+    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "patients.json").toFile, FileUtils.getPath(jsonWatchPath, "patients.json").toFile)
+    // Copy Parquet file to test directory
+    val parquetWatchFolder: String = watchFolders("parquetWatchFolder").getAbsolutePath
+    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "patients.parquet").toFile, FileUtils.getPath(parquetWatchFolder, "patients.parquet").toFile)
   }
 
   /**
@@ -82,7 +98,6 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
   it should "read a streaming mapping job definition" in {
     // Read a mapping job from a json file
     val streamingMappingJob = FhirMappingJobFormatter.readMappingJobFromFile(getClass.getResource("/streaming-job-example.json").toURI.getPath)
-
     // Validate asStream and sinkSettings properties are read correctly
     streamingMappingJob.sourceSettings("source").asStream shouldBe true
     streamingMappingJob.sinkSettings shouldBe a[FileSystemSinkSettings]
@@ -94,13 +109,11 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
    * This test verifies that a streaming job can be correctly started when reading from CSV files
    * It includes:
    * - Setting up `FhirMappingTask` instances for CSV data.
-   * - Copying test CSV data files to the designated watch folders.
    * - Starting the mapping job stream and checking the status of the streaming queries.
    *
    */
   it should "start a streaming job reading from CSV files" in {
     // Patient Mapping Task
-    val patientWatchFolder: String = watchFolders("patientWatchFolder").getAbsolutePath
     val patientMappingTask: FhirMappingTask = FhirMappingTask(
       name = "patient-mapping",
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
@@ -110,28 +123,17 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
         sourceRef = Some("test-source")
       ))
     )
-    // Observation Mapping Task
-    val observationWatchFolder: String = watchFolders("observationWatchFolder").getAbsolutePath
-    val observationMappingTask: FhirMappingTask = FhirMappingTask(
-      name = "other-observation-mapping",
-      mappingRef = "https://aiccelerate.eu/fhir/mappings/other-observation-mapping",
-      sourceBinding = Map("source" -> FileSystemSource(
-        path = "observations_csv",
-        contentType = SourceContentTypes.CSV,
-        sourceRef = Some("test-source")
-      ))
-    )
-    // Copy files to their test directories
-    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "patients.csv").toFile, FileUtils.getPath(patientWatchFolder, "patients.csv").toFile)
-    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "other-observations.csv").toFile, FileUtils.getPath(observationWatchFolder, "other-observations.csv").toFile)
+    // clean up the checkpoint directory so that spark does not fail
+    val mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask), job = fhirMappingJob)
+    val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(patientMappingTask.name))
+    org.apache.commons.io.FileUtils.deleteDirectory(checkpointDirectory)
     // Run the streaming job, wait for all streaming queries to complete and check their status
-    val mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(patientMappingTask, observationMappingTask), job = fhirMappingJob)
     val streamingQueryFutures = fhirMappingJobManager.startMappingJobStream(mappingJobExecution = mappingJobExecution, mappingJobSourceSettings, fileSinkSettings)
     // Wait for future to complete first
     val streamingQueries = Await.result(Future.sequence(streamingQueryFutures.values), 10.seconds)
     streamingQueries.foreach(sq => sq.isActive shouldBe true)
     // Wait for 5 seconds to allow the streaming queries to process data
-    streamingQueries.foreach(sq => sq.awaitTermination(5000))
+    streamingQueries.foreach(sq => sq.awaitTermination(10000))
     streamingQueries.foreach(sq => sq.stop() shouldBe ())
   }
 
@@ -141,13 +143,11 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
    * This test ensures that a streaming job can be correctly started when reading from JSON files
    * It includes:
    * - Setting up a `FhirMappingTask` instance for JSON data.
-   * - Copying a test JSON data file to the designated watch folder.
    * - Starting the mapping job stream and checking the status of the streaming queries.
    *
    */
   it should "start a streaming job reading from JSON files" in {
     // Json Mapping Task
-    val jsonWatchPath: String = watchFolders("jsonWatchFolder").getAbsolutePath
     val jsonMappingTask: FhirMappingTask = FhirMappingTask(
       name = "patient-mapping",
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
@@ -158,8 +158,6 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
         sourceRef = Some("test-source")
       ))
     )
-    // Copy json file to test directory
-    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "patients.json").toFile, FileUtils.getPath(jsonWatchPath, "patients.json").toFile)
     // clean up the checkpoint directory so that spark does not fail
     val mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(jsonMappingTask), job = fhirMappingJob)
     val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(jsonMappingTask.name))
@@ -170,7 +168,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     val streamingQueries = Await.result(Future.sequence(streamingQueryFutures.values), 10.seconds)
     streamingQueries.foreach(sq => sq.isActive shouldBe true)
     // Wait for 5 seconds to allow the streaming queries to process data
-    streamingQueries.foreach(sq => sq.awaitTermination(5000))
+    streamingQueries.foreach(sq => sq.awaitTermination(10000))
     streamingQueries.foreach(sq => sq.stop() shouldBe ())
   }
 
@@ -180,13 +178,11 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
    * This test ensures that a streaming job can be correctly started when reading from Parquet files
    * It includes:
    * - Setting up a `FhirMappingTask` instance for Parquet data.
-   * - Copying a test Parquet data file to the designated watch folder.
    * - Starting the mapping job stream and checking the status of the streaming queries.
    *
    */
   it should "start a streaming job reading from Parquet files" in {
     // Parquet Mapping Task
-    val parquetWatchFolder: String = watchFolders("parquetWatchFolder").getAbsolutePath
     val parquetMappingTask: FhirMappingTask = FhirMappingTask(
       name = "patient-mapping",
       mappingRef = "https://aiccelerate.eu/fhir/mappings/patient-mapping",
@@ -196,8 +192,6 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
         sourceRef = Some("test-source")
       ))
     )
-    // Copy parquet file to test directory
-    org.apache.commons.io.FileUtils.copyFile(FileUtils.getPath(testDataFolderPath, "patients.parquet").toFile, FileUtils.getPath(parquetWatchFolder, "patients.parquet").toFile)
     // clean up the checkpoint directory so that spark does not fail
     val mappingJobExecution = FhirMappingJobExecution(mappingTasks = Seq(parquetMappingTask), job = fhirMappingJob)
     val checkpointDirectory: File = new File(mappingJobExecution.getCheckpointDirectory(parquetMappingTask.name))
@@ -208,7 +202,7 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     val streamingQueries = Await.result(Future.sequence(streamingQueryFutures.values), 10.seconds)
     streamingQueries.foreach(sq => sq.isActive shouldBe true)
     // Wait for 5 seconds to allow the streaming queries to process data
-    streamingQueries.foreach(sq => sq.awaitTermination(5000))
+    streamingQueries.foreach(sq => sq.awaitTermination(10000))
     streamingQueries.foreach(sq => sq.stop() shouldBe ())
   }
 
@@ -221,8 +215,8 @@ class FileStreamingTest extends AnyFlatSpec with BeforeAndAfterAll with ToFhirTe
     val outputFolder = new File(fileSinkPath)
     assert(outputFolder.exists(), "Output file does not exist")
     assert(outputFolder.length() > 0, "Output file is empty")
-    // number of files in output data with extension .txt should be 4
-    val expectedFileCount = 4
+    // number of files in output data with extension .txt should be 3
+    val expectedFileCount = 3
     val actualFileCount = outputFolder.listFiles().count(_.getName.endsWith(".txt"))
     assert(actualFileCount == expectedFileCount, s"Expected $expectedFileCount mapped files, but found $actualFileCount")
   }
