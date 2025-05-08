@@ -240,6 +240,11 @@
             <artifactId>postgresql</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.ibm.db2</groupId>
+            <artifactId>jcc</artifactId>
+        </dependency>
+
         <!-- For Unit testing -->
         <dependency>
             <groupId>org.scalatest</groupId>
