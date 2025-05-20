@@ -1,8 +1,9 @@
 package io.tofhir.engine.mapping.fhirPath
 
+import io.onfhir.api.FHIR_DATA_TYPES
 import io.onfhir.api.util.FHIRUtil
 import io.onfhir.path._
-import io.onfhir.path.annotation.FhirPathFunction
+import io.onfhir.path.annotation.{FhirPathFunction, FhirPathFunctionDocumentation, FhirPathFunctionParameter, FhirPathFunctionReturn}
 import io.onfhir.path.grammar.FhirPathExprParser.ExpressionContext
 import io.tofhir.engine.model.{ConceptMapContext, FhirMappingContext, UnitConversionContext}
 import io.tofhir.engine.util.FhirMappingUtility
@@ -25,12 +26,36 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @return
    */
   @FhirPathFunction(
-    documentation = "\uD83D\uDCDC Creates an ID using the hash of given string. Resource name should be quoted and ID should be string. It returns a string.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`resourceType`**  \nHL7 FHIR resource type to generate hashed ID for.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`id`**  \nA unique ID to generate a hash.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```\n\"Patient/a363ff2b1833e3df408910f5b3d04334\"\n``` \n\uD83D\uDCA1 **E.g.** mpp:getHashedId('Patient', id.toString())",
+    documentation = FhirPathFunctionDocumentation(
+      detail = "Creates an ID using the hash of given string. Resource name should be quoted and ID should be string. It returns a string.",
+      usageWarnings = None,
+      parameters = Some(Seq(
+        FhirPathFunctionParameter(
+          name = "resourceType",
+          detail = "HL7 FHIR resource type to generate hashed ID for.",
+          examples = None
+        ),
+        FhirPathFunctionParameter(
+          name = "id",
+          detail = "A unique ID to generate a hash.",
+          examples = None
+        )
+      )),
+      returnValue = FhirPathFunctionReturn(
+        detail = None,
+        examples = Seq(
+          "\"Patient/a363ff2b1833e3df408910f5b3d04334\""
+        )
+      ),
+      examples = Seq(
+        "mpp:getHashedId('Patient', id.toString())"
+      )
+    ),
     insertText = "mpp:getHashedId(<resourceName>, <id>)",
     detail = "mpp",
     label = "mpp:getHashedId",
     kind = "Function",
-    returnType = Seq("string"),
+    returnType = Seq(FHIR_DATA_TYPES.STRING),
     inputType = Seq()
   )
   def getHashedId(resourceTypeExp:ExpressionContext, inputExpr:ExpressionContext):Seq[FhirPathResult] = {
@@ -59,8 +84,39 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param inputExpr       Expression to return the value of referenced id
    * @return
    */
-  @FhirPathFunction(documentation = "\uD83D\uDCDC Creates a FHIR Reference object with a given resource type and hash of the given ID. Resource name should be quoted and ID should be string. It returns a FHIR Reference object.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`resourceType`**  \nHL7 FHIR resource type to generate hashed ID for.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`id`**  \nA unique ID to generate a hash.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```json\n{\n    \"reference\": \"Patient/a363ff2b1833e3df408910f5b3d04334\"\n}\n``` \n\uD83D\uDCA1 **E.g.** mpp:createFhirReferenceWithHashedId('Patient', id.toString())",
-    insertText = "mpp:createFhirReferenceWithHashedId(<resourceType>, <id>)",detail = "mpp", label = "mpp:createFhirReferenceWithHashedId", kind = "Function", returnType = Seq(), inputType = Seq())
+  @FhirPathFunction(
+    documentation = FhirPathFunctionDocumentation(
+      detail = "Creates a FHIR Reference object with a given resource type and hash of the given ID. Resource name should be quoted and ID should be string. It returns a FHIR Reference object.",
+      usageWarnings = None,
+      parameters = Some(Seq(
+        FhirPathFunctionParameter(
+          name = "resourceType",
+          detail = "HL7 FHIR resource type to generate hashed ID for.",
+          examples = None
+        ),
+        FhirPathFunctionParameter(
+          name = "id",
+          detail = "A unique ID to generate a hash.",
+          examples = None
+        )
+      )),
+      returnValue = FhirPathFunctionReturn(
+        detail = None,
+        examples = Seq(
+          """<JSON>{"reference": "Patient/a363ff2b1833e3df408910f5b3d04334"}"""
+        )
+      ),
+      examples = Seq(
+        "mpp:createFhirReferenceWithHashedId('Patient', id.toString())"
+      )
+    ),
+    insertText = "mpp:createFhirReferenceWithHashedId(<resourceType>, <id>)",
+    detail = "mpp",
+    label = "mpp:createFhirReferenceWithHashedId",
+    kind = "Function",
+    returnType = Seq(),
+    inputType = Seq()
+  )
   def createFhirReferenceWithHashedId(resourceTypeExp:ExpressionContext, inputExpr:ExpressionContext):Seq[FhirPathResult] = {
     val resourceType = getStringValueOfExpr(resourceTypeExp, s"Invalid function call 'createFhirReferenceWithHashedId', given expression for keyExpr:${resourceTypeExp.getText} should return a string value!")
     val input = getStringValuesOfExpr(inputExpr, s"Invalid function call 'createFhirReferenceWithHashedId', given expression for keyExpr:${inputExpr.getText} should return string value(s)!")
@@ -77,9 +133,44 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param toExpr   End index (inclusive)
    * @return the field names which have values i.e. the non-empty ones
    */
-  @FhirPathFunction(documentation = "\uD83D\uDCDC Creates a sequence of indices between from-to integers and concatenates them and prefix string to generate looped field names (i.e. prefix+from,...,prefix+to). After that, for each field, it checks whether it has a value or not and returns the list of field names which have values i.e the non-empty ones.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`prefixExpr`**  \nPrefix string to be used to generate field names.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`fromExpr`**  \nThe start index (inclusive).\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`toExpr`**  \nThe end index (inclusive).\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```\n[\"child_1\", \"child_3\", \"child_4\"]\n``` \n\uD83D\uDCA1 **E.g.** mpp:nonEmptyLoopedFields('child_',1,5)",
-    insertText = "mpp:nonEmptyLoopedFields(<prefixExpr>, <fromExpr>, <toExpr>)",detail = "mpp", label = "mpp:nonEmptyLoopedFields", kind = "Function",
-    returnType = Seq("String"), inputType = Seq())
+  @FhirPathFunction(
+    documentation = FhirPathFunctionDocumentation(
+      detail = "Creates a sequence of indices between from-to integers and concatenates them with a prefix string to generate looped field names (i.e. prefix+from,...,prefix+to). After that, for each field, it checks whether it has a value or not and returns the list of field names which have values i.e. the non-empty ones.",
+      usageWarnings = None,
+      parameters = Some(Seq(
+        FhirPathFunctionParameter(
+          name = "prefixExpr",
+          detail = "Prefix string to be used to generate field names.",
+          examples = None
+        ),
+        FhirPathFunctionParameter(
+          name = "fromExpr",
+          detail = "The start index (inclusive).",
+          examples = None
+        ),
+        FhirPathFunctionParameter(
+          name = "toExpr",
+          detail = "The end index (inclusive).",
+          examples = None
+        )
+      )),
+      returnValue = FhirPathFunctionReturn(
+        detail = None,
+        examples = Seq(
+          """["child_1", "child_3", "child_4"]"""
+        )
+      ),
+      examples = Seq(
+        "mpp:nonEmptyLoopedFields('child_',1,5)"
+      )
+    ),
+    insertText = "mpp:nonEmptyLoopedFields(<prefixExpr>, <fromExpr>, <toExpr>)",
+    detail = "mpp",
+    label = "mpp:nonEmptyLoopedFields",
+    kind = "Function",
+    returnType = Seq(FHIR_DATA_TYPES.STRING),
+    inputType = Seq()
+  )
   def nonEmptyLoopedFields(prefixExpr: ExpressionContext, fromExpr: ExpressionContext, toExpr: ExpressionContext): Seq[FhirPathResult] = {
     val prefix = new FhirPathExpressionEvaluator(context, current).visit(prefixExpr)
     if (prefix.length != 1 || !prefix.forall(_.isInstanceOf[FhirPathString]))
@@ -124,8 +215,40 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param keyExpr     This is any expression that will provide the key value e.g. code
    * @return
    */
-  @FhirPathFunction(documentation = "\uD83D\uDCDC Get corresponding concept from the given concept map with the given key. If there are more than one target column, it returns them as a complex JSON object. Otherwise, returns the value of it as list of string.  \n⚠\uFE0F A mapping concept with specified reference **must** be registered to the mapping as a context to use this function.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`conceptMap`**  \nA reference to the concept map context e.g. %obsConceptMap\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`source_code`**  \nSource code to perform lookup operation in the concept map e.g. code\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```json\n[\n  {\n    \"target_code\": \"AMB\",\n    \"target_display\": \"ambulatory\"\n    ...\n  }\n]\n```\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```json\n[\"AMB\", ...]      \n``` \n\uD83D\uDCA1 **E.g.** mpp:getConcept(%obsConceptMap, code)",
-    insertText = "mpp:getConcept(<%conceptMap>, <source_code>)",detail = "mpp", label = "mpp:getConcept", kind = "Function", returnType = Seq(), inputType = Seq())
+  @FhirPathFunction(
+    documentation = FhirPathFunctionDocumentation(
+      detail = "Get corresponding concept from the given concept map with the given key. If there are more than one target column, it returns them as a complex JSON object. Otherwise, returns the value of it as list of string.",
+      usageWarnings = Some(Seq("A mapping concept with specified reference **must** be registered to the mapping as a context to use this function.")),
+      parameters = Some(Seq(
+        FhirPathFunctionParameter(
+          name = "conceptMap",
+          detail = "A reference to the concept map context.",
+          examples = Some(Seq("%obsConceptMap"))
+        ),
+        FhirPathFunctionParameter(
+          name = "source_code",
+          detail = "Source code to perform lookup operation in the concept map.",
+          examples = Some(Seq("code"))
+        )
+      )),
+      returnValue = FhirPathFunctionReturn(
+        detail = None,
+        examples = Seq(
+          """<JSON>[{"target_code": "AMB", "target_display": "ambulatory", ...}]""",
+          """["AMB", ...]"""
+        )
+      ),
+      examples = Seq(
+        "mpp:getConcept(%obsConceptMap, code)"
+      )
+    ),
+    insertText = "mpp:getConcept(<%conceptMap>, <source_code>)",
+    detail = "mpp",
+    label = "mpp:getConcept",
+    kind = "Function",
+    returnType = Seq(),
+    inputType = Seq()
+  )
   def getConcept(conceptMap: ExpressionContext, keyExpr: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conceptMap.getText.substring(1) // skip the leading % character
     val conceptMapContext = getConceptMap(mapName)
@@ -168,9 +291,42 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param columnName This should be the FHIR Path string literal providing the name of the column
    * @return
    */
-  @FhirPathFunction(documentation = "\uD83D\uDCDC Get corresponding value from the given concept map with the given key and column name. If there is no concept found with given key (code), return empty. It returns a list of string.  \n⚠\uFE0F A mapping concept with specified reference **must** be registered to the mapping as a context to use this function.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`conceptMap`**  \nA reference to the concept map context e.g. %obsConceptMap\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`source_code`**  \nSource code to perform lookup operation in the concept map e.g. code\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`columnName`**  \nFHIRPath string literal providing the name of the interested column from the concept map context.\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```json\n[\n  \"target-column-value-1\",\n  ...\n]\n``` \n\uD83D\uDCA1 **E.g.** mpp:getConcept(%obsConceptMap, code, 'target_code')",
-    insertText = "mpp:getConcept(<%conceptMap>, <source_code>, <columnName>)", detail = "mpp", label = "mpp:getConcept"
-    , kind = "Function", returnType = Seq("string"), inputType = Seq())
+  @FhirPathFunction(
+    documentation = FhirPathFunctionDocumentation(
+      detail = "Get corresponding value from the given concept map with the given key and column name. If there is no concept found with given key (code), return empty. It returns a list of string.",
+      usageWarnings = Some(Seq("A mapping concept with specified reference **must** be registered to the mapping as a context to use this function.")),
+      parameters = Some(Seq(
+        FhirPathFunctionParameter(
+          name = "conceptMap",
+          detail = "A reference to the concept map context.",
+          examples = Some(Seq("%obsConceptMap"))
+        ),
+        FhirPathFunctionParameter(
+          name = "source_code",
+          detail = "Source code to perform lookup operation in the concept map.",
+          examples = Some(Seq("code"))
+        ),
+        FhirPathFunctionParameter(
+          name = "columnName",
+          detail = "FHIRPath string literal providing the name of the interested column from the concept map context.",
+          examples = None
+        )
+      )),
+      returnValue = FhirPathFunctionReturn(
+        detail = None,
+        examples = Seq("""["target-column-value-1", ...]""")
+      ),
+      examples = Seq(
+        "mpp:getConcept(%obsConceptMap, code, 'target_code')"
+      )
+    ),
+    insertText = "mpp:getConcept(<%conceptMap>, <source_code>, <columnName>)",
+    detail = "mpp",
+    label = "mpp:getConcept",
+    kind = "Function",
+    returnType = Seq(FHIR_DATA_TYPES.STRING),
+    inputType = Seq()
+  )
   def getConcept(conceptMap: ExpressionContext, keyExpr: ExpressionContext, columnName: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conceptMap.getText.substring(1) // skip the leading % character
     val conceptMapContext = getConceptMap(mapName)
@@ -211,8 +367,47 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
    * @param unitExpr               FHIR Path expression returning the unit in the source
    * @return
    */
-  @FhirPathFunction(documentation = "\uD83D\uDCDC Convert the given value in given unit to the target unit specified in the context file with specified conversion function, return FHIR [Quantity](https://build.fhir.org/datatypes.html#Quantity). If there is no corresponding key (code) and unit in the unit conversion context, then return empty.  \n⚠\uFE0F An unit conversion context with specified reference **must** be registered to the mapping as a context to use this function.\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`unitConversion`**  \nReference name to the unit conversion context used to register in the mapping. e.g. %labUnitConv\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`source_code`**  \nCode to perform lookup operation together with source_unit. e.g. labCode\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`source_value`**  \nThe value in the source unit. This value will be applied to the found conversion function to get the value in target unit. e.g. labResultValue\n\n\uD83D\uDCDD <span style=\"color:#ff0000;\">_@param_</span> **`source_unit`**  \nThe unit to be converted. It is used to perform lookup operation together with source_code\n\n\uD83D\uDD19 <span style=\"color:#ff0000;\">_@return_</span>  \n```json\n{\n  \"value\": \"1.5\",\n  \"code\": \"mg/L\",\n  \"unit\": \"mg/L\",\n  \"system\": \"http://unitsofmeasure.org\"\n}\n```\n\n\uD83D\uDCA1 **E.g.** mpp:convertAndReturnQuantity(%conversionFunctions, labCode, measuredValue, unit)",
-    insertText = "mpp:convertAndReturnQuantity(<%unitConversion>, <source_code>, <source_value>, <source_unit>)",detail = "mpp", label = "mpp:convertAndReturnQuantity", kind = "Function", returnType = Seq(), inputType = Seq())
+  @FhirPathFunction(
+    documentation = FhirPathFunctionDocumentation(
+      detail = "Convert the given value in given unit to the target unit specified in the context file with specified conversion function, return FHIR [Quantity](https://build.fhir.org/datatypes.html#Quantity). If there is no corresponding key (code) and unit in the unit conversion context, then return empty.",
+      usageWarnings = Some(Seq("An unit conversion context with specified reference **must** be registered to the mapping as a context to use this function.")),
+      parameters = Some(Seq(
+        FhirPathFunctionParameter(
+          name = "unitConversion",
+          detail = "Reference name to the unit conversion context used to register in the mapping.",
+          examples = Some(Seq("%labUnitConv"))
+        ),
+        FhirPathFunctionParameter(
+          name = "source_code",
+          detail = "Code to perform lookup operation together with source_unit.",
+          examples = Some(Seq("labCode"))
+        ),
+        FhirPathFunctionParameter(
+          name = "source_value",
+          detail = "The value in the source unit. This value will be applied to the found conversion function to get the value in target unit.",
+          examples = Some(Seq("labResultValue"))
+        ),
+        FhirPathFunctionParameter(
+          name = "source_unit",
+          detail = "The unit to be converted. It is used to perform lookup operation together with source_code",
+          examples = None
+        )
+      )),
+      returnValue = FhirPathFunctionReturn(
+        detail = None,
+        examples = Seq("""<JSON>{"value": "1.5","code": "mg/L","unit": "mg/L","system": "http://unitsofmeasure.org"}""")
+      ),
+      examples = Seq(
+        "mpp:convertAndReturnQuantity(%conversionFunctions, labCode, measuredValue, unit)"
+      )
+    ),
+    insertText = "mpp:convertAndReturnQuantity(<%unitConversion>, <source_code>, <source_value>, <source_unit>)",
+    detail = "mpp",
+    label = "mpp:convertAndReturnQuantity",
+    kind = "Function",
+    returnType = Seq(),
+    inputType = Seq()
+  )
   def convertAndReturnQuantity(conversionFunctionsMap: ExpressionContext, keyExpr: ExpressionContext, valueExpr: ExpressionContext, unitExpr: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conversionFunctionsMap.getText.substring(1) // skip the leading % character
     val unitConversionContext = try {
