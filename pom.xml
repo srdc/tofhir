@@ -112,6 +112,7 @@
         <mockito.version>1.17.30</mockito.version>
         <postgres.version>42.7.0</postgres.version>
         <h2db.version>2.2.224</h2db.version>
+        <db2.version>12.1.0.0</db2.version>
         <cron4j.version>2.2.5</cron4j.version>
         <testcontainers>1.19.3</testcontainers>
         <akka.version>2.8.5</akka.version>
@@ -430,6 +431,13 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgres.version}</version>
+            </dependency>
+
+            <!-- DB2 driver for spark - https://mvnrepository.com/artifact/com.ibm.db2/jcc -->
+            <dependency>
+                <groupId>com.ibm.db2</groupId>
+                <artifactId>jcc</artifactId>
+                <version>${db2.version}</version>
             </dependency>
 
             <!-- cron4j -->

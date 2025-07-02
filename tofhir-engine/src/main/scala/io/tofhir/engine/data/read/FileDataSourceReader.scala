@@ -103,16 +103,19 @@ class FileDataSourceReader(spark: SparkSession) extends BaseDataSourceReader[Fil
             .csv(finalPath)
       // assume that each line in the txt files contains a separate JSON object.
       case SourceContentTypes.JSON | SourceContentTypes.NDJSON =>
-        if (mappingJobSourceSettings.asStream)
-          spark.readStream.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
+        if (mappingJobSourceSettings.asStream) {
+          // schema cannot be inferred for streaming so let's infer it ourselves
+          val inferredSchema = spark.read.options(mappingSourceBinding.options).json(finalPath).schema
+          spark.readStream.options(mappingSourceBinding.options).schema(inferredSchema).json(finalPath)
             // add a dummy column called 'filename' to print a log when the data reading is started for a file
             .withColumn("filename", logStartOfDataReading(processedFiles, logger = logger, jobId = jobId)(input_file_name))
+        }
         else if (isZipFile) {
           val unzippedFileContents = SparkUtil.readZip(finalPath, spark)
-          spark.read.options(mappingSourceBinding.options).schema(schema.orNull).json(unzippedFileContents)
+          spark.read.options(mappingSourceBinding.options).json(unzippedFileContents)
         }
         else
-          spark.read.options(mappingSourceBinding.options).schema(schema.orNull).json(finalPath)
+          spark.read.options(mappingSourceBinding.options).json(finalPath)
       case SourceContentTypes.PARQUET =>
         if (mappingJobSourceSettings.asStream)
           spark.readStream.options(mappingSourceBinding.options).schema(schema.orNull).parquet(finalPath)
