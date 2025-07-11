@@ -130,8 +130,13 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
           .limit(1) // It is enough to take the first row to infer the schema.
       } catch {
         case e: FhirMappingException =>
-          // Remove the new lines and capitalize the error detail to show it in front-end properly.
-          throw BadRequest(e.getMessage, e.getCause.toString.capitalize.replace("\n", " "))
+          val simplifiedCause = Option(e.getCause).map(_.getMessage).map(_.replace("\n", " ")).getOrElse("")
+          val detail =
+            if (simplifiedCause.toLowerCase.contains("parquet") && simplifiedCause.toLowerCase.contains("not a parquet file"))
+              "Content type mismatch: the input file is not a valid Parquet file."
+            else
+              simplifiedCause.capitalize
+          throw BadRequest(e.getMessage, detail)
       }
       dataFrame.schema // Get the schema inferred by Spark
     }
