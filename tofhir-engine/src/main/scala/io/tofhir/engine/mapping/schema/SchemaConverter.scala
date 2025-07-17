@@ -69,7 +69,8 @@ class SchemaConverter(majorFhirVersion: String) {
    * @return
    */
   private def getSparkType(elementRestrictions: ElementRestrictions): DataType = {
-    // if max = "*", its removed from the restrictions by API
+    // If max = "*", it is removed from the restrictions by onFHIR.
+    // Hence, we say that it is not an array if there is a cardinality restriction of <= 1.
     val notArray = elementRestrictions.restrictions.get(ConstraintKeys.MAX).exists {
       case m: CardinalityMaxRestriction => m.n <= 1
     }
@@ -95,6 +96,7 @@ class SchemaConverter(majorFhirVersion: String) {
             case _ => StringType
           }
       }
+
     if (notArray)
       baseType
     else
@@ -117,7 +119,7 @@ class SchemaConverter(majorFhirVersion: String) {
    * @return SimpleStructureDefinition object that defines a Schema
    */
   def fieldsToSchema(structField: StructField, defaultName: String): SimpleStructureDefinition = {
-    val (dataTypes, isArray, maxCardinality) = {
+    val (dataType, isArray, maxCardinality) = {
       def mapDataTypeToFhir(dataType: DataType): Option[Seq[DataTypeWithProfiles]] = {
         dataType match {
           case DataTypes.ShortType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.INTEGER, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.INTEGER}")))))
@@ -142,14 +144,15 @@ class SchemaConverter(majorFhirVersion: String) {
         case arrayType: ArrayType =>
           (mapDataTypeToFhir(arrayType.elementType), true, None) // None represents "*" (unbounded)
         case other =>
-          (mapDataTypeToFhir(other), false, Some(1))
+          val cardinality = if(structField.nullable) Some(0) else Some(1)
+          (mapDataTypeToFhir(other), false, cardinality)
       }
     }
 
     SimpleStructureDefinition(
       id = structField.name,
       path = defaultName + "." + structField.name,
-      dataTypes = dataTypes,
+      dataTypes = dataType,
       isPrimitive = true,
       isChoiceRoot = false,
       isArray = isArray,
