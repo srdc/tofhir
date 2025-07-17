@@ -144,8 +144,7 @@ class SchemaConverter(majorFhirVersion: String) {
         case arrayType: ArrayType =>
           (mapDataTypeToFhir(arrayType.elementType), true, None) // None represents "*" (unbounded)
         case other =>
-          val cardinality = if(structField.nullable) Some(0) else Some(1)
-          (mapDataTypeToFhir(other), false, cardinality)
+          (mapDataTypeToFhir(other), false, Some(1))
       }
     }
 
