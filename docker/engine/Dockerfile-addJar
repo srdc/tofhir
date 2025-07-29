@@ -1,4 +1,4 @@
-FROM openjdk:11-jre-slim
+FROM eclipse-temurin:11-jre
 
 ENV TOFHIR_HOME /usr/local/tofhir
 RUN mkdir -p "$TOFHIR_HOME"
