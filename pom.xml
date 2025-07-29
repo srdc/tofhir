@@ -98,7 +98,7 @@
         <scala-logging.version>3.9.5</scala-logging.version>
         <onfhir.version>3.4-SNAPSHOT</onfhir.version>
         <onfhir-template-engine.version>1.1-SNAPSHOT</onfhir-template-engine.version>
-        <spark-on-fhir.version>1.0-SNAPSHOT</spark-on-fhir.version>
+        <spark-on-fhir.version>1.1-SNAPSHOT</spark-on-fhir.version>
         <json4s.version>3.7.0-M11</json4s.version>
         <logback-more-appenders.version>1.8.8</logback-more-appenders.version>
         <fluent-logger.version>0.3.4</fluent-logger.version>
