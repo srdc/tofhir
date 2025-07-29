@@ -705,6 +705,23 @@
                 <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
+        <repository>
+            <name>SRDC Nexus Releases</name>
+            <id>srdc-maven-releases</id>
+            <url>https://nexus.srdc.com.tr/repository/maven-releases/</url>
+        </repository>
+        <repository>
+            <name>SRDC Nexus Snapshots</name>
+            <id>srdc-maven-snapshots</id>
+            <url>https://nexus.srdc.com.tr/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
     </repositories>
 
 </project>
