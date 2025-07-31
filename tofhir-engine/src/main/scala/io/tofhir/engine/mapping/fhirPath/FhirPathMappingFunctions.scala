@@ -218,7 +218,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
   @FhirPathFunction(
     documentation = FhirPathFunctionDocumentation(
       detail = "Get corresponding concept from the given concept map with the given key. If there are more than one target column, it returns them as a complex JSON object. Otherwise, returns the value of it as list of string.",
-      usageWarnings = Some(Seq("A mapping concept with specified reference **must** be registered to the mapping as a context to use this function.")),
+      usageWarnings = Some(Seq("A mapping concept with specified reference <strong>must</strong> be registered to the mapping as a context to use this function.")),
       parameters = Some(Seq(
         FhirPathFunctionParameter(
           name = "conceptMap",
@@ -294,7 +294,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
   @FhirPathFunction(
     documentation = FhirPathFunctionDocumentation(
       detail = "Get corresponding value from the given concept map with the given key and column name. If there is no concept found with given key (code), return empty. It returns a list of string.",
-      usageWarnings = Some(Seq("A mapping concept with specified reference **must** be registered to the mapping as a context to use this function.")),
+      usageWarnings = Some(Seq("A mapping concept with specified reference <strong>must</strong> be registered to the mapping as a context to use this function.")),
       parameters = Some(Seq(
         FhirPathFunctionParameter(
           name = "conceptMap",
@@ -370,7 +370,7 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
   @FhirPathFunction(
     documentation = FhirPathFunctionDocumentation(
       detail = "Convert the given value in given unit to the target unit specified in the context file with specified conversion function, return FHIR [Quantity](https://build.fhir.org/datatypes.html#Quantity). If there is no corresponding key (code) and unit in the unit conversion context, then return empty.",
-      usageWarnings = Some(Seq("An unit conversion context with specified reference **must** be registered to the mapping as a context to use this function.")),
+      usageWarnings = Some(Seq("An unit conversion context with specified reference <strong>must</strong> be registered to the mapping as a context to use this function.")),
       parameters = Some(Seq(
         FhirPathFunctionParameter(
           name = "unitConversion",
