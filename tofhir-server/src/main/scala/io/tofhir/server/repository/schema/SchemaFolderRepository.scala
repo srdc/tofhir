@@ -98,11 +98,14 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectReposito
     } catch {
       case _: IllegalArgumentException => throw BadRequest("Missing data type.", s"A field definition must have at least one data type. Element rootPath: ${schemaDefinition.`type`}")
     }
-    try {
-      fhirConfigurator.validateGivenInfrastructureResources(baseFhirConfig, api.FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION, Seq(structureDefinitionResource))
-    } catch {
-      case e: Exception =>
-        throw BadRequest("Schema definition is not valid.", s"Schema definition cannot be validated: ${schemaDefinition.url}", Some(e))
+    if (!SchemaUtil.isDeepSchema(schemaDefinition))
+    {
+      try {
+        fhirConfigurator.validateGivenInfrastructureResources(baseFhirConfig, api.FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION, Seq(structureDefinitionResource))
+      } catch {
+        case e: Exception =>
+          throw BadRequest("Schema definition is not valid.", s"Schema definition cannot be validated: ${schemaDefinition.url}", Some(e))
+      }
     }
 
     // Ensure that both the ID and "URL|version" (the canonical URL) of the schema is unique/
@@ -138,11 +141,13 @@ class SchemaFolderRepository(schemaRepositoryFolderPath: String, projectReposito
     } catch {
       case _: IllegalArgumentException => throw BadRequest("Missing data type.", s"A field definition must have at least one data type. Element rootPath: ${schemaDefinition.`type`}")
     }
-    try {
-      fhirConfigurator.validateGivenInfrastructureResources(baseFhirConfig, api.FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION, Seq(structureDefinitionResource))
-    } catch {
-      case e: Exception =>
-        throw BadRequest("Schema definition is not valid.", s"Schema definition cannot be validated: ${schemaDefinition.url}", Some(e))
+    if (!SchemaUtil.isDeepSchema(schemaDefinition)) {
+      try {
+        fhirConfigurator.validateGivenInfrastructureResources(baseFhirConfig, api.FHIR_FOUNDATION_RESOURCES.FHIR_STRUCTURE_DEFINITION, Seq(structureDefinitionResource))
+      } catch {
+        case e: Exception =>
+          throw BadRequest("Schema definition is not valid.", s"Schema definition cannot be validated: ${schemaDefinition.url}", Some(e))
+      }
     }
 
     // Update the file

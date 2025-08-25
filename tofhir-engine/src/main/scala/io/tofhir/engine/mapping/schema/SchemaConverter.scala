@@ -119,7 +119,6 @@ class SchemaConverter(majorFhirVersion: String) {
    * @return SimpleStructureDefinition object that defines a Schema
    */
   def fieldsToSchema(structField: StructField, defaultName: String): SimpleStructureDefinition = {
-    val (dataType, isArray, maxCardinality) = {
       def mapDataTypeToFhir(dataType: DataType): Option[Seq[DataTypeWithProfiles]] = {
         dataType match {
           case DataTypes.ShortType => Some(Seq(DataTypeWithProfiles(dataType = FHIR_DATA_TYPES.INTEGER, profiles = Some(Seq(s"$FHIR_ROOT_URL_FOR_DEFINITIONS/StructureDefinition/${FHIR_DATA_TYPES.INTEGER}")))))
@@ -140,37 +139,117 @@ class SchemaConverter(majorFhirVersion: String) {
         }
       }
 
-      structField.dataType match {
-        case arrayType: ArrayType =>
-          (mapDataTypeToFhir(arrayType.elementType), true, None) // None represents "*" (unbounded)
-        case other =>
-          (mapDataTypeToFhir(other), false, Some(1))
-      }
-    }
+    val path = s"$defaultName.${structField.name}"
 
-    SimpleStructureDefinition(
-      id = structField.name,
-      path = defaultName + "." + structField.name,
-      dataTypes = dataType,
-      isPrimitive = true,
-      isChoiceRoot = false,
-      isArray = isArray,
-      minCardinality = if (structField.nullable) 0 else 1,
-      maxCardinality = maxCardinality,
-      boundToValueSet = None,
-      isValueSetBindingRequired = None,
-      referencableProfiles = None,
-      constraintDefinitions = None,
-      sliceDefinition = None,
-      sliceName = None,
-      fixedValue = None,
-      patternValue = None,
-      referringTo = None,
-      short = None,
-      definition = None,
-      comment = None,
-      elements = None
-    )
+    structField.dataType match {
+      case ArrayType(st: StructType, _) =>
+        // Backbone element
+        val children = st.fields.map(cf => fieldsToSchema(cf, path))
+        SimpleStructureDefinition(
+          id = structField.name,
+          path = path,
+          dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "BackboneElement", profiles = None))),
+          isPrimitive = false,
+          isChoiceRoot = false,
+          isArray = true,
+          minCardinality = if (structField.nullable) 0 else 1,
+          maxCardinality = None,
+          boundToValueSet = None,
+          isValueSetBindingRequired = None,
+          referencableProfiles = None,
+          constraintDefinitions = None,
+          sliceDefinition = None,
+          sliceName = None,
+          fixedValue = None,
+          patternValue = None,
+          referringTo = None,
+          short = None,
+          definition = None,
+          comment = None,
+          elements = Some(children)
+        )
+
+      case st: StructType =>
+        // BackboneElement with children
+        val children = st.fields.map(cf => fieldsToSchema(cf, path))
+        SimpleStructureDefinition(
+          id = structField.name,
+          path = path,
+          dataTypes = Some(Seq(DataTypeWithProfiles(dataType = "BackboneElement", profiles = None))),
+          isPrimitive = false,
+          isChoiceRoot = false,
+          isArray = false,
+          minCardinality = if (structField.nullable) 0 else 1,
+          maxCardinality = Some(1),
+          boundToValueSet = None,
+          isValueSetBindingRequired = None,
+          referencableProfiles = None,
+          constraintDefinitions = None,
+          sliceDefinition = None,
+          sliceName = None,
+          fixedValue = None,
+          patternValue = None,
+          referringTo = None,
+          short = None,
+          definition = None,
+          comment = None,
+          elements = Some(children)
+        )
+
+      case ArrayType(elt, _) =>
+        // Array of primitives
+        val fhirType = mapDataTypeToFhir(elt)
+        SimpleStructureDefinition(
+          id = structField.name,
+          path = path,
+          dataTypes = fhirType,
+          isPrimitive = true,
+          isChoiceRoot = false,
+          isArray = true,
+          minCardinality = if (structField.nullable) 0 else 1,
+          maxCardinality = None, // "*"
+          boundToValueSet = None,
+          isValueSetBindingRequired = None,
+          referencableProfiles = None,
+          constraintDefinitions = None,
+          sliceDefinition = None,
+          sliceName = None,
+          fixedValue = None,
+          patternValue = None,
+          referringTo = None,
+          short = None,
+          definition = None,
+          comment = None,
+          elements = None
+        )
+
+      case other =>
+        // Single primitive
+        val fhirType = mapDataTypeToFhir(other)
+        SimpleStructureDefinition(
+          id = structField.name,
+          path = path,
+          dataTypes = fhirType,
+          isPrimitive = true,
+          isChoiceRoot = false,
+          isArray = false,
+          minCardinality = if (structField.nullable) 0 else 1,
+          maxCardinality = Some(1),
+          boundToValueSet = None,
+          isValueSetBindingRequired = None,
+          referencableProfiles = None,
+          constraintDefinitions = None,
+          sliceDefinition = None,
+          sliceName = None,
+          fixedValue = None,
+          patternValue = None,
+          referringTo = None,
+          short = None,
+          definition = None,
+          comment = None,
+          elements = None
+        )
+    }
   }
 
   /**
