@@ -165,7 +165,7 @@ class SchemaDefinitionService(schemaRepository: ISchemaRepository, mappingReposi
     // Create unnamed Schema definition by infer the schema from DataFrame
     val unnamedSchema = {
       // Map SQL DataTypes to Fhir DataTypes
-      var fieldDefinitions = effectiveSchema.fields.map(structField => schemaConverter.fieldsToSchema(structField, defaultName))
+      var fieldDefinitions = effectiveSchema.fields.map(structField => schemaConverter.fieldsToSchema(structField, ""))
       // Remove INPUT_VALIDITY_ERROR fieldDefinition that is added by SourceHandler
       fieldDefinitions = fieldDefinitions.filter(fieldDefinition => fieldDefinition.id != SourceHandler.INPUT_VALIDITY_ERROR)
       SchemaDefinition(url = defaultName, version = SchemaDefinition.VERSION_LATEST, `type` = defaultName, name = defaultName, description = Option.empty, rootDefinition = Option.empty, fieldDefinitions = Some(fieldDefinitions))
