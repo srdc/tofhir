@@ -16,6 +16,11 @@ object SchemaUtil {
    * @return
    */
   def convertToStructureDefinitionResource(schemaDefinition: SchemaDefinition, fhirVersion: String): Resource = {
+
+    val deepSchema = isDeepSchema(schemaDefinition)
+    val kindVal        = if (deepSchema) "resource"      else "logical"
+    val derivationVal  = if (deepSchema) "constraint"    else "specialization"
+
     var structureDefinitionResource: Resource =
       ("id" -> schemaDefinition.id) ~
         ("resourceType" -> "StructureDefinition") ~
@@ -28,12 +33,12 @@ object SchemaUtil {
     structureDefinitionResource ~
       ("status" -> "draft") ~
       ("fhirVersion" -> fhirVersion) ~
-      ("kind" -> "logical") ~
+      ("kind" -> kindVal) ~
       ("abstract" -> false) ~
       ("type" -> schemaDefinition.`type`) ~
       ("baseDefinition" -> "http://hl7.org/fhir/StructureDefinition/Element") ~
-      ("derivation" -> "specialization") ~
-      ("differential" -> ("element" -> generateElementArray(schemaDefinition.`type`, schemaDefinition.fieldDefinitions.getOrElse(Seq.empty))))
+      ("derivation"   -> derivationVal) ~
+      ("differential" -> ("element" -> generateElementArray(schemaDefinition.id, schemaDefinition.`type`, schemaDefinition.fieldDefinitions.getOrElse(Seq.empty), deepSchema)))
   }
 
   /**
@@ -44,24 +49,58 @@ object SchemaUtil {
    * @return
    * @throws IllegalArgumentException if a field definition does not have at least one data type
    */
-  private def generateElementArray(`type`: String, fieldDefinitions: Seq[SimpleStructureDefinition]): JArray = {
-    // Check whether all field definitions have at least one data type
-    val integrityCheck = fieldDefinitions.forall(fd => fd.dataTypes.isDefined && fd.dataTypes.get.nonEmpty)
+  private def generateElementArray(id: String, `type`: String, fieldDefinitions: Seq[SimpleStructureDefinition], deepSchema: Boolean): JArray = {
+
+    // Normalize path so that it starts with the schema type
+    def normalizePath(p: String): String = {
+      val raw = Option(p).map(_.trim).getOrElse("")
+      val clean =
+        if (id != null && id.nonEmpty && (raw == id || raw.startsWith(id + ".")))
+          raw.stripPrefix(id + ".").stripPrefix(id)
+        else raw
+      val t = `type`
+      if (clean.isEmpty) t
+      else if (clean == t || clean.startsWith(t + ".")) clean
+      else t + "." + clean
+    }
+
+    // Flatten nested elements into a single list suitable for StructureDefinition.differential.element
+    def flatten(defs: Seq[SimpleStructureDefinition]): Seq[SimpleStructureDefinition] = {
+      defs.flatMap { fd =>
+        val np = normalizePath(fd.path)
+        val self = fd.copy(
+          id       = np,
+          path     = np,
+          elements = None
+        )
+        self +: flatten(fd.elements.getOrElse(Seq.empty))
+      }
+    }
+
+    val flatFds = flatten(fieldDefinitions)
+
+    // Validate types after flatten
+    val integrityCheck = flatFds.forall(fd => fd.dataTypes.isDefined && fd.dataTypes.get.nonEmpty)
     if (!integrityCheck) {
       throw new IllegalArgumentException(s"Missing data type.A field definition must have at least one data type. Element rootPath: ${`type`}")
     }
 
-    val rootElement =
-      ("id" -> `type`) ~
-        ("path" -> `type`) ~
-        ("min" -> 0) ~
-        ("max" -> "*") ~
-        ("type" -> JArray(List("code" -> "Element")))
-
-    val elements = fieldDefinitions.map { fd =>
+    val rootElement: org.json4s.JObject =
+      if (deepSchema) {
+        ("id" -> `type`) ~
+          ("path" -> `type`)
+      } else {
+        ("id" -> `type`) ~
+          ("path" -> `type`) ~
+          ("min" -> 0) ~
+          ("max" -> "*") ~
+          ("type" -> JArray(List(("code" -> "Element"))))
+      }
+    // Children (flat list)
+    val elements = flatFds.map { fd =>
       val max: String = fd.maxCardinality match {
         case Some(v) => v.toString
-        case None => "*"
+        case None    => if (fd.isArray) "*" else "1"
       }
       // create element json
       var elementJson =
@@ -69,10 +108,10 @@ object SchemaUtil {
           ("path" -> fd.path) ~
           ("min" -> fd.minCardinality) ~
           ("max" -> max) ~
-          ("type" -> fd.dataTypes.get.map { dt =>
+          ("type" -> JArray(fd.dataTypes.get.map { dt =>
             ("code" -> dt.dataType) ~
               ("profile" -> dt.profiles)
-          })
+          }.toList))
       // add the field definition if it exists
       if (fd.definition.nonEmpty) {
         elementJson = elementJson ~ ("definition" -> fd.definition)
@@ -85,5 +124,16 @@ object SchemaUtil {
     }.toList
 
     JArray(rootElement +: elements)
+  }
+
+  /**
+   * Helper to check if a schema's field definitions have elements in them
+   * @param schema Schema to be classified
+   * @return
+   */
+  def isDeepSchema(schema: SchemaDefinition): Boolean = {
+    schema.fieldDefinitions
+      .getOrElse(Seq.empty)
+      .exists(fd => fd.elements.exists(_.nonEmpty))
   }
 }
