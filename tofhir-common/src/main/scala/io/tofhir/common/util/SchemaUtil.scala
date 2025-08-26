@@ -28,12 +28,12 @@ object SchemaUtil {
     structureDefinitionResource ~
       ("status" -> "draft") ~
       ("fhirVersion" -> fhirVersion) ~
-      ("kind" -> "logical") ~
+      ("kind" -> "resource") ~
       ("abstract" -> false) ~
       ("type" -> schemaDefinition.`type`) ~
       ("baseDefinition" -> "http://hl7.org/fhir/StructureDefinition/Element") ~
-      ("derivation" -> "specialization") ~
-      ("differential" -> ("element" -> generateElementArray(schemaDefinition.`type`, schemaDefinition.fieldDefinitions.getOrElse(Seq.empty))))
+      ("derivation" -> "constraint") ~
+      ("differential" -> ("element" -> generateElementArray(schemaDefinition.id, schemaDefinition.`type`, schemaDefinition.fieldDefinitions.getOrElse(Seq.empty))))
   }
 
   /**
@@ -44,15 +44,19 @@ object SchemaUtil {
    * @return
    * @throws IllegalArgumentException if a field definition does not have at least one data type
    */
-  private def generateElementArray(`type`: String, fieldDefinitions: Seq[SimpleStructureDefinition]): JArray = {
+  private def generateElementArray(id: String, `type`: String, fieldDefinitions: Seq[SimpleStructureDefinition]): JArray = {
 
     // Normalize path so that it starts with the schema type
-     def normalizePath(p: String): String = {
-      val s = Option(p).map(_.trim).getOrElse("")
+    def normalizePath(p: String): String = {
+      val raw = Option(p).map(_.trim).getOrElse("")
+      val clean =
+        if (id != null && id.nonEmpty && (raw == id || raw.startsWith(id + ".")))
+        raw.stripPrefix(id + ".").stripPrefix(id)
+      else raw
       val t = `type`
-      if (s.isEmpty) t
-      else if (s == t || s.startsWith(t + ".")) s
-      else t + "." + s
+      if (clean.isEmpty) t
+      else if (clean == t || clean.startsWith(t + ".")) clean
+      else t + "." + clean
     }
 
     // Flatten nested elements into a single list suitable for StructureDefinition.differential.element
@@ -78,10 +82,7 @@ object SchemaUtil {
 
     val rootElement =
       ("id" -> `type`) ~
-        ("path" -> `type`) ~
-        ("min" -> 0) ~
-        ("max" -> "*") ~
-        ("type" -> JArray(List("code" -> "Element")))
+        ("path" -> `type`)
 
     // Children (flat list)
     val elements = flatFds.map { fd =>
