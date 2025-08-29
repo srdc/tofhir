@@ -28,10 +28,7 @@ class MappingContextLoader extends IMappingContextLoader {
     if (contextDefinition.url.isDefined) {
       //logger.debug("The context definition for the mapping repository is defined at a URL:{}. It will be loaded...", contextDefinition.url.get)
       // FIXME: To build the context, we only accept CSV files with a header to read from.
-      contextDefinition.category match {
-        case FhirMappingContextCategories.CONCEPT_MAP => readConceptMapContextFromCSV(contextDefinition.url.get).map { concepts => ConceptMapContext(concepts) }
-        case FhirMappingContextCategories.UNIT_CONVERSION_FUNCTIONS => readUnitConversionFunctionsFromCSV(contextDefinition.url.get).map { conversionFunctions => UnitConversionContext(conversionFunctions) }
-      }
+      readConceptMapContextFromCSV(contextDefinition.url.get)
     } else {
       // FIXME: If there is no URL to read from, then the context definition may be given through the value of the FhirMappingContextDefinition as a JSON object.
       //  It needs to be converted to a FhirMappingContext object.
@@ -89,20 +86,37 @@ class MappingContextLoader extends IMappingContextLoader {
    * @param filePath
    * @return
    */
-  private def readConceptMapContextFromCSV(filePath: String): Future[Map[String, Seq[Map[String, String]]]] = {
+  private def readConceptMapContextFromCSV(filePath: String): Future[ConceptMapContext] = {
     readFromCSV(filePath) map {
       case (columns, records) =>
         //val (firstColumnName, _) = records.head.head // Get the first element in the records list and then get the first (k,v) pair to get the name of the first column.
         val columnHeadKey = columns.head
-        records.foldLeft(Map[String, Seq[Map[String, String]]]()) { (conceptMap, columnMap) =>
-          val key = columnMap(columnHeadKey)
-          // If a source code has not been encountered before, add it as the first element.
-          // Otherwise, append the new target values to the existing sequence.
-          conceptMap.updatedWith(key) {
-            case Some(existingValues) => Some(existingValues :+ columnMap)
-            case None => Some(Seq(columnMap))
-          }
+        val lowerCols  = columns.map(_.toLowerCase)
+
+        def colName(wanted: String): Option[String] = {
+          val i = lowerCols.indexOf(wanted)
+          if (i == -1) None else Some(columns(i))
         }
+
+      // Concept Map view
+      val concepts: Map[String, Seq[Map[String, String]]] =
+        records.groupBy(_(columnHeadKey)).view.mapValues(_.toSeq).toMap
+
+      // Unit Conversion view
+      val maybeSrcUnit = colName("source_unit")
+      val maybeTgtUnit = colName("target_unit")
+      val maybeFn      = colName("conversion_function")
+
+      val conversionFunctions: Map[(String, String), (String, String)] =
+        (maybeSrcUnit, maybeTgtUnit, maybeFn) match {
+          case (Some(srcU), Some(tgtU), Some(fn)) =>
+            records.foldLeft(Map.empty[(String, String), (String, String)]) {
+              (acc, row) =>
+              acc + ((row(columnHeadKey) -> row(srcU)) -> (row(tgtU) -> row(fn)))}
+          case _ => Map.empty
+        }
+
+      ConceptMapContext(concepts = concepts, conversionFunctions = conversionFunctions)
     }
   }
 

@@ -22,7 +22,7 @@ trait FhirMappingContext {
  *
  *
  */
-case class ConceptMapContext(concepts: Map[String, Seq[Map[String, String]]]) extends FhirMappingContext {
+case class ConceptMapContext(concepts: Map[String, Seq[Map[String, String]]], conversionFunctions: Map[(String, String), (String, String)] = Map.empty) extends FhirMappingContext {
   override def toContextObject: JObject = JObject()
 }
 
