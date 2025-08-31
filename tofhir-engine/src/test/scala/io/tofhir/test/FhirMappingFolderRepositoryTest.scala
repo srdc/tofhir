@@ -3,7 +3,7 @@ package io.tofhir.test
 import io.tofhir.ToFhirTestSpec
 import io.tofhir.engine.mapping.context.MappingContextLoader
 import io.tofhir.engine.model.exception.FhirMappingException
-import io.tofhir.engine.model.{ConceptMapContext, UnitConversionContext}
+import io.tofhir.engine.model.ConceptMapContext
 import org.scalatest.flatspec.AsyncFlatSpec
 
 import java.io.File
@@ -83,7 +83,7 @@ class FhirMappingFolderRepositoryTest extends AsyncFlatSpec with ToFhirTestSpec 
     val unitConversionContextDefinition = labResultsMapping.context("labResultUnitConversion")
     val mappingContextLoader = new MappingContextLoader
     mappingContextLoader.retrieveContext(unitConversionContextDefinition) map { context =>
-      val unitConversionContext = context.asInstanceOf[UnitConversionContext]
+      val unitConversionContext = context.asInstanceOf[ConceptMapContext]
       unitConversionContext.conversionFunctions.size shouldBe 25
 
       // source_code,source_unit,target_unit,conversion_function
