@@ -58,32 +58,40 @@ class MappingContextLoader extends IMappingContextLoader {
   }
 
   /**
-   * Read concept mappings from the given CSV file.
-   * Example dataset to understand what this function does:
-   * Input CSV content (concept mappings), assumed to be at some file path specified:
+   * Reads Concept Maps and with potential Unit Conversion-related fields from a CSV file,
+   *
+   * The CSV's header row, 'source code' is used as a key to group the entries.
+   * Grouped entries form the Concept Map view.
+   *
+   * If the CSV also includes the following columns, the method additionally builds a Unit Conversion view where 'source_code' and 'source_unit' entries are keyed to map 'conversion_function' and 'target_unit' entries:
+   *   - `source_unit`
+   *   - `target_unit`
+   *   - `conversion_function`
+   *
+   * Example Composite CSV Data
    * -----------------------------
-   * source_code,target_code,display_value
-   * 001,A1,Foo
-   * 001,A2,Bar
-   * 002,B1,Baz
+   * source_code,source_unit,target_code,target_unit,conversion_function
+   * "1988-5","mg/L","1988-5","mg/L","$this"
+   * "59260-0","mmol/L","718-7","g/L","$this * 16.114"
    * -----------------------------
    *
-   * Explanation of this structure:
-   * - "source_code" is the key (the first column header), which will group the rows.
-   * - "target_code" and "display_value" are part of the data for each key grouping.
-   *
-   * Expected output of processing:
+   * Concept Map view:
    * Map(
-   *   "001" -> Seq(
-   *     Map("source_code" -> "001", "target_code" -> "A1", "display_value" -> "Foo"),
-   *     Map("source_code" -> "001", "target_code" -> "A2", "display_value" -> "Bar")
+   *   "1988-5" -> Seq(
+   *     Map("source_code" -> "1988-5", "source_unit" -> "mg/L", "target_code" -> "1988-5", "target_unit" -> "mg/L", "conversion_function" -> "$this" )
    *   ),
-   *   "002" -> Seq(
-   *     Map("source_code" -> "002", "target_code" -> "B1", "display_value" -> "Baz")
+   *   "59260-0" -> Seq(
+   *     Map("source_code" -> "59260-0", "source_unit" -> "mmol/L", "target_code" -> "718-7", "target_unit" -> "g/L", "conversion_function" -> "$this * 16.114" )
    *   )
    * )
    *
-   * @param filePath
+   * Unit Conversion view:
+   * Map(
+   *   ("1988-5","mg/L") -> ("mg/L", "$this"),
+   *   ("59260-0", "mmol/L")-> ("g/L",  "$this * 16.114")
+   * )
+   *
+   * @param filePath file path of the CSV file
    * @return
    */
   private def readConceptMapContextFromCSV(filePath: String): Future[ConceptMapContext] = {

@@ -19,6 +19,21 @@ trait FhirMappingContext {
  *                                        (unit -> mL),
  *                                        (profile -> https://aiccelerate.eu/fhir/StructureDefinition/AIC-IntraOperativeObservation)]
  *                 ]]
+ * @param conversionFunctions Optionally given unit conversion data
+ *
+ *                            If the parsed CSV uses "source_unit, target_unit, conversion_function" columns on top of the essential column data, the model will also hold those as Unit Conversion specifications.
+ *
+ *                            For example, in a composite mapping context like the following, the conversion specific data looks as given below it:
+ *
+ *                            -----------------------------
+ *                            source_code,source_unit,target_code,target_unit,conversion_function
+ *                            "1988-5","mg/L","1988-5","mg/L","$this"
+ *                            "59260-0","mmol/L","718-7","g/L","$this * 16.114"
+ *                            -----------------------------
+ *                            Map(
+ *                              ("1988-5","mg/L") -> ("mg/L", "$this"),
+ *                              ("59260-0", "mmol/L")-> ("g/L",  "$this * 16.114")
+ *                            )
  *
  *
  */
