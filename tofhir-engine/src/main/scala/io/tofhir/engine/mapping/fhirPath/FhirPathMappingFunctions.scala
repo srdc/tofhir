@@ -410,8 +410,12 @@ class FhirPathMappingFunctions(context: FhirPathEnvironment, current: Seq[FhirPa
   )
   def convertAndReturnQuantity(conversionFunctionsMap: ExpressionContext, keyExpr: ExpressionContext, valueExpr: ExpressionContext, unitExpr: ExpressionContext): Seq[FhirPathResult] = {
     val mapName = conversionFunctionsMap.getText.substring(1) // skip the leading % character
-    val unitConversionContext = try {
-      mappingContext(mapName).asInstanceOf[UnitConversionContext]
+    val unitConversionContext: UnitConversionContext = try {
+      mappingContext(mapName) match {
+        case u: UnitConversionContext => u
+        case c: ConceptMapContext     => UnitConversionContext(c.conversionFunctions)
+        case _                        => throw new Exception()
+      }
     } catch {
       case e: Exception => throw new FhirPathException(s"Invalid function call 'convertAndReturnQuantity', given expression for conversionFunctionsMap:${conversionFunctionsMap.getText} should point to a valid map entry in the provided mapping context!")
     }

@@ -28,10 +28,7 @@ class MappingContextLoader extends IMappingContextLoader {
     if (contextDefinition.url.isDefined) {
       //logger.debug("The context definition for the mapping repository is defined at a URL:{}. It will be loaded...", contextDefinition.url.get)
       // FIXME: To build the context, we only accept CSV files with a header to read from.
-      contextDefinition.category match {
-        case FhirMappingContextCategories.CONCEPT_MAP => readConceptMapContextFromCSV(contextDefinition.url.get).map { concepts => ConceptMapContext(concepts) }
-        case FhirMappingContextCategories.UNIT_CONVERSION_FUNCTIONS => readUnitConversionFunctionsFromCSV(contextDefinition.url.get).map { conversionFunctions => UnitConversionContext(conversionFunctions) }
-      }
+      readConceptMapContextFromCSV(contextDefinition.url.get)
     } else {
       // FIXME: If there is no URL to read from, then the context definition may be given through the value of the FhirMappingContextDefinition as a JSON object.
       //  It needs to be converted to a FhirMappingContext object.
@@ -61,48 +58,73 @@ class MappingContextLoader extends IMappingContextLoader {
   }
 
   /**
-   * Read concept mappings from the given CSV file.
-   * Example dataset to understand what this function does:
-   * Input CSV content (concept mappings), assumed to be at some file path specified:
+   * Reads Concept Maps and with potential Unit Conversion-related fields from a CSV file,
+   *
+   * The CSV's header row, 'source code' is used as a key to group the entries.
+   * Grouped entries form the Concept Map view.
+   *
+   * If the CSV also includes the following columns, the method additionally builds a Unit Conversion view where 'source_code' and 'source_unit' entries are keyed to map 'conversion_function' and 'target_unit' entries:
+   *   - `source_unit`
+   *   - `target_unit`
+   *   - `conversion_function`
+   *
+   * Example Composite CSV Data
    * -----------------------------
-   * source_code,target_code,display_value
-   * 001,A1,Foo
-   * 001,A2,Bar
-   * 002,B1,Baz
+   * source_code,source_unit,target_code,target_unit,conversion_function
+   * "1988-5","mg/L","1988-5","mg/L","$this"
+   * "59260-0","mmol/L","718-7","g/L","$this * 16.114"
    * -----------------------------
    *
-   * Explanation of this structure:
-   * - "source_code" is the key (the first column header), which will group the rows.
-   * - "target_code" and "display_value" are part of the data for each key grouping.
-   *
-   * Expected output of processing:
+   * Concept Map view:
    * Map(
-   *   "001" -> Seq(
-   *     Map("source_code" -> "001", "target_code" -> "A1", "display_value" -> "Foo"),
-   *     Map("source_code" -> "001", "target_code" -> "A2", "display_value" -> "Bar")
+   *   "1988-5" -> Seq(
+   *     Map("source_code" -> "1988-5", "source_unit" -> "mg/L", "target_code" -> "1988-5", "target_unit" -> "mg/L", "conversion_function" -> "$this" )
    *   ),
-   *   "002" -> Seq(
-   *     Map("source_code" -> "002", "target_code" -> "B1", "display_value" -> "Baz")
+   *   "59260-0" -> Seq(
+   *     Map("source_code" -> "59260-0", "source_unit" -> "mmol/L", "target_code" -> "718-7", "target_unit" -> "g/L", "conversion_function" -> "$this * 16.114" )
    *   )
    * )
    *
-   * @param filePath
+   * Unit Conversion view:
+   * Map(
+   *   ("1988-5","mg/L") -> ("mg/L", "$this"),
+   *   ("59260-0", "mmol/L")-> ("g/L",  "$this * 16.114")
+   * )
+   *
+   * @param filePath file path of the CSV file
    * @return
    */
-  private def readConceptMapContextFromCSV(filePath: String): Future[Map[String, Seq[Map[String, String]]]] = {
+  private def readConceptMapContextFromCSV(filePath: String): Future[ConceptMapContext] = {
     readFromCSV(filePath) map {
       case (columns, records) =>
         //val (firstColumnName, _) = records.head.head // Get the first element in the records list and then get the first (k,v) pair to get the name of the first column.
         val columnHeadKey = columns.head
-        records.foldLeft(Map[String, Seq[Map[String, String]]]()) { (conceptMap, columnMap) =>
-          val key = columnMap(columnHeadKey)
-          // If a source code has not been encountered before, add it as the first element.
-          // Otherwise, append the new target values to the existing sequence.
-          conceptMap.updatedWith(key) {
-            case Some(existingValues) => Some(existingValues :+ columnMap)
-            case None => Some(Seq(columnMap))
-          }
+        val lowerCols  = columns.map(_.toLowerCase)
+
+        def colName(wanted: String): Option[String] = {
+          val i = lowerCols.indexOf(wanted)
+          if (i == -1) None else Some(columns(i))
         }
+
+      // Concept Map view
+      val concepts: Map[String, Seq[Map[String, String]]] =
+        records.groupBy(_(columnHeadKey)).view.mapValues(_.toSeq).toMap
+
+      // Unit Conversion view
+      val maybeSrcUnit = colName("source_unit")
+      val maybeTgtUnit = colName("target_unit")
+      val maybeFn      = colName("conversion_function")
+
+      val conversionFunctions: Map[(String, String), (String, String)] =
+        (maybeSrcUnit, maybeTgtUnit, maybeFn) match {
+          case (Some(srcU), Some(tgtU), Some(fn)) =>
+            records.foldLeft(Map.empty[(String, String), (String, String)]) {
+              (acc, row) =>
+              acc + ((row(columnHeadKey) -> row(srcU)) -> (row(tgtU) -> row(fn)))}
+          case _ => Map.empty
+        }
+
+      ConceptMapContext(concepts = concepts, conversionFunctions = conversionFunctions)
     }
   }
 
