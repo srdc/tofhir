@@ -24,6 +24,8 @@ import java.util.regex.Pattern
  * @param isWriteSkipped                 Whether writing the mapped resources to the sink is skipped (a dry run: the
  *                                       mappings run and their results are logged, but nothing reaches the sink and
  *                                       the source files are not archived). Supported only for batch executions.
+ * @param validateResources              Whether the mapped resources are validated against their profile(s) before
+ *                                       they are written (see [[SinkSettings.validateResources]])
  */
 case class FhirMappingJobExecution(
     id: String,
@@ -36,7 +38,8 @@ case class FhirMappingJobExecution(
     archiveMode: ArchiveModes,
     saveErroneousRecords: Boolean,
     isScheduledJob: Boolean,
-    isWriteSkipped: Boolean
+    isWriteSkipped: Boolean,
+    validateResources: Boolean
 ) {
 
   /**
@@ -193,7 +196,8 @@ object FhirMappingJobExecution {
       archiveMode,
       saveErroneousRecords,
       isScheduledJob,
-      skipWrite
+      skipWrite,
+      job.sinkSettings != null && job.sinkSettings.validateResources
     )
   }
 }

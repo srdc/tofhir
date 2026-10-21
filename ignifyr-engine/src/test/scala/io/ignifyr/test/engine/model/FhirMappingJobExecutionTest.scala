@@ -4,7 +4,9 @@ import io.ignifyr.engine.model.{
   FhirMappingJob,
   FhirMappingJobExecution,
   FhirMappingJobResult,
-  FhirRepositorySinkSettings
+  FhirRepositorySinkSettings,
+  FileSystemSinkSettings,
+  SinkContentTypes
 }
 import io.ignifyr.engine.util.SparkUtil
 import org.scalatest.flatspec.AnyFlatSpec
@@ -32,6 +34,17 @@ class FhirMappingJobExecutionTest extends AnyFlatSpec with Matchers {
     // Test whether commit directory is right
     testExecution.getCommitDirectory(mappingTaskName) shouldBe
       SparkUtil.getCommitDirectoryPath(Paths.get(testExecution.getCheckpointDirectory(mappingTaskName)))
+  }
+
+  "FhirMappingJobExecution" should "validate the mapped resources only when the sink asks for it" in {
+    // A FHIR server sink validates on its own and never asks for it
+    testExecution.validateResources shouldBe false
+    FhirMappingJobExecution(job =
+      testJob.copy(sinkSettings = FileSystemSinkSettings("./out", SinkContentTypes.NDJSON))
+    ).validateResources shouldBe false
+    FhirMappingJobExecution(job =
+      testJob.copy(sinkSettings = FileSystemSinkSettings("./out", SinkContentTypes.NDJSON, validateResources = true))
+    ).validateResources shouldBe true
   }
 
   "FhirMappingJobExecution" should "write its results unless skipping the write is asked for" in {

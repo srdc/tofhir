@@ -50,6 +50,7 @@ class ListPlugins extends Command {
       line("lookup observers", ext.lookupObservers)(_.getClass.getSimpleName),
       ext.streamingProvider.map(p => s"streaming provider: ${p.getClass.getSimpleName}"),
       ext.schedulerProvider.map(p => s"scheduler provider: ${p.getClass.getSimpleName}"),
+      ext.resourceValidatorProvider.map(p => s"resource validator: ${p.getClass.getSimpleName}"),
       line("spark conf keys", ext.sparkConfContributions.keys.toSeq.sorted)(identity)
     ).flatten ++ ext.extraCapabilities
   }

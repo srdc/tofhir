@@ -74,6 +74,12 @@ trait IgnifyrExtension {
   def lookupObservers: Seq[MappingLookupObserver] = Nil
 
   /**
+   * Validation of the mapped resources against their profile(s) before they are written, for jobs that ask for it
+   * (`sinkSettings.validateResources`). At most one may be installed.
+   */
+  def resourceValidatorProvider: Option[ResourceValidatorProvider] = None
+
+  /**
    * Extra Spark configuration entries this module contributes to the shared SparkSession — e.g. an
    * enterprise format that needs a Spark session extension or catalog (`spark.sql.extensions`,
    * `spark.sql.catalog.spark_catalog`). Merged into the session config when it is first built.

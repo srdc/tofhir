@@ -9,7 +9,17 @@ import scala.concurrent.ExecutionContext
 /**
  * Common interface for sink settings
  */
-trait SinkSettings
+trait SinkSettings {
+
+  /**
+   * Whether the mapped resources are validated against their profile(s) before they are written; a resource with
+   * validation errors is not written and is reported as an invalid resource. Needs a resource validator module
+   * (Enterprise `ignifyr-validation`). Only sinks that do not validate on their own offer it: a FHIR server validates
+   * what it receives, so [[FhirRepositorySinkSettings]] (and any sink that does not override this, e.g. a database
+   * sink checking its rows against its tables) never asks for it.
+   */
+  def validateResources: Boolean = false
+}
 
 /**
  * Settings to write mapped FHIR resources to file system
@@ -25,6 +35,8 @@ trait SinkSettings
  * @param partitioningColumns     Keeps partitioning columns for specific resource types.
  *                                Applicable only when data is partitioned by resource type (via "partitionByResourceType").
  *                                Supported content types: {@link SinkContentTypes.PARQUET} and {@link SinkContentTypes.DELTA_LAKE}
+ * @param validateResources       Whether the mapped resources are validated before they are written (see
+ *                                [[SinkSettings.validateResources]])
  */
 case class FileSystemSinkSettings(
     path: String,
@@ -32,7 +44,8 @@ case class FileSystemSinkSettings(
     numOfPartitions: Int = 1,
     options: Map[String, String] = Map.empty[String, String],
     partitionByResourceType: Boolean = false,
-    partitioningColumns: Map[String, List[String]] = Map.empty[String, List[String]]
+    partitioningColumns: Map[String, List[String]] = Map.empty[String, List[String]],
+    override val validateResources: Boolean = false
 ) extends SinkSettings {
 
   /**
