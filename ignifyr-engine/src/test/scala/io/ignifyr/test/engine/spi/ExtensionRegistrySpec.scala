@@ -46,6 +46,12 @@ class ExtensionRegistrySpec extends AnyFlatSpec with Matchers {
     ex.getMessage should include("UnregisteredSource")
   }
 
+  it should "find no module job-model classes or serializers on the core-only classpath" in {
+    // The engine core's job-model classes are its own (FhirMappingJobFormatter); only modules contribute any
+    ExtensionRegistry.jobModelClasses shouldBe empty
+    ExtensionRegistry.jobSerializers shouldBe empty
+  }
+
   it should "materialize every rejecting registry without error on the core-only classpath" in {
     noException should be thrownBy ExtensionRegistry.init()
   }

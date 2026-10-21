@@ -1,13 +1,6 @@
 package io.ignifyr.engine.spi
 
-import io.ignifyr.engine.model.{
-  FhirRepositorySinkSettings,
-  FhirServerSource,
-  FileSystemSinkSettings,
-  FileSystemSource,
-  KafkaSource,
-  SqlSource
-}
+import io.ignifyr.engine.model.{FhirRepositorySinkSettings, FileSystemSinkSettings, FileSystemSource, SqlSource}
 
 /**
  * Static "which module provides this?" hints used only to build actionable error messages when a
@@ -15,16 +8,16 @@ import io.ignifyr.engine.model.{
  * and the Maven coordinates of the module that supplies its runtime, so the error can say exactly
  * what to install. Unknown (e.g. third-party) classes fall back to their simple name.
  *
- * Keyed on model classes, all of which permanently live in the engine, so these entries stay valid
- * regardless of which edition currently ships the corresponding reader/writer.
+ * Keyed on the engine's own model classes, so these entries stay valid regardless of which edition
+ * currently ships the corresponding reader/writer. A model class defined by a module (see
+ * [[IgnifyrExtension.jobModelClasses]]) needs no entry: without the module the job does not parse, and the
+ * parse error names the unknown `jsonClass`.
  */
 object ExtensionHints {
 
   private val sourceModules: Map[Class[_], (String, String)] = Map(
     classOf[FileSystemSource] -> ("file", "io.ignifyr:ignifyr-connector-file"),
-    classOf[SqlSource] -> ("sql", "io.ignifyr:ignifyr-connector-sql"),
-    classOf[KafkaSource] -> ("kafka", "com.pontegra.ignifyr:ignifyr-connector-kafka"),
-    classOf[FhirServerSource] -> ("fhir-server", "com.pontegra.ignifyr:ignifyr-connector-fhir-server")
+    classOf[SqlSource] -> ("sql", "io.ignifyr:ignifyr-connector-sql")
   )
 
   private val sinkModules: Map[Class[_], (String, String)] = Map(

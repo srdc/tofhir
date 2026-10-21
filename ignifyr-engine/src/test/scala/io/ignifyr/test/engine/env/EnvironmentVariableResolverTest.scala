@@ -5,6 +5,13 @@ import io.ignifyr.engine.model._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+/** A module's binding, resolving the placeholders of its own field. */
+private case class TopicSource(topic: String) extends MappingSourceBinding {
+  override def withPreprocessSql(preprocessSql: Option[String]): MappingSourceBinding = this
+  override def withResolvedEnvironmentVariables(resolve: String => String): MappingSourceBinding =
+    copy(topic = resolve(topic))
+}
+
 /**
  * Covers `${ENV_VAR}` substitution in mapping-job definitions. Only the names listed in the
  * `EnvironmentVariable` enumeration are substitutable; anything else is rejected rather than silently
@@ -76,6 +83,21 @@ class EnvironmentVariableResolverTest extends AnyFlatSpec with Matchers {
     val thrown = the[RuntimeException] thrownBy EnvironmentVariableResolver.resolveFhirMappingJob(job)
     thrown.getMessage should include("SOURCE_URL")
     thrown.getMessage should include("is not set")
+  }
+
+  it should "let a source binding type resolve the placeholders of its own fields" in {
+    val job = jobWith(
+      Map("main" -> FileSystemSourceSettings(name = "src", sourceUri = "urn:test", dataFolderPath = "/data")),
+      mappings = Seq(
+        FhirMappingTask(
+          name = "t",
+          mappingRef = "http://test/mappings/t",
+          sourceBinding = Map("source" -> TopicSource("${NOT_A_KNOWN_VAR}"))
+        )
+      )
+    )
+    val thrown = the[RuntimeException] thrownBy EnvironmentVariableResolver.resolveFhirMappingJob(job)
+    thrown.getMessage should include("NOT_A_KNOWN_VAR")
   }
 
   it should "not touch a sink type that carries no resolvable field" in {

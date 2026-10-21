@@ -3,16 +3,55 @@ package io.ignifyr.test.engine.util
 import io.onfhir.client.model.BasicAuthenticationSettings
 import io.ignifyr.engine.model._
 import io.ignifyr.engine.util.FhirMappingJobFormatter
-import org.json4s.MappingException
+import org.json4s.JsonAST.{JBool, JObject, JString}
+import org.json4s.jackson.{JsonMethods, Serialization}
+import org.json4s.{CustomSerializer, Formats, MappingException}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.nio.file.Files
 
+/** Job-model classes of a module that is not the engine: a source type the engine does not know. */
+private case class ModuleSource(queue: String) extends MappingSourceBinding {
+  override def withPreprocessSql(preprocessSql: Option[String]): MappingSourceBinding = this
+}
+
+private case class ModuleSourceSettings(name: String, sourceUri: String, enabled: Boolean = true)
+    extends MappingJobSourceSettings
+
+/** A module serializer writing the defaulted `enabled`, as the Kafka connector does for `asStream`. */
+private object ModuleSourceSettingsSerializer
+    extends CustomSerializer[ModuleSourceSettings](_ =>
+      (
+        { case json: JObject =>
+          implicit val formats: Formats = org.json4s.DefaultFormats
+          ModuleSourceSettings(
+            (json \ "name").extract[String],
+            (json \ "sourceUri").extract[String],
+            (json \ "enabled").extractOrElse(false)
+          )
+        },
+        { case settings: ModuleSourceSettings =>
+          JObject(
+            "name" -> JString(settings.name),
+            "sourceUri" -> JString(settings.sourceUri),
+            "enabled" -> JBool(settings.enabled),
+            "jsonClass" -> JString("ModuleSourceSettings")
+          )
+        }
+      )
+    )
+
+/** A module class with the simple name of an engine one. */
+private object clashing {
+  case class SqlSource(table: String)
+}
+
 /**
  * Covers the mapping-job (de)serializer: the `ShortTypeHints` table that lets one job file carry any
- * source/sink/scheduling type, and the duplicate-mappingTask-name rejection. The server rejects
- * duplicate names on its own create path; this is the file-read path the CLI and the scheduler use.
+ * source/sink/scheduling type — the engine's own and those the installed modules contribute — and the
+ * duplicate-mappingTask-name rejection. The server rejects duplicate names on its own create path; this
+ * is the file-read path the CLI and the scheduler use.
  */
 class FhirMappingJobFormatterTest extends AnyFlatSpec with Matchers {
 
@@ -36,7 +75,7 @@ class FhirMappingJobFormatterTest extends AnyFlatSpec with Matchers {
     duplicates should contain theSameElementsAs Seq("a", "b")
   }
 
-  "readMappingJobFromFile" should "restore every registered source and sink type" in {
+  "readMappingJobFromFile" should "restore every engine source and sink type" in {
     val job = FhirMappingJob(
       name = Some("multi-source-job"),
       sourceSettings = Map(
@@ -47,21 +86,18 @@ class FhirMappingJobFormatterTest extends AnyFlatSpec with Matchers {
           databaseUrl = "jdbc:h2:mem:t",
           username = "u",
           password = "p"
-        ),
-        "fhir" -> FhirServerSourceSettings(name = "r", sourceUri = "urn:r", serverUrl = "http://onfhir/fhir")
+        )
       ),
       sinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://onfhir/fhir"),
       mappings = Seq(
         task("from-file"),
-        task("from-sql", SqlSource(tableName = Some("patients"))),
-        task("from-fhir", FhirServerSource(resourceType = "Patient"))
+        task("from-sql", SqlSource(tableName = Some("patients")))
       )
     )
 
     val restored = roundTrip(job)
     restored.sourceSettings("file") shouldBe a[FileSystemSourceSettings]
     restored.sourceSettings("sql") shouldBe a[SqlSourceSettings]
-    restored.sourceSettings("fhir") shouldBe a[FhirServerSourceSettings]
     restored.sinkSettings shouldBe a[FhirRepositorySinkSettings]
     restored.mappings.map(_.sourceBinding("source").getClass) shouldBe
       job.mappings.map(_.sourceBinding("source").getClass)
@@ -95,7 +131,50 @@ class FhirMappingJobFormatterTest extends AnyFlatSpec with Matchers {
     roundTrip(job).sinkSettings shouldBe sink
   }
 
-  it should "reject a job whose mappingTasks share a name" in {
+  "formats" should "read and write the job-model classes and serializers a module contributes" in {
+    implicit val formats: Formats =
+      FhirMappingJobFormatter.buildFormats(
+        Seq(classOf[ModuleSource], classOf[ModuleSourceSettings]),
+        Seq(ModuleSourceSettingsSerializer)
+      )
+    val job = FhirMappingJob(
+      sourceSettings = Map("queue" -> ModuleSourceSettings(name = "q", sourceUri = "urn:q")),
+      sinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://onfhir/fhir"),
+      mappings = Seq(task("from-queue", ModuleSource("patients")))
+    )
+    val json = Serialization.write(job)
+    // The module serializer writes the defaulted field (its deserializer would read it as false otherwise)
+    json should include(""""enabled":true""")
+
+    val restored = JsonMethods.parse(json).extract[FhirMappingJob]
+    restored.sourceSettings("queue") shouldBe ModuleSourceSettings(name = "q", sourceUri = "urn:q")
+    restored.mappings.head.sourceBinding("source") shouldBe ModuleSource("patients")
+  }
+
+  it should "fail on a jsonClass no installed module provides, saying so" in {
+    // The engine's test classpath installs no module defining job-model classes
+    val json =
+      """{"sourceSettings": {"q": {"jsonClass": "ModuleSourceSettings", "name": "q", "sourceUri": "urn:q"}},
+        | "sinkSettings": {"jsonClass": "FhirRepositorySinkSettings", "fhirRepoUrl": "http://onfhir/fhir"},
+        | "mappings": []}""".stripMargin
+    val file = Files.createTempFile("ignifyr-job", ".json")
+    Files.writeString(file, json)
+
+    val thrown = the[MappingException] thrownBy FhirMappingJobFormatter.readMappingJobFromFile(file.toString)
+    thrown.getMessage should include("Unknown jsonClass 'ModuleSourceSettings'")
+    thrown.getMessage should include("no installed module provides it")
+  }
+
+  it should "reject a module job-model class reusing the name of an engine one" in {
+    val thrown = the[IllegalStateException] thrownBy FhirMappingJobFormatter.buildFormats(
+      Seq(classOf[clashing.SqlSource]),
+      Nil
+    )
+    thrown.getMessage should include(classOf[clashing.SqlSource].getName)
+    thrown.getMessage should include("reuse the name of an engine job model class")
+  }
+
+  "readMappingJobFromFile" should "reject a job whose mappingTasks share a name" in {
     val job = FhirMappingJob(
       sourceSettings = Map("file" -> FileSystemSourceSettings(name = "f", sourceUri = "urn:f", dataFolderPath = "./d")),
       sinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://onfhir/fhir"),

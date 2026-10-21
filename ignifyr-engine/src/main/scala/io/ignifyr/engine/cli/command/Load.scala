@@ -71,12 +71,11 @@ object Load {
             s"\t\tDatabase URL: ${settings.databaseUrl},\n" +
             s"\t\tUsername: ${settings.username},\n" +
             s"\t\tPassword: ********\n"
-        case (sourceAlias, settings: KafkaSourceSettings) =>
-          s"\tKafka Source Settings for '$sourceAlias':\n" +
+        // Settings types of the installed modules: the fields every source has
+        case (sourceAlias, settings) =>
+          s"\t${settings.getClass.getSimpleName} for '$sourceAlias':\n" +
             s"\t\tName: ${settings.name},\n" +
-            s"\t\tSource URI: ${settings.sourceUri},\n" +
-            s"\t\tBootstrap servers: ${settings.bootstrapServers}\n"
-        case _ => "\tNo Source Settings\n"
+            s"\t\tSource URI: ${settings.sourceUri}\n"
       }
       .mkString("\n")
     val sinkSettingsStr = mj.sinkSettings match {

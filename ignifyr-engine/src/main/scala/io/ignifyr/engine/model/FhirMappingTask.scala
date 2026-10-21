@@ -75,6 +75,13 @@ trait MappingSourceBinding extends Serializable {
    * (e.g. batch-parameter substitution) without matching on concrete binding types.
    */
   def withPreprocessSql(preprocessSql: Option[String]): MappingSourceBinding
+
+  /**
+   * A copy of this binding with the `${ENV_VAR}` placeholders of its fields resolved by `resolve` (see
+   * `EnvironmentVariableResolver`). Each binding type decides which of its fields may carry one; the default is
+   * none.
+   */
+  def withResolvedEnvironmentVariables(resolve: String => String): MappingSourceBinding = this
 }
 
 /**
@@ -122,39 +129,6 @@ case class SqlSource(
     tableName: Option[String] = None,
     query: Option[String] = None,
     options: Map[String, String] = Map.empty[String, String],
-    override val preprocessSql: Option[String] = None,
-    override val sourceRef: Option[String] = None
-) extends MappingSourceBinding {
-  override def withPreprocessSql(preprocessSql: Option[String]): MappingSourceBinding =
-    copy(preprocessSql = preprocessSql)
-}
-
-/**
- * Context/configuration for one of the source of the mapping that will read the source data from a kafka as stream
- *
- * @param topicName       The topic(s) to subscribe, may be comma seperated string list (topic1,topic2)
- * @param options         Further options for Kafka source (Spark Kafka Guide -> https://spark.apache.org/docs/3.5.1/structured-streaming-kafka-integration.html)
- */
-case class KafkaSource(
-    topicName: String,
-    options: Map[String, String] = Map.empty[String, String],
-    override val preprocessSql: Option[String] = None,
-    override val sourceRef: Option[String] = None
-) extends MappingSourceBinding {
-  override def withPreprocessSql(preprocessSql: Option[String]): MappingSourceBinding =
-    copy(preprocessSql = preprocessSql)
-}
-
-/**
- * Represents a mapping source binding for FHIR server data.
- *
- * @param resourceType   The type of FHIR resource to query.
- * @param query          An optional query string to filter the FHIR resources.
- * @param preprocessSql  An optional SQL string for preprocessing the data before mapping.
- */
-case class FhirServerSource(
-    resourceType: String,
-    query: Option[String] = None,
     override val preprocessSql: Option[String] = None,
     override val sourceRef: Option[String] = None
 ) extends MappingSourceBinding {

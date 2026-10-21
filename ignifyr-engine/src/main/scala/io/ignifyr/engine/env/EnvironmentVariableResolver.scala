@@ -5,9 +5,6 @@ import io.ignifyr.engine.model.{
   FhirMappingTask,
   FhirRepositorySinkSettings,
   SinkSettings,
-  FileSystemSourceSettings,
-  KafkaSource,
-  KafkaSourceSettings,
   MappingJobSourceSettings
 }
 
@@ -70,7 +67,8 @@ object EnvironmentVariableResolver {
   }
 
   /**
-   * Resolves environment variables in MappingJobSourceSettings.
+   * Resolves environment variables in MappingJobSourceSettings. Which fields may carry a placeholder is up to
+   * each settings type ([[MappingJobSourceSettings.withResolvedEnvironmentVariables]]).
    *
    * @param sourceSettings A map of source settings.
    * @return The map with resolved settings.
@@ -79,18 +77,13 @@ object EnvironmentVariableResolver {
       sourceSettings: Map[String, MappingJobSourceSettings]
   ): Map[String, MappingJobSourceSettings] = {
     sourceSettings.map { case (key, value) =>
-      key -> (value match {
-        case fs: FileSystemSourceSettings =>
-          fs.copy(dataFolderPath = resolveEnvironmentVariables(fs.dataFolderPath))
-        case ks: KafkaSourceSettings =>
-          ks.copy(sourceUri = resolveEnvironmentVariables(ks.sourceUri))
-        case other => other // No changes for other types
-      })
+      key -> value.withResolvedEnvironmentVariables(resolveEnvironmentVariables)
     }
   }
 
   /**
-   * Resolves environment variables in mappings.
+   * Resolves environment variables in the source bindings of the mappings. Which fields may carry a placeholder
+   * is up to each binding type ([[io.ignifyr.engine.model.MappingSourceBinding.withResolvedEnvironmentVariables]]).
    *
    * @param mappings The list of mapping tasks
    * @return The resolved mappings
@@ -98,11 +91,7 @@ object EnvironmentVariableResolver {
   private def resolveMappings(mappings: Seq[FhirMappingTask]): Seq[FhirMappingTask] = {
     mappings.map { mapping =>
       val updatedSourceBinding = mapping.sourceBinding.map { case (key, source) =>
-        key -> (source match {
-          case kafkaSource: KafkaSource =>
-            kafkaSource.copy(topicName = resolveEnvironmentVariables(kafkaSource.topicName))
-          case other => other // No changes for other source types
-        })
+        key -> source.withResolvedEnvironmentVariables(resolveEnvironmentVariables)
       }
 
       mapping.copy(sourceBinding = updatedSourceBinding)

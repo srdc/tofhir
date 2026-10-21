@@ -88,7 +88,7 @@ else plugs into). Where a module exists mainly for structural regularity, the ta
 
 | Module | Edition | What it does | Why it is a module |
 |---|---|---|---|
-| `ignifyr-engine` | Community | The engine: reads with Spark, applies the mapping templates, routes results to a sink. Owns every job/mapping/settings model, the batch runtime, the CLI, and the `IgnifyrExtension` SPI. | It is the host, not a plugin — the one artifact every other module compiles against. Because the plugins depend on it, it cannot itself be the fat jar (that would be a cycle), which is why the assembly lives downstream in `ignifyr-cli`. Two gates keep it honest: the enforcer, which bans the enterprise libraries from its dependency tree, and its own test suite, which asserts that the engine's built-in extension contributes nothing but CLI commands and a local terminology service. |
+| `ignifyr-engine` | Community | The engine: reads with Spark, applies the mapping templates, routes results to a sink. Owns the job/mapping models and the community source/sink settings models (a plugin module defines its own, see `IgnifyrExtension.jobModelClasses`), the batch runtime, the CLI, and the `IgnifyrExtension` SPI. | It is the host, not a plugin — the one artifact every other module compiles against. Because the plugins depend on it, it cannot itself be the fat jar (that would be a cycle), which is why the assembly lives downstream in `ignifyr-cli`. Two gates keep it honest: the enforcer, which bans the enterprise libraries from its dependency tree, and its own test suite, which asserts that the engine's built-in extension contributes nothing but CLI commands and a local terminology service. |
 | `ignifyr-common` | Community | Spark-free helpers below the engine: the app-version reader, onFHIR `SchemaDefinition` → `StructureDefinition` conversion, exception-chain flattening, and the `cst:` FHIRPath function library. | The only layer usable without Spark or the engine on the classpath, and the point where the `onfhir-common` / `onfhir-definition-commons` dependencies enter the build. Honestly a thin, largely historical split: nothing today would break if it folded into the engine. |
 
 #### Source connectors — `ignifyr-connector-*` reads data **in**
@@ -177,9 +177,11 @@ And it can write the mapped results to:
 | OMOP CDM | *upcoming* — see `ignifyr-sink-omop` | `ignifyr-sink-omop` | Enterprise |
 
 > [!NOTE]
-> A mapping job naming a source or sink whose module is not installed still **parses** — every settings
-> class lives in the engine. It fails when the job runs, with a message naming the module to install.
-> `list-plugins` (see [CLI Commands](#cli-commands)) reports what the running jar actually has.
+> A mapping job naming a community source or sink whose module is not installed still **parses** — those
+> settings classes live in the engine — and fails when the job runs, with a message naming the module to
+> install. An Enterprise source or sink type is defined by its own module, so without that module the job
+> fails to parse, naming the unknown `jsonClass`. `list-plugins` (see [CLI Commands](#cli-commands))
+> reports what the running jar actually has.
 
 ## Usage
 
