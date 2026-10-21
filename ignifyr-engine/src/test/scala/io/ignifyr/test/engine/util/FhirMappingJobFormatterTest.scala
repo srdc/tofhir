@@ -174,7 +174,28 @@ class FhirMappingJobFormatterTest extends AnyFlatSpec with Matchers {
     thrown.getMessage should include("reuse the name of an engine job model class")
   }
 
-  "readMappingJobFromFile" should "reject a job whose mappingTasks share a name" in {
+  "readMappingJobFromFile" should "restore the resource validation option of the file sink, off when absent" in {
+    val fileSink = FileSystemSinkSettings("./out", SinkContentTypes.NDJSON, validateResources = true)
+    val job = FhirMappingJob(
+      sourceSettings = Map("file" -> FileSystemSourceSettings(name = "f", sourceUri = "urn:f", dataFolderPath = "./d")),
+      sinkSettings = fileSink,
+      mappings = Seq(task("a"))
+    )
+    roundTrip(job).sinkSettings.validateResources shouldBe true
+    roundTrip(job.copy(sinkSettings = FileSystemSinkSettings("./out", SinkContentTypes.NDJSON))).sinkSettings
+      .validateResources shouldBe false
+    // A job file written before the option existed
+    val file = Files.createTempFile("ignifyr-job", ".json")
+    Files.writeString(
+      file,
+      Serialization.write(job)(FhirMappingJobFormatter.formats).replace(",\"validateResources\":true", "")
+    )
+    FhirMappingJobFormatter.readMappingJobFromFile(file.toString).sinkSettings shouldBe fileSink.copy(
+      validateResources = false
+    )
+  }
+
+  it should "reject a job whose mappingTasks share a name" in {
     val job = FhirMappingJob(
       sourceSettings = Map("file" -> FileSystemSourceSettings(name = "f", sourceUri = "urn:f", dataFolderPath = "./d")),
       sinkSettings = FhirRepositorySinkSettings(fhirRepoUrl = "http://onfhir/fhir"),

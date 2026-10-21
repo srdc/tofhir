@@ -123,6 +123,11 @@ object ExtensionRegistry {
     extensions.flatMap(e => e.streamingProvider.map(e.id -> _))
   )
 
+  /** The single installed resource validator provider, if any. More than one is a config error. */
+  lazy val resourceValidator: Option[ResourceValidatorProvider] = singleCapability("resource validator provider")(
+    extensions.flatMap(e => e.resourceValidatorProvider.map(e.id -> _))
+  )
+
   /** The single installed scheduling execution provider, if any. More than one is a config error. */
   lazy val scheduler: Option[SchedulerProvider] = singleCapability("scheduling execution provider")(
     extensions.flatMap(e => e.schedulerProvider.map(e.id -> _))
@@ -182,7 +187,7 @@ object ExtensionRegistry {
    * second copy of a single-capability module surfaces at engine startup rather than in the middle of
    * a job — and log what was loaded.
    *
-   * `streaming` and `scheduler` are included deliberately: both throw from [[singleCapability]] when
+   * `streaming`, `scheduler` and `resourceValidator` are included deliberately: all throw from [[singleCapability]] when
    * two providers are installed, and neither is read anywhere else during startup. (`streaming` used
    * to be covered only incidentally, by `IgnifyrEngine` consulting it to decide whether to start the
    * archive timer; that is a coincidence, not a guarantee.) `sparkConfContributions` needs no entry —
@@ -200,6 +205,7 @@ object ExtensionRegistry {
     io.ignifyr.engine.util.FhirMappingJobFormatter.formats
     streaming
     scheduler
+    resourceValidator
     ()
   }
 

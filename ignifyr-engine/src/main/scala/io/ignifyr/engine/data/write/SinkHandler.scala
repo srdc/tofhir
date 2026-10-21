@@ -4,11 +4,21 @@ import com.typesafe.scalalogging.Logger
 import io.ignifyr.engine.execution.log.ExecutionLogger
 import io.ignifyr.engine.execution.processing.ErroneousRecordWriter
 import io.ignifyr.engine.model._
-import io.ignifyr.engine.spi.ExtensionRegistry
+import io.ignifyr.engine.spi.{
+  ExtensionHints,
+  ExtensionRegistry,
+  MappedResourceValidator,
+  MissingCapabilityException,
+  ResourceValidatorProvider,
+  ValidationIssue
+}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
+import org.json4s.DefaultFormats
+import org.json4s.jackson.Serialization
 
 import java.util
+import scala.util.control.NonFatal
 
 object SinkHandler {
   val logger: Logger = Logger(this.getClass)
@@ -28,6 +38,20 @@ object SinkHandler {
       mappingTaskName: String,
       df: Dataset[FhirMappingResult],
       resourceWriter: BaseSinkWriter
+  ): Unit =
+    writeMappingResult(spark, mappingJobExecution, mappingTaskName, df, resourceWriter, ExtensionRegistry.resourceValidator)
+
+  /**
+   * [[writeMappingResult]] with the resource validator provider given explicitly (the installed one by default), so
+   * that the validation step can be tested with a stub provider.
+   */
+  private[ignifyr] def writeMappingResult(
+      spark: SparkSession,
+      mappingJobExecution: FhirMappingJobExecution,
+      mappingTaskName: String,
+      df: Dataset[FhirMappingResult],
+      resourceWriter: BaseSinkWriter,
+      resourceValidator: => Option[ResourceValidatorProvider]
   ): Unit = {
     // Cache the dataframe
     df.cache()
@@ -40,6 +64,21 @@ object SinkHandler {
     val fhirWriteProblemsAccum: CollectionAccumulator[FhirMappingResult] =
       spark.sparkContext.collectionAccumulator[FhirMappingResult](accumName)
     fhirWriteProblemsAccum.reset()
+    // Validate the mapped resources if the job asks for it. The invalid ones are reported like the resources the sink
+    // rejects (they count as not written) and only the valid ones are handed to the writer.
+    val validatedResults: Option[Dataset[(FhirMappingResult, Option[String])]] =
+      if (mappingJobExecution.validateResources) {
+        val validator = resourceValidator
+          .getOrElse(throw MissingCapabilityException(ExtensionHints.describeResourceValidator))
+          .validatorFor(mappingJobExecution, mappingTaskName)
+        Some(validateMappedResults(spark, mappedResults, validator, fhirWriteProblemsAccum))
+      } else None
+    val resourcesToWrite = validatedResults match {
+      case Some(validated) =>
+        import spark.implicits._
+        validated.filter(_._2.isEmpty).map(_._1)
+      case None => mappedResults
+    }
     // Write the FHIR resources, unless the execution skips writing (the accumulator then stays empty, so the mapped
     // resources are logged as numOfFhirResources with no failed writes)
     if (mappingJobExecution.isWriteSkipped)
@@ -47,7 +86,7 @@ object SinkHandler {
         s"Skipping the write of the mapped resources for mappingTask '$mappingTaskName' of execution '${mappingJobExecution.id}'."
       )
     else
-      resourceWriter.write(spark, mappedResults, fhirWriteProblemsAccum)
+      resourceWriter.write(spark, resourcesToWrite, fhirWriteProblemsAccum)
     logMappingJobResult(
       mappingJobExecution,
       mappingTaskName,
@@ -66,8 +105,68 @@ object SinkHandler {
       mappingErrors,
       invalidInputs
     )
-    // Unpersist the data frame
+    // Unpersist the data frames
+    validatedResults.foreach(_.unpersist())
     df.unpersist()
+  }
+
+  /**
+   * Fails fast, before anything is mapped, when the execution asks for the validation of the mapped resources but no
+   * resource validator is installed.
+   *
+   * @throws MissingCapabilityException if the validation is asked for and no resource validator is installed
+   */
+  def requireResourceValidator(mappingJobExecution: FhirMappingJobExecution): Unit =
+    if (mappingJobExecution.validateResources && ExtensionRegistry.resourceValidator.isEmpty)
+      throw MissingCapabilityException(ExtensionHints.describeResourceValidator)
+
+  /**
+   * Validates the mapped resources and adds the invalid ones (with an [[FhirMappingErrorCodes.INVALID_RESOURCE]] error
+   * listing the issues) to the problems accumulator.
+   *
+   * @return Every mapped result with the JSON of its issues if it is invalid (cached; the caller unpersists it)
+   */
+  private def validateMappedResults(
+      spark: SparkSession,
+      mappedResults: Dataset[FhirMappingResult],
+      validator: MappedResourceValidator,
+      problemsAccumulator: CollectionAccumulator[FhirMappingResult]
+  ): Dataset[(FhirMappingResult, Option[String])] = {
+    import spark.implicits._
+    // Validate once: the dataset is read again for the invalid and for the valid results
+    val validated = mappedResults.map(result => result -> invalidResourceIssues(validator, result)).cache()
+    validated
+      .filter(_._2.isDefined)
+      .collect()
+      .foreach { case (result, issues) =>
+        problemsAccumulator.add(
+          result.copy(error =
+            Some(
+              FhirMappingError(
+                code = FhirMappingErrorCodes.INVALID_RESOURCE,
+                description = "Resource does not conform to its profile(s)!",
+                expression = issues
+              )
+            )
+          )
+        )
+      }
+    validated
+  }
+
+  /**
+   * Validates the mapped resource of a result.
+   *
+   * @return The JSON of the validation issues if the resource is invalid (has an error), None if it conforms
+   */
+  private def invalidResourceIssues(validator: MappedResourceValidator, result: FhirMappingResult): Option[String] = {
+    val issues =
+      try result.mappedFhirResource.flatMap(_.mappedResource).map(validator.validate).getOrElse(Nil)
+      catch {
+        case NonFatal(t) =>
+          Seq(ValidationIssue("fatal", "exception", Some(s"Resource could not be validated: ${t.getMessage}")))
+      }
+    if (issues.exists(_.isError)) Some(Serialization.write(issues)(DefaultFormats)) else None
   }
 
   /**

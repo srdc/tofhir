@@ -1,5 +1,6 @@
 package io.ignifyr.engine.model
 
+import io.ignifyr.engine.spi.{ExtensionHints, ExtensionRegistry}
 import io.ignifyr.engine.util.FhirMappingJobFormatter
 import org.json4s.JsonAST.{JObject, JString}
 
@@ -39,12 +40,20 @@ case class FhirMappingJob(
   /**
    * Validates the mapping job
    *
-   * @throws BadRequestException if a streaming job is attempted to be scheduled or if a data source referenced
-   *                             by a mapping task is missing from the source settings.
+   * @throws BadRequestException if a streaming job is attempted to be scheduled, if a data source referenced
+   *                             by a mapping task is missing from the source settings, or if the job asks for the
+   *                             validation of the mapped resources and no resource validator is installed.
    */
   def validate(): Unit = {
     if (sourceSettings.exists(_._2.asStream) && schedulingSettings.nonEmpty) {
       throw new BadRequestException("Streaming jobs cannot be scheduled.")
+    }
+
+    if (
+      sinkSettings != null && sinkSettings.validateResources &&
+      ExtensionRegistry.resourceValidator.isEmpty
+    ) {
+      throw new BadRequestException(ExtensionHints.describeResourceValidator)
     }
 
     // Check names of the mappingTasks, if a duplicate name is found, throw an error

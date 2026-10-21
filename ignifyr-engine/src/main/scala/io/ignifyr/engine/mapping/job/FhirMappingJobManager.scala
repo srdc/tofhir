@@ -98,6 +98,7 @@ class FhirMappingJobManager(
     val sinkWriter = SinkWriterFactory.apply(sinkSettings)
     // The sink is not touched at all when the execution skips writing
     if (!mappingJobExecution.isWriteSkipped) sinkWriter.validate()
+    SinkHandler.requireResourceValidator(mappingJobExecution)
     mappingJobExecution.mappingTasks.foldLeft(Future((): Unit)) { (f, task) => // Initial empty Future
       f.flatMap { _ => // Execute the Futures in the Sequence consecutively (not in parallel)
         // log the start of the FHIR mapping task execution
@@ -221,6 +222,7 @@ class FhirMappingJobManager(
     val sinkWriter = SinkWriterFactory.apply(sinkSettings)
     // The sink is not touched at all when the execution skips writing
     if (!mappingJobExecution.isWriteSkipped) sinkWriter.validate()
+    SinkHandler.requireResourceValidator(mappingJobExecution)
 
     readSourceAndExecuteTask(
       mappingJobExecution.jobId,

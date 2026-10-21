@@ -4,6 +4,13 @@ import io.ignifyr.engine.config.IgnifyrConfig
 import io.ignifyr.engine.data.write.{BaseSinkWriter, SinkHandler}
 import io.ignifyr.engine.execution.log.ExecutionLogger
 import io.ignifyr.engine.model._
+import io.ignifyr.engine.spi.{
+  MappedResourceValidator,
+  MissingCapabilityException,
+  ResourceValidatorProvider,
+  ValidationIssue
+}
+import io.ignifyr.test.engine.data.SinkHandlerTest.StubValidatorProvider
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.util.CollectionAccumulator
 import org.scalatest.flatspec.AnyFlatSpec
@@ -25,6 +32,7 @@ class SinkHandlerTest extends AnyFlatSpec with Matchers {
   /** Captures the dataset it is handed instead of writing it anywhere. */
   private class CapturingWriter extends BaseSinkWriter(FileSystemSinkSettings("./out", SinkContentTypes.NDJSON)) {
     var written: Seq[FhirMappingResult] = Seq.empty
+    var problemsBeforeWrite: Seq[FhirMappingResult] = Seq.empty
     var writeCalls: Int = 0
     override def write(
         spark: SparkSession,
@@ -33,6 +41,7 @@ class SinkHandlerTest extends AnyFlatSpec with Matchers {
     ): Unit = {
       writeCalls += 1
       written = df.collect().toSeq
+      problemsBeforeWrite = problemsAccumulator.value.toArray(Array.empty[FhirMappingResult]).toSeq
     }
     override def validate(): Unit = ()
   }
@@ -127,5 +136,89 @@ class SinkHandlerTest extends AnyFlatSpec with Matchers {
     )
     writer.writeCalls shouldBe 0
     writer.written shouldBe empty
+  }
+
+  private val validatingExecution = execution.copy(validateResources = true)
+
+  private def writeValidated(results: FhirMappingResult*): CapturingWriter = {
+    import sparkSession.implicits._
+    val writer = new CapturingWriter
+    SinkHandler.writeMappingResult(
+      sparkSession,
+      validatingExecution,
+      "task-1",
+      results.toSeq.toDS(),
+      writer,
+      Some(StubValidatorProvider)
+    )
+    writer
+  }
+
+  "writeMappingResult with resource validation" should "write only the resources without validation errors" in {
+    val writer = writeValidated(
+      result("ok", mappedResource = Some("""{"resourceType":"Patient"}""")),
+      result("invalid", mappedResource = Some("""{"resourceType":"Patient","invalid":true}""")),
+      result("warned", mappedResource = Some("""{"resourceType":"Patient","warn":true}"""))
+    )
+    writer.written.map(_.source) should contain theSameElementsAs Seq("ok", "warned")
+  }
+
+  it should "report an invalid resource as invalid_resource with its issues, before the write" in {
+    val writer = writeValidated(result("invalid", mappedResource = Some("""{"resourceType":"Patient","invalid":true}""")))
+    writer.problemsBeforeWrite.map(_.source) shouldBe Seq("invalid")
+    val error = writer.problemsBeforeWrite.head.error.get
+    error.code shouldBe FhirMappingErrorCodes.INVALID_RESOURCE
+    error.expression.get should include("Patient.invalid")
+  }
+
+  it should "reject a resource whose validation fails with an exception" in {
+    val writer = writeValidated(result("boom", mappedResource = Some("""{"resourceType":"Patient","boom":true}""")))
+    writer.written shouldBe empty
+    writer.problemsBeforeWrite.head.error.get.expression.get should include("could not be validated")
+  }
+
+  it should "fail clearly when no resource validator is installed" in {
+    import sparkSession.implicits._
+    val thrown = the[MissingCapabilityException] thrownBy SinkHandler.writeMappingResult(
+      sparkSession,
+      validatingExecution,
+      "task-1",
+      Seq(result("row-1", mappedResource = Some("""{"resourceType":"Patient"}"""))).toDS(),
+      new CapturingWriter,
+      None
+    )
+    thrown.getMessage should include("ignifyr-validation")
+  }
+
+  it should "fail fast at job start when no resource validator is installed" in {
+    // The community engine has no resource validator module on its test classpath
+    a[MissingCapabilityException] should be thrownBy SinkHandler.requireResourceValidator(validatingExecution)
+    noException should be thrownBy SinkHandler.requireResourceValidator(execution)
+  }
+}
+
+object SinkHandlerTest {
+
+  /**
+   * Validator stub: a resource with an `invalid` field has an error, one with a `warn` field a warning, and one with a
+   * `boom` field makes the validator throw. Top-level, so that it serializes to the Spark executors.
+   */
+  object StubValidatorProvider extends ResourceValidatorProvider with MappedResourceValidator {
+    override def validatorFor(
+        mappingJobExecution: FhirMappingJobExecution,
+        mappingTaskName: String
+    ): MappedResourceValidator = this
+
+    override def validate(mappedResource: String): Seq[ValidationIssue] =
+      if (mappedResource.contains("\"boom\"")) throw new IllegalStateException("validator failure")
+      else
+        Seq(
+          if (mappedResource.contains("\"invalid\""))
+            Some(ValidationIssue("error", "invalid", Some("bad"), Seq("Patient.invalid")))
+          else None,
+          if (mappedResource.contains("\"warn\""))
+            Some(ValidationIssue("warning", "invalid", Some("odd"), Seq("Patient.warn")))
+          else None
+        ).flatten
   }
 }

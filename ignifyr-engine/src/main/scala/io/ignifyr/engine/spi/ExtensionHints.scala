@@ -35,6 +35,12 @@ object ExtensionHints {
   def describeSink(settingsClass: Class[_]): String =
     describe("sink writer", "sink type", settingsClass, sinkModules)
 
+  /** Message for a job asking for resource validation when no resource validator module is installed. */
+  val describeResourceValidator: String =
+    "The job asks for the validation of the mapped resources (sinkSettings.validateResources), but no " +
+      "resource validator is installed. Install the 'com.pontegra.ignifyr:ignifyr-validation' module (Enterprise " +
+      "Edition), or turn the validation off."
+
   def describeCliCommand(commandToken: String): String =
     cliCommandModules.get(commandToken) match {
       case Some(module) =>
