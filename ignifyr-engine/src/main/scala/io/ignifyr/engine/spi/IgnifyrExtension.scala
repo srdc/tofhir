@@ -1,6 +1,7 @@
 package io.ignifyr.engine.spi
 
 import com.typesafe.config.Config
+import org.json4s.Serializer
 
 /**
  * Aggregate service-provider interface for an Ignifyr edition module.
@@ -12,9 +13,9 @@ import com.typesafe.config.Config
  * plain folder move plus a reactor edit, with no engine code change.
  *
  * All contribution accessors default to empty; a module overrides only what it provides. Further
- * accessors (function libraries, streaming/scheduling capabilities, file-format handlers, extra
- * json4s hints) are introduced by later migration phases as they are needed — adding a defaulted
- * method here stays binary/source compatible with existing extensions.
+ * accessors (function libraries, streaming/scheduling capabilities, file-format handlers) are
+ * introduced by later migration phases as they are needed — adding a defaulted method here stays
+ * binary/source compatible with existing extensions.
  */
 trait IgnifyrExtension {
 
@@ -33,6 +34,9 @@ trait IgnifyrExtension {
    * [[ExtensionRegistry.sparkConfContributions]], which forces the extension list and hence every
    * `initialize`), so reading the session here would re-enter its lazy initialization and self-recurse.
    * Do Spark-dependent setup lazily, on first use, not in `initialize`.
+   *
+   * For the same reason it MUST NOT (de)serialize a job with `FhirMappingJobFormatter.formats`: building
+   * those formats loads the registry to collect [[jobModelClasses]].
    */
   def initialize(config: Config): Unit = ()
 
@@ -84,6 +88,26 @@ trait IgnifyrExtension {
    * Keeping this a pure accessor that never touches the SparkSession avoids an initialization cycle.
    */
   def sparkConfContributions: Map[String, String] = Map.empty
+
+  /**
+   * Job-model classes this module defines — the source bindings, source settings, sink settings, … its
+   * connectors and sinks read from a mapping job — so that a job JSON naming them by `jsonClass` parses.
+   * They join the engine's own classes in `FhirMappingJobFormatter.formats` (a json4s `ShortTypeHints`
+   * table, i.e. keyed by simple class name). A simple name claimed twice, by two modules or by a module
+   * and the engine, is a configuration error and fails fast. A job naming a class no installed module
+   * provides fails to parse with a message saying so.
+   *
+   * Keep the class next to the connector/sink that reads it, in the module itself: the engine does not need
+   * to know it, which is what lets a module add a source or sink type without an engine change.
+   */
+  def jobModelClasses: Seq[Class[_]] = Nil
+
+  /**
+   * Custom json4s serializers for this module's [[jobModelClasses]], if the default case-class
+   * (de)serialization does not fit (e.g. a defaulted field that must still be written). Added to
+   * `FhirMappingJobFormatter.formats`.
+   */
+  def jobSerializers: Seq[Serializer[_]] = Nil
 
   /**
    * Extra, human-readable capability lines for the `list-plugins` command — for contributions the

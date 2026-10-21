@@ -2,6 +2,7 @@ package io.ignifyr.engine.spi
 
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
+import org.json4s.Serializer
 
 import java.util.ServiceLoader
 import scala.jdk.CollectionConverters._
@@ -65,6 +66,20 @@ object ExtensionRegistry {
     indexUnique("CLI command")(
       extensions.flatMap(e => e.cliCommands.flatMap(cmd => (cmd.name +: cmd.aliases).map(token => (e.id, token, cmd))))
     )
+
+  /**
+   * The job-model classes the installed modules define (see [[IgnifyrExtension.jobModelClasses]]), keyed by
+   * the simple class name a job JSON names them with (`jsonClass`). A name claimed by two modules fails fast;
+   * a clash with one of the engine's own classes is detected when `FhirMappingJobFormatter.formats` is built.
+   */
+  lazy val jobModelClasses: Map[String, Class[_]] =
+    indexUnique("job model class")(
+      extensions.flatMap(e => e.jobModelClasses.map(c => (e.id, c.getSimpleName, c: Class[_])))
+    )
+
+  /** The custom json4s serializers of the installed modules' job-model classes, in extension order. */
+  lazy val jobSerializers: Seq[Serializer[_]] =
+    extensions.flatMap(_.jobSerializers)
 
   /** All source-failure descriptors, in extension order. Queried on a connector-specific failure. */
   lazy val sourceFailureDescriptors: Seq[SourceFailureDescriptor] =
@@ -171,7 +186,8 @@ object ExtensionRegistry {
    * two providers are installed, and neither is read anywhere else during startup. (`streaming` used
    * to be covered only incidentally, by `IgnifyrEngine` consulting it to decide whether to start the
    * archive timer; that is a coincidence, not a guarantee.) `sparkConfContributions` needs no entry —
-   * building the shared SparkSession reads it, which happens before this call.
+   * building the shared SparkSession reads it, which happens before this call. The job (de)serialization
+   * formats are built too, so a module's job-model class clashing with one of the engine's surfaces here.
    */
   def init(): Unit = {
     sourceConnectors
@@ -180,6 +196,8 @@ object ExtensionRegistry {
     identityServiceProviders
     cliCommands
     schemaInferrers
+    jobModelClasses
+    io.ignifyr.engine.util.FhirMappingJobFormatter.formats
     streaming
     scheduler
     ()

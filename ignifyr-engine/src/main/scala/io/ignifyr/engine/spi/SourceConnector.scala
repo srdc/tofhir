@@ -7,9 +7,11 @@ import org.apache.spark.sql.SparkSession
 /**
  * Contributes a data-source reader for one source-binding type.
  *
- * The binding/settings model classes always live in the engine, so a job JSON referencing this
- * source parses everywhere; when no connector is registered for the binding class, the engine
- * raises a [[MissingConnectorException]] at read time rather than failing to parse.
+ * The binding/settings model classes live either in the engine (the community sources) or in the module
+ * itself, which then contributes them through [[IgnifyrExtension.jobModelClasses]]. For an engine class a job
+ * JSON referencing this source parses everywhere, and when no connector is registered for it the engine raises
+ * a [[MissingConnectorException]] at read time; for a module class the job parses only where the module is
+ * installed.
  */
 trait SourceConnector {
 

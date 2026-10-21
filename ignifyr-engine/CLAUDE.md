@@ -37,7 +37,8 @@ resources. Usable as a library or as the standalone CLI/batch tool. Package root
   separator and `spark.sql.catalog.spark_catalog` is a scalar, so both are deliberately excluded.
 - `spi/` — the ServiceLoader extension SPI: `IgnifyrExtension` (one per module; contributes source
   connectors, sinks, terminology/identity services, CLI commands, source-failure descriptors, schema
-  inferrers, streaming/scheduling capabilities, `sparkConfContributions`, `extraCapabilities`),
+  inferrers, streaming/scheduling capabilities, `sparkConfContributions`, `extraCapabilities`, and its own
+  job-model classes and json4s serializers — `jobModelClasses`/`jobSerializers`, see `util/` below),
   `ExtensionRegistry`, the provider traits — `SourceConnector`, `SinkProvider`, `CliCommandProvider`,
   `SourceSchemaInferrer`, `SourceFailureDescriptor`, `StreamingExecutionProvider`, `SchedulerProvider`,
   `MappingTaskPipeline`, and `TerminologyServiceProvider`/`IdentityServiceProvider` (both in
@@ -83,13 +84,25 @@ resources. Usable as a library or as the standalone CLI/batch tool. Package root
   explicit environment — the substitution seam, since `sys.env` cannot be set from inside the JVM.
 - `Execution.scala` (top level) — the Akka `ActorSystem` the registry reads root config from, and which
   the service-provider modules use.
-- `util/` — helpers (`FileUtils`, `SparkUtil`, `CsvUtil`, …).
+- `util/` — helpers (`FileUtils`, `SparkUtil`, `CsvUtil`, …). `FhirMappingJobFormatter.formats` is the one
+  json4s `Formats` every job (de)serialization uses, engine and server alike: a `ShortTypeHints` table
+  (`jsonClass` = simple class name) over the engine's own job-model classes (`engineJobModelClasses`) **plus**
+  the installed modules' `jobModelClasses`/`jobSerializers`, built on first use. So a module defines the models
+  of its own source/sink types; the engine knows only the community ones. A simple name claimed twice fails
+  fast (`ExtensionRegistry.init()` builds the formats), and a polymorphic member whose `jsonClass` no
+  installed module provides fails to parse with "Unknown jsonClass '…': no installed module provides it" —
+  `JobModelTypeHints` makes json4s treat such a field as a type hint instead of failing on the abstract type.
+  ⚠️ An extension's `initialize` must not use the formats (building them loads the registry).
 
 ## Adding a new data source reader (common task)
-1. Add/extend a source-settings model under `model/` (alongside `MappingJobSourceSettings`).
-2. Create (or extend) an `ignifyr-connector-<x>` module with a reader extending `BaseDataSourceReader`
+1. Create (or extend) an `ignifyr-connector-<x>` module with a reader extending `BaseDataSourceReader`
    — mirror `ignifyr-connector-sql`.
-3. Register it via the module's `IgnifyrExtension` (`sourceConnectors`) and its
+2. Define the binding and settings models (`MappingSourceBinding`, `MappingJobSourceSettings`) **in that
+   module** and contribute them through its `IgnifyrExtension.jobModelClasses` (plus `jobSerializers` if
+   the default case-class serialization does not fit), so job JSON naming them parses. Override
+   `withResolvedEnvironmentVariables` if a field may carry a `${ENV_VAR}` placeholder. (The community
+   sources' models predate this and live under `model/`; there is no need to add new ones there.)
+3. Register the reader via the module's `IgnifyrExtension` (`sourceConnectors`) and its
    `META-INF/services/io.ignifyr.engine.spi.IgnifyrExtension` entry; add the module to the reactor
    and to the distributions that ship it (`ignifyr-cli` for community, `ignifyr-server` for enterprise).
 4. Add a lightweight registration spec **in the new module** (the engine's own suites can't reach it —

@@ -3,9 +3,13 @@ package io.ignifyr.test.cli
 import io.ignifyr.connector.file.format.FileFormatRegistry
 import io.ignifyr.engine.model._
 import io.ignifyr.engine.spi.ExtensionRegistry
+import io.ignifyr.engine.util.FhirMappingJobFormatter
 import io.ignifyr.sink.file.format.FileSinkFormatRegistry
+import org.json4s.MappingException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.nio.file.Files
 
 /**
  * Community-edition separation guard.
@@ -41,12 +45,26 @@ class CommunityEditionSeparationSpec extends AnyFlatSpec with Matchers {
     ExtensionRegistry.scheduler shouldBe None
   }
 
-  it should "not register the enterprise source connectors (Kafka, FHIR-server)" in {
-    val sources = ExtensionRegistry.sourceConnectors.keySet
-    sources should contain(classOf[SqlSource]: Class[_])
-    sources should contain(classOf[FileSystemSource]: Class[_])
-    sources should not contain (classOf[KafkaSource]: Class[_])
-    sources should not contain (classOf[FhirServerSource]: Class[_])
+  it should "register only the community source connectors" in {
+    ExtensionRegistry.sourceConnectors.keySet shouldBe Set[Class[_]](classOf[SqlSource], classOf[FileSystemSource])
+  }
+
+  it should "know no job-model class beyond the engine's own" in {
+    ExtensionRegistry.jobModelClasses shouldBe empty
+  }
+
+  // The model of an enterprise source lives in its module: a job using one does not parse here, and says why
+  it should "reject a job using an enterprise source type, naming the unknown jsonClass" in {
+    val file = Files.createTempFile("ignifyr-job", ".json")
+    Files.writeString(
+      file,
+      """{"sourceSettings": {"k": {"jsonClass": "KafkaSourceSettings", "name": "k", "sourceUri": "urn:k",
+        |  "bootstrapServers": "localhost:9092"}},
+        | "sinkSettings": {"jsonClass": "FhirRepositorySinkSettings", "fhirRepoUrl": "http://onfhir/fhir"},
+        | "mappings": []}""".stripMargin
+    )
+    val thrown = the[MappingException] thrownBy FhirMappingJobFormatter.readMappingJobFromFile(file.toString)
+    thrown.getMessage should include("Unknown jsonClass 'KafkaSourceSettings'")
   }
 
   it should "not expose enterprise CLI commands" in {

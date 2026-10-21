@@ -155,9 +155,9 @@ if command -v java >/dev/null 2>&1; then
     fi
   }
   expect_refusal "$SCRIPT_DIR/config/jobs/streaming-watch-job.json" "MissingCapabilityException\|runtime-streaming" "streaming job -> MissingCapabilityException (streaming)"
-  # Kafka job is a stream, so it's refused at the missing streaming capability before connector
-  # resolution — accept either enterprise-gap error.
-  expect_refusal "$SCRIPT_DIR/config/jobs/kafka-redcap-job.json"   "MissingConnectorException\|connector-kafka\|MissingCapabilityException\|runtime-streaming" "Kafka streaming job -> refused (missing streaming capability or Kafka connector)"
+  # The Kafka source models live in the Enterprise connector-kafka module, so the community jar refuses
+  # the job already when parsing it, naming the unknown jsonClass.
+  expect_refusal "$SCRIPT_DIR/config/jobs/kafka-redcap-job.json"   "Unknown jsonClass 'KafkaSource" "Kafka streaming job -> refused (unknown Kafka source type)"
   # list-plugins must not advertise enterprise plugins on the community jar. Confirm it actually ran
   # first: with the rc and stderr dropped, a JVM that never got as far as printing anything left an
   # empty $lp, the grep matched nothing, and "no enterprise plugins" was reported -- the same verdict a
